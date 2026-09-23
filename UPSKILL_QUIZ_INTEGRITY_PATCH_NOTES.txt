@@ -1,0 +1,49 @@
+UPSKILL — Quiz Integrity Verification Patch v2
+
+IMPORTANT FIX IN V2:
+The previous patch accidentally omitted the existing quiz timer block from
+resources/views/student/courses/enrollment.blade.php. Because hideAllViews()
+references _quizTimerId, that omission caused a JavaScript ReferenceError when
+a student opened a lesson. The result was a blank lesson area and missing
+Start Learning / Mark Complete / Continue behavior.
+
+V2 restores the original quiz timer and auto-submit functions while retaining
+the quiz-integrity changes.
+
+Main integrity changes retained:
+- Quiz answers are submitted, not a client-supplied score.
+- Server-side grading determines correct count and pass/fail.
+- Correct answers are not included in student QUIZ_DATA.
+- Quiz attempt answer evidence is persisted server-side.
+- Legacy completion bypass is neutralized.
+- Stacking approval requires pending_approval.
+- Academic-credit recognition synchronizes live stacking progress.
+
+Files in this patch:
+- app/Services/QuizGradingService.php
+- app/Services/QuizAttemptService.php
+- app/Services/StudentProgressService.php
+- app/Services/CourseCompletionService.php
+- app/Services/MicrocredentialCompletionService.php
+- app/Services/AcademicCreditRecognitionService.php
+- app/Http/Controllers/AdminController.php
+- app/Http/Controllers/StudentController.php
+- resources/views/student/courses/enrollment.blade.php
+- tests/Unit/StudentServicesTest.php
+- tests/Unit/MicrocredentialCompletionServiceTest.php
+- tests/Feature/QuizCompletionIntegrationTest.php
+- tests/Feature/InstitutionalActionRoutesTest.php
+- tests/Feature/CourseCompletionEndpointTest.php
+
+Local verification:
+1. Replace the corresponding files in the local Laravel project.
+2. Run: php artisan optimize:clear
+3. Start Laravel normally.
+4. Open a student enrollment/learning page.
+5. Confirm Start Learning appears, then open a lesson.
+6. Confirm Mark Complete and Continue appear.
+7. Test quiz submission and attempt handling.
+
+Automated test limitation in the agent/runtime environment:
+PHPUnit could not start because the PHP DOM extension (DOMDocument) is not
+available there. PHP syntax checks on the patched PHP files passed.

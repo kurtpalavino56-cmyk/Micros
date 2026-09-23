@@ -1,0 +1,154 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+/* Manual (class-based) dark mode — toggled by the dashboard layout. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-display: 'Sora', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* PSU blue ramp */
+    --color-psu-blue-50: #eef1fd;
+    --color-psu-blue-100: #dbe1fc;
+    --color-psu-blue-200: #b0bdf8;
+    --color-psu-blue-300: #7d90f2;
+    --color-psu-blue-400: #4257e8;
+    --color-psu-blue-500: #0927d8;
+    --color-psu-blue-600: #081ec2;
+    --color-psu-blue-700: #0718a0;
+    --color-psu-blue-800: #061680;
+    --color-psu-blue-900: #071566;
+    --color-psu-blue-950: #050c3d;
+
+    /* PSU gold ramp */
+    --color-psu-gold-50: #fffbe8;
+    --color-psu-gold-100: #fff6c2;
+    --color-psu-gold-200: #ffec8a;
+    --color-psu-gold-300: #ffda27;
+    --color-psu-gold-400: #f2c700;
+    --color-psu-gold-500: #d1a900;
+    --color-psu-gold-600: #a68400;
+    --color-psu-gold-700: #7a6100;
+
+    /* Blue-tinted dark-mode surfaces */
+    --color-ink-950: #05070f;
+    --color-ink-900: #0a0e1c;
+    --color-ink-800: #111729;
+    --color-ink-700: #1a2238;
+    --color-ink-600: #2a3552;
+
+    --radius-card: 1.25rem;
+    --radius-pill: 999px;
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+/* Shared product surfaces: crisp borders with restrained, consistent rounding. */
+.surface-card {
+    border: 1px solid #e3e8f3;
+    border-radius: 1.25rem;
+    background: #fff;
+    box-shadow: 0 10px 30px rgba(10, 31, 110, .08);
+}
+.interactive-lift {
+    transition: transform .22s cubic-bezier(.2, .8, .2, 1), box-shadow .22s ease;
+}
+.interactive-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 42px rgba(10, 31, 110, .14);
+}
+
+.admin-shell .navbar-logo,
+.admin-shell .navbar-avatar {
+    border-radius: 999px !important;
+}
+
+
+/* CKEditor lesson file attachment */
+.lesson-file-attachment {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 620px;
+    margin: 12px 0;
+    padding: 14px 16px;
+    border: 1px solid #d9e2ec;
+    border-radius: 10px;
+    background: #f8fafc;
+    box-sizing: border-box;
+}
+
+.lesson-file-attachment__icon {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 8px;
+    background: #eaf2fb;
+    font-size: 20px;
+}
+
+.lesson-file-attachment__info {
+    min-width: 0;
+    flex: 1;
+}
+
+.lesson-file-attachment__name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #172033;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.lesson-file-attachment__type {
+    margin-top: 3px;
+    font-size: 12px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* =========================================================
+   Embedded PDF Viewer - CKEditor
+   ========================================================= */
+
+.upskill-pdf-editor {
+    display: block;
+    width: 100%;
+    margin: 16px 0;
+    border: 1px solid #d9dee7;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #f8fafc;
+}
+
+.upskill-pdf-editor__header {
+    display: flex;
+    align-items: center;
+    min-height: 46px;
+    padding: 10px 14px;
+    background: #f1f5f9;
+    border-bottom: 1px solid #d9dee7;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.upskill-pdf-editor__frame {
+    display: block;
+    width: 100%;
+    height: 720px;
+    border: 0;
+    background: #ffffff;
+}

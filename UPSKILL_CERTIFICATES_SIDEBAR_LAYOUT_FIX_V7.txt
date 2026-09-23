@@ -1,0 +1,14 @@
+UPSKILL — Student Certificates Sidebar Layout Fix v7
+
+Fixes the Certificates page sidebar stretching across the full viewport.
+
+Cause:
+- The Certificates page uses the shared .student-sidebar component, but its
+  page-level .layout did not declare display:grid.
+- The sidebar component sets grid-template-columns, but without display:grid
+  the sidebar rendered as a normal block and expanded to the page width.
+
+Fix:
+- Added display:grid to .layout.student-sidebar-layout on the Certificates page.
+- Preserved the shared sidebar's 244px/78px collapsed column behavior.
+- Preserved the existing certificate list and View/Download styling from v6.

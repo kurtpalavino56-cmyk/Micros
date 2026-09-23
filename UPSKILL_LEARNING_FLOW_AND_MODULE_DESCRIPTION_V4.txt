@@ -1,0 +1,22 @@
+UPSKILL Learning Flow + Module Description Fix v4
+
+Apply this patch on top of the previous UPSKILL Lesson Editor Display Fix v3.
+
+Changed files:
+- app/Http/Controllers/StudentController.php
+- resources/views/student/courses/enrollment.blade.php
+
+Changes:
+1. The module description entered by faculty through the rich-text editor is now passed to the student learning page.
+2. The module welcome screen displays that faculty-authored rich content under "About this module".
+3. Module descriptions support the same rich embedded media rendering used by lesson content.
+4. Clicking Continue from a lesson now scrolls the learning page back to the top.
+5. Continue from the final lesson of a module opens that module's quiz directly when a quiz exists and is unlocked.
+6. Continue no longer returns the student to the module welcome / Start Learning screen before the quiz.
+7. If a module has no quiz, Continue moves directly to the next unlocked module's first lesson.
+8. Continue to the next module also returns the page to the top.
+
+After replacing the files locally:
+php artisan optimize:clear
+
+Then hard refresh the student learning page with Ctrl+F5.

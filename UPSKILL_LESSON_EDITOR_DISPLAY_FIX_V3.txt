@@ -1,0 +1,67 @@
+UPSKILL — Lesson Editor-Only Workflow + Student Lesson Display Fix v3
+
+SOURCE
+- Built from the latest MC-LATEST project ZIP.
+- Includes the previous Quiz Integrity Verification Patch v2 files so this is a single replacement package.
+
+LESSON AUTHORING CHANGES
+- Removed the separate file-type selector and Choose File control from Faculty > Manage Course > Add Lesson.
+- Removed the same standalone file upload controls from Edit Lesson.
+- Removed lesson upload progress UI and related JavaScript.
+- New lessons are saved as Text lessons using the CKEditor content only.
+- Lesson title, rich-text content, and duration remain.
+- Legacy CourseLesson file columns are retained for database compatibility.
+- When an existing lesson is edited, any legacy standalone CourseLesson attachment is retired; files inserted through the CKEditor editor workflow are not affected.
+
+STUDENT LEARNING PAGE CHANGES
+- Removed the standalone file preview/attachment area.
+- Removed the large placeholder/media area used by the old file-upload workflow.
+- Removed the generated "What is [lesson]?" heading and generated description/duration block.
+- Removed the duplicate navy lesson heading above the lesson card.
+- Student lesson view now shows the lesson title, Mark Complete button, and the actual CKEditor-authored lesson content.
+- Continue button remains after the lesson content.
+- CKEditor-authored YouTube/Vimeo embeds are converted into responsive players.
+- CKEditor PDF embeds are rendered inside the lesson content area.
+- Existing lesson file metadata is no longer exposed to the student learning-page payload.
+
+QUIZ INTEGRITY PATCH RETAINED
+- Server-side quiz grading from submitted answers.
+- Client-supplied score is prohibited.
+- Correct answers are not sent in student QUIZ_DATA.
+- Quiz attempt answer evidence is persisted server-side.
+- Legacy completion bypass is neutralized.
+- Stacking approval requires pending_approval.
+- Academic-credit recognition synchronizes live stacking progress.
+
+FILES TO REPLACE
+- app/Http/Controllers/AdminController.php
+- app/Http/Controllers/FacultyController.php
+- app/Http/Controllers/StudentController.php
+- app/Services/QuizGradingService.php
+- app/Services/QuizAttemptService.php
+- app/Services/StudentProgressService.php
+- app/Services/CourseCompletionService.php
+- app/Services/MicrocredentialCompletionService.php
+- app/Services/AcademicCreditRecognitionService.php
+- app/Services/CourseLessonService.php
+- resources/views/faculty/courses/index.blade.php
+- resources/views/student/courses/enrollment.blade.php
+- previous integrity test files included under tests/Unit and tests/Feature
+
+LOCAL STEPS
+1. Back up the current local project.
+2. Replace the files above, preserving the existing Laravel directory structure.
+3. Run:
+   php artisan optimize:clear
+4. Reload the Faculty Manage Course page and open Add Lesson.
+5. Confirm there is no separate Choose File / file-type picker.
+6. Create a lesson using the CKEditor content and duration.
+7. Open the student learning page.
+8. Confirm Start Learning appears on the welcome screen.
+9. Open the lesson and confirm only the authored editor content is shown, with Mark Complete and Continue.
+10. Test Mark Complete → Continue → quiz flow.
+
+VERIFICATION PERFORMED IN PATCH RUNTIME
+- PHP syntax checks passed for all changed PHP files.
+- BladeCompiler successfully compiled both modified Blade views.
+- Full PHPUnit/Artisan test execution remains blocked in the runtime because PHP DOMDocument is unavailable.
