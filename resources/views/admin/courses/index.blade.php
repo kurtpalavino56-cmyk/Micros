@@ -4,581 +4,323 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upskill – Courses &amp; Badges</title>
-    {{-- Browser tab icon (favicon) --}}
     <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
     <style>
-        /* ─── Reset ─────────────────────────────────────────────── */
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-        /* ─── Tokens (shared with Admin_Main_Home / UserManage) ──── */
         :root {
-            --navy:        #0d1b6e;
-            --navy-light:  #1a2fa0;
-            --navy-pale:   #e8eaf6;
-            --teal:        #1a6b5a;
-            --teal-bar:    #1f8a6e;
-            --white:       #ffffff;
-            --surface:     #f4f6fb;
-            --border:      #e2e5f0;
-            --text-main:   #0d1b6e;
-            --text-muted:  #6b7280;
-            --text-sub:    #9ca3af;
-            --shadow-sm:   0 1px 4px rgba(13,27,110,.07);
-            --shadow-md:   0 3px 12px rgba(13,27,110,.11);
-            --radius-card: 12px;
-            --radius-sm:   8px;
-            --sidebar-w:   225px;
-            --topbar-h:    58px;
+            --navy: #071550;
+            --blue: #0b4ea2;
+            --soft: #eaf2ff;
+            --yellow: #f4c430;
+            --yellow-dark: #e8b91f;
+            --yellow-soft: #fff8dc;
+            --surface: #f5f7fa;
+            --white: #ffffff;
+            --line: #e2e7ef;
+            --text: #17212b;
+            --muted: #687385;
         }
 
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
             background: var(--surface);
-            color: var(--text-main);
+            color: var(--text);
             min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* ─── TOP NAV ─────────────────────────────────────────────── */
-        .topbar {
-            position: fixed;
-            inset: 0 0 auto 0;
-            height: var(--topbar-h);
-            background: var(--navy);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 22px;
-            z-index: 200;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-        }
-
-        .topbar-brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: var(--white);
-            font-size: 1.05rem;
-            font-weight: 800;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            text-decoration: none;
-        }
-
-        .brand-logo {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            background: var(--white);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            overflow: hidden;
-        }
-
-        .brand-logo svg { width: 20px; height: 20px; }
-
-        .topbar-right { display: flex; align-items: center; gap: 14px; }
-
-        .search-wrap {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255,255,255,0.12);
-            border: 1px solid rgba(255,255,255,0.22);
-            border-radius: 20px;
-            padding: 6px 16px;
-        }
-
-        .search-wrap svg { color: rgba(255,255,255,0.65); flex-shrink: 0; }
-
-        .search-wrap input {
-            background: none;
-            border: none;
-            outline: none;
-            color: var(--white);
-            width: 170px;
-            font-size: 0.825rem;
-        }
-
-        .search-wrap input::placeholder { color: rgba(255,255,255,0.55); }
-
-        .avatar-btn {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.15);
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--white);
-            text-decoration: none;
-            transition: background .2s;
-        }
-
-        .avatar-btn:hover { background: rgba(255,255,255,0.25); }
-
-        /* ─── LAYOUT ─────────────────────────────────────────────── */
-        .layout {
-            display: flex;
-            margin-top: var(--topbar-h);
-            min-height: calc(100vh - var(--topbar-h));
-        }
-
-        /* ════════════════════════════════════════════════════════════
-           SIDEBAR — identical to Admin_Main_Home / UserManage.
-           Active pill sits on "Courses & Badges".
-           ════════════════════════════════════════════════════════════ */
-        .sidebar {
-            width: var(--sidebar-w);
-            background: var(--white);
-            border-right: 1px solid var(--border);
-            position: fixed;
-            top: var(--topbar-h);
-            left: 0;
-            bottom: 0;
-            overflow-y: auto;
-            z-index: 100;
-            scrollbar-width: thin;
-            scrollbar-color: var(--border) transparent;
-        }
-
-        .sb-section { border-bottom: 1px solid var(--border); }
-
-        .sb-section-hd {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 14px 14px 16px;
-            cursor: pointer;
-            user-select: none;
-            border-left: 3px solid transparent;
-            transition: background .18s, border-color .2s;
-        }
-
-        .sb-section-hd:hover { background: #f7f9ff; }
-
-        .sb-section.open > .sb-section-hd { border-left-color: #5c6bc0; }
-
-        .sb-hd-left { display: flex; flex-direction: column; gap: 3px; }
-
-        .sb-section-label {
-            font-size: 0.875rem;
-            font-weight: 700;
-            color: #1a237e;
-            letter-spacing: 0;
-            text-transform: none;
-        }
-
-        .sb-lesson-count {
-            font-size: 0.695rem;
-            color: var(--text-sub);
-            font-weight: 400;
-        }
-
-        .sb-chevron {
-            width: 16px;
-            height: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-muted);
-            transition: transform .28s ease;
-            flex-shrink: 0;
-        }
-
-        .sb-section.open .sb-chevron { transform: rotate(180deg); }
-
-        .sb-items {
-            display: none;
-            flex-direction: column;
-            padding: 6px 10px 10px;
-            gap: 1px;
-        }
-
-        .sb-section.open .sb-items { display: flex; }
-
-        .sb-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 9px 10px 9px 12px;
-            text-decoration: none;
-            color: #374151;
-            font-size: 0.84rem;
-            border-radius: 6px;
-            border-bottom: 1px solid #f0f2f9;
-            transition: background .15s, color .15s;
-        }
-
-        .sb-item:last-child { border-bottom: none; }
-
-        .sb-item:hover { background: #eef0fb; color: var(--navy); }
-
-        /* Active item — teal pill */
-        .sb-item.active {
-            background: #62d4cf;
-            border-radius: 22px;
-            color: #0d2060;
-            font-weight: 600;
-            border-bottom: none;
-        }
-
-        .sb-item.active:hover { background: #4ecbc5; }
-
-        .sb-item-text { flex: 1; }
-
-        .sb-item-type {
-            font-size: 0.67rem;
-            color: var(--text-sub);
-            white-space: nowrap;
-            margin-left: 6px;
-        }
-
-        .sb-item.active .sb-item-type { color: #2d5098; }
-
-        /* ─── MAIN CONTENT ─────────────────────────────────────── */
+        /* Layout (topbar + shared sidebar offset) */
+        .layout { display: block; min-height: calc(100vh - 66px); }
         .main {
-            margin-left: var(--sidebar-w);
-            flex: 1;
-            padding: 34px 40px 52px;
+            margin-left: 238px !important;
+            width: calc(100% - 238px) !important;
+            min-width: 0;
+            padding: 30px 34px 56px;
         }
+        .page-wrap { max-width: 1120px; margin: 0 auto; }
 
-        .page-heading { font-size: 1.25rem; font-weight: 800; color: var(--navy); margin-bottom: 5px; }
-        .page-sub { font-size: 0.825rem; color: var(--text-muted); margin-bottom: 26px; }
+        /* Header */
+        .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+        .page-heading { font-size: 1.35rem; font-weight: 700; color: var(--blue); }
+        .page-sub { margin-top: 3px; font-size: .85rem; color: var(--muted); }
 
-        /* ─── COURSE CARD GRID (matches mockup: 2-up cards) ─────── */
-        .course-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 26px;
+        .search {
+            min-width: 240px; padding: 9px 13px;
+            border: 1px solid var(--line); border-radius: 8px;
+            background: var(--white); font: inherit; font-size: .85rem; color: var(--text); outline: none;
         }
+        .search:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(11,78,162,.1); }
 
-        @media (max-width: 1050px) {
-            .course-grid { grid-template-columns: 1fr; }
+        /* Status tabs */
+        .tabs { display: flex; flex-wrap: wrap; gap: 22px; border-bottom: 1px solid var(--line); margin: 18px 0 20px; }
+        .tab {
+            padding: 9px 0; border: 0; border-bottom: 2px solid transparent; background: none;
+            font: inherit; font-size: .88rem; color: var(--muted); cursor: pointer;
         }
+        .tab:hover { color: var(--navy); }
+        .tab.active { color: var(--blue); font-weight: 600; border-bottom-color: var(--yellow); }
+        .tab .n { margin-left: 4px; font-size: .78rem; color: var(--muted); }
 
-        /* ─── SINGLE COURSE CARD ────────────────────────────────── */
-        .course-card {
-            background: var(--white);
-            border: 1.5px solid var(--border);
-            border-radius: 14px;
-            padding: 26px 26px 30px;
-            min-height: 190px;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .course-card-title {
-            font-size: 1.15rem;
-            font-weight: 800;
-            color: var(--navy);
-            line-height: 1.28;
-            margin-bottom: 16px;
-        }
-
-        /* Completion award chips on each course card. */
-        .award-row { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 4px; }
-        .award-chip {
-            display:inline-flex; align-items:center; gap:7px;
-            background:#f7f9ff; border:1px solid #dfe4fb; border-radius:999px;
-            padding:5px 12px 5px 6px; font-size:11.5px; font-weight:700;
-            color:#13176b; max-width:100%; min-width:0;
-        }
-        /* The badge art is an SVG data URL with no intrinsic size, so it
-           fills whatever box it is given unless pinned. */
-        .award-chip img { width:22px; height:22px; object-fit:contain; flex:0 0 22px; }
-        .award-chip svg { width:16px; height:16px; margin-left:5px; flex:0 0 16px; }
-        .award-chip__blank {
-            width:22px; height:22px; flex:0 0 22px; border-radius:50%;
-            background:#e5e7eb; color:#9ca3af;
-            display:flex; align-items:center; justify-content:center; font-size:12px;
-        }
-        .award-chip__text { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
-        .award-chip.is-off { background:#f8f9fb; border-color:#e5e7eb; color:#9ca3af; }
-
-        .course-card-meta {
-            font-size: 0.8rem;
-            color: var(--text-sub);
-            font-weight: 600;
-            line-height: 1.55;
-            margin-bottom: 18px;
-        }
-
-        /* ─── PROGRESS BAR ──────────────────────────────────────── */
-        .progress-track {
-            height: 6px;
-            background: #e4e8f5;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-bottom: 10px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: var(--teal-bar);
-            border-radius: 4px;
-            transition: width .6s ease;
-        }
-
-        .course-card-pct {
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: var(--navy);
-        }
-
-        /* ─── CLICKABLE CARD ────────────────────────────────────── */
-        .course-card { cursor: pointer; transition: box-shadow .2s, transform .2s, border-color .2s; }
-        .course-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: #c7cdf0; }
-
-        /* ─── APPROVAL STATUS PILLS ─────────────────────────────── */
-        .approval-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            padding: 4px 12px;
-            border-radius: 999px;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .approval-pill .dot { width: 8px; height: 8px; border-radius: 50%; }
-        .approval-pending  { background: #fff7ed; color: #b45309; border: 1px solid #fed7aa; }
-        .approval-pending .dot { background: #f59e0b; }
-        .approval-approved { background: #ecfdf5; color: #15803d; border: 1px solid #a7f3d0; }
-        .approval-approved .dot { background: #22c55e; }
-        .approval-denied   { background: #fff1f2; color: #b91c1c; border: 1px solid #fecdd3; }
-        .approval-denied .dot { background: #ef4444; }
-        .approval-draft    { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
-        .approval-draft .dot { background: #94a3b8; }
-
-        /* Pending cards get a subtle amber edge so they stand out */
-        .course-card.is-pending { border-color: #fcd9a0; background: #fffdf8; }
-
-        /* ─── APPROVE / DENIED BUTTONS ──────────────────────────── */
-        .course-actions { display: flex; gap: 10px; margin-top: 16px; }
-        .btn-approve, .btn-deny {
-            flex: 1;
-            border: none;
-            border-radius: 9px;
-            padding: 10px 0;
-            font-size: 0.84rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background .18s, transform .15s;
-        }
-        .btn-approve { background: #16a34a; color: #fff; }
-        .btn-approve:hover { background: #15803d; transform: translateY(-1px); }
-        .btn-deny { background: #fff1f2; color: #b91c1c; border: 1.5px solid #fecdd3; }
-        .btn-deny:hover { background: #ffe4e6; transform: translateY(-1px); }
-
-        /* ─── PUBLISH / FEATURE (admin-only) ────────────────────── */
-        .course-actions-admin { margin-top: 10px; }
-        .btn-publish, .btn-feature {
-            flex: 1;
-            border-radius: 9px;
-            padding: 10px 0;
-            font-size: 0.8rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background .18s, transform .15s, color .18s, border-color .18s;
-            border: 1.5px solid #c7cde8;
-            background: #f4f6fd;
-            color: #13176b;
-        }
-        .btn-publish:hover, .btn-feature:hover { transform: translateY(-1px); }
-        .btn-publish.is-on { background: #13176b; color: #fff; border-color: #13176b; }
-        .btn-feature.is-on { background: #fdf3d7; color: #c4930f; border-color: #f0dc9a; }
-
-        /* flash message */
         .alert-success {
-            background: #ecfdf5;
-            border: 1px solid #a7f3d0;
-            color: #047857;
-            border-radius: 10px;
-            padding: 11px 16px;
-            font-size: 0.86rem;
-            font-weight: 600;
-            margin-bottom: 20px;
+            background: #eaf8ef; border: 1px solid #ccebd6; color: #166534;
+            border-radius: 10px; padding: 11px 16px; font-size: .86rem; font-weight: 600; margin-bottom: 18px;
         }
+
+        /* Grid + card */
+        .course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+
+        .course-card {
+            display: flex; flex-direction: column; gap: 11px;
+            background: var(--white); border: 1px solid var(--line); border-radius: 12px;
+            padding: 18px 20px; cursor: pointer;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+        .course-card:hover { border-color: #c6d3e8; box-shadow: 0 4px 14px rgba(9,37,95,.07); }
+        .course-card.is-pending { border: 1.5px solid var(--yellow); }
+
+        .card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .status { display: inline-flex; align-items: center; gap: 7px; font-size: .78rem; color: var(--muted); }
+        .status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); }
+        .status-pending .dot { background: var(--yellow); }
+        .status-denied .dot { background: #d64545; }
+        .status-draft .dot { background: #a3adbd; }
+
+        .star-form { display: flex; }
+        .star-btn {
+            display: flex; padding: 3px; border: 0; background: none; color: #a3adbd; cursor: pointer;
+            transition: color .15s ease;
+        }
+        .star-btn:hover { color: #c99a00; }
+        .star-btn.is-on { color: #e0a800; }
+        .star-btn.is-on svg { fill: #e0a800; }
+        .star-btn svg { width: 19px; height: 19px; }
+
+        .course-title { font-size: 1.02rem; font-weight: 600; line-height: 1.3; color: var(--text); }
+        .course-meta { font-size: .82rem; color: var(--muted); }
+
+        .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .chip {
+            display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
+            padding: 3px 10px 3px 4px; border-radius: 999px;
+            background: var(--soft); color: var(--blue); font-size: .75rem; font-weight: 500;
+        }
+        .chip img { width: 18px; height: 18px; object-fit: contain; flex: 0 0 18px; }
+        .chip .blank { width: 18px; height: 18px; flex: 0 0 18px; border-radius: 50%; background: #dbe4f3; }
+        .chip.plain { padding-left: 10px; }
+        .chip.off { background: #f1f3f7; color: #98a2b3; }
+        .chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .related { font-size: .78rem; color: var(--muted); }
+
+        .progress-track { height: 4px; border-radius: 2px; background: #eef1f6; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--blue); border-radius: 2px; }
+        .pct { margin-top: 5px; font-size: .78rem; color: var(--muted); }
+
+        /* Actions */
+        .actions { display: flex; gap: 8px; }
+        .actions form, .actions a { flex: 1; display: flex; }
+        .btn {
+            flex: 1; padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line);
+            background: var(--white); color: var(--text); font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer;
+            transition: background .15s ease;
+        }
+        .btn:hover { background: #f5f7fa; }
+        .btn-approve { background: var(--yellow); border-color: var(--yellow); color: var(--navy); }
+        .btn-approve:hover { background: var(--yellow-dark); }
 
         .empty-state {
-            padding: 34px 24px;
-            border-radius: 14px;
-            background: var(--white);
-            border: 1.5px solid var(--border);
-            color: var(--text-muted);
-            text-align: center;
+            padding: 40px 24px; border: 1px solid var(--line); border-radius: 12px;
+            background: var(--white); color: var(--muted); text-align: center; font-size: .88rem;
         }
 
-        /* "Subject is Related on" tags on the course card */
-        .related-tags{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 2px;}
-        .related-tags-label{font-size:10px;font-weight:800;letter-spacing:.5px;
-            text-transform:uppercase;color:#9aa0b8;margin-right:2px;}
-        .related-tag{background:#eef1fb;color:#13176b;border:1px solid #c9cdf0;
-            border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700;}
-        .related-tag.more{background:#fff;color:#6b7280;border-color:#e5e7eb;}
-
+        @media (max-width: 1024px) {
+            .main { margin-left: 0 !important; width: 100% !important; padding: 24px 20px 48px; }
+        }
+        @media (max-width: 560px) {
+            .main { padding: 18px 12px 40px; }
+            .search { width: 100%; }
+            .course-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
-{{-- ════════════════════════════════════ TOP NAV ══════════════════════════════════ --}}
 @include('components.authenticated-topbar', ['user' => auth()->user()])
-<div class="layout">
 
-{{-- ════════════════════════════════════ SIDEBAR ══════════════════════════════════ --}}
-{{-- Identical to Admin_Main_Home — active pill sits on "Courses & Badges" --}}
-{{-- ════════════════════════════════════ MAIN CONTENT ═════════════════════════════ --}}
-<main class="main">
+<div class="layout admin-layout">
 
-    <div class="page-heading">Courses &amp; Badges</div>
-    <div class="page-sub">Manage every course and its associated completion badge.</div>
+    {{-- SHARED ADMIN SIDEBAR --}}
+    @include('components.admin-sidebar')
 
-    @if (session('success'))
-        <div class="alert-success">{{ session('success') }}</div>
-    @endif
+    {{-- MAIN CONTENT --}}
+    <main class="main">
+    <div class="page-wrap">
 
-    {{-- ── COURSE CARD GRID ─────────────────────────────────────────────── --}}
-    {{-- Click a card to open the full course detail page. Courses submitted
-         by faculty appear here with Approve / Denied buttons until reviewed. --}}
-    @if ($courses->isEmpty())
-        <div class="empty-state">No courses yet. Courses created by faculty will appear here for review.</div>
-    @else
-    <div class="course-grid">
-        @foreach ($courses as $course)
-        <div class="course-card {{ $course->status_key === 'pending' ? 'is-pending' : '' }}"
-             onclick="window.location='{{ route('admin.courses.show', $course->id) }}'">
-
-            <span class="approval-pill approval-{{ $course->status_key }}">
-                <span class="dot"></span>{{ $course->status }}
-            </span>
-
-            <div class="course-card-title">{{ $course->title }}</div>
-
-            <div class="course-card-meta">
-                {{ $course->students }} Students . {{ $course->faculty }} Faculty .<br>
-                <span style="color:var(--text-sub);">By {{ $course->instructor ?? 'Faculty' }}</span>
+        <div class="page-head">
+            <div>
+                <div class="page-heading">Courses and badges</div>
+                <div class="page-sub">Review courses and manage their completion badges.</div>
             </div>
-
-            {{-- What a student receives on completion, at a glance. The badge
-                 art is the composed SVG saved by the badge designer. --}}
-            <div class="award-row">
-                <div class="award-chip">
-                    @if ($course->badge_icon)
-                        <img src="{{ $course->badge_icon }}" alt="">
-                    @else
-                        <span class="award-chip__blank">?</span>
-                    @endif
-                    <span class="award-chip__text">{{ $course->badge }}</span>
-                </div>
-
-                <div class="award-chip {{ $course->certificate_enabled ? '' : 'is-off' }}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M8 13l-2 8 6-3 6 3-2-8"/></svg>
-                    <span class="award-chip__text">
-                        @if (! $course->certificate_enabled)
-                            No certificate
-                        @else
-                            {{ $course->certificate_mode === 'upload' ? 'Uploaded certificate' : 'Auto certificate' }}
-                        @endif
-                    </span>
-                </div>
-            </div>
-
-            {{-- "Subject is Related on" — faculty/admin only. Shown here so a
-                 course can be checked before approval; students never see it. --}}
-            @if (! empty($course->related_skills))
-                <div class="related-tags">
-                    <span class="related-tags-label">Related on</span>
-                    @foreach (array_slice($course->related_skills, 0, 4) as $skill)
-                        <span class="related-tag">{{ $skill }}</span>
-                    @endforeach
-                    @if (count($course->related_skills) > 4)
-                        <span class="related-tag more">+{{ count($course->related_skills) - 4 }}</span>
-                    @endif
-                </div>
-            @endif
-
-            <div class="progress-track">
-                <div class="progress-fill" style="width: {{ $course->percent }}%"></div>
-            </div>
-
-            <div class="course-card-pct">{{ $course->percent }}% Complete</div>
-
-            @if ($course->status_key === 'pending')
-            <div class="course-actions">
-                <form method="POST" action="{{ route('admin.courses.approve', $course->id) }}" onclick="event.stopPropagation();" style="flex:1;display:flex;">
-                    @csrf
-                    <button type="submit" class="btn-approve" onclick="event.stopPropagation();">Approve</button>
-                </form>
-                {{-- #1 — denial now requires written feedback, which is captured
-                     on the course detail screen. --}}
-                <a href="{{ route('admin.courses.show', $course->id) }}#deny-panel"
-                   onclick="event.stopPropagation();" style="flex:1;display:flex;">
-                    <button type="button" class="btn-deny" style="width:100%;"
-                            onclick="event.stopPropagation();">Denied</button>
-                </a>
-            </div>
-            @endif
-
-            {{-- Admin-only power: feature on homepage --}}
-            <div class="course-actions course-actions-admin">
-                <form method="POST" action="{{ route('admin.courses.feature', $course->id) }}" onclick="event.stopPropagation();" style="flex:1;display:flex;">
-                    @csrf
-                    <button type="submit" class="btn-feature {{ $course->is_featured ? 'is-on' : '' }}" onclick="event.stopPropagation();"
-                            title="{{ $course->is_featured ? 'Shown on the homepage — click to unfeature' : 'Feature this course on the homepage' }}">
-                        {{ $course->is_featured ? '★ Featured' : '☆ Feature on Homepage' }}
-                    </button>
-                </form>
-            </div>
+            <input type="search" class="search" id="course-search" placeholder="Search courses" aria-label="Search courses">
         </div>
-        @endforeach
+
+        @php
+            $count = fn ($key) => $courses->where('status_key', $key)->count();
+        @endphp
+
+        <div class="tabs" role="tablist">
+            <button type="button" class="tab active" data-filter="all">All<span class="n">{{ $courses->count() }}</span></button>
+            <button type="button" class="tab" data-filter="pending">Pending review<span class="n">{{ $count('pending') }}</span></button>
+            <button type="button" class="tab" data-filter="approved">Approved<span class="n">{{ $count('approved') }}</span></button>
+            <button type="button" class="tab" data-filter="denied">Denied<span class="n">{{ $count('denied') }}</span></button>
+            <button type="button" class="tab" data-filter="draft">Drafts<span class="n">{{ $count('draft') }}</span></button>
+        </div>
+
+        @if (session('success'))
+            <div class="alert-success">{{ session('success') }}</div>
+        @endif
+
+        @if ($courses->isEmpty())
+            <div class="empty-state">No courses yet. Courses created by faculty will appear here for review.</div>
+        @else
+            <div class="course-grid" id="course-grid">
+                @foreach ($courses as $course)
+                    <div class="course-card {{ $course->status_key === 'pending' ? 'is-pending' : '' }}"
+                         data-status="{{ $course->status_key }}"
+                         data-search="{{ strtolower($course->title . ' ' . ($course->instructor ?? '')) }}"
+                         onclick="window.location='{{ route('admin.courses.show', $course->id) }}'">
+
+                        <div class="card-top">
+                            <span class="status status-{{ $course->status_key }}">
+                                <span class="dot"></span>{{ $course->status }}
+                            </span>
+
+                            <form class="star-form" method="POST" action="{{ route('admin.courses.feature', $course->id) }}" onclick="event.stopPropagation();">
+                                @csrf
+                                <button type="submit"
+                                        class="star-btn {{ $course->is_featured ? 'is-on' : '' }}"
+                                        aria-label="{{ $course->is_featured ? 'Unfeature course' : 'Feature course on homepage' }}"
+                                        title="{{ $course->is_featured ? 'Shown on the homepage. Click to unfeature.' : 'Feature this course on the homepage' }}">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="course-title">{{ $course->title }}</div>
+
+                        <div class="course-meta">
+                            {{ $course->students }} students · {{ $course->faculty }} faculty · By {{ $course->instructor ?? 'Faculty' }}
+                        </div>
+
+                        <div class="chips">
+                            <div class="chip {{ $course->badge_icon ? '' : 'off' }}">
+                                @if ($course->badge_icon)
+                                    <img src="{{ $course->badge_icon }}" alt="">
+                                @else
+                                    <span class="blank"></span>
+                                @endif
+                                <span>{{ $course->badge ?: 'No badge yet' }}</span>
+                            </div>
+
+                            <div class="chip plain {{ $course->certificate_enabled ? '' : 'off' }}">
+                                <span>
+                                    @if (! $course->certificate_enabled)
+                                        No certificate
+                                    @else
+                                        {{ $course->certificate_mode === 'upload' ? 'Uploaded certificate' : 'Auto certificate' }}
+                                    @endif
+                                </span>
+                            </div>
+                        </div>
+
+                        {{-- "Related on": internal, faculty/admin only --}}
+                        @if (! empty($course->related_skills))
+                            <div class="related">
+                                Related: {{ implode(', ', array_slice($course->related_skills, 0, 3)) }}
+                                @if (count($course->related_skills) > 3) +{{ count($course->related_skills) - 3 }} @endif
+                            </div>
+                        @endif
+
+                        <div>
+                            <div class="progress-track"><div class="progress-fill" style="width: {{ $course->percent }}%"></div></div>
+                            <div class="pct">{{ $course->percent }}% complete</div>
+                        </div>
+
+                        @if ($course->status_key === 'pending')
+                            <div class="actions" onclick="event.stopPropagation();">
+                                <form method="POST" action="{{ route('admin.courses.approve', $course->id) }}">
+                                    @csrf
+                                    <button type="submit" class="btn btn-approve">Approve</button>
+                                </form>
+                                {{-- Denial needs written feedback, captured on the detail page --}}
+                                <a href="{{ route('admin.courses.show', $course->id) }}#deny-panel">
+                                    <button type="button" class="btn">Deny</button>
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="empty-state" id="no-match" style="display:none;">No courses match your filter.</div>
+        @endif
+
     </div>
-    @endif
+    </main>
+</div>
 
-</main>
-</div>{{-- /layout --}}
-
-{{-- ── SCRIPTS ─────────────────────────────────────────────────────────── --}}
 <script>
-    /* Accordion toggle — shared with the other admin pages. */
-    function toggleSection(id) {
-        const section = document.getElementById(id);
-        if (!section || section.classList.contains('locked')) return;
-        section.classList.toggle('open');
-    }
+    (function () {
+        var tabs = document.querySelectorAll('.tab');
+        var cards = document.querySelectorAll('.course-card');
+        var search = document.getElementById('course-search');
+        var none = document.getElementById('no-match');
+        var filter = 'all';
+
+        function apply() {
+            var q = (search.value || '').trim().toLowerCase();
+            var shown = 0;
+            cards.forEach(function (card) {
+                var ok = (filter === 'all' || card.dataset.status === filter) &&
+                         (!q || card.dataset.search.indexOf(q) !== -1);
+                card.style.display = ok ? '' : 'none';
+                if (ok) shown++;
+            });
+            if (none) none.style.display = shown ? 'none' : 'block';
+        }
+
+        tabs.forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                tabs.forEach(function (t) { t.classList.toggle('active', t === tab); });
+                filter = tab.dataset.filter;
+                apply();
+            });
+        });
+        if (search) search.addEventListener('input', apply);
+    })();
 </script>
 
-
-{{-- ── Back to top (appears on long pages) ── --}}
+{{-- Back to top --}}
 <button id="back-to-top-btn" type="button" title="Back to top" aria-label="Back to top"
         onclick="window.scrollTo({top:0,behavior:'smooth'});">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
 </button>
 <style>
-    #back-to-top-btn{position:fixed;right:26px;bottom:26px;z-index:2000;width:48px;height:48px;border-radius:50%;border:none;background:#13176b;color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 22px rgba(19,23,107,.35);transition:transform .15s ease,background .2s ease;}
-    #back-to-top-btn:hover{background:#dba617;transform:translateY(-3px);}
-    #back-to-top-btn svg{width:22px;height:22px;}
+    #back-to-top-btn{position:fixed;right:26px;bottom:26px;z-index:2000;width:46px;height:46px;border-radius:50%;border:none;background:#071550;color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 20px rgba(7,21,80,.28);transition:transform .15s ease,background .2s ease,color .2s ease;}
+    #back-to-top-btn:hover{background:#f4c430;color:#071550;transform:translateY(-2px);}
+    #back-to-top-btn svg{width:21px;height:21px;}
 </style>
 <script>
     (function () {
         var btn = document.getElementById('back-to-top-btn');
         if (!btn) return;
-        function toggleBackToTop() {
-            btn.style.display = (window.scrollY || document.documentElement.scrollTop) > 400 ? 'flex' : 'none';
-        }
-        window.addEventListener('scroll', toggleBackToTop, { passive: true });
-        toggleBackToTop();
+        function t() { btn.style.display = (window.scrollY || document.documentElement.scrollTop) > 400 ? 'flex' : 'none'; }
+        window.addEventListener('scroll', t, { passive: true });
+        t();
     })();
 </script>
 
-{{-- Shared Admin sidebar styling (floating card + section pills) --}}
-    @include('components.admin-sidebar')
-    
-        {{-- Shared responsiveness layer (drawer nav + grid stacking) --}}
-    @include('components.responsive')
+@include('components.responsive')
 </body>
 </html>

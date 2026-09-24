@@ -1,124 +1,169 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upskill – Admin Dashboard</title>
-    {{-- Browser tab icon (favicon) --}}
+
     <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
+
     <style>
-        /* ─── Reset ─────────────────────────────────────────────── */
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        /* =========================================================
+           UPSKILL ADMIN DASHBOARD
+           Blue / White / Yellow UI
+           Design-only layer
+        ========================================================= */
 
-        /* ─── Tokens ─────────────────────────────────────────────── */
+        /* Avoid resetting margins and padding on shared components */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
         :root {
-            --navy:        #0d1b6e;
-            --navy-light:  #1a2fa0;
-            --navy-pale:   #e8eaf6;
-            --teal:        #1a6b5a;
-            --teal-bar:    #1f8a6e;
-            --white:       #ffffff;
-            --surface:     #f4f6fb;
-            --border:      #e2e5f0;
-            --text-main:   #0d1b6e;
-            --text-muted:  #6b7280;
-            --text-sub:    #9ca3af;
-            --shadow-sm:   0 1px 4px rgba(13,27,110,.07);
-            --shadow-md:   0 3px 10px rgba(13,27,110,.10);
-            --radius-card: 12px;
-            --radius-sm:   8px;
-            --sidebar-w:   225px;
-            --topbar-h:    58px;
+            --navy: #09255f;
+            --blue: #0b4ea2;
+            --blue-light: #eaf2ff;
+            --blue-soft: #f4f7fc;
+
+            --yellow: #f4c430;
+            --yellow-soft: #fff8dc;
+
+            --white: #ffffff;
+            --surface: #f5f7fa;
+
+            --border: #e2e7ef;
+            --border-light: #edf0f5;
+
+            --text: #17212b;
+            --text-muted: #687385;
+            --text-soft: #929baa;
+
+            --green: #247a5b;
+            --green-soft: #eaf7f1;
+
+            --red: #b54747;
+            --red-soft: #fff0f0;
+
+            --shadow-sm: 0 1px 3px rgba(9, 37, 95, .05);
+            --shadow-md: 0 5px 18px rgba(9, 37, 95, .08);
+
+            --radius: 10px;
+            --radius-sm: 7px;
         }
 
+        /* PAGE */
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
             background: var(--surface);
-            color: var(--text-main);
+            color: var(--text);
             min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* ─── TOP NAV ─────────────────────────────────────────────── */
-        
-
-        /* ─── LAYOUT ─────────────────────────────────────────────── */
-    
-
-        /* ════════════════════════════════════════════════════════════
-           SIDEBAR
-           Structure → Image 1 (bold header + count subtitle + chevron
-                                + left accent border on open section
-                                + thin row dividers between items)
-           Active item → Image 2 (teal rounded pill, no icons, plain text)
-           ════════════════════════════════════════════════════════════ */
-        
-
-        /* ─── MAIN CONTENT ─────────────────────────────────────── */
         .layout {
             min-height: calc(100vh - 66px);
         }
 
         .main {
-            margin-left: 238px;
-            width: calc(100% - 238px);
+            margin-left: 0;
+            width: 100%;
             min-width: 0;
-            padding: 30px 28px 40px;
+            padding: 30px 30px 44px;
         }
 
-        .page-heading { font-size: 1.25rem; font-weight: 800; color: var(--navy); margin-bottom: 3px; }
-        .page-sub { font-size: 0.825rem; color: var(--text-muted); margin-bottom: 26px; }
+        /* PAGE HEADER */
+        .page-heading {
+            font-size: 1.45rem;
+            line-height: 1.25;
+            font-weight: 700;
+            letter-spacing: -.02em;
+            color: var(--navy);
+            margin-bottom: 5px;
+        }
 
-        /* ─── STAT CARDS ─────────────────────────────────────────── */
+        .page-sub {
+            font-size: .84rem;
+            line-height: 1.5;
+            font-weight: 400;
+            color: var(--text-muted);
+            margin-bottom: 25px;
+        }
+
+        /* STAT CARDS */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 22px;
-        }
-
-        .stat-card {
-            background: var(--white);
-            border-radius: var(--radius-card);
-            border: 1px solid var(--border);
-            padding: 22px 18px;
-            text-align: center;
-            box-shadow: var(--shadow-sm);
-            transition: box-shadow .2s, transform .2s;
-        }
-
-        .stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
-
-        .stat-val {
-            font-size: 1.95rem;
-            font-weight: 800;
-            color: var(--navy);
-            line-height: 1;
-            margin-bottom: 7px;
-        }
-
-        .stat-lbl {
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: .6px;
-        }
-
-        /* ─── TWO-COLUMN GRID ─────────────────────────────────────── */
-        .two-col {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 18px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
             margin-bottom: 18px;
         }
 
-        /* ─── CARD SHELL ─────────────────────────────────────────── */
-        .card {
+        .stat-card {
+            position: relative;
+            min-height: 112px;
             background: var(--white);
-            border-radius: var(--radius-card);
             border: 1px solid var(--border);
-            padding: 20px;
+            border-radius: var(--radius);
+            padding: 19px 20px;
+            box-shadow: var(--shadow-sm);
+            text-align: left;
+            overflow: hidden;
+            transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+        }
+
+        .stat-card::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--yellow);
+        }
+
+        .stat-card:hover {
+            border-color: #cfd8e6;
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        .stat-val {
+            font-size: 1.8rem;
+            line-height: 1;
+            font-weight: 700;
+            letter-spacing: -.025em;
+            color: var(--navy);
+            margin-bottom: 9px;
+        }
+
+        .stat-lbl {
+            font-size: .72rem;
+            line-height: 1.3;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: .055em;
+        }
+
+        /* TWO-COLUMN LAYOUT */
+        .two-col {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 16px;
+            margin-bottom: 16px !important;
+        }
+
+        /* CARD */
+        .card {
+            min-width: 0;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 19px 20px;
             box-shadow: var(--shadow-sm);
         }
 
@@ -126,314 +171,550 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 12px;
+            min-height: 25px;
             margin-bottom: 14px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-light);
         }
 
-        .card-title { font-size: 0.9rem; font-weight: 800; color: var(--navy); }
+        .card-title {
+            font-size: .88rem;
+            line-height: 1.3;
+            font-weight: 700;
+            color: var(--navy);
+            letter-spacing: -.01em;
+        }
 
         .view-all {
-            font-size: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            padding: 0 9px;
+            border-radius: 6px;
+            color: var(--blue);
+            background: transparent;
+            font-size: .73rem;
             font-weight: 600;
-            color: var(--navy-light);
             text-decoration: none;
-            transition: opacity .2s;
+            transition: background .18s ease, color .18s ease;
         }
 
-        .view-all:hover { opacity: .7; }
+        .view-all:hover {
+            color: var(--navy);
+            background: var(--blue-light);
+            opacity: 1;
+        }
 
-        /* ─── COURSE LIST ─────────────────────────────────────────── */
+        /* LIVE MONITORING */
+        #live-activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        #live-activity-list .badge-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-align: left;
+            border: 0;
+            border-bottom: 1px solid var(--border-light);
+            border-radius: 0;
+            padding: 11px 2px;
+        }
+
+        #live-activity-list .badge-card:last-child {
+            border-bottom: 0;
+        }
+
+        #live-activity-list .badge-card::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            flex: 0 0 7px;
+            border-radius: 50%;
+            background: var(--yellow);
+            box-shadow: 0 0 0 3px var(--yellow-soft);
+        }
+
+        /* PLATFORM SNAPSHOT */
+        .chart-row {
+            margin-bottom: 15px;
+        }
+
+        .chart-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .chart-lbl {
+            font-size: .77rem;
+            line-height: 1.4;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .card > .chart-row:not(:has(.bar-track)) {
+            padding: 9px 11px;
+            background: var(--blue-soft);
+            border-left: 3px solid var(--blue);
+            border-radius: 5px;
+        }
+
+        .card > .chart-row:not(:has(.bar-track)) .chart-lbl {
+            margin-bottom: 0;
+            color: var(--navy);
+            font-weight: 600;
+        }
+
+        /* ACTIVE COURSES */
         .course-item {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 9px 0;
-            border-bottom: 1px solid #f1f3fa;
+            min-height: 61px;
+            padding: 10px 2px;
+            border-bottom: 1px solid var(--border-light);
         }
 
-        .course-item:last-child { border-bottom: none; }
+        .course-item:last-child {
+            border-bottom: 0;
+        }
 
         .course-thumb {
             width: 42px;
             height: 42px;
-            background: var(--navy-pale);
-            border-radius: var(--radius-sm);
-            border: 1px solid #c5cae9;
-            flex-shrink: 0;
+            flex: 0 0 42px;
+            background: var(--blue-light);
+            border: 1px solid #d7e3f7;
+            border-radius: 7px;
             overflow: hidden;
         }
 
-        .course-body { flex: 1; min-width: 0; }
+        .course-body {
+            flex: 1;
+            min-width: 0;
+        }
 
         .course-name {
-            font-size: 0.8rem;
-            font-weight: 700;
-            color: var(--navy);
+            font-size: .79rem;
+            line-height: 1.35;
+            font-weight: 600;
+            color: var(--text);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .course-meta { font-size: 0.7rem; color: var(--text-sub); margin-top: 2px; }
+        .course-meta {
+            font-size: .68rem;
+            line-height: 1.35;
+            color: var(--text-soft);
+            margin-top: 3px;
+        }
 
         .course-pct {
-            border: 1.5px solid var(--navy);
-            border-radius: var(--radius-sm);
-            padding: 4px 9px;
-            font-size: 0.78rem;
-            font-weight: 800;
+            min-width: 48px;
+            padding: 5px 7px;
+            border: 1px solid #d5deeb;
+            border-radius: 6px;
+            background: var(--blue-soft);
             color: var(--navy);
-            min-width: 46px;
+            font-size: .72rem;
+            line-height: 1;
+            font-weight: 700;
             text-align: center;
             flex-shrink: 0;
         }
 
-        /* ─── BADGES GRID ─────────────────────────────────────────── */
+        /* BADGES */
         .badges-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 9px;
         }
 
         .badge-card {
-            border: 1.5px solid #c5cae9;
-            border-radius: 10px;
-            padding: 13px 12px;
-            text-align: center;
-            transition: border-color .2s;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 12px 11px;
+            text-align: left;
+            transition: border-color .18s ease, background .18s ease;
         }
 
-        .badge-card:hover { border-color: var(--navy-light); }
+        .badge-card:hover {
+            border-color: #c7d5e9;
+            background: #fbfcfe;
+        }
 
-        .badge-name { font-size: 0.8rem; font-weight: 700; color: var(--navy); }
-        .badge-count { font-size: 0.72rem; color: var(--text-sub); margin-top: 3px; }
-
-        /* ─── BAR CHARTS ─────────────────────────────────────────── */
-        .chart-row { margin-bottom: 13px; }
-        .chart-row:last-child { margin-bottom: 0; }
-
-        .chart-lbl {
-            font-size: 0.8rem;
-            font-weight: 700;
+        .badge-name {
+            font-size: .77rem;
+            line-height: 1.35;
+            font-weight: 600;
             color: var(--navy);
-            margin-bottom: 5px;
         }
 
+        .badge-count {
+            font-size: .68rem;
+            line-height: 1.35;
+            color: var(--text-soft);
+            margin-top: 4px;
+        }
+
+        #recent-badges-grid .badge-card {
+            position: relative;
+            padding-left: 15px;
+        }
+
+        #recent-badges-grid .badge-card::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 12px;
+            bottom: 12px;
+            width: 3px;
+            border-radius: 2px;
+            background: var(--yellow);
+        }
+
+        /* BAR CHARTS */
         .bar-track {
-            height: 8px;
-            background: #e4e8f5;
-            border-radius: 4px;
+            height: 7px;
+            background: #e9edf3;
+            border-radius: 3px;
             overflow: hidden;
         }
 
         .bar-fill {
             height: 100%;
-            background: var(--teal-bar);
-            border-radius: 4px;
+            background: var(--blue);
+            border-radius: 3px;
             transition: width .6s ease;
+        }
+
+        .card .bar-track + * {
+            margin-top: 0;
+        }
+
+        /* EMPTY / LOADING STATES */
+        #live-activity-list:empty::before {
+            content: "Waiting for live activity...";
+            display: block;
+            padding: 22px 4px;
+            color: var(--text-soft);
+            font-size: .76rem;
+            text-align: center;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1100px) {
+            .main {
+                padding: 26px 22px 38px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 850px) {
+            .main {
+                margin-left: 0;
+                width: 100%;
+                padding: 24px 18px 34px;
+            }
+
+            .two-col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .page-heading {
+                font-size: 1.25rem;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .badges-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
+
 <body>
 
-@include('components.authenticated-topbar', ['user' => auth()->user()])
+    @include('components.authenticated-topbar', ['user' => auth()->user()])
 
     <div class="layout">
-
         @include('components.admin-sidebar')
 
         <main class="main">
 
-    <div class="page-heading">Welcome back, Admin</div>
-    <div class="page-sub">Here's what's happening on your platform today.</div>
+            <div class="page-heading">Welcome back, Admin</div>
+            <div class="page-sub">Here's what's happening on your platform today.</div>
 
-    {{-- ── STAT CARDS ──────────────────────────────────────────────────── --}}
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-val" id="live-active-users">0</div>
-            <div class="stat-lbl">Active Users</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-val" id="live-events-today">0</div>
-            <div class="stat-lbl">Events Today</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-val" id="live-enrollments-today">0</div>
-            <div class="stat-lbl">Enrollments Today</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-val" id="live-badges-today">0</div>
-            <div class="stat-lbl">Badges Today</div>
-        </div>
-    </div>
-
-    <div class="two-col" style="margin-bottom: 18px;">
-        <div class="card">
-            <div class="card-hd">
-                <span class="card-title">Live Monitoring Feed</span>
-            </div>
-            <div id="live-activity-list" class="badges-grid"></div>
-        </div>
-        <div class="card">
-            <div class="card-hd">
-                <span class="card-title">Current Platform Snapshot</span>
-            </div>
-            <div class="chart-row">
-                <div class="chart-lbl">Students on platform &ndash; {{ $stats['total_students'] }}</div>
-            </div>
-            <div class="chart-row">
-                <div class="chart-lbl">Badges issued &ndash; {{ $stats['badges_issued'] }}</div>
-            </div>
-            <div class="chart-row">
-                <div class="chart-lbl">Average quiz score &ndash; {{ $stats['course_score_avg'] }}%</div>
-            </div>
-            <div class="chart-row">
-                <div class="chart-lbl">Enrollments recorded &ndash; {{ $stats['students_enrolled'] }}</div>
-            </div>
-        </div>
-    </div>
-
-    {{-- ── ACTIVE COURSES + RECENT BADGES ─────────────────────────────── --}}
-    <div class="two-col">
-
-        {{-- Active Courses --}}
-        <div class="card">
-            <div class="card-hd">
-                <span class="card-title">Active Courses</span>
-                <a href="{{ route('courses.browse') }}" class="view-all">View All</a>
-            </div>
-
-            @foreach ($activeCourses as $course)
-            <div class="course-item">
-                <div class="course-thumb">
-                    @if ($course->thumbnail_url)
-                        <img src="{{ $course->thumbnail_url }}" alt="{{ $course->title }}"
-                             style="width:100%;height:100%;object-fit:cover;">
-                    @endif
+            {{-- STAT CARDS --}}
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-val" id="live-active-users">0</div>
+                    <div class="stat-lbl">Active Users</div>
                 </div>
-                <div class="course-body">
-                    <div class="course-name">{{ $course->title }}</div>
-                    <div class="course-meta">{{ $course->meta }}</div>
-                </div>
-                <div class="course-pct">{{ $course->percent }}%</div>
-            </div>
-            @endforeach
-        </div>
 
-        {{-- Recent Badges --}}
-        <div class="card">
-            <div class="card-hd">
-                <span class="card-title">Recent Badges</span>
-            </div>
-            <div class="badges-grid" id="recent-badges-grid">
-                @foreach ($recentBadges as $badge)
-                <div class="badge-card">
-                    <div class="badge-name">{{ $badge->name }}</div>
-                    <div class="badge-count">{{ $badge->earned_count }} Earned</div>
+                <div class="stat-card">
+                    <div class="stat-val" id="live-events-today">0</div>
+                    <div class="stat-lbl">Events Today</div>
                 </div>
-                @endforeach
+
+                <div class="stat-card">
+                    <div class="stat-val" id="live-enrollments-today">0</div>
+                    <div class="stat-lbl">Enrollments Today</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-val" id="live-badges-today">0</div>
+                    <div class="stat-lbl">Badges Today</div>
+                </div>
             </div>
-        </div>
+
+            {{-- LIVE MONITORING + PLATFORM SNAPSHOT --}}
+            <div class="two-col" style="margin-bottom: 18px;">
+                <div class="card">
+                    <div class="card-hd">
+                        <span class="card-title">Live Monitoring Feed</span>
+                    </div>
+                    <div id="live-activity-list" class="badges-grid"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-hd">
+                        <span class="card-title">Current Platform Snapshot</span>
+                    </div>
+
+                    <div class="chart-row">
+                        <div class="chart-lbl">
+                            Students on platform &ndash; {{ $stats['total_students'] }}
+                        </div>
+                    </div>
+
+                    <div class="chart-row">
+                        <div class="chart-lbl">
+                            Badges issued &ndash; {{ $stats['badges_issued'] }}
+                        </div>
+                    </div>
+
+                    <div class="chart-row">
+                        <div class="chart-lbl">
+                            Average quiz score &ndash; {{ $stats['course_score_avg'] }}%
+                        </div>
+                    </div>
+
+                    <div class="chart-row">
+                        <div class="chart-lbl">
+                            Enrollments recorded &ndash; {{ $stats['students_enrolled'] }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ACTIVE COURSES + RECENT BADGES --}}
+            <div class="two-col">
+
+                {{-- Active Courses --}}
+                <div class="card">
+                    <div class="card-hd">
+                        <span class="card-title">Active Courses</span>
+                        <a href="{{ route('courses.browse') }}" class="view-all">View All</a>
+                    </div>
+
+                    @foreach ($activeCourses as $course)
+                        <div class="course-item">
+                            <div class="course-thumb">
+                                @if ($course->thumbnail_url)
+                                    <img src="{{ $course->thumbnail_url }}"
+                                         alt="{{ $course->title }}"
+                                         style="width:100%;height:100%;object-fit:cover;">
+                                @endif
+                            </div>
+
+                            <div class="course-body">
+                                <div class="course-name">{{ $course->title }}</div>
+                                <div class="course-meta">{{ $course->meta }}</div>
+                            </div>
+
+                            <div class="course-pct">{{ $course->percent }}%</div>
+                        </div>
+                    @endforeach
+                </div>
+
+                {{-- Recent Badges --}}
+                <div class="card">
+                    <div class="card-hd">
+                        <span class="card-title">Recent Badges</span>
+                    </div>
+
+                    <div class="badges-grid" id="recent-badges-grid">
+                        @foreach ($recentBadges as $badge)
+                            <div class="badge-card">
+                                <div class="badge-name">{{ $badge->name }}</div>
+                                <div class="badge-count">{{ $badge->earned_count }} Earned</div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            {{-- ENROLLMENT + COMPLETION CHARTS --}}
+            <div class="two-col">
+
+                {{-- Enrollment by Courses --}}
+                <div class="card">
+                    <div class="card-hd">
+                        <span class="card-title">Enrollment by Courses</span>
+                    </div>
+
+                    @foreach ($enrollmentByCourse as $row)
+                        <div class="chart-row">
+                            <div class="chart-lbl">
+                                {{ $row->label }} &ndash; {{ $row->value }}
+                            </div>
+
+                            <div class="bar-track">
+                                <div class="bar-fill" style="width:{{ $row->percent }}%"></div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                {{-- Completion Rate --}}
+                <div class="card">
+                    <div class="card-hd">
+                        <span class="card-title">Completion Rate</span>
+                    </div>
+
+                    @foreach ($completionRate as $row)
+                        <div class="chart-row">
+                            <div class="chart-lbl">
+                                {{ $row->label }} &ndash; {{ $row->value }}%
+                            </div>
+
+                            <div class="bar-track">
+                                <div class="bar-fill" style="width:{{ $row->percent }}%"></div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+        </main>
     </div>
 
-    {{-- ── ENROLLMENT + COMPLETION CHARTS ─────────────────────────────── --}}
-    <div class="two-col">
+    {{-- SCRIPTS --}}
+    <script>
+        function toggleSection(id) {
+            const section = document.getElementById(id);
+            if (!section || section.classList.contains('locked')) return;
+            section.classList.toggle('open');
+        }
 
-        {{-- Enrollment by Courses --}}
-        <div class="card">
-            <div class="card-hd">
-                <span class="card-title">Enrollment by Courses</span>
-            </div>
-            @foreach ($enrollmentByCourse as $row)
-            <div class="chart-row">
-                <div class="chart-lbl">{{ $row->label }} &ndash; {{ $row->value }}</div>
-                <div class="bar-track"><div class="bar-fill" style="width:{{ $row->percent }}%"></div></div>
-            </div>
-            @endforeach
-        </div>
+        function refreshLiveMonitoring() {
+            const liveUrl = '{{ route('monitoring.live') }}';
 
-        {{-- Completion Rate --}}
-        <div class="card">
-            <div class="card-hd">
-                <span class="card-title">Completion Rate</span>
-            </div>
-            @foreach ($completionRate as $row)
-            <div class="chart-row">
-                <div class="chart-lbl">{{ $row->label }} &ndash; {{ $row->value }}%</div>
-                <div class="bar-track"><div class="bar-fill" style="width:{{ $row->percent }}%"></div></div>
-            </div>
-            @endforeach
-        </div>
-    </div>
+            fetch(liveUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Monitoring endpoint unavailable');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('live-active-users').textContent =
+                        data.stats.active_users;
 
-</main>
-</div>{{-- /layout --}}
+                    document.getElementById('live-events-today').textContent =
+                        data.stats.events_today;
 
-{{-- ── SCRIPTS ─────────────────────────────────────────────────────────── --}}
-<script>
-    function toggleSection(id) {
-        const section = document.getElementById(id);
-        if (!section || section.classList.contains('locked')) return;
-        section.classList.toggle('open');
-    }
+                    document.getElementById('live-enrollments-today').textContent =
+                        data.stats.enrollments_today;
 
-    function refreshLiveMonitoring() {
-        const liveUrl = '{{ route('monitoring.live') }}';
-        fetch(liveUrl)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Monitoring endpoint unavailable');
-                }
-                return response.json();
-            })
-            .then(data => {
-                document.getElementById('live-active-users').textContent = data.stats.active_users;
-                document.getElementById('live-events-today').textContent = data.stats.events_today;
-                document.getElementById('live-enrollments-today').textContent = data.stats.enrollments_today;
-                document.getElementById('live-badges-today').textContent = data.stats.badges_today;
+                    document.getElementById('live-badges-today').textContent =
+                        data.stats.badges_today;
 
-                // Recent Badges — refresh the Earned counters in real time
-                const badgeGrid = document.getElementById('recent-badges-grid');
-                if (badgeGrid && Array.isArray(data.recentBadges)) {
-                    badgeGrid.innerHTML = '';
-                    data.recentBadges.forEach(badge => {
+                    // Refresh recent badge counters
+                    const badgeGrid = document.getElementById('recent-badges-grid');
+
+                    if (badgeGrid && Array.isArray(data.recentBadges)) {
+                        badgeGrid.innerHTML = '';
+
+                        data.recentBadges.forEach(badge => {
+                            const card = document.createElement('div');
+                            card.className = 'badge-card';
+
+                            card.innerHTML =
+                                `<div class="badge-name">${badge.name}</div>
+                                 <div class="badge-count">${badge.earned_count} Earned</div>`;
+
+                            badgeGrid.appendChild(card);
+                        });
+                    }
+
+                    // Refresh live activity feed
+                    const list = document.getElementById('live-activity-list');
+                    if (!list) return;
+
+                    list.innerHTML = '';
+
+                    data.activity.forEach(item => {
                         const card = document.createElement('div');
                         card.className = 'badge-card';
-                        card.innerHTML = `<div class="badge-name">${badge.name}</div><div class="badge-count">${badge.earned_count} Earned</div>`;
-                        badgeGrid.appendChild(card);
+
+                        card.innerHTML =
+                            `<div class="badge-name">${item.title}</div>
+                             <div class="badge-count">${item.detail} · ${item.time}</div>`;
+
+                        list.appendChild(card);
                     });
-                }
+                })
+                .catch(() => {
+                    const list = document.getElementById('live-activity-list');
 
-                const list = document.getElementById('live-activity-list');
-                if (!list) return;
-
-                list.innerHTML = '';
-                data.activity.forEach(item => {
-                    const card = document.createElement('div');
-                    card.className = 'badge-card';
-                    card.innerHTML = `<div class="badge-name">${item.title}</div><div class="badge-count">${item.detail} · ${item.time}</div>`;
-                    list.appendChild(card);
+                    if (list) {
+                        list.innerHTML =
+                            '<div class="badge-card">' +
+                                '<div class="badge-name">Monitoring unavailable</div>' +
+                                '<div class="badge-count">The live feed could not be loaded.</div>' +
+                            '</div>';
+                    }
                 });
-            })
-            .catch(() => {
-                const list = document.getElementById('live-activity-list');
-                if (list) {
-                    list.innerHTML = '<div class="badge-card"><div class="badge-name">Monitoring unavailable</div><div class="badge-count">The live feed could not be loaded.</div></div>';
-                }
-            });
-    }
-
-    refreshLiveMonitoring();
-    setInterval(refreshLiveMonitoring, 15000);
-
-    (function () {
-        var btn = document.getElementById('back-to-top-btn');
-        if (!btn) return;
-        function toggleBackToTop() {
-            btn.style.display = (window.scrollY || document.documentElement.scrollTop) > 400 ? 'flex' : 'none';
         }
-        window.addEventListener('scroll', toggleBackToTop, { passive: true });
-        toggleBackToTop();
-    })();
-</script>
+
+        refreshLiveMonitoring();
+        setInterval(refreshLiveMonitoring, 15000);
+
+        (function () {
+            var btn = document.getElementById('back-to-top-btn');
+            if (!btn) return;
+
+            function toggleBackToTop() {
+                btn.style.display =
+                    (window.scrollY || document.documentElement.scrollTop) > 400
+                        ? 'flex'
+                        : 'none';
+            }
+
+            window.addEventListener('scroll', toggleBackToTop, { passive: true });
+            toggleBackToTop();
+        })();
+    </script>
+
 </body>
 </html>

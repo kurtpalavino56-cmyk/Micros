@@ -19,19 +19,7 @@
     body{font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--navy);margin:0;background:#f5f7ff;}
     a{text-decoration:none;color:inherit;}
     button{font-family:inherit;cursor:pointer;}
-    .topbar{position:sticky;top:0;height:var(--topbar-h);background:var(--navy);display:flex;
-        align-items:center;justify-content:space-between;padding:0 22px;z-index:200;
-        box-shadow:0 2px 8px rgba(0,0,0,.25);}
-    .topbar-brand{display:flex;align-items:center;gap:10px;color:#fff;font-size:1.05rem;
-        font-weight:800;letter-spacing:2px;text-transform:uppercase;}
-    .brand-logo{width:34px;height:34px;border-radius:50%;background:#fff;display:flex;
-        align-items:center;justify-content:center;overflow:hidden;}
-    .brand-logo img{width:100%;height:100%;object-fit:contain;}
-    .topbar-right{display:flex;align-items:center;gap:10px;}
-    /* White circular icon buttons, matching every other admin page. */
-    .avatar-btn{width:40px;height:40px;border-radius:50%;background:#fff;color:var(--navy);
-        display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
-        border:1px solid rgba(255,255,255,.28);transition:transform .15s ease,box-shadow .15s ease;}
+    
     .avatar-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.22);}
     .btn-danger{background:#fff1f2;border:1px solid #fecdd3;color:#b91c1c;padding:8px 14px;
         border-radius:999px;font-weight:700;font-size:12.5px;}

@@ -1,5 +1,7 @@
 
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
     :root {
         --admin-sidebar-width: 238px;
         --admin-topbar-height: 66px;
@@ -8,13 +10,14 @@
         --admin-text: #f3f6ff;
         --admin-muted: rgba(255,255,255,.68);
         --admin-hover: rgba(255,255,255,.08);
+        --admin-font: 'Inter', sans-serif;
     }
 
     /* =========================================================
        SHARED ADMIN SIDEBAR
        ========================================================= */
 
-    aside.shared-admin-sidebar {
+        aside.shared-admin-sidebar {
         position: fixed !important;
         top: var(--admin-topbar-height) !important;
         left: 0 !important;
@@ -22,13 +25,11 @@
 
         width: var(--admin-sidebar-width) !important;
         height: calc(100vh - var(--admin-topbar-height)) !important;
-
         box-sizing: border-box !important;
-
         margin: 0 !important;
         padding: 18px 12px 24px !important;
 
-        background: #09255f !important;
+        background: #071550 !important;
         border: 0 !important;
         border-right: 1px solid rgba(255,255,255,.08) !important;
         border-radius: 0 !important;
@@ -37,8 +38,18 @@
         overflow-x: hidden !important;
         overflow-y: auto !important;
 
+        /* Hide scrollbar while keeping scrolling */
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+
         z-index: 900 !important;
+        font-family: 'Inter', sans-serif !important;
     }
+
+    aside.shared-admin-sidebar::-webkit-scrollbar {
+        display: none !important;
+    }
+
 
     /* Sidebar sections */
 
@@ -78,13 +89,14 @@
     aside.shared-admin-sidebar .sb-section-label {
         display: block !important;
 
-        color: rgba(255,255,255,.58) !important;
+        color: rgba(255,255,255,.65) !important;
 
-        font-size: 10px !important;
-        font-weight: 800 !important;
-        line-height: 1.2 !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
 
-        letter-spacing: .09em !important;
+        line-height: 1.3 !important;
+
+        letter-spacing: .08em !important;
         text-transform: uppercase !important;
     }
 
@@ -121,7 +133,7 @@
         color: var(--admin-text) !important;
 
         font-size: 13px !important;
-        font-weight: 600 !important;
+        font-weight: 500 !important;
         line-height: 1.35 !important;
 
         text-decoration: none !important;
@@ -134,15 +146,51 @@
 
     aside.shared-admin-sidebar .sb-item:hover {
         background: var(--admin-hover) !important;
-        color: var(--admin-navy) !important;
+        color: #f4c430  !important;
     }
 
-    aside.shared-admin-sidebar .sb-item.active,
+    /* aside.shared-admin-sidebar .sb-item.active,
     aside.shared-admin-sidebar .sb-item.active:hover,
     aside.shared-admin-sidebar .sb-item.active:focus {
         background: #f4c430 !important;
         color: #071550 !important;
         font-weight: 700 !important;
+    }  */
+
+    /* ACTIVE ITEM */
+    aside.shared-admin-sidebar .sb-item.active,
+    aside.shared-admin-sidebar .sb-item.active:hover,
+    aside.shared-admin-sidebar .sb-item.active:focus {
+        position: relative !important;
+
+        background: #ffd864 !important;
+        color: #071550 !important;
+        font-weight: 600 !important;
+
+        border-radius: 0 !important;
+    }
+
+    aside.shared-admin-sidebar .sb-item.active {
+        margin-left: -12px !important;
+        padding-left: 24px !important;
+        margin-right: 0 !important;
+
+        border-radius: 0 8px 8px 0 !important;
+    }
+
+    /* Yellow highlight at the left edge */
+    aside.shared-admin-sidebar .sb-item.active::before {
+        content: "" !important;
+
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        bottom: 0 !important;
+
+        width: 4px !important;
+
+        background: #f4c430 !important;
+        border-radius: 0 3px 3px 0 !important;
     }
 
     aside.shared-admin-sidebar .sb-item-text {
@@ -204,7 +252,6 @@
 <aside class="sidebar shared-admin-sidebar" aria-label="Admin navigation">
     <div class="sb-section open"><div class="sb-section-hd"><div class="sb-hd-left"><span class="sb-section-label">Main</span></div></div><div class="sb-items">
         <a href="<?php echo e(route('admin.dashboard')); ?>" class="sb-item <?php echo e(request()->routeIs('admin.dashboard') ? 'active' : ''); ?>"><span class="sb-item-text">Home</span></a>
-        <a href="<?php echo e(route('admin.profile')); ?>" class="sb-item <?php echo e(request()->routeIs('admin.profile') ? 'active' : ''); ?>"><span class="sb-item-text">Profile</span></a>
     </div></div>
     <div class="sb-section open"><div class="sb-section-hd"><div class="sb-hd-left"><span class="sb-section-label">Management</span></div></div><div class="sb-items">
         <a href="<?php echo e(route('admin.usermanagement')); ?>" class="sb-item <?php echo e(request()->routeIs('admin.usermanagement', 'admin.users.*') ? 'active' : ''); ?>"><span class="sb-item-text">User Management</span></a>

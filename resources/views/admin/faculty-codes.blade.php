@@ -40,31 +40,9 @@
     button{font-family:inherit;cursor:pointer;}
 
     /* ── Topbar ── */
-    .topbar{background:var(--white);display:flex;align-items:center;justify-content:space-between;padding:12px 28px;gap:20px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;}
-    .topbar-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.15rem;letter-spacing:0.04em;color:var(--navy);}
-    .brand-logo{width:36px;height:36px;border-radius:10px;background:#eef1ff;display:flex;align-items:center;justify-content:center;}
-    .brand-logo svg{width:22px;height:22px;}
-    .topbar-right{display:flex;align-items:center;gap:14px;}
-    .search-wrap{display:flex;align-items:center;gap:8px;background:#f1f3fb;border:1px solid var(--border);border-radius:999px;padding:7px 14px;color:var(--text-muted);}
-    .search-wrap input{border:none;background:transparent;outline:none;font-size:0.88rem;color:var(--ink);width:150px;}
-    .avatar-btn{width:38px;height:38px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;}
-    .avatar-btn:hover{background:var(--navy-deep);}
+    
 
     /* ── Layout / Sidebar ── */
-    .layout{display:flex;min-height:calc(100vh - 63px);}
-    .sidebar{width:var(--sidebar-w);background:var(--white);border-right:1px solid var(--border);padding:18px 12px;flex-shrink:0;position:fixed;top:63px;bottom:0;overflow-y:auto;}
-    .sb-section{margin-bottom:10px;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
-    .sb-section-hd{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;cursor:pointer;background:#fafbff;user-select:none;}
-    .sb-hd-left{display:flex;flex-direction:column;gap:2px;}
-    .sb-section-label{font-weight:700;font-size:0.88rem;}
-    .sb-lesson-count{font-size:0.72rem;color:var(--text-muted);}
-    .sb-chevron{color:var(--text-muted);transition:transform 0.2s;}
-    .sb-section.open .sb-chevron{transform:rotate(180deg);}
-    .sb-section .sb-items{display:none;padding:6px;}
-    .sb-section.open .sb-items{display:block;}
-    .sb-item{display:block;padding:9px 12px;border-radius:8px;font-size:0.86rem;color:var(--text-muted);font-weight:600;}
-    .sb-item:hover{background:#f1f3fb;color:var(--ink);}
-    .sb-item.active{background:var(--navy);color:#fff;}
 
     /* ── Main ── */
     .main{flex:1;margin-left:var(--sidebar-w);padding:28px;display:flex;flex-direction:column;gap:18px;}
