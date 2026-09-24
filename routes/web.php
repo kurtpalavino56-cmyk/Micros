@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\FacultyAnalyticsReportController;
 use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\StudentController;
@@ -287,6 +288,9 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty']
     Route::patch('/Faculty-profile', [FacultyController::class, 'updateProfile'])->name('faculty.profile.update');
 
     Route::get('/Faculty-analytics', [FacultyController::class, 'analytics'])->name('faculty.analytics');
+    // Download the whole Faculty Analytics page as a PDF report
+    Route::get('/Faculty-analytics/report', [FacultyAnalyticsReportController::class, 'download'])
+        ->name('faculty.analytics.report');
 
     // Faculty inbox — announcements addressed to faculty by the admin
     Route::get('/Faculty-inbox', [FacultyController::class, 'inbox'])->name('faculty.inbox');
