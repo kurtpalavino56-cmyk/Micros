@@ -188,4 +188,4 @@
 .progress-fill,.bar-fill,.chart-line,.nav-progress-fill,.fill{background:var(--up-progress)!important;stroke:var(--up-progress)!important}
 .progress-track,.bar-track,.track{background:#e8edf6!important}
 </style>
-<?php /**PATH C:\Users\PaulV\Documents\MICROCREDENTIALS NEW ADDITIONS\UPSKILL - Microcredential Platform\resources\views/components/authenticated-topbar.blade.php ENDPATH**/ ?>
+<?php /**PATH C:\Users\Beerus\Herd\UpSkill-Microcredential_Platform\resources\views/components/authenticated-topbar.blade.php ENDPATH**/ ?>

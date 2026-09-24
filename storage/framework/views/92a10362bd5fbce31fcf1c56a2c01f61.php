@@ -514,4 +514,4 @@
             if (window.innerWidth > 1024) closeNav();
         });
     }
-</script><?php /**PATH C:\Users\PaulV\Documents\MICROCREDENTIALS NEW ADDITIONS\UPSKILL - Microcredential Platform\resources\views/components/responsive.blade.php ENDPATH**/ ?>
+</script><?php /**PATH C:\Users\Beerus\Herd\UpSkill-Microcredential_Platform\resources\views/components/responsive.blade.php ENDPATH**/ ?>

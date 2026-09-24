@@ -69,6 +69,11 @@
     .page-head .sub-line{margin:0;color:var(--muted);font-size:14px;font-weight:600;}
     .page-head .sub-line b{color:var(--navy);}
 
+    /* Download Report button — streams the whole analytics page as a PDF */
+    .download-report-btn{display:inline-flex;align-items:center;gap:10px;background:var(--navy);color:#fff;font-weight:800;font-size:15px;padding:12px 22px;border-radius:12px;box-shadow:0 8px 18px rgba(19,23,107,0.25);transition:background .15s ease, transform .15s ease;white-space:nowrap;}
+    .download-report-btn:hover{background:var(--gold);color:var(--navy);transform:translateY(-2px);}
+    .download-report-btn svg{width:18px;height:18px;flex-shrink:0;}
+
     /* Gradient stat cards */
     .stat-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-bottom:32px;}
     .g-card{position:relative;border-radius:18px;box-shadow:var(--shadow);padding:30px 26px;color:#fff;overflow:hidden;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
@@ -123,9 +128,15 @@
     {{-- Main content --}}
     <main class="main">
 
-        <div class="page-head">
-            <h2>Analytics</h2>
-            <p class="live-line">Last hour - <span class="count">{{ $onlineNow ?? 0 }}</span> learners online</p>
+        <div class="page-head" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+            <div>
+                <h2>Analytics</h2>
+                <p class="live-line">Last hour - <span class="count">{{ $onlineNow ?? 0 }}</span> learners online</p>
+            </div>
+            <a href="{{ route('faculty.analytics.report') }}" class="download-report-btn" title="Download the full analytics report as a PDF">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+                Download Report
+            </a>
         </div>
 
         {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â• GRADIENT STAT CARDS â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
