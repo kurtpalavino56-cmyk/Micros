@@ -318,6 +318,8 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty']
         ->whereNumber('id')->name('faculty.module.store');
     Route::post('/Faculty-mycourses/manage/{id}/modules/{key}/delete', [FacultyController::class, 'deleteModule'])
         ->whereNumber('id')->name('faculty.module.delete');
+    Route::post('/Faculty-mycourses/manage/{id}/modules/{moduleIndex}/update', [FacultyController::class, 'updateModule'])
+        ->whereNumber('id')->whereNumber('moduleIndex')->name('faculty.module.update');
 
     Route::post('/Faculty-mycourses/manage/{id}/modules/{moduleIndex}/lessons', [FacultyController::class, 'storeLesson'])
         ->whereNumber('id')->whereNumber('moduleIndex')->name('faculty.lesson.store');

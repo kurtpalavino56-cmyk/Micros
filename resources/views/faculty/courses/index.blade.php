@@ -108,14 +108,17 @@
     .thumb{width:88px;height:88px;border-radius:12px;background:var(--thumb);flex-shrink:0;background-size:cover;background-position:center;}
     .course-info{flex:1;min-width:0;}
     .course-info h3{margin:0 0 8px;font-size:21px;color:var(--navy);}
-    .course-info .desc{font-size:12px;color:var(--navy);opacity:.85;line-height:1.5;max-width:520px;margin-bottom:14px;}
+    .course-info .desc{font-size:12px;color:var(--navy);opacity:.85;line-height:1.5;max-width:520px;margin-bottom:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
     .course-meta{display:flex;align-items:center;gap:26px;flex-wrap:wrap;}
     .status-chip{display:inline-block;font-size:12px;font-weight:700;padding:8px 24px;border-radius:999px;border:1.5px solid #c9ccdb;background:#fff;color:var(--ink);}
     .status-chip.draft{background:#fde68a;border-color:#fde68a;color:#713f12;}
     .meta-item{text-align:center;font-size:11px;color:var(--muted);line-height:1.3;}
     .meta-item .meta-num{display:block;font-weight:800;font-size:14px;color:var(--ink);}
     .card-actions{display:flex;flex-direction:column;gap:12px;flex-shrink:0;}
-    .btn-action{background:#fff;border:1.5px solid var(--navy);color:var(--navy);font-weight:700;padding:10px 30px;border-radius:999px;font-size:15px;min-width:150px;display:block;width:100%;text-align:center;}
+    .btn-action{background:#fff;border:1.5px solid var(--navy);color:var(--navy);font-weight:700;padding:10px 30px;border-radius:999px;font-size:15px;min-width:150px;display:block;width:100%;text-align:center;transition:background .15s ease,color .15s ease;}
+    .btn-action:hover{background:#eef1ff;}
+    .btn-action.primary{background:var(--navy);color:#fff;}
+    .btn-action.primary:hover{background:#1a2fa0;}
     .empty-state{border:1px dashed var(--line);border-radius:16px;padding:30px;text-align:center;color:var(--muted);font-size:14px;}
 
     /* â”€â”€ MANAGE mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -349,9 +352,13 @@
                                     <div class="sub">{{ $module->subtitle }}</div>
                                 @endif
                             </div>
-                            {{-- âœ… Opens the inline Add Lesson form for THIS module --}}
+                            {{-- Edit THIS module's title / description --}}
+                            <button class="btn-edit-lesson" type="button"
+                                    onclick="toggleModuleEdit({{ $module->idx }})"
+                                    title="Edit module">Edit</button>
+                            {{-- ✅ Opens the inline Add Lesson form for THIS module --}}
                             <button class="btn-add-lesson" type="button" onclick="toggleLessonForm({{ $module->idx }}, true)">+ Add Lesson</button>
-                            {{-- âœ… Deletes THIS module and everything in it (with confirmation) --}}
+                            {{-- ✅ Deletes THIS module and everything in it (with confirmation) --}}
                             <form method="POST" style="margin:0;display:flex;"
                                   action="{{ route('faculty.module.delete', [$course->id, $module->key]) }}"
                                   onsubmit="return confirm('Delete this module? Its lessons and quiz will be removed too.');">
@@ -359,6 +366,39 @@
                                 <button class="btn-x" type="submit" title="Remove module">&times;</button>
                             </form>
                         </div>
+
+                        {{-- ── Inline module editor — title + rich-text description ── --}}
+                        <form class="lesson-form module-edit-form" id="module-edit-{{ $module->idx }}"
+                              style="display:{{ $errors->has('module_description') && (int) session('open_module_edit') === (int) $module->idx ? 'flex' : 'none' }};"
+                              method="POST"
+                              action="{{ route('faculty.module.update', [$course->id, $module->idx]) }}">
+                            @csrf
+
+                            <div class="row2">
+                                <input class="input-outline" type="text" name="module_title"
+                                       placeholder="Module title *"
+                                       value="{{ old('module_title', $module->title) }}" required>
+                            </div>
+
+                            @include('components.rich-text-editor', [
+                                'name' => 'module_description',
+                                'id' => 'module-description-edit-'.$module->idx,
+                                'value' => old('module_description', $module->description ?? ''),
+                                'placeholder' => 'Describe what this module covers...'
+                            ])
+
+                            @if ($errors->has('module_description') && (int) session('open_module_edit') === (int) $module->idx)
+                                <div style="background:#fdecea;border:1px solid #f2b8b5;color:#a93226;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;">
+                                    {{ $errors->first('module_description') }}
+                                </div>
+                            @endif
+
+                            <div class="actions">
+                                <button class="btn-save-lesson" type="submit">Save Module</button>
+                                <button class="btn-cancel-outline" type="button"
+                                        onclick="toggleModuleEdit({{ $module->idx }})">Cancel</button>
+                            </div>
+                        </form>
 
                         @php $showLessonForm = ($addLessonIndex ?? null) === $module->idx
     || (int) session('open_lesson_form') === (int) $module->idx; @endphp
@@ -725,8 +765,11 @@
                 <div class="thumb" @if($course->thumbnail_url ?? null) style="background-image:url('{{ $course->thumbnail_url }}')" @endif></div>
                 <div class="course-info">
                     <h3>{{ $course->title }}</h3>
-                    @if($course->description ?? null)
-                        <div class="desc">{!! $course->description !!}</div>
+                    @php
+                        $descPreview = \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags((string) ($course->description ?? ''))))), 130);
+                    @endphp
+                    @if($descPreview !== '')
+                        <div class="desc">{{ $descPreview }}</div>
                     @endif
                     <div class="course-meta">
                         <span class="status-chip {{ strtolower($course->status ?? 'draft') === 'published' ? 'published' : 'draft' }}">
@@ -747,8 +790,8 @@
                     </div>
                 </div>
                 <div class="card-actions">
-                    {{-- âœ… Manage â†’ Managing Course screen for THIS course (same blade, manage mode) --}}
-                    <a href="{{ route('faculty.courses.manage', $course->id ?? 1) }}" class="btn-action">Manage</a>
+                    {{-- ✅ Manage → Managing Course screen for THIS course (same blade, manage mode) --}}
+                    <a href="{{ route('faculty.courses.manage', $course->id ?? 1) }}" class="btn-action primary">Manage</a>
                     <a href="{{ route('faculty.analytics') }}" class="btn-action">Analytics</a>
                 </div>
             </div>
@@ -785,6 +828,18 @@
             });
         });
     });
+
+    // Show / hide the inline module editor (title + description).
+    function toggleModuleEdit(moduleIdx) {
+        var box = document.getElementById('module-edit-' + moduleIdx);
+        if (!box) return;
+        var opening = box.style.display === 'none' || box.style.display === '';
+        box.style.display = opening ? 'flex' : 'none';
+        if (opening) {
+            var first = box.querySelector('input[name="module_title"]');
+            if (first) first.focus();
+        }
+    }
 
     function addChoice(q) {
         var box = document.getElementById('choices-' + q);
@@ -957,7 +1012,7 @@
 
     // Reopen the editor the server flagged after a failed upload.
     document.addEventListener('DOMContentLoaded', function () {
-        var open = document.querySelector('.lesson-edit-form[style*="flex"]');
+        var open = document.querySelector('.lesson-edit-form[style*="flex"], .module-edit-form[style*="flex"]');
         if (open) open.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
 </script>

@@ -25,4 +25,13 @@ class CourseModuleService
                 ->delete();
         }
     }
+
+    public function update(CourseModule $module, array $data): CourseModule
+    {
+        $module->title = trim($data['module_title'] ?? '') ?: $module->title;
+        $module->description = trim($data['module_description'] ?? '');
+        $module->save();
+
+        return $module;
+    }
 }

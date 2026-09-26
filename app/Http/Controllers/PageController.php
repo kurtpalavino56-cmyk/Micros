@@ -181,21 +181,13 @@ class PageController extends Controller
             ->values();
         $items = $items->concat($manual);
 
-        // 2) New courses published this month.
-        Course::where('is_published', true)->where('is_approved', true)
-            ->latest('approved_at')->limit(2)->get()
-            ->each(function (Course $c) use ($items) {
-                $items->push([
-                    'type' => 'general',
-                    'label' => 'New Course',
-                    'date' => ($c->approved_at ?? $c->created_at)?->format('F j, Y') ?? '',
-                    'title' => 'New Course Added: '.$c->title,
-                    'desc' => Str::limit((string) $c->description, 160)
-                                ?: 'A new course is now available in the catalog.',
-                ]);
-            });
+        // New-course activity is intentionally NOT surfaced here. It is a
+        // per-student notification (see the "Student / guest" branch of
+        // notificationsFeed()/notificationPreview() below), not a public
+        // landing-page announcement — a course going live shouldn't be
+        // broadcast to guests, faculty, or the admin dashboard.
 
-        // 3) Enrollment activity this month.
+        // 2) Enrollment activity this month.
         $monthEnroll = Enrollment::where('created_at', '>=', now()->startOfMonth())->count();
         if ($monthEnroll > 0) {
             $items->push([
@@ -207,7 +199,7 @@ class PageController extends Controller
             ]);
         }
 
-        // 4) Latest badge award.
+        // 3) Latest badge award.
         $latestBadge = UserBadge::with('badge')->latest('earned_at')->first();
         if ($latestBadge) {
             $items->push([

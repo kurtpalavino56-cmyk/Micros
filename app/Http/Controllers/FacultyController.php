@@ -326,7 +326,11 @@ class FacultyController extends Controller
                 'idx' => $m->id,
                 'key' => 'mod-'.$m->id,
                 'title' => $m->title,
-                'subtitle' => $m->description,
+                // 'subtitle' is a short plain-text preview for the compact
+                // header row; 'description' keeps the raw CKEditor HTML so
+                // the edit form can load it back into the editor.
+                'subtitle' => \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags((string) $m->description)))), 90),
+                'description' => $m->description,
                 'lessons' => $m->lessons->map(fn (CourseLesson $l) => (object) [
                     'id' => $l->id,
                     'key' => 'les-'.$l->id,
@@ -772,6 +776,9 @@ class FacultyController extends Controller
                         'target',
                         'rel',
                         'title',
+                        'class',
+                        'data-file-name',
+                        'data-file-type',
                     ],
 
                     'img' => [
@@ -784,6 +791,7 @@ class FacultyController extends Controller
 
                     'figure' => [
                         'class',
+                        'data-file-name',
                     ],
 
                     'figcaption' => [
@@ -969,6 +977,27 @@ class FacultyController extends Controller
         $courseModuleService->create($course, $data);
 
         return redirect()->route('faculty.courses.manage', $course->id);
+    }
+
+    public function updateModule(Request $request, int $id, int $moduleIndex, CourseModuleService $courseModuleService)
+    {
+        $course = $this->ownedCourse($id);
+        $module = CourseModule::where('course_id', $course->id)->findOrFail($moduleIndex);
+
+        try {
+            $data = $request->validate([
+                'module_title' => ['nullable', 'string', 'max:255'],
+                'module_description' => ['nullable', 'string', 'max:10000'],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput()->with('open_module_edit', $module->id);
+        }
+
+        $data['module_description'] = $this->sanitizeRichText($data['module_description'] ?? '');
+        $courseModuleService->update($module, $data);
+
+        return redirect()->route('faculty.courses.manage', $course->id)
+            ->with('success', 'Module updated.');
     }
 
     public function deleteModule(int $id, string $key, CourseModuleService $courseModuleService)

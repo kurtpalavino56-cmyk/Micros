@@ -80,14 +80,17 @@
     .thumb{width:88px;height:88px;border-radius:12px;background:var(--thumb);flex-shrink:0;background-size:cover;background-position:center;}
     .course-info{flex:1;min-width:0;}
     .course-info h3{margin:0 0 8px;font-size:21px;color:var(--navy);}
-    .course-info .desc{font-size:12px;color:var(--navy);opacity:.85;line-height:1.5;max-width:520px;margin-bottom:14px;}
+    .course-info .desc{font-size:12px;color:var(--navy);opacity:.85;line-height:1.5;max-width:520px;margin-bottom:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
     .course-meta{display:flex;align-items:center;gap:26px;flex-wrap:wrap;}
     .status-chip{display:inline-block;font-size:12px;font-weight:700;padding:8px 24px;border-radius:999px;border:1.5px solid #c9ccdb;background:#fff;color:var(--ink);}
     .status-chip.draft{background:#fde68a;border-color:#fde68a;color:#713f12;}
     .meta-item{text-align:center;font-size:11px;color:var(--muted);line-height:1.3;}
     .meta-item .meta-num{display:block;font-weight:800;font-size:14px;color:var(--ink);}
     .card-actions{display:flex;flex-direction:column;gap:12px;flex-shrink:0;}
-    .btn-action{background:#fff;border:1.5px solid var(--navy);color:var(--navy);font-weight:700;padding:10px 30px;border-radius:999px;font-size:15px;min-width:150px;display:block;width:100%;text-align:center;}
+    .btn-action{background:#fff;border:1.5px solid var(--navy);color:var(--navy);font-weight:700;padding:10px 30px;border-radius:999px;font-size:15px;min-width:150px;display:block;width:100%;text-align:center;transition:background .15s ease,color .15s ease;}
+    .btn-action:hover{background:#eef1ff;}
+    .btn-action.primary{background:var(--navy);color:#fff;}
+    .btn-action.primary:hover{background:#1a2fa0;}
     .empty-state{border:1px dashed var(--line);border-radius:16px;padding:30px;text-align:center;color:var(--muted);font-size:14px;}
 
     /* â”€â”€ MANAGE mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -321,6 +324,10 @@
                                 <?php endif; ?>
                             </div>
                             
+                            <button class="btn-edit-lesson" type="button"
+                                    onclick="toggleModuleEdit(<?php echo e($module->idx); ?>)"
+                                    title="Edit module">Edit</button>
+                            
                             <button class="btn-add-lesson" type="button" onclick="toggleLessonForm(<?php echo e($module->idx); ?>, true)">+ Add Lesson</button>
                             
                             <form method="POST" style="margin:0;display:flex;"
@@ -330,6 +337,40 @@
                                 <button class="btn-x" type="submit" title="Remove module">&times;</button>
                             </form>
                         </div>
+
+                        
+                        <form class="lesson-form module-edit-form" id="module-edit-<?php echo e($module->idx); ?>"
+                              style="display:<?php echo e($errors->has('module_description') && (int) session('open_module_edit') === (int) $module->idx ? 'flex' : 'none'); ?>;"
+                              method="POST"
+                              action="<?php echo e(route('faculty.module.update', [$course->id, $module->idx])); ?>">
+                            <?php echo csrf_field(); ?>
+
+                            <div class="row2">
+                                <input class="input-outline" type="text" name="module_title"
+                                       placeholder="Module title *"
+                                       value="<?php echo e(old('module_title', $module->title)); ?>" required>
+                            </div>
+
+                            <?php echo $__env->make('components.rich-text-editor', [
+                                'name' => 'module_description',
+                                'id' => 'module-description-edit-'.$module->idx,
+                                'value' => old('module_description', $module->description ?? ''),
+                                'placeholder' => 'Describe what this module covers...'
+                            ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+
+                            <?php if($errors->has('module_description') && (int) session('open_module_edit') === (int) $module->idx): ?>
+                                <div style="background:#fdecea;border:1px solid #f2b8b5;color:#a93226;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;">
+                                    <?php echo e($errors->first('module_description')); ?>
+
+                                </div>
+                            <?php endif; ?>
+
+                            <div class="actions">
+                                <button class="btn-save-lesson" type="submit">Save Module</button>
+                                <button class="btn-cancel-outline" type="button"
+                                        onclick="toggleModuleEdit(<?php echo e($module->idx); ?>)">Cancel</button>
+                            </div>
+                        </form>
 
                         <?php $showLessonForm = ($addLessonIndex ?? null) === $module->idx
     || (int) session('open_lesson_form') === (int) $module->idx; ?>
@@ -690,8 +731,11 @@
                 <div class="thumb" <?php if($course->thumbnail_url ?? null): ?> style="background-image:url('<?php echo e($course->thumbnail_url); ?>')" <?php endif; ?>></div>
                 <div class="course-info">
                     <h3><?php echo e($course->title); ?></h3>
-                    <?php if($course->description ?? null): ?>
-                        <div class="desc"><?php echo $course->description; ?></div>
+                    <?php
+                        $descPreview = \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags((string) ($course->description ?? ''))))), 130);
+                    ?>
+                    <?php if($descPreview !== ''): ?>
+                        <div class="desc"><?php echo e($descPreview); ?></div>
                     <?php endif; ?>
                     <div class="course-meta">
                         <span class="status-chip <?php echo e(strtolower($course->status ?? 'draft') === 'published' ? 'published' : 'draft'); ?>">
@@ -714,7 +758,7 @@
                 </div>
                 <div class="card-actions">
                     
-                    <a href="<?php echo e(route('faculty.courses.manage', $course->id ?? 1)); ?>" class="btn-action">Manage</a>
+                    <a href="<?php echo e(route('faculty.courses.manage', $course->id ?? 1)); ?>" class="btn-action primary">Manage</a>
                     <a href="<?php echo e(route('faculty.analytics')); ?>" class="btn-action">Analytics</a>
                 </div>
             </div>
@@ -751,6 +795,18 @@
             });
         });
     });
+
+    // Show / hide the inline module editor (title + description).
+    function toggleModuleEdit(moduleIdx) {
+        var box = document.getElementById('module-edit-' + moduleIdx);
+        if (!box) return;
+        var opening = box.style.display === 'none' || box.style.display === '';
+        box.style.display = opening ? 'flex' : 'none';
+        if (opening) {
+            var first = box.querySelector('input[name="module_title"]');
+            if (first) first.focus();
+        }
+    }
 
     function addChoice(q) {
         var box = document.getElementById('choices-' + q);
@@ -923,7 +979,7 @@
 
     // Reopen the editor the server flagged after a failed upload.
     document.addEventListener('DOMContentLoaded', function () {
-        var open = document.querySelector('.lesson-edit-form[style*="flex"]');
+        var open = document.querySelector('.lesson-edit-form[style*="flex"], .module-edit-form[style*="flex"]');
         if (open) open.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
 </script>

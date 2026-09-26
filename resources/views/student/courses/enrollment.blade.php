@@ -2052,17 +2052,37 @@ function retakeQuiz() {
     });
 }
 
-/* â”€â”€ Go to next module â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Go to next module ───────────────────────────────────── */
 function goToNextModule() {
     const nextIdx = _curModIdx + 1;
-    const list    = document.getElementById('mod-' + nextIdx);
-    const chev    = document.getElementById('chev-' + nextIdx);
+    const group   = document.getElementById('mg-' + nextIdx);
+
+    if (!group) {
+        // No such module in the DOM — nothing to navigate to.
+        console.warn('goToNextModule: module ' + nextIdx + ' not found.');
+        return;
+    }
+
+    // Defensive: the module should already be unlocked by
+    // applyServerQuizSubmission(), but make sure before navigating.
+    unlockModule(nextIdx);
+
+    const list = document.getElementById('mod-' + nextIdx);
+    const chev = document.getElementById('chev-' + nextIdx);
     if (list) { list.classList.add('open'); if (chev) chev.classList.add('open'); }
-    const first   = document.querySelector('#mg-' + nextIdx + ' .lesson-item');
+
+    const first = group.querySelector('.lesson-item');
     if (first) {
         first.click();
-        scrollLearningTop();
+    } else {
+        // Module has no lessons (quiz-only, or lessons still empty) —
+        // show its welcome screen instead of doing nothing.
+        const titleArea = document.getElementById('mta-' + nextIdx);
+        if (titleArea) {
+            titleArea.click();
+        }
     }
+    scrollLearningTop();
 }
 
 </script>

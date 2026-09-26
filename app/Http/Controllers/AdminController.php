@@ -569,7 +569,7 @@ class AdminController extends Controller
                 'title' => $l->title,
                 'type' => $l->type,
                 'duration' => $l->duration,
-                'description' => $l->description,
+                'content' => $l->content,
                 'file_url' => ! empty($l->file_url) ? asset($l->file_url) : null,
                 'file_name' => ! empty($l->file_url) ? basename($l->file_url) : null,
             ])->values(),

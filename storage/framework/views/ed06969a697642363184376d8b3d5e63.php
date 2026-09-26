@@ -90,8 +90,20 @@
         .rich h1, .rich h2, .rich h3, .rich h4 { margin: 1em 0 .4em; color: var(--title); line-height: 1.3; }
         .rich ul, .rich ol { margin: 0 0 .7em; padding-left: 1.4em; }
         .rich img, .rich video, .rich iframe { max-width: 100%; height: auto; border-radius: 8px; }
+        .file-embed { margin: 10px 0; padding: 8px; border-radius: 10px; background: #f5f8fc; }
+        .file-embed embed { display: block; width: 100%; height: 420px; border-radius: 6px; }
         .rich table { max-width: 100%; display: block; overflow-x: auto; border-collapse: collapse; }
         .rich a { color: var(--blue); text-decoration: underline; }
+        .rich::after { content: ''; display: block; clear: both; }
+        .rich figure { margin: .8em 0; }
+        .rich figure.image { display: table; margin-left: auto; margin-right: auto; max-width: 100%; }
+        .rich figure.image img { display: block; margin: 0 auto; }
+        .rich figure.image-style-side, .rich figure.image-style-align-right { float: right; margin-left: 1em; max-width: 50%; }
+        .rich figure.image-style-align-left { float: left; margin-right: 1em; max-width: 50%; }
+        .rich figcaption { margin-top: 4px; font-size: .78rem; color: var(--muted); text-align: center; }
+        .rich blockquote { margin: .8em 0; padding: 2px 14px; border-left: 3px solid var(--yellow); color: var(--muted); }
+        .rich pre { margin: .8em 0; padding: 10px 12px; border-radius: 8px; background: #f3f5f9; overflow-x: auto; font-size: .82rem; }
+        .rich code { font-family: ui-monospace, Consolas, monospace; font-size: .92em; }
 
         .hero-actions { display: flex; flex-direction: column; gap: 10px; padding: 4px 0 4px 24px; border-left: 1px solid var(--line); }
         .hero-actions form { display: flex; }
@@ -160,6 +172,7 @@
         .module-block { border: 1px solid var(--line); border-radius: 9px; margin-bottom: 8px; background: #f8fafd; overflow: hidden; }
         .module-block:last-child { margin-bottom: 0; }
         .module-head { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 14px; border: 0; background: transparent; font: inherit; text-align: left; cursor: pointer; }
+        .module-index { flex: 0 0 22px; width: 22px; height: 22px; border-radius: 50%; background: var(--soft); color: var(--blue); font-size: .72rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
         .module-title { flex: 1; min-width: 0; font-size: .86rem; font-weight: 600; color: var(--title); }
         .module-count { font-size: .74rem; color: var(--muted); white-space: nowrap; }
         .module-head .ico { width: 16px; height: 16px; color: var(--muted); transition: transform .18s ease; }
@@ -253,6 +266,23 @@
 <body>
 <?php echo $__env->make('components.authenticated-topbar', ['user' => auth()->user()], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
+<?php
+    // CKEditor leaves <p>&nbsp;</p> for every blank line the author types.
+    // On a review page those show up as large gaps, so drop them.
+    $tidy = function ($html) {
+        $html = (string) $html;
+        $html = preg_replace('/<p>(?:\s|&nbsp;|\x{00A0}|<br\s*\/?>)*<\/p>/iu', '', $html);
+        $html = preg_replace('/(?:<br\s*\/?>\s*){2,}/i', '<br>', $html);
+
+        return trim($html);
+    };
+
+    // Stored thumbnails are relative paths (uploads/thumbnails/...).
+    $thumb = $course->thumbnail_url ?? null;
+    if ($thumb && ! preg_match('#^(https?:)?//|^/|^data:#i', $thumb)) {
+        $thumb = asset($thumb);
+    }
+?>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
@@ -309,8 +339,8 @@
         ?>
         <section class="card hero">
             <div class="thumb">
-                <?php if(! empty($course->thumbnail_url)): ?>
-                    <img src="<?php echo e($course->thumbnail_url); ?>" alt="">
+                <?php if(! empty($thumb)): ?>
+                    <img src="<?php echo e($thumb); ?>" alt="">
                 <?php else: ?>
                     <svg class="ico"><use href="#i-cap"/></svg>
                 <?php endif; ?>
@@ -387,8 +417,8 @@ unset($__errorArgs, $__bag); ?>
                 <section class="card stats">
                     <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-bars"/></svg></span><div><small>Level</small><b><?php echo e($course->level ?? '—'); ?></b></div></div>
                     <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-clock"/></svg></span><div><small>Duration</small><b><?php echo e($course->duration ?? '—'); ?></b></div></div>
-                    <!-- <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-cap"/></svg></span><div><small>Program</small><b><?php echo e($course->program ?? '—'); ?></b></div></div>
-                    <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-cal"/></svg></span><div><small>Term</small><b><?php echo e($course->term ?? '—'); ?></b></div></div> -->
+                    <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-cap"/></svg></span><div><small>Program</small><b><?php echo e($course->program ?? '—'); ?></b></div></div>
+                    <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-cal"/></svg></span><div><small>Term</small><b><?php echo e($course->term ?? '—'); ?></b></div></div>
                     <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-users"/></svg></span><div><small>Students</small><b><?php echo e($course->students); ?></b></div></div>
                     <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-layers"/></svg></span><div><small>Modules</small><b><?php echo e($course->modules_count); ?></b></div></div>
                     <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-play"/></svg></span><div><small>Lessons</small><b><?php echo e($course->lessons_count); ?></b></div></div>
@@ -397,7 +427,11 @@ unset($__errorArgs, $__bag); ?>
                 <div class="stack">
                     <section class="card">
                         <div class="card-title"><svg class="ico"><use href="#i-file"/></svg>Description</div>
-                        <div class="rich"><?php echo $course->description ?: 'No description provided.'; ?></div>
+                        <?php
+                            $descHtml = $tidy($course->description);
+                            $descBlank = trim(preg_replace('/[\s\x{00A0}]+/u', ' ', html_entity_decode(strip_tags($descHtml, '<img><oembed>')))) === '';
+                        ?>
+                        <div class="rich"><?php echo $descBlank ? 'No description provided.' : $descHtml; ?></div>
                     </section>
 
                     <section class="card">
@@ -440,21 +474,19 @@ unset($__errorArgs, $__bag); ?>
                     <div class="card-title"><svg class="ico"><use href="#i-file"/></svg>Course content</div>
                     <?php $__empty_1 = true; $__currentLoopData = $modules; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $module): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <?php
-                            $mTitle = preg_match('/^module\s*\d/i', $module->title)
-                                ? $module->title
-                                : 'Module ' . $loop->iteration . ': ' . $module->title;
                             $lCount = count($module->lessons);
                         ?>
                         <div class="module-block open">
                             <button type="button" class="module-head" onclick="this.parentElement.classList.toggle('open')">
-                                <span class="module-title"><?php echo e($mTitle); ?></span>
+                                <span class="module-index"><?php echo e($loop->iteration); ?></span>
+                                <span class="module-title"><?php echo e($module->title); ?></span>
                                 <span class="module-count"><?php echo e($lCount); ?> <?php echo e($lCount === 1 ? 'lesson' : 'lessons'); ?><?php if($module->quiz): ?> · 1 quiz <?php endif; ?></span>
                                 <svg class="ico"><use href="#i-down"/></svg>
                             </button>
 
                             <div class="module-body">
                                 <?php if($module->description): ?>
-                                    <div class="module-sub"><?php echo $module->description; ?></div>
+                                    <div class="module-sub rich"><?php echo $tidy($module->description); ?></div>
                                 <?php endif; ?>
 
                                 <?php $__currentLoopData = $module->lessons; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $lesson): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
@@ -463,24 +495,39 @@ unset($__errorArgs, $__bag); ?>
                                         <span class="lesson-meta"><?php echo e($lesson->type); ?><?php echo e($lesson->duration ? ' · ' . $lesson->duration : ''); ?></span>
                                     </div>
                                     <?php
-                                        $lBody  = $lesson->content ?? $lesson->body ?? null;
+                                        $blank = fn ($h) => trim(preg_replace('/[\s\x{00A0}]+/u', ' ', html_entity_decode(strip_tags((string) $h, '<img><iframe><oembed><video>')))) === '';
+                                        $lBody  = $tidy($lesson->content ?? $lesson->body ?? '');
+                                        $lDesc  = $tidy($lesson->description ?? '');
                                         $lVideo = $lesson->video_url ?? null;
+                                        $lFile  = $lesson->file_url ?? null;
+                                        if ($lFile && ! preg_match('#^(https?:)?//|^/#i', $lFile)) {
+                                            $lFile = asset($lFile);
+                                        }
+                                        $lExt = $lFile ? strtolower(pathinfo(parse_url($lFile, PHP_URL_PATH) ?: $lFile, PATHINFO_EXTENSION)) : null;
+                                        $lIsPdf = $lExt === 'pdf';
+                                        $lIsImageFile = in_array($lExt, ['png', 'jpg', 'jpeg', 'gif', 'webp'], true);
+                                        $hasBody = ! $blank($lBody);
+                                        $hasDesc = ! $blank($lDesc);
                                     ?>
                                     <div class="lesson-detail open">
-                                        <?php if($lesson->description): ?>
-                                            <div class="rich"><?php echo $lesson->description; ?></div>
-                                        <?php endif; ?>
-                                        <?php if($lBody): ?>
+                                        <?php if($hasBody): ?>
                                             <div class="rich"><?php echo $lBody; ?></div>
+                                        <?php elseif($hasDesc): ?>
+                                            <div class="rich"><?php echo $lDesc; ?></div>
+                                        <?php endif; ?>
+                                        <?php if($lFile && (($lesson->type ?? '') === 'Image' || $lIsImageFile)): ?>
+                                            <div class="rich"><img src="<?php echo e($lFile); ?>" alt="<?php echo e($lesson->title); ?>"></div>
+                                        <?php elseif($lFile && $lIsPdf): ?>
+                                            <div class="file-embed"><embed src="<?php echo e($lFile); ?>" type="application/pdf"></div>
                                         <?php endif; ?>
                                         <?php if($lVideo): ?>
                                             <p class="lesson-desc"><a class="lesson-file" href="<?php echo e($lVideo); ?>" target="_blank" rel="noopener">Open video</a></p>
                                         <?php endif; ?>
-                                        <?php if($lesson->file_url): ?>
-                                            <p class="lesson-desc"><a class="lesson-file" href="<?php echo e($lesson->file_url); ?>" target="_blank" rel="noopener">Open attached file (<?php echo e($lesson->file_name); ?>)</a></p>
+                                        <?php if($lFile): ?>
+                                            <p class="lesson-desc"><a class="lesson-file" href="<?php echo e($lFile); ?>" target="_blank" rel="noopener">Open attached file (<?php echo e($lesson->file_name ?? 'file'); ?>)</a></p>
                                         <?php endif; ?>
-                                        <?php if(! $lesson->description && ! $lBody && ! $lVideo && ! $lesson->file_url): ?>
-                                            <p class="lesson-desc lesson-empty">No description or file attached.</p>
+                                        <?php if(! $hasBody && ! $hasDesc && ! $lVideo && ! $lFile): ?>
+                                            <p class="lesson-desc lesson-empty">No content has been added to this lesson yet.</p>
                                         <?php endif; ?>
                                     </div>
                                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
@@ -623,6 +670,65 @@ unset($__errorArgs, $__bag); ?>
 </div>
 
 <script>
+    // CKEditor saves embedded video as <oembed url="...">, and a PDF
+    // dropped into the editor as <figure class="upskill-pdf"><oembed
+    // url="..."></oembed></figure>. Neither renders on its own in a
+    // plain browser, so swap each one for a real player or viewer.
+    (function () {
+        document.querySelectorAll('.rich oembed[url]').forEach(function (el) {
+            var url = el.getAttribute('url') || '';
+            var figure = el.closest('figure.upskill-pdf');
+            var isPdf = !!figure || /\.pdf(\?|#|$)/i.test(url);
+
+            if (isPdf) {
+                var wrap = document.createElement('div');
+                wrap.className = 'file-embed';
+                var embed = document.createElement('embed');
+                embed.src = url;
+                embed.type = 'application/pdf';
+                wrap.appendChild(embed);
+                (figure || el).replaceWith(wrap);
+                return;
+            }
+
+            var yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/);
+            var vm = url.match(/vimeo\.com\/(\d+)/);
+            var src = yt ? 'https://www.youtube.com/embed/' + yt[1]
+                : (vm ? 'https://player.vimeo.com/video/' + vm[1] : null);
+            var node;
+
+            if (src) {
+                node = document.createElement('iframe');
+                node.src = src;
+                node.loading = 'lazy';
+                node.allowFullscreen = true;
+                node.style.cssText = 'width:100%;aspect-ratio:16/9;border:0;border-radius:8px;';
+            } else if (/^https?:\/\//i.test(url)) {
+                node = document.createElement('a');
+                node.href = url;
+                node.target = '_blank';
+                node.rel = 'noopener';
+                node.className = 'lesson-file';
+                node.textContent = 'Open embedded media';
+            } else {
+                return;
+            }
+            el.replaceWith(node);
+        });
+
+        // Non-PDF files dropped into CKEditor come out as
+        // <a class="lesson-file-attachment" data-file-name="...">📎 name</a>.
+        // Give them the same "Open attached file" look as the legacy
+        // file_url attachments.
+        document.querySelectorAll('.rich a.lesson-file-attachment').forEach(function (el) {
+            el.classList.add('lesson-file');
+            var name = el.getAttribute('data-file-name');
+            if (name) el.textContent = 'Open attached file (' + name + ')';
+        });
+    })();
+</script>
+
+<script>
     (function () {
         var open = document.getElementById('deny-open');
         var panel = document.getElementById('deny-panel');
@@ -660,4 +766,5 @@ unset($__errorArgs, $__bag); ?>
 
 <?php echo $__env->make('components.responsive', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 </body>
-</html><?php /**PATH C:\Users\PaulV\Documents\MICROCREDENTIALS NEW ADDITIONS\UPSKILL - Microcredential Platform\resources\views/admin/courses/show.blade.php ENDPATH**/ ?>
+</html>
+<?php /**PATH C:\Users\PaulV\Documents\MICROCREDENTIALS NEW ADDITIONS\UPSKILL - Microcredential Platform\resources\views/admin/courses/show.blade.php ENDPATH**/ ?>

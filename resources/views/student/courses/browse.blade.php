@@ -112,7 +112,7 @@
     .tag-category{background:var(--tag-cat);color:#fff;}
     .tag-level{background:var(--tag-level-bg);color:var(--navy);}
     .browse-card h3{margin:0 0 10px;font-size:22px;color:var(--navy);line-height:1.25;}
-    .browse-card .desc{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.5;}
+    .browse-card .desc{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
     .meta{display:flex;align-items:center;gap:18px;color:var(--muted);font-size:14px;flex-wrap:wrap;}
     .meta span{display:flex;align-items:center;gap:6px;}
     .meta svg{width:16px;height:16px;flex-shrink:0;}
@@ -202,8 +202,11 @@
                             @endif
                         </div>
                         <h3>{{ $course->title }}</h3>
-                        @if($course->description)
-                            <p class="desc">{!! $course->description !!}</p>
+                        @php
+                            $descPreview = \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags((string) ($course->description ?? ''))))), 120);
+                        @endphp
+                        @if($descPreview !== '')
+                            <p class="desc">{{ $descPreview }}</p>
                         @endif
                         <div class="meta">
                             @if($course->instructor)
