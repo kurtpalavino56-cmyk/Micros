@@ -314,6 +314,23 @@
                         <div class="progress-fill" style="width:{{ $progress_percent ?? 0 }}%"></div>
                     </div>
 
+                    @if($prerequisites->isNotEmpty())
+                        <div class="course-prerequisites" style="margin:0 0 16px;padding:12px;border:1px solid #dbe3ef;border-radius:10px;">
+                            <strong style="display:block;margin-bottom:8px;">Prerequisites</strong>
+                            <ul style="margin:0;padding-left:20px;">
+                                @foreach($prerequisites as $prerequisite)
+                                    <li style="margin:4px 0;">
+                                        {{ $prerequisite->title }}
+                                        <span>{{ $prerequisite->completed ? '- completed' : '- not completed' }}</span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+                    @if($errors->has('prerequisites'))
+                        <p role="alert" style="color:#b42318;margin:0 0 12px;">{{ $errors->first('prerequisites') }}</p>
+                    @endif
+
                     @if($is_completed ?? false)
                         <div class="completion-state" role="status">Course completed ✓</div>
                     @elseif($is_enrolled ?? false)
@@ -326,6 +343,13 @@
                         @unless($completion_ready ?? false)
                             <small class="completion-help">Finish the required lessons and quizzes to unlock completion.</small>
                         @endunless
+                    @elseif(!($prerequisites_met ?? true))
+                        <button type="button" class="btn-enroll" disabled aria-disabled="true" style="opacity:.6;cursor:not-allowed;">
+                            Complete prerequisites first
+                        </button>
+                        <small class="completion-help">
+                            Complete: {{ $missing_prerequisite_titles->implode(', ') }}
+                        </small>
                     @else
                         <form action="{{ route('courses.enroll', $course->id) }}" method="POST" class="enroll-form">
                             @csrf
@@ -555,3 +579,4 @@
     @include('components.responsive')
 </body>
 </html>
+

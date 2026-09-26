@@ -55,7 +55,7 @@ function makeReadyEnrollmentFor(User $faculty, array $courseOverrides = []): arr
 
     DB::table('lesson_completions')->insert([
         'user_id' => $student->id, 'lesson_id' => $lesson->id,
-        'completed_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        'completed_at' => now(), 'server_verified_at' => now(), 'created_at' => now(), 'updated_at' => now(),
     ]);
     QuizAttempt::create([
         'user_id' => $student->id, 'quiz_id' => $quiz->id,

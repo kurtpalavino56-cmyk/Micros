@@ -668,7 +668,11 @@ class MicrocredentialCompletionService
     private function allLessonsCompleted(Enrollment $enrollment): bool
     {
         $course = $enrollment->course;
-        $lessonIds = $course->lessons->pluck('id');
+        $course->loadMissing('modules.lessons');
+        $lessonIds = $course->modules
+            ->flatMap(fn ($module) => $module->lessons)
+            ->pluck('id')
+            ->unique();
 
         if ($lessonIds->isEmpty()) {
             // No lessons configured: this gate cannot block completion.
@@ -678,6 +682,7 @@ class MicrocredentialCompletionService
         $completedCount = DB::table('lesson_completions')
             ->where('user_id', $enrollment->user_id)
             ->whereIn('lesson_id', $lessonIds)
+            ->whereNotNull('server_verified_at')
             ->distinct('lesson_id')
             ->count('lesson_id');
 
@@ -867,3 +872,4 @@ class MicrocredentialCompletionService
         return self::STATUS_COMPLETED;
     }
 }
+

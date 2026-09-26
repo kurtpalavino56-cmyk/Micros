@@ -1125,10 +1125,14 @@
     <div class="certfloat">
         <button type="button" class="certfloat__close" onclick="closeCertFloat()" aria-label="Close">&times;</button>
 
-        <div class="certfloat__verified">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-            Verified Certificate
-        </div>
+        @if(($scannedCertificate['status'] ?? 'active') === 'revoked')
+            <div class="certfloat__verified" style="background:#fff1f2;color:#b42318" role="status">Revoked Certificate</div>
+        @else
+            <div class="certfloat__verified">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                Verified Certificate
+            </div>
+        @endif
 
         @include('components.certificate', ['cert' => $scannedCertificate])
 
@@ -1171,3 +1175,4 @@ document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeCe
 @endif
 
 @endsection
+

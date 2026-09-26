@@ -1,9 +1,20 @@
 <?php
 
-test('monitoring live endpoint returns expected JSON payload', function () {
-    $response = $this->getJson('/monitoring/live');
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-    $response
+uses(RefreshDatabase::class);
+
+test('guest cannot read the live monitoring feed', function () {
+    $this->getJson('/monitoring/live')
+        ->assertRedirect(route('login'));
+});
+
+test('admin can read the live monitoring feed', function () {
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->getJson('/monitoring/live')
         ->assertOk()
         ->assertJsonStructure([
             'stats' => [
@@ -15,8 +26,11 @@ test('monitoring live endpoint returns expected JSON payload', function () {
         ]);
 });
 
-test('faculty dashboard renders without requiring a course id', function () {
-    $response = $this->get('/Faculty-dashboard');
+test('faculty dashboard renders for a signed-in faculty member', function () {
+    $faculty = User::factory()->faculty()->create();
 
-    $response->assertOk();
+    $this->actingAs($faculty)
+        ->get('/Faculty-dashboard')
+        ->assertOk();
 });
+

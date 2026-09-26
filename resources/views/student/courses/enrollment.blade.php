@@ -1025,6 +1025,9 @@ function toggleModule(listId, chevId) {
    server, and the saved state is restored on load â€” so the student's
    percentage is the same on every page, every visit. */
 var _savedProgress = {!! json_encode($saved_progress ?? ['completed_lessons' => [], 'module_scores' => new \stdClass()]) !!};
+var LESSON_TRACKING_BASE = @json(url('/courses/'.$course->id.'/lessons'));
+var _lessonOpenedAt = 0;
+var _lessonStartRequest = Promise.resolve({ok:false});
 var _serverUnlocks = {!! json_encode($quiz_unlocks ?? new \stdClass()) !!};   // moduleIdx â†’ retake unlock timestamp (ms), from the server
 var _serverUnlocksAuthoritative = true;   // this list is complete: anything absent from it is unlocked
 var _quizAttempts = {!! json_encode($quiz_attempts ?? new \stdClass()) !!};   // moduleIdx â†’ {allowed, used, remaining, exhausted}
@@ -1412,9 +1415,11 @@ function _prepLesson(title, desc, duration, modIdx, lesIdx, content) {
     if (_curLessonEl && _curLessonEl.classList.contains('lesson-correct')) {
         btn.textContent = '✓ Completed';
         btn.classList.add('done');
+        btn.disabled = true;
     } else {
         btn.textContent = 'Mark Complete';
         btn.classList.remove('done');
+        btn.disabled = false;
     }
 }
 
@@ -1434,8 +1439,28 @@ function loadTextLesson(title, desc, duration, modIdx, lesIdx, content) {
 
 /* Editor-first lesson loader. The standalone CourseLesson file upload
    is no longer part of the student learning experience. */
+function startLessonTracking() {
+    if (!_curLessonEl) return;
+    var lessonId = _curLessonEl.dataset.lid;
+    _lessonOpenedAt = Date.now();
+    _lessonStartRequest = fetch(LESSON_TRACKING_BASE + '/' + encodeURIComponent(lessonId) + '/start', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        }
+    }).then(function (response) {
+        return response.json().then(function (data) {
+            return { ok: response.ok && !!data.ok, message: data.message || '' };
+        });
+    }).catch(function () {
+        return { ok: false, message: 'Could not start lesson tracking. Reload the course and try again.' };
+    });
+}
+
 function loadLesson(type, title, desc, duration, modIdx, lesIdx, content) {
     _prepLesson(title, desc, duration, modIdx, lesIdx, content);
+    startLessonTracking();
     hideAllViews();
     document.getElementById('view-lesson').style.display = 'flex';
     scrollLearningTop();
@@ -1443,21 +1468,47 @@ function loadLesson(type, title, desc, duration, modIdx, lesIdx, content) {
 
 /* â”€â”€ Mark Complete â†’ green dot + unlock quiz check â”€â”€ */
 function markComplete() {
-    const btn  = document.getElementById('btn-mark');
-    const done = btn.classList.toggle('done');
-    btn.textContent = done ? '\u2713 Completed' : 'Mark Complete';
+    const btn = document.getElementById('btn-mark');
+    const lessonEl = _curLessonEl;
+    if (!lessonEl || lessonEl.classList.contains('lesson-correct') || btn.disabled) return;
 
-    if (_curLessonEl) {
-        if (done) {
-            _curLessonEl.classList.add('lesson-correct');
-            _curLessonEl.classList.remove('lesson-wrong', 'active');
-        } else {
-            _curLessonEl.classList.remove('lesson-correct');
+    const lessonId = lessonEl.dataset.lid;
+    const openedAt = _lessonOpenedAt;
+    const startRequest = _lessonStartRequest;
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    const waitMs = Math.max(0, 5500 - (Date.now() - openedAt));
+    window.setTimeout(async function () {
+        if (_curLessonEl !== lessonEl) return;
+
+        try {
+            const started = await startRequest;
+            if (!started.ok) throw new Error(started.message || 'Could not verify this lesson.');
+
+            const response = await fetch(LESSON_TRACKING_BASE + '/' + encodeURIComponent(lessonId) + '/complete', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            });
+            const result = await response.json();
+            if (!response.ok || !result.ok) throw new Error(result.message || 'Could not save this lesson.');
+
+            lessonEl.classList.add('lesson-correct');
+            lessonEl.classList.remove('lesson-wrong', 'active');
+            btn.textContent = '✓ Completed';
+            btn.classList.add('done');
+            checkQuizUnlock(_curModIdx);
+            checkModuleComplete(_curModIdx);
+            saveProgress(true);
+        } catch (error) {
+            btn.disabled = false;
+            btn.textContent = 'Mark Complete';
+            alert(error.message || 'Could not save lesson progress.');
         }
-    }
-    checkQuizUnlock(_curModIdx);
-    checkModuleComplete(_curModIdx);
-    saveProgress();
+    }, waitMs);
 }
 
 /* â”€â”€ Unlock QUIZ when all lessons are marked complete â”€ */
@@ -2113,3 +2164,4 @@ function goToNextModule() {
     @include('components.responsive')
 </body>
 </html>
+

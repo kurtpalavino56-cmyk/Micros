@@ -865,12 +865,33 @@ class FacultyController extends Controller
                             : ($part[3] !== '' ? $part[3] : $part[4]);
 
                         $value = trim($value);
+                        $safeStyles = [];
 
-                        if (preg_match(
-                            '/^text-align\s*:\s*(left|center|right|justify)\s*;?$/i',
-                            $value
-                        )) {
-                            $safe[] = 'style="' . e($value) . '"';
+                        foreach (explode(';', $value) as $declaration) {
+                            $styleParts = explode(':', $declaration, 2);
+                            if (count($styleParts) !== 2) {
+                                continue;
+                            }
+
+                            $property = strtolower(trim($styleParts[0]));
+                            $styleValue = trim($styleParts[1]);
+
+                            if ($property === 'text-align'
+                                && preg_match('/^(left|center|right|justify)$/i', $styleValue)) {
+                                $safeStyles[] = 'text-align:' . strtolower($styleValue);
+                                continue;
+                            }
+
+                            // CKEditor emits safe HSL, RGB, or hexadecimal color values.
+                            // Restrict these properties and formats to prevent CSS injection.
+                            if (in_array($property, ['color', 'background-color'], true)
+                                && preg_match('/^(#[0-9a-f]{3,8}|(?:rgb|hsl)a?\([0-9.%+,\s-]+\))$/i', $styleValue)) {
+                                $safeStyles[] = $property . ':' . $styleValue;
+                            }
+                        }
+
+                        if ($safeStyles) {
+                            $safe[] = 'style="' . e(implode(';', $safeStyles)) . '"';
                         }
 
                         continue;
@@ -1497,3 +1518,4 @@ class FacultyController extends Controller
         return back()->with('success', 'Badge saved and linked to this course.');
     }
 }
+

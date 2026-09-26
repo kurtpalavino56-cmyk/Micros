@@ -101,23 +101,27 @@ class RegisterController extends Controller
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
-        $code = FacultyCode::where('code', strtoupper(trim($validated['faculty_code'])))->first();
+        $facultyCodeValue = strtoupper(trim($validated['faculty_code']));
 
-        if (! $code) {
-            return back()
-                ->withErrors(['faculty_code' => 'This Faculty Code Number is not valid. Please request one from the administrator.'])
-                ->withInput();
-        }
+        // Lock and recheck inside the same transaction that creates the
+        // account, so concurrent requests cannot redeem one single-use code
+        // more than once.
+        $user = DB::transaction(function () use ($validated, $userCodes, $facultyCodeValue) {
+            $code = FacultyCode::where('code', $facultyCodeValue)->lockForUpdate()->first();
 
-        if ($code->isUsed()) {
-            return back()
-                ->withErrors(['faculty_code' => 'This Faculty Code Number has already been used.'])
-                ->withInput();
-        }
+            if (! $code) {
+                throw ValidationException::withMessages([
+                    'faculty_code' => 'This Faculty Code Number is not valid. Please request one from the administrator.',
+                ]);
+            }
 
-        $userCode = $userCodes->generateForRole(User::ROLE_FACULTY);
+            if ($code->isUsed()) {
+                throw ValidationException::withMessages([
+                    'faculty_code' => 'This Faculty Code Number has already been used.',
+                ]);
+            }
 
-        $user = DB::transaction(function () use ($validated, $userCode, $code) {
+            $userCode = $userCodes->generateForRole(User::ROLE_FACULTY);
             $user = User::create([
                 'first_name' => $validated['first_name'],
                 'middle_name' => $validated['middle_name'] ?? null,
@@ -132,14 +136,12 @@ class RegisterController extends Controller
                 'is_active' => true,
             ]);
 
-            // Mark the code as used → turns RED on the admin page.
             $code->used_by = $user->id;
             $code->used_at = now();
             $code->save();
 
             return $user;
         });
-
         Auth::login($user);
         $request->session()->regenerate();
 
@@ -147,3 +149,4 @@ class RegisterController extends Controller
             ->with('success', 'Welcome to UPSKILL, Prof. '.$user->last_name.'! Your faculty account is ready.');
     }
 }
+

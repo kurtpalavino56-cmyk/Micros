@@ -99,7 +99,7 @@ function makeReadyEnrollment(array $courseOverrides = [], bool $withCompetency =
     DB::table('lesson_completions')->insert([
         'user_id' => $student->id,
         'lesson_id' => $lesson->id,
-        'completed_at' => now(),
+        'completed_at' => now(), 'server_verified_at' => now(),
         'created_at' => now(),
         'updated_at' => now(),
     ]);
@@ -392,7 +392,7 @@ function makeUnmasteredEnrollment(array $courseOverrides = [], string $state = '
     if ($state === 'assessment_pending') {
         DB::table('lesson_completions')->insert([
             'user_id' => $student->id, 'lesson_id' => $lesson->id,
-            'completed_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+            'completed_at' => now(), 'server_verified_at' => now(), 'created_at' => now(), 'updated_at' => now(),
         ]);
         QuizAttempt::create([
             'user_id' => $student->id, 'quiz_id' => $quiz->id,
@@ -826,3 +826,4 @@ test('official completion issues the automatic certificate even when the legacy 
         ->and(DB::table('certificates')->where('user_id', $student->id)->where('course_id', $course->id)->count())->toBe(1)
         ->and(DB::table('certificates')->where('user_id', $student->id)->where('course_id', $course->id)->value('title'))->toBe('Certificate of Completion');
 });
+

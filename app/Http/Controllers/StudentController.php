@@ -443,6 +443,34 @@ class StudentController extends Controller
             ? $this->courseCompletion->isReady($course, $enrollment)
             : false;
 
+        $prerequisiteIds = collect($course->prerequisite_ids ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+        $completedPrerequisiteIds = Enrollment::query()
+            ->where('user_id', $auth->id)
+            ->whereIn('course_id', $prerequisiteIds)
+            ->where('completion_status', MicrocredentialCompletionService::STATUS_COMPLETED)
+            ->pluck('course_id')
+            ->map(fn ($id) => (int) $id);
+        $prerequisitesMet = $prerequisiteIds->diff($completedPrerequisiteIds)->isEmpty();
+        $prerequisites = Course::query()
+            ->whereIn('id', $prerequisiteIds)
+            ->orderBy('title')
+            ->get(['id', 'title'])
+            ->map(fn (Course $prerequisite) => (object) [
+                'id' => $prerequisite->id,
+                'title' => $prerequisite->title,
+                'completed' => $completedPrerequisiteIds->contains((int) $prerequisite->id),
+            ]);
+        $missingPrerequisiteTitles = $prerequisiteIds
+            ->diff($completedPrerequisiteIds)
+            ->map(function ($missingId) use ($prerequisites) {
+                return $prerequisites->firstWhere('id', (int) $missingId)?->title
+                    ?? 'Unavailable prerequisite course';
+            })
+            ->values();
+
         return view('student.courses.description', [
             'user' => UserPresenter::student($auth),
             'course' => (object) [
@@ -475,6 +503,9 @@ class StudentController extends Controller
             'is_completed' => $enrollment?->completion_status === MicrocredentialCompletionService::STATUS_COMPLETED,
             'completion_ready' => $completionReady,
             'progress_percent' => $progressPercent,
+            'prerequisites' => $prerequisites,
+            'prerequisites_met' => $prerequisitesMet,
+            'missing_prerequisite_titles' => $missingPrerequisiteTitles,
         ]);
     }
 
@@ -484,6 +515,37 @@ class StudentController extends Controller
     {
         $auth = Auth::user();
         $course = Course::findOrFail($id);
+        $requiredPrerequisiteIds = collect($course->prerequisite_ids ?? [])
+            ->map(fn ($prerequisiteId) => (int) $prerequisiteId)
+            ->filter(fn ($prerequisiteId) => $prerequisiteId > 0)
+            ->unique()
+            ->values();
+
+        if ($requiredPrerequisiteIds->isNotEmpty()) {
+            $completedPrerequisiteIds = Enrollment::query()
+                ->where('user_id', $auth->id)
+                ->whereIn('course_id', $requiredPrerequisiteIds)
+                ->where('completion_status', MicrocredentialCompletionService::STATUS_COMPLETED)
+                ->pluck('course_id')
+                ->map(fn ($prerequisiteId) => (int) $prerequisiteId);
+            $missingPrerequisiteIds = $requiredPrerequisiteIds->diff($completedPrerequisiteIds);
+
+            if ($missingPrerequisiteIds->isNotEmpty()) {
+                $missingTitles = Course::query()
+                    ->whereIn('id', $missingPrerequisiteIds)
+                    ->orderBy('title')
+                    ->pluck('title')
+                    ->all();
+                if (count($missingTitles) < $missingPrerequisiteIds->count()) {
+                    $missingTitles[] = 'an unavailable prerequisite course';
+                }
+
+                return back()->withErrors([
+                    'prerequisites' => 'Complete these prerequisite courses before enrolling: '
+                        .implode(', ', $missingTitles).'.',
+                ]);
+            }
+        }
 
         $enrollment = Enrollment::firstOrCreate(
             ['user_id' => $auth->id, 'course_id' => $course->id],
@@ -1891,3 +1953,4 @@ class StudentController extends Controller
         return $choice;
     }
 }
+
