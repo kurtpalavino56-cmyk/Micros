@@ -46,17 +46,17 @@
 
     .hero__eyebrow {
         display: inline-flex;
-        align-items: center;
+        align-items: left;
         gap: 0.5rem;
-        background: var(--gold);
-        color: var(--navy-dark);
+        /* background: var(--gold); */
+        color: var(--gold);
         border-radius: 999px;
         padding: 0.58rem 1.2rem;
-        font-size: 0.8rem;
+        font-size: 1rem;
         text-transform: uppercase;
         letter-spacing: 0.12em;
         font-weight: 700;
-        margin-bottom: 1.2rem;
+        margin-bottom: 1rem;
     }
 
     .hero__title {
@@ -345,7 +345,7 @@
         display: block;
         width: 100%;
         height: 78.14vw;
-        margin: -27.35vw 0 0;
+        margin: -31vw 0 0;
         background: url('<?php echo e(asset('Images/divider.png')); ?>') center center / 100% auto no-repeat;
         transform: scaleY(0.7);
         transform-origin: top center;
@@ -788,7 +788,7 @@
         <div>
             <div class="hero__eyebrow">The Official Platform for PSU Microcredential</div>
             <h1 class="hero__title">Learn smarter. <span>UpSkill</span> faster.</h1>
-            <p class="hero__subtitle">Explore practical microcredentials designed for students, faculty, and professionals who want to build real-world skills at PSU.</p>
+            <p class="hero__subtitle">Explore practical microcredentials designed for students, people, and professionals who want to build real-world skills at PSU.</p>
 
             <div class="hero__actions">
                 <a href="<?php echo e(url('/register')); ?>" class="btn btn-gold hero__cta">Get Started</a>
