@@ -562,6 +562,13 @@ class FacultyController extends Controller
             'related_skills_csv' => ['nullable', 'string', 'max:4000'],
         ]);
 
+        $selectedPrerequisiteIds = $this->prerequisiteIdsFrom($request, $course->id);
+        if ($this->wouldCreatePrerequisiteCycle((int) $course->id, $selectedPrerequisiteIds)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'prerequisite_ids' => 'These prerequisites would create a course dependency cycle. Choose different prerequisite courses.',
+            ]);
+        }
+
         $title = trim($data['title']);
         $hours = (float) ($data['duration'] ?? 0);
 
@@ -1248,17 +1255,76 @@ class FacultyController extends Controller
      */
     private function prerequisiteOptions(?int $excludeId = null)
     {
+        $graph = $this->prerequisiteGraph();
+
         return Course::query()
             ->where('is_approved', true)
             ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
             ->orderBy('title')
             ->get(['id', 'title', 'category'])
+            ->filter(function (Course $candidate) use ($excludeId, $graph) {
+                if (! $excludeId) {
+                    return true;
+                }
+
+                $visited = [];
+
+                // A course that already depends on the edited course cannot
+                // be selected as its prerequisite without making a cycle.
+                return ! $this->courseDependsOn((int) $candidate->id, $excludeId, $graph, $visited);
+            })
             ->map(fn (Course $c) => (object) [
                 'id' => $c->id,
                 'title' => $c->title,
                 'category' => $c->category,
             ])
             ->values();
+    }
+
+    /** @return array<int, list<int>> */
+    private function prerequisiteGraph(): array
+    {
+        return Course::query()
+            ->get(['id', 'prerequisite_ids'])
+            ->mapWithKeys(fn (Course $course) => [
+                (int) $course->id => array_map('intval', (array) ($course->prerequisite_ids ?? [])),
+            ])
+            ->all();
+    }
+
+    private function courseDependsOn(int $courseId, int $targetId, array $graph, array &$visited): bool
+    {
+        if ($courseId === $targetId) {
+            return true;
+        }
+
+        if (isset($visited[$courseId])) {
+            return false;
+        }
+        $visited[$courseId] = true;
+
+        foreach ($graph[$courseId] ?? [] as $prerequisiteId) {
+            if ($this->courseDependsOn((int) $prerequisiteId, $targetId, $graph, $visited)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function wouldCreatePrerequisiteCycle(int $courseId, array $prerequisiteIds): bool
+    {
+        $graph = $this->prerequisiteGraph();
+        $graph[$courseId] = array_map('intval', $prerequisiteIds);
+
+        foreach ($prerequisiteIds as $prerequisiteId) {
+            $visited = [];
+            if ($this->courseDependsOn((int) $prerequisiteId, $courseId, $graph, $visited)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** Clean, de-duplicated prerequisite ids from the form. */
@@ -1518,4 +1584,5 @@ class FacultyController extends Controller
         return back()->with('success', 'Badge saved and linked to this course.');
     }
 }
+
 

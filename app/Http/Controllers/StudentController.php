@@ -576,6 +576,14 @@ class StudentController extends Controller
     {
         $auth = Auth::user();
         $course = Course::with(['modules.lessons', 'modules.quiz.questions'])->findOrFail($id);
+        $enrollment = Enrollment::where('user_id', $auth->id)
+            ->where('course_id', $course->id)
+            ->first();
+
+        if (! $enrollment) {
+            return redirect()->route('courses.show', $course->id)
+                ->withErrors(['enrollment' => 'Enroll in this course before opening its lessons.']);
+        }
 
         $modules = $course->modules->map(fn ($m) => (object) [
             'id' => $m->id,
@@ -614,8 +622,6 @@ class StudentController extends Controller
                 })->values()->all(),
             ] : null,
         ])->values();
-
-        $enrollment = Enrollment::where('user_id', $auth->id)->where('course_id', $course->id)->first();
 
         // Previously saved player state, so returning students pick up
         // exactly where they left off (completed lessons + quiz scores).
@@ -737,6 +743,96 @@ class StudentController extends Controller
             'quiz_unlocks' => (object) $quizUnlocks,
             'quiz_attempts' => (object) $quizAttempts,
         ]);
+    }
+
+    /**
+     * Record when an enrolled student opens a lesson. Completion is recorded
+     * separately after a minimum server-measured reading time.
+     */
+    public function startLesson(int $courseId, int $lessonId, Request $request)
+    {
+        $student = Auth::user();
+        Enrollment::query()
+            ->where('user_id', $student->id)
+            ->where('course_id', $courseId)
+            ->firstOrFail();
+
+        CourseLesson::query()
+            ->where('course_id', $courseId)
+            ->findOrFail($lessonId);
+
+        $request->session()->put(
+            $this->lessonTrackingSessionKey((int) $student->id, $courseId, $lessonId),
+            now()->timestamp
+        );
+
+        return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Record a lesson completion only after an enrolled student has opened
+     * that lesson and spent the minimum reading interval on it.
+     */
+    public function completeLesson(int $courseId, int $lessonId, Request $request)
+    {
+        $student = Auth::user();
+        $enrollment = Enrollment::query()
+            ->where('user_id', $student->id)
+            ->where('course_id', $courseId)
+            ->firstOrFail();
+
+        $course = Course::with('modules.lessons')->findOrFail($courseId);
+        $lesson = CourseLesson::query()
+            ->where('course_id', $courseId)
+            ->findOrFail($lessonId);
+
+        $alreadyVerified = DB::table('lesson_completions')
+            ->where('user_id', $student->id)
+            ->where('lesson_id', $lesson->id)
+            ->whereNotNull('server_verified_at')
+            ->exists();
+
+        $sessionKey = $this->lessonTrackingSessionKey((int) $student->id, $courseId, $lessonId);
+        $openedAt = (int) $request->session()->get($sessionKey, 0);
+        if (! $alreadyVerified && (! $openedAt || now()->timestamp - $openedAt < 5)) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Open the lesson and spend at least five seconds on it before marking it complete.',
+            ], 422);
+        }
+
+        $this->progressService->persistLessonCompletions(
+            $course,
+            $student,
+            [(string) $lesson->id]
+        );
+
+        $lessonIds = $course->modules->flatMap(fn ($module) => $module->lessons)->pluck('id');
+        $verifiedLessonIds = DB::table('lesson_completions')
+            ->where('user_id', $student->id)
+            ->whereIn('lesson_id', $lessonIds)
+            ->whereNotNull('server_verified_at')
+            ->pluck('lesson_id')
+            ->map(fn ($id) => (string) $id)
+            ->all();
+
+        $state = (array) ($enrollment->progress_state ?? []);
+        $state['completed_lessons'] = $this->progressService->resolveCompletedLessons(
+            $course,
+            $verifiedLessonIds,
+            $enrollment
+        );
+        $enrollment->progress_state = $state;
+        $enrollment->save();
+        $this->progressService->syncLessonsCompletedFlag($course, $enrollment);
+        $request->session()->forget($sessionKey);
+
+        return response()->json(['ok' => true]);
+    }
+
+    private function lessonTrackingSessionKey(int $userId, int $courseId, int $lessonId): string
+    {
+        return 'lesson_tracking.'.$userId.'.'.$courseId.'.'.$lessonId;
     }
 
     /**
@@ -934,10 +1030,10 @@ class StudentController extends Controller
 
         $student = Auth::user();
         $course = Course::with('modules.lessons')->findOrFail($id);
-        $enrollment = Enrollment::firstOrCreate(
-            ['user_id' => $student->id, 'course_id' => $course->id],
-            ['enrolled_at' => now(), 'progress_percent' => 0, 'is_completed' => false]
-        );
+        $enrollment = Enrollment::query()
+            ->where('user_id', $student->id)
+            ->where('course_id', $course->id)
+            ->firstOrFail();
 
         if (isset($data['retake_check'])) {
             $module = $course->modules->get((int) $data['retake_check']);
@@ -970,14 +1066,22 @@ class StudentController extends Controller
             (int) $student->id
         );
         $percent = $this->progressService->calculateProgressPercent($course, $moduleScores);
-        $completedKeys = array_values($data['completed_lessons'] ?? []);
+        $courseLessonIds = $course->modules
+            ->flatMap(fn ($module) => $module->lessons)
+            ->pluck('id');
+        $completedKeys = DB::table('lesson_completions')
+            ->where('user_id', $student->id)
+            ->whereIn('lesson_id', $courseLessonIds)
+            ->whereNotNull('server_verified_at')
+            ->pluck('lesson_id')
+            ->map(fn ($lessonId) => (string) $lessonId)
+            ->all();
         $enrollment->progress_percent = $percent;
         $enrollment->progress_state = [
             'completed_lessons' => $this->progressService->resolveCompletedLessons($course, $completedKeys, $enrollment),
             'module_scores' => $moduleScores,
         ];
         $enrollment->save();
-        $this->progressService->persistLessonCompletions($course, $student, $completedKeys);
         $this->progressService->syncLessonsCompletedFlag($course, $enrollment);
 
         $quizUnlocks = [];
@@ -1167,7 +1271,7 @@ class StudentController extends Controller
     {
         $auth = Auth::user();
 
-        $badges = UserBadge::with('badge')
+        $badges = UserBadge::with(['badge.pathway', 'badge.courses:id,title,badge_id'])
             ->where('user_id', $auth->id)
             ->latest('earned_at')
             ->get()
@@ -1176,6 +1280,17 @@ class StudentController extends Controller
                 'description' => $ub->badge->description ?? '',
                 'icon_url' => $ub->badge->icon_url ?? null,
                 'earned_at' => $ub->earned_at,
+                'badge_level' => $ub->badge->badge_level ?? null,
+                'pqf_level' => $ub->pqf_level_snapshot ?: ($ub->badge->pqf_level ?? null),
+                'issuing_institution' => $ub->badge->issuing_institution ?? null,
+                'pathway_name' => $ub->badge?->pathway?->name,
+                'course_names' => $ub->badge?->courses?->pluck('title')->filter()->values() ?? collect(),
+                'credential_uid' => $ub->credential_uid,
+                'status' => $ub->status ?: 'active',
+                'revoked_at' => $ub->revoked_at,
+                'revocation_reason' => $ub->revocation_reason,
+                'competencies' => $ub->competencies_snapshot ?? [],
+                'learning_outcomes' => $ub->learning_outcomes_snapshot ?? [],
             ])
             ->values();
 
@@ -1953,4 +2068,5 @@ class StudentController extends Controller
         return $choice;
     }
 }
+
 

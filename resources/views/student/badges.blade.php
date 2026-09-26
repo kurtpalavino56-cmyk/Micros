@@ -96,12 +96,28 @@
     /* Recently Earned */
     .section-head{font-size:24px;margin:0 0 18px;color:var(--navy);}
     .badge-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:24px;}
-    .badge-card{background:var(--badge-bg);border-radius:20px;padding:20px;text-align:center;position:relative;box-shadow:var(--shadow);}
+    .badge-card{display:block;width:100%;min-height:340px;padding:0;border:0;border-radius:20px;background:transparent;color:inherit;text-align:inherit;perspective:1200px;cursor:pointer;}
+    .badge-card:focus-visible{outline:3px solid #2fb3ab;outline-offset:4px;border-radius:22px;}
+    .badge-card__inner{position:relative;display:block;min-height:340px;height:100%;transform-style:preserve-3d;transition:transform .65s cubic-bezier(.2,.75,.25,1);}
+    .badge-card.is-flipped .badge-card__inner{transform:rotateY(180deg);}
+    .badge-face{position:absolute;inset:0;display:block;min-height:340px;padding:20px;border-radius:20px;box-shadow:var(--shadow);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:auto;}
+    .badge-front{background:var(--badge-bg);text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+    .badge-back{background:#fff;border:1px solid #e7eaf2;transform:rotateY(180deg);text-align:left;}
     .badge-time{position:absolute;top:16px;right:18px;font-size:12px;color:var(--muted);}
-    .badge-icon{width:90px;height:90px;border-radius:16px;background:var(--thumb);margin:28px auto 18px;background-size:cover;background-position:center;}
-    .badge-card h4{margin:0 0 10px;color:var(--navy);font-size:18px;font-weight:800;line-height:1.3;}
-    .badge-card .desc{color:var(--muted);font-size:13px;margin:0 0 18px;line-height:1.45;}
+    .badge-icon{width:90px;height:90px;border-radius:16px;background:var(--thumb);margin:28px auto 18px;background-size:cover;background-position:center;display:grid;place-items:center;overflow:hidden;}
+    .badge-icon img{width:100%;height:100%;object-fit:cover;}
+    .badge-title{display:block;margin:0 0 10px;color:var(--navy);font-size:18px;font-weight:800;line-height:1.3;}
+    .badge-card .desc{display:block;color:var(--muted);font-size:13px;margin:0 0 18px;line-height:1.45;}
     .badge-earned-pill{display:inline-block;background:var(--gold);color:var(--navy);font-weight:800;font-size:13px;padding:8px 22px;border-radius:999px;}
+    .badge-detail-title{display:block;font-size:18px;font-weight:800;color:var(--navy);margin:0 0 12px;padding-right:28px;}
+    .badge-details{display:grid;gap:9px;margin:0;}
+    .badge-detail{display:block;border-bottom:1px solid #edf0f5;padding-bottom:8px;}
+    .badge-detail dt{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin-bottom:3px;}
+    .badge-detail dd{font-size:13px;color:#202642;margin:0;line-height:1.45;overflow-wrap:anywhere;}
+    .badge-detail ul{margin:4px 0 0;padding-left:18px;}
+    .badge-status{display:inline-block;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:800;background:#ecfdf3;color:#067647;}
+    .badge-status.is-revoked{background:#fff1f2;color:#b42318;}
+    .badge-flip-hint{display:block;font-size:12px;color:var(--muted);margin:14px 0 0;}
     .empty-state{border:1px dashed var(--line);border-radius:16px;padding:40px;text-align:center;color:var(--muted);grid-column:1/-1;}
 
     @media (max-width:980px){
@@ -165,14 +181,86 @@
         <h3 class="section-head">Recently Earned</h3>
         <div class="badge-grid">
             @forelse ($badges as $badge)
-                <div class="badge-card">
-                    <span class="badge-time">{{ $badge->earned_at?->diffForHumans() ?? '' }}</span>
-                    <div class="badge-icon" @if($badge->icon_url) style="background-image:url('{{ $badge->icon_url }}')" @endif></div>
-                    <h4>{{ $badge->name }}</h4>
-                    @if($badge->description)
-                        <p class="desc">{{ $badge->description }}</p>
-                    @endif
-                    <span class="badge-earned-pill">Earned</span>
+                <div class="badge-card" role="button" tabindex="0" aria-expanded="false"
+                        aria-label="Show details for {{ $badge->name }}">
+                    <span class="badge-card__inner">
+                        <span class="badge-face badge-front" data-badge-face="front">
+                            <span class="badge-time">{{ $badge->earned_at?->diffForHumans() ?? '' }}</span>
+                            <span class="badge-icon">
+                                @if($badge->icon_url)
+                                    <img src="{{ $badge->icon_url }}" alt="" loading="lazy">
+                                @else
+                                    <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                                        <path d="M12 3l2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3z"/>
+                                    </svg>
+                                @endif
+                            </span>
+                            <span class="badge-title">{{ $badge->name }}</span>
+                            @if($badge->description)
+                                <span class="desc">{{ $badge->description }}</span>
+                            @endif
+                            <span class="badge-earned-pill">{{ strtolower($badge->status ?? 'active') === 'revoked' ? 'Revoked' : 'Earned' }}</span>
+                            <span class="badge-flip-hint">Click or press Enter to view details</span>
+                        </span>
+                        <span class="badge-face badge-back" data-badge-face="back" aria-hidden="true">
+                            <span class="badge-detail-title">{{ $badge->name }}</span>
+                            <dl class="badge-details">
+                                <div class="badge-detail">
+                                    <dt>Date received</dt>
+                                    <dd>{{ $badge->earned_at?->format('F j, Y') ?? 'Date unavailable' }}</dd>
+                                </div>
+                                @if($badge->badge_level)
+                                    <div class="badge-detail"><dt>Badge level</dt><dd>{{ $badge->badge_level }}</dd></div>
+                                @endif
+                                @if($badge->pqf_level)
+                                    <div class="badge-detail"><dt>PQF level</dt><dd>{{ $badge->pqf_level }}</dd></div>
+                                @endif
+                                @if($badge->issuing_institution)
+                                    <div class="badge-detail"><dt>Issued by</dt><dd>{{ $badge->issuing_institution }}</dd></div>
+                                @endif
+                                @if($badge->pathway_name)
+                                    <div class="badge-detail"><dt>Pathway</dt><dd>{{ $badge->pathway_name }}</dd></div>
+                                @endif
+                                @if($badge->course_names->isNotEmpty())
+                                    <div class="badge-detail"><dt>Related course</dt><dd>{{ $badge->course_names->implode(', ') }}</dd></div>
+                                @endif
+                                @if(!empty($badge->competencies))
+                                    <div class="badge-detail">
+                                        <dt>Competencies</dt>
+                                        <dd><ul>
+                                            @foreach($badge->competencies as $competency)
+                                                <li>{{ is_array($competency) ? ($competency['title'] ?? $competency['name'] ?? 'Competency') : $competency }}</li>
+                                            @endforeach
+                                        </ul></dd>
+                                    </div>
+                                @endif
+                                @if(!empty($badge->learning_outcomes))
+                                    <div class="badge-detail">
+                                        <dt>Learning outcomes</dt>
+                                        <dd><ul>
+                                            @foreach($badge->learning_outcomes as $outcome)
+                                                <li>{{ is_array($outcome) ? trim(($outcome['code'] ?? '').' '.($outcome['description'] ?? '')) : $outcome }}</li>
+                                            @endforeach
+                                        </ul></dd>
+                                    </div>
+                                @endif
+                                @if($badge->credential_uid)
+                                    <div class="badge-detail"><dt>Credential ID</dt><dd>{{ $badge->credential_uid }}</dd></div>
+                                @endif
+                                <div class="badge-detail">
+                                    <dt>Status</dt>
+                                    <dd><span class="badge-status {{ strtolower($badge->status ?? 'active') === 'revoked' ? 'is-revoked' : '' }}">{{ ucfirst($badge->status ?? 'active') }}</span></dd>
+                                </div>
+                                @if($badge->revoked_at)
+                                    <div class="badge-detail"><dt>Revoked on</dt><dd>{{ $badge->revoked_at->format('F j, Y') }}</dd></div>
+                                @endif
+                                @if($badge->revocation_reason)
+                                    <div class="badge-detail"><dt>Revocation reason</dt><dd>{{ $badge->revocation_reason }}</dd></div>
+                                @endif
+                            </dl>
+                            <span class="badge-flip-hint">Click to return to badge</span>
+                        </span>
+                    </span>
                 </div>
             @empty
                 <div class="empty-state">
@@ -209,6 +297,31 @@
 
     {{-- Shared responsiveness layer (drawer nav + grid stacking) --}}
     @include('components.responsive')
+
+<script>
+    document.querySelectorAll('.badge-card').forEach(function (card) {
+        var front = card.querySelector('[data-badge-face="front"]');
+        var back = card.querySelector('[data-badge-face="back"]');
+        var title = card.querySelector('.badge-title').textContent.trim();
+
+        function toggleBadge() {
+            var flipped = card.classList.toggle('is-flipped');
+            card.setAttribute('aria-expanded', flipped ? 'true' : 'false');
+            card.setAttribute('aria-label', (flipped ? 'Hide details for ' : 'Show details for ') + title);
+            front.setAttribute('aria-hidden', flipped ? 'true' : 'false');
+            back.setAttribute('aria-hidden', flipped ? 'false' : 'true');
+        }
+
+        card.addEventListener('click', toggleBadge);
+        card.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleBadge();
+            }
+        });
+    });
+</script>
 </body>
 </html>
+
 
