@@ -55,17 +55,27 @@ class AdminController extends Controller
 
         [$enrollmentByCourse, $completionRate] = $this->courseCharts();
 
-        $activeCourses = Course::query()
+        $activeCourseModels = Course::query()
             ->where('approval_status', '!=', 'draft')   // drafts are faculty-private
             ->withCount('enrollments')
             ->orderByDesc('enrollments_count')
             ->limit(4)
-            ->get()
+            ->get();
+
+        // N+1 fix: average progress was queried per course. One grouped
+        // query covers all four rows.
+        $avgProgressByCourse = DB::table('enrollments')
+            ->whereIn('course_id', $activeCourseModels->pluck('id')->all() ?: [0])
+            ->select('course_id', DB::raw('AVG(progress_percent) as avg_progress'))
+            ->groupBy('course_id')
+            ->pluck('avg_progress', 'course_id');
+
+        $activeCourses = $activeCourseModels
             ->map(fn (Course $c) => (object) [
                 'title' => $c->title,
                 'meta' => $c->enrollments_count.' Students · 1 Faculty',
                 'thumbnail_url' => $c->thumbnail_url,
-                'percent' => (int) round((float) DB::table('enrollments')->where('course_id', $c->id)->avg('progress_percent')),
+                'percent' => (int) round((float) ($avgProgressByCourse[$c->id] ?? 0)),
             ])
             ->values();
 
@@ -208,8 +218,16 @@ class AdminController extends Controller
             $usersQuery->orderBy('created_at', $direction);
         }
 
+        // Scalability: only the columns the table renders, and paginated.
+        // Previously this loaded EVERY user row — including avatar_url, a
+        // LONGTEXT column holding base64 photos — into memory on each visit.
+        $users = $usersQuery
+            ->select(['id', 'first_name', 'last_name', 'username', 'email', 'role_id', 'user_code', 'is_active', 'created_at'])
+            ->paginate(20)
+            ->withQueryString();
+
         return view('admin.users.index', [
-            'users' => $usersQuery->get(),
+            'users' => $users,
             'q' => $query,
             'sort' => $sort,
             'direction' => $direction,

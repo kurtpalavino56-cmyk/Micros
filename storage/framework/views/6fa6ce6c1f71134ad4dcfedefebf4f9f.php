@@ -120,8 +120,13 @@
 
         /* Hide the desktop sidebar — navigation moves into the pill.
            Attribute selector + !important beats any per-page media query
-           that turns the sidebar into a horizontal row. */
-        aside.sidebar, aside[class~="sidebar"] { display: none !important; }
+           that turns the sidebar into a horizontal row. The student and
+           faculty sidebars use their own class names (.student-sidebar /
+           .faculty-sidebar), so they must be listed explicitly — previously
+           they stayed visible as full-height columns between 980–1024px and
+           never fed the floating menu at all. */
+        aside.sidebar, aside[class~="sidebar"],
+        aside.student-sidebar, aside.faculty-sidebar { display: none !important; }
         .nav-toggle { display: flex; }
 
         /* Admin pages indent .main by the sidebar width — remove it */
@@ -450,7 +455,9 @@
 
     /* ── Floating nav pill ─────────────────────────────────────────── */
     function buildNavPill() {
-        var sidebar = document.querySelector('aside.sidebar');
+        // Admin pages use aside.sidebar; student and faculty pages use their
+        // own class names. All three feed the floating menu on small screens.
+        var sidebar = document.querySelector('aside.sidebar, aside.student-sidebar, aside.faculty-sidebar');
 
         // Pages without a sidebar (Admin_Profile, Faculty_Students,
         // Student_Course_Enrollment, Explore_Courses, ...) previously got no
@@ -514,4 +521,4 @@
             if (window.innerWidth > 1024) closeNav();
         });
     }
-</script><?php /**PATH C:\Users\PaulV\Documents\MICROCREDENTIALS NEW ADDITIONS\UPSKILL - Microcredential Platform\resources\views/components/responsive.blade.php ENDPATH**/ ?>
+</script><?php /**PATH C:\Users\Kurt Palavino\Herd\UpSkill-Microcredential_Platform\resources\views/components/responsive.blade.php ENDPATH**/ ?>

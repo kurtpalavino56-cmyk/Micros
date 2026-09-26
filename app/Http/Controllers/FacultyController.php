@@ -110,12 +110,21 @@ class FacultyController extends Controller
     {
         $auth = Auth::user();
         $courses = Course::where('created_by', $auth->id)->withCount('enrollments')->get();
+        $courseIds = $courses->pluck('id')->all() ?: [0];
 
         // Teaching performance — monthly enrollments over the last 6
         // months, normalised to a percentage for the bar chart.
+        // N+1 fix: this ran one COUNT query per month (6 total). A single
+        // query now feeds every bucket, grouped in PHP so it stays portable
+        // across SQLite and MySQL.
         $months = collect(range(5, 0))->map(fn ($i) => now()->subMonths($i)->startOfMonth());
-        $counts = $months->map(fn (Carbon $m) => Enrollment::whereIn('course_id', $courses->pluck('id')->all() ?: [0])
-            ->whereYear('enrolled_at', $m->year)->whereMonth('enrolled_at', $m->month)->count());
+        $enrolledAts = Enrollment::whereIn('course_id', $courseIds)
+            ->where('enrolled_at', '>=', $months->first())
+            ->pluck('enrolled_at');
+
+        $counts = $months->map(fn (Carbon $m) => $enrolledAts
+            ->filter(fn ($ts) => Carbon::parse($ts)->isSameMonth($m))
+            ->count());
         $peak = max(1, (int) $counts->max());
 
         $performance = $months->map(fn (Carbon $m) => [
@@ -138,6 +147,13 @@ class FacultyController extends Controller
             return ['label' => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][$i], 'hours' => (int) ($dowCounts[$dow] ?? 0)];
         })->all();
 
+        // N+1 fix: average progress per course was queried one course at a
+        // time. A single grouped query covers the whole list.
+        $avgProgressByCourse = Enrollment::whereIn('course_id', $courseIds)
+            ->select('course_id', DB::raw('AVG(progress_percent) as avg_progress'))
+            ->groupBy('course_id')
+            ->pluck('avg_progress', 'course_id');
+
         return view('faculty.profile', [
             'user' => UserPresenter::faculty($auth),
             'languages' => ['English', 'Filipino'],
@@ -153,7 +169,7 @@ class FacultyController extends Controller
                 'category' => $c->level ?? 'Course',
                 'students' => (int) $c->enrollments_count,
                 'rating' => null,
-                'completion' => (int) round((float) Enrollment::where('course_id', $c->id)->avg('progress_percent')),
+                'completion' => (int) round((float) ($avgProgressByCourse[$c->id] ?? 0)),
                 'earnings' => '$0',
                 'status' => $c->statusLabel(),
                 'thumbnail_url' => $c->thumbnail_url,
@@ -231,14 +247,22 @@ class FacultyController extends Controller
         $enrollBase = Enrollment::whereIn('course_id', $courseIds);
 
         // Cumulative learner growth, one point per month for the last year.
-        $academyStats = collect(range(11, 0))->map(function ($i) use ($courseIds) {
+        // N+1 fix: this ran 12 separate COUNT queries (one per month). The
+        // cumulative total equals the number of learners whose FIRST
+        // enrollment happened on or before that month-end, so one pass over
+        // the enrollments feeds every point.
+        $firstEnrollmentAt = Enrollment::whereIn('course_id', $courseIds)
+            ->get(['user_id', 'enrolled_at'])
+            ->groupBy('user_id')
+            ->map(fn ($rows) => Carbon::parse($rows->min('enrolled_at')));
+
+        $academyStats = collect(range(11, 0))->map(function ($i) use ($firstEnrollmentAt) {
             $month = now()->subMonths($i);
+            $monthEnd = $month->copy()->endOfMonth();
 
             return [
                 'label' => $month->format('M j,')."\n".$month->format('Y'),
-                'value' => Enrollment::whereIn('course_id', $courseIds)
-                    ->where('enrolled_at', '<=', $month->copy()->endOfMonth())
-                    ->distinct()->count('user_id'),
+                'value' => $firstEnrollmentAt->filter(fn (Carbon $first) => $first->lte($monthEnd))->count(),
             ];
         })->all();
 
@@ -1411,7 +1435,9 @@ class FacultyController extends Controller
         }
 
         $course->certificate_mode = $data['certificate_mode'];
-        $course->certificate_title = $data['certificate_title'] ?: 'Certificate of Completion';
+        // nullable + absent from the request = key missing from $data —
+        // read with a fallback so saving certificate settings can't 500.
+        $course->certificate_title = ($data['certificate_title'] ?? null) ?: 'Certificate of Completion';
         $course->certificate_enabled = true;
 
         if ($data['certificate_mode'] === 'auto') {

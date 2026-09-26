@@ -158,14 +158,18 @@
         .tag-gold   { background: var(--gold); color: var(--navy-dark); }
     </style>
 
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-
+    {{-- @vite is emitted once (top of <head>) — a second call here double-loaded
+         the same CSS/JS bundle on every page. --}}
     @stack('styles')
 </head>
 <body>
 
-    {{-- Navigation --}}
-    @include('components.navbar')
+    {{-- Navigation. Authenticated pages that render their own topbar (e.g.
+         onboarding) extend this layout with ['chrome' => 'auth'] so the
+         public navbar does not stack on top of the student header. --}}
+    @if (($chrome ?? 'public') !== 'auth')
+        @include('components.navbar')
+    @endif
 
     {{-- Page Content --}}
     <main>
@@ -173,7 +177,9 @@
     </main>
 
     {{-- Footer --}}
-    @include('components.footer')
+    @if (($chrome ?? 'public') !== 'auth')
+        @include('components.footer')
+    @endif
 
     <script>
         // No page-fade transitions — navigation is instant. This also fixes

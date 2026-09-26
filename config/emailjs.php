@@ -26,9 +26,21 @@
 |   EMAILJS_TEMPLATE_RESET=template_xxxxxxx
 |
 | The private key is under Account → General → API Keys in the EmailJS
-| dashboard. Turn OFF "Allow EmailJS API for non-browser applications"
-| being required only if sending fails — with the private key supplied,
-| server-side calls are permitted.
+| dashboard.
+|
+| IMPORTANT — the #1 reason server-side sending fails:
+| EmailJS blocks API calls that do not come from a browser by default.
+| In the EmailJS dashboard go to Account → Security and switch ON
+| "Allow EmailJS API for non-browser applications". Without that toggle
+| the API rejects Laravel's request (HTTP 403) and the reset form shows
+| "We could not send the email just now."
+|
+| Also check, if it still fails (the exact reason is written to
+| storage/logs/laravel.log, and shown on the form while APP_DEBUG=true):
+|   · the EmailJS template's "To Email" field contains {{to_email}}
+|   · template variables match: to_email, to_name, code, expires_in,
+|     logo_url, site_url, site_name
+|   · after editing .env, run: php artisan config:clear
 |
 */
 

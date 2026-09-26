@@ -187,6 +187,33 @@
             overflow-x: auto;
         }
 
+        /* Pagination */
+        .um-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+        }
+        .um-page-btn {
+            display: inline-block;
+            padding: 8px 18px;
+            border-radius: 999px;
+            background: var(--navy, #0d1b6e);
+            color: #fff;
+            font-weight: 700;
+            font-size: 13px;
+            text-decoration: none;
+        }
+        .um-page-btn:hover { background: #1232d4; }
+        .um-page-btn.is-disabled {
+            background: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .um-page-status { font-size: 12.5px; font-weight: 600; color: #6b7280; }
+
         /* Table */
         .um-table {
             width: 100%;
@@ -546,6 +573,27 @@
                         </tbody>
                     </table>
                 </div>
+
+                @if ($users->hasPages())
+                    <nav class="um-pagination" aria-label="User list pages">
+                        @if ($users->onFirstPage())
+                            <span class="um-page-btn is-disabled" aria-disabled="true">&laquo; Prev</span>
+                        @else
+                            <a class="um-page-btn" href="{{ $users->previousPageUrl() }}" rel="prev">&laquo; Prev</a>
+                        @endif
+
+                        <span class="um-page-status">
+                            {{ $users->firstItem() }}–{{ $users->lastItem() }} of {{ $users->total() }}
+                            &nbsp;·&nbsp; Page {{ $users->currentPage() }} of {{ $users->lastPage() }}
+                        </span>
+
+                        @if ($users->hasMorePages())
+                            <a class="um-page-btn" href="{{ $users->nextPageUrl() }}" rel="next">Next &raquo;</a>
+                        @else
+                            <span class="um-page-btn is-disabled" aria-disabled="true">Next &raquo;</span>
+                        @endif
+                    </nav>
+                @endif
             @endif
 
         </main>

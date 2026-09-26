@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AnalyticsEvent;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\QuizAttempt;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -17,28 +18,47 @@ class StudentProgressService
      * The submitted $scores array is retained in the signature for backwards
      * compatibility with existing callers, but is never trusted.
      *
+     * All attempts for the course's quizzes are fetched in ONE query and the
+     * latest-per-quiz pick happens in memory — previously each module fired
+     * its own attempt query (plus one per questions table lookup), which is
+     * what made dashboards with several enrolled courses so query-heavy.
+     *
      * @param array<string, int> $scores
      */
     public function earnedModuleScores(Course $course, array $scores, int $userId): array
     {
         $valid = [];
 
+        $quizzes = [];
         foreach ($course->modules as $moduleIndex => $module) {
-            if (! $module->quiz) {
-                continue;
+            if ($module->quiz) {
+                $quizzes[(int) $module->quiz->id] = [$moduleIndex, $module->quiz];
             }
+        }
 
-            $editedAt = $this->quizAttempts->lastEditedAt($module->quiz);
-            $attempt = $module->quiz->quizAttempts()
-                ->where('user_id', $userId)
-                ->whereHas('answers')
-                ->when($editedAt, fn ($query) => $query->where(function ($where) use ($editedAt) {
-                    $where->where('submitted_at', '>=', $editedAt)
-                        ->orWhere('created_at', '>=', $editedAt);
-                }))
-                ->with('answers')
-                ->latest('submitted_at')
-                ->first();
+        if (empty($quizzes)) {
+            return $valid;
+        }
+
+        $attemptsByQuiz = QuizAttempt::query()
+            ->where('user_id', $userId)
+            ->whereIn('quiz_id', array_keys($quizzes))
+            ->whereHas('answers')
+            ->with('answers')
+            ->latest('submitted_at')
+            ->latest('created_at')
+            ->get()
+            ->groupBy('quiz_id');
+
+        foreach ($quizzes as $quizId => [$moduleIndex, $quiz]) {
+            $editedAt = $this->quizAttempts->lastEditedAt($quiz);
+
+            // Candidates are already ordered newest-first; take the first
+            // one that post-dates the quiz's last edit (same rule as before).
+            $attempt = $attemptsByQuiz->get($quizId, collect())
+                ->first(fn (QuizAttempt $a) => ! $editedAt
+                    || ($a->submitted_at && $a->submitted_at->gte($editedAt))
+                    || ($a->created_at && $a->created_at->gte($editedAt)));
 
             if (! $attempt) {
                 continue;
@@ -89,7 +109,11 @@ class StudentProgressService
                 continue;
             }
 
-            $questionCount = $module->quiz->questions()->count();
+            // Use the eager-loaded questions collection when the controller
+            // provided it; only hit the database when it was not loaded.
+            $questionCount = $module->quiz->relationLoaded('questions')
+                ? $module->quiz->questions->count()
+                : $module->quiz->questions()->count();
             if ($questionCount === 0) {
                 continue;
             }

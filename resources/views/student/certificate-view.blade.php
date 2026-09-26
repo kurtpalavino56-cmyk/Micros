@@ -65,5 +65,8 @@
     </div>
     @endif
 </div>
+
+    {{-- Shared responsiveness layer (drawer nav + grid stacking) --}}
+    @include('components.responsive')
 </body>
 </html>

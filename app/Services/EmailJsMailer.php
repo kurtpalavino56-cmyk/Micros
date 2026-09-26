@@ -20,6 +20,26 @@ use Illuminate\Support\Facades\Log;
  */
 class EmailJsMailer
 {
+    /**
+     * Why the last send() call failed ('not_configured', 'rejected',
+     * 'connection'), or null when it succeeded. Surfaced on the reset form
+     * only while APP_DEBUG is on, so a misconfiguration can be diagnosed in
+     * seconds instead of guessing at a generic error banner.
+     */
+    protected ?string $lastFailure = null;
+
+    protected string $lastDetail = '';
+
+    public function lastFailure(): ?string
+    {
+        return $this->lastFailure;
+    }
+
+    public function lastDetail(): string
+    {
+        return $this->lastDetail;
+    }
+
     /** Send the 6-digit verification code. */
     public function sendVerificationCode(string $toEmail, string $toName, string $code): bool
     {
@@ -67,16 +87,28 @@ class EmailJsMailer
      */
     protected function send(string $template, array $params): bool
     {
+        $this->lastFailure = null;
+        $this->lastDetail = '';
+
         $serviceId = config('emailjs.service_id');
         $templateId = config("emailjs.templates.$template");
         $publicKey = config('emailjs.public_key');
         $privateKey = config('emailjs.private_key');
 
-        if (! $serviceId || ! $templateId || ! $privateKey) {
+        if (! $serviceId || ! $templateId || ! $publicKey || ! $privateKey) {
+            $this->lastFailure = 'not_configured';
+            $this->lastDetail = 'One or more EMAILJS_* values are missing from .env '
+                .'(service: '.($serviceId ? 'ok' : 'MISSING')
+                .', template: '.($templateId ? 'ok' : 'MISSING')
+                .', public key: '.($publicKey ? 'ok' : 'MISSING')
+                .', private key: '.($privateKey ? 'ok' : 'MISSING')
+                .'). Run "php artisan config:clear" after editing .env.';
+
             Log::warning('EmailJS is not configured; password-reset email not sent.', [
                 'template' => $template,
                 'has_service' => (bool) $serviceId,
                 'has_template' => (bool) $templateId,
+                'has_publickey' => (bool) $publicKey,
                 'has_privatekey' => (bool) $privateKey,
             ]);
 
@@ -98,6 +130,9 @@ class EmailJsMailer
                 return true;
             }
 
+            $this->lastFailure = 'rejected';
+            $this->lastDetail = 'EmailJS answered HTTP '.$response->status().': '.$response->body();
+
             Log::error('EmailJS rejected the request.', [
                 'template' => $template,
                 'status' => $response->status(),
@@ -106,6 +141,9 @@ class EmailJsMailer
 
             return false;
         } catch (\Throwable $e) {
+            $this->lastFailure = 'connection';
+            $this->lastDetail = $e->getMessage();
+
             Log::error('EmailJS request failed.', [
                 'template' => $template,
                 'message' => $e->getMessage(),

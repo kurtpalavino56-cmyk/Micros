@@ -324,12 +324,18 @@ class PageController extends Controller
     public function explore(Request $request)
     {
         $category = trim((string) $request->query('category', '')) ?: null;
+
+        // Paginated: the catalog previously loaded EVERY published course into
+        // memory (and rendered them all) on each visit — fine at 10 courses,
+        // a real problem at 500.
         $cards = Course::where('is_published', true)->where('is_approved', true)
             ->when($category, fn ($query) => $query->where('category', $category))
             ->orderByDesc('is_featured')
             ->orderBy('title')
-            ->get()
-            ->map(fn (Course $c) => [
+            ->paginate(12)
+            ->withQueryString();
+
+        $cards->setCollection($cards->getCollection()->map(fn (Course $c) => [
                 'title' => $c->title,
                 'description' => Str::limit((string) $c->description, 110),
                 'professor' => $c->instructor ?? 'Faculty',
@@ -339,7 +345,7 @@ class PageController extends Controller
                 'level' => $c->level ?? 'Beginner',
                 'image' => $c->thumbnail_url ? asset($c->thumbnail_url) : null,
                 'slug' => route('public.courses.show', $c->id),
-            ])->values()->all();
+            ])->values());
 
         return view('public.explore-courses', [
             'courses' => $cards,
@@ -376,8 +382,18 @@ class PageController extends Controller
             // joined a course yet. Their course list simply shows as empty.
             ->with(['enrollments.course'])
             ->orderBy('first_name')
-            ->get()
-            ->map(function (User $u) {
+            ->get();
+
+        // N+1 fix: certificate serials were looked up one query PER completed
+        // enrollment PER student. Fetch every certificate for the listed
+        // students in a single query and key it by "user_id-course_id".
+        $serials = Certificate::query()
+            ->whereIn('user_id', $students->pluck('id')->all() ?: [0])
+            ->get(['user_id', 'course_id', 'serial'])
+            ->keyBy(fn (Certificate $c) => $c->user_id.'-'.$c->course_id);
+
+        $students = $students
+            ->map(function (User $u) use ($serials) {
                 return (object) [
                     'name' => $u->name,
                     'student_id' => $u->student_id ?? $u->user_code,
@@ -386,13 +402,11 @@ class PageController extends Controller
                     // the QR can encode a real verification URL. Courses
                     // still in progress carry none, and the Blade shows no
                     // QR for them.
-                    'courses' => $u->enrollments->map(function ($e) use ($u) {
+                    'courses' => $u->enrollments->map(function ($e) use ($u, $serials) {
                         $serial = null;
 
                         if ($e->completion_status === MicrocredentialCompletionService::STATUS_COMPLETED) {
-                            $serial = Certificate::where('user_id', $u->id)
-                                ->where('course_id', $e->course_id)
-                                ->value('serial');
+                            $serial = $serials->get($u->id.'-'.$e->course_id)?->serial;
                         }
 
                         return [
