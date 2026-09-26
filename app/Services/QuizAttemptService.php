@@ -132,7 +132,11 @@ class QuizAttemptService
             return $quiz->questions_changed_at;
         }
 
-        $newestQuestion = $quiz->questions()->max('created_at');
+        // Prefer the eager-loaded collection (dashboards load questions for
+        // every quiz up front); query only when it was not loaded.
+        $newestQuestion = $quiz->relationLoaded('questions')
+            ? $quiz->questions->max('created_at')
+            : $quiz->questions()->max('created_at');
 
         return $newestQuestion ? Carbon::parse($newestQuestion) : null;
     }

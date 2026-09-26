@@ -95,6 +95,34 @@
         box-shadow: var(--shadow-card);
     }
 
+    /* Pagination */
+    .explore__pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 2.25rem;
+    }
+    .explore__page-btn {
+        display: inline-block;
+        padding: 0.55rem 1.3rem;
+        border-radius: 50px;
+        background: var(--navy);
+        color: var(--white);
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: background var(--transition), transform var(--transition);
+    }
+    .explore__page-btn:hover { background: var(--navy-dark); transform: translateY(-2px); }
+    .explore__page-btn.is-disabled {
+        background: var(--line);
+        color: var(--text-muted);
+        cursor: not-allowed;
+        transform: none;
+    }
+    .explore__page-status { font-size: 0.88rem; font-weight: 600; color: var(--text-muted); }
+
     @media (max-width: 520px) {
         .courses-grid { grid-template-columns: 1fr; }
     }
@@ -109,7 +137,7 @@
             <h1 class="explore__title">All Courses</h1>
             <p class="explore__sub">
                 Every published micro-credential from PSU faculty &mdash;
-                {{ count($courses) }} course{{ count($courses) === 1 ? '' : 's' }}
+                {{ $courses->total() }} course{{ $courses->total() === 1 ? '' : 's' }}
             </p>
         </div>
 
@@ -128,6 +156,24 @@
                     @include('components.course-card', ['course' => $course])
                 @endforeach
             </div>
+
+            @if ($courses->hasPages())
+                <nav class="explore__pagination" aria-label="Course pages">
+                    @if ($courses->onFirstPage())
+                        <span class="explore__page-btn is-disabled" aria-disabled="true">&laquo; Prev</span>
+                    @else
+                        <a class="explore__page-btn" href="{{ $courses->previousPageUrl() }}" rel="prev">&laquo; Prev</a>
+                    @endif
+
+                    <span class="explore__page-status">Page {{ $courses->currentPage() }} of {{ $courses->lastPage() }}</span>
+
+                    @if ($courses->hasMorePages())
+                        <a class="explore__page-btn" href="{{ $courses->nextPageUrl() }}" rel="next">Next &raquo;</a>
+                    @else
+                        <span class="explore__page-btn is-disabled" aria-disabled="true">Next &raquo;</span>
+                    @endif
+                </nav>
+            @endif
         @else
             <div class="explore__empty">No published courses yet. Check back soon!</div>
         @endif

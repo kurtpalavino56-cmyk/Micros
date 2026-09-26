@@ -1,4 +1,6 @@
-@extends('layouts.app')
+{{-- chrome=auth: this page is a signed-in flow with its own student topbar;
+     the layout must skip the public navbar + footer. --}}
+@extends('layouts.app', ['chrome' => 'auth'])
 
 @section('title', 'Welcome to UpSkill PSU')
 

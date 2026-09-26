@@ -88,7 +88,10 @@ class StudentController extends Controller
             return redirect()->route('onboarding.show');
         }
 
-        $enrollments = Enrollment::with('course.modules.quiz')
+        // Eager-load quiz questions as well: the progress sync below reads
+        // per-quiz question counts and newest-question timestamps, and
+        // lazy-loading those cost several queries per module per course.
+        $enrollments = Enrollment::with('course.modules.quiz.questions')
             ->where('user_id', $auth->id)
             ->get();
 
@@ -154,7 +157,7 @@ class StudentController extends Controller
     {
         $auth = Auth::user();
 
-        $enrollments = Enrollment::with('course.modules.quiz')
+        $enrollments = Enrollment::with('course.modules.quiz.questions')
             ->where('user_id', $auth->id)
             ->get();
 
@@ -183,12 +186,16 @@ class StudentController extends Controller
         $auth = Auth::user();
         $frameworks = $this->stackingProgress->progressForUser((int) $auth->id);
 
-        $frameworks = $frameworks->map(function (array $item) use ($auth) {
+        // N+1 fix: recognition records were fetched one query per framework.
+        $recognitions = AcademicCreditRecognition::query()
+            ->where('user_id', $auth->id)
+            ->whereIn('stacking_framework_id', $frameworks->pluck('framework.id')->all() ?: [0])
+            ->get()
+            ->keyBy('stacking_framework_id');
+
+        $frameworks = $frameworks->map(function (array $item) use ($auth, $recognitions) {
             $framework = $item['framework'];
-            $record = AcademicCreditRecognition::query()
-                ->where('user_id', $auth->id)
-                ->where('stacking_framework_id', $framework->id)
-                ->first();
+            $record = $recognitions->get($framework->id);
 
             $item['recognition'] = $record;
             $item['can_request_recognition'] = $this->academicCreditRecognition->canRequestRecognition($auth, $framework);
@@ -269,7 +276,9 @@ class StudentController extends Controller
             'school' => $this->resolveSchool($data),
             'address' => $data['address'],
             'career_goal' => $data['career_goal'],
-            'pathway_id' => $data['pathway_id'],
+            // nullable fields are dropped from validated data when absent —
+            // read with a fallback so onboarding can't 500 here.
+            'pathway_id' => $data['pathway_id'] ?? null,
             'bio' => $bio,
             'profile_completed' => true,
         ];
@@ -321,6 +330,9 @@ class StudentController extends Controller
 
         $query = Course::query()
             ->where('is_published', true)
+            // N+1 fix: the card mapper fell back to lessons()->count() per
+            // course. Count them all in the main query instead.
+            ->withCount('lessons')
             ->when($filters['q'], function ($q) use ($filters) {
                 $term = '%'.$filters['q'].'%';
                 $q->where(function ($sub) use ($term) {
@@ -379,7 +391,7 @@ class StudentController extends Controller
             'level' => $c->level,
             'instructor' => $c->instructor,
             'duration' => $c->duration,
-            'lessons_count' => (int) ($c->lessons_count ?: $c->lessons()->count()),
+            'lessons_count' => (int) $c->lessons_count,
             'thumbnail_url' => $c->thumbnail_url ? asset($c->thumbnail_url) : null,
         ])->values();
 
@@ -402,7 +414,10 @@ class StudentController extends Controller
     public function show(int $id)
     {
         $auth = Auth::user();
-        $course = Course::with(['modules.lessons', 'quizzes.questions', 'creator'])->findOrFail($id);
+        // modules.quiz.questions added: syncEnrollmentProgress() walks every
+        // module quiz and would otherwise lazy-load quiz + questions per
+        // module on each visit.
+        $course = Course::with(['modules.lessons', 'modules.quiz.questions', 'quizzes.questions', 'creator'])->findOrFail($id);
 
         $instructor = $course->creator;
 

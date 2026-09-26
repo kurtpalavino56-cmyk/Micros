@@ -60,7 +60,10 @@ app('view')->composer('Student_*', function (View $view) {
 Route::get('/', [PageController::class, 'homepage'])->name('Homepage');
 
 Route::get('/login', [LoginController::class, 'show'])->name('login');
-Route::post('/login', [LoginController::class, 'store'])->name('login.store');
+// Throttled like the password-reset endpoints: without a limit, account
+// passwords could be brute-forced through this form.
+Route::post('/login', [LoginController::class, 'store'])
+    ->middleware('throttle:6,1')->name('login.store');
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
 Route::get('/register', [RegisterController::class, 'show'])->name('register');
