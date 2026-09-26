@@ -46,17 +46,17 @@
 
     .hero__eyebrow {
         display: inline-flex;
-        align-items: center;
+        align-items: left;
         gap: 0.5rem;
-        background: var(--gold);
-        color: var(--navy-dark);
+        /* background: var(--gold); */
+        color: var(--gold);
         border-radius: 999px;
         padding: 0.58rem 1.2rem;
-        font-size: 0.8rem;
+        font-size: 1rem;
         text-transform: uppercase;
         letter-spacing: 0.12em;
         font-weight: 700;
-        margin-bottom: 1.2rem;
+        margin-bottom: 1rem;
     }
 
     .hero__title {
@@ -345,7 +345,7 @@
         display: block;
         width: 100%;
         height: 78.14vw;
-        margin: -27.35vw 0 0;
+        margin: -31vw 0 0;
         background: url('<?php echo e(asset('Images/divider.png')); ?>') center center / 100% auto no-repeat;
         transform: scaleY(0.7);
         transform-origin: top center;
@@ -788,7 +788,7 @@
         <div>
             <div class="hero__eyebrow">The Official Platform for PSU Microcredential</div>
             <h1 class="hero__title">Learn smarter. <span>UpSkill</span> faster.</h1>
-            <p class="hero__subtitle">Explore practical microcredentials designed for students, faculty, and professionals who want to build real-world skills at PSU.</p>
+            <p class="hero__subtitle">Explore practical microcredentials designed for students, people, and professionals who want to build real-world skills at PSU.</p>
 
             <div class="hero__actions">
                 <a href="<?php echo e(url('/register')); ?>" class="btn btn-gold hero__cta">Get Started</a>
@@ -1120,10 +1120,14 @@
     <div class="certfloat">
         <button type="button" class="certfloat__close" onclick="closeCertFloat()" aria-label="Close">&times;</button>
 
-        <div class="certfloat__verified">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-            Verified Certificate
-        </div>
+        <?php if(($scannedCertificate['status'] ?? 'active') === 'revoked'): ?>
+            <div class="certfloat__verified" style="background:#fff1f2;color:#b42318" role="status">Revoked Certificate</div>
+        <?php else: ?>
+            <div class="certfloat__verified">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                Verified Certificate
+            </div>
+        <?php endif; ?>
 
         <?php echo $__env->make('components.certificate', ['cert' => $scannedCertificate], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
@@ -1166,5 +1170,6 @@ document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeCe
 <?php endif; ?>
 
 <?php $__env->stopSection(); ?>
+
 
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\Kurt Palavino\Herd\UpSkill-Microcredential_Platform\resources\views/public/home.blade.php ENDPATH**/ ?>
