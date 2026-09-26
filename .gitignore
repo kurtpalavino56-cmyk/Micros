@@ -27,3 +27,4 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /database/database.sqlite
+/storage/framework/views/*
