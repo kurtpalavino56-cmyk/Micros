@@ -117,8 +117,8 @@ Route::view('/privacy', 'public.privacy')->name('privacy');
 Route::view('/terms', 'public.terms')->name('terms');
 // ── Password reset ────────────────────────────────────────────────────
 // "Forgot Password?" on the login screen. Three steps: email -> 6-digit
-// code -> new password. The code is emailed through EmailJS from the
-// SERVER (see App\Services\EmailJsMailer) and stored hashed in the
+// code -> new password. The code is emailed over plain SMTP from the
+// SERVER (see App\Services\SmtpMailer) and stored hashed in the
 // password_reset_tokens table.
 //
 // Throttled because these endpoints email real people and check a 6-digit

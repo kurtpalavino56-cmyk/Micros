@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Services\EmailJsMailer;
+use App\Services\SmtpMailer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +35,14 @@ class PasswordResetController extends Controller
 
     private const SESSION_VERIFIED = 'pwreset.verified';
 
+    /**
+     * Minutes a verification code stays valid. Used by step 2's expiry
+     * check, shown on the verify page, and written into the email itself.
+     * (Previously config('emailjs.code_ttl_minutes') — lives here now that
+     * mail goes through plain SMTP, so there is one source of truth.)
+     */
+    public const CODE_TTL_MINUTES = 10;
+
     // ── Step 1: ask for the email ────────────────────────────────────────
 
     public function request()
@@ -42,7 +50,7 @@ class PasswordResetController extends Controller
         return view('auth.forgot-password');
     }
 
-    public function sendCode(Request $request, EmailJsMailer $mailer)
+    public function sendCode(Request $request, SmtpMailer $mailer)
     {
         $request->validate([
             'email' => ['required', 'email'],
@@ -62,15 +70,15 @@ class PasswordResetController extends Controller
                 ['token' => Hash::make($code), 'created_at' => now()]
             );
 
-            $sent = $mailer->sendVerificationCode($email, $user->first_name ?: 'there', $code);
+            $sent = $mailer->sendVerificationCode($email, $user->first_name ?: 'there', $code, self::CODE_TTL_MINUTES);
 
             if (! $sent) {
                 $message = 'We could not send the email just now. Please try again in a moment.';
 
-                // In debug mode, append WHY the send failed (missing .env
-                // keys, EmailJS rejection, connection error) so the problem
-                // can be fixed instead of guessed at. Production keeps the
-                // generic message.
+                // In debug mode, append WHY the send failed (SMTP auth
+                // error, wrong host/port, connection refused) so the
+                // problem can be fixed instead of guessed at. Production
+                // keeps the generic message.
                 if (config('app.debug') && $mailer->lastDetail() !== '') {
                     $message .= ' [debug] '.$mailer->lastDetail();
                 }
@@ -99,6 +107,7 @@ class PasswordResetController extends Controller
 
         return view('auth.verify-code', [
             'email' => $request->session()->get(self::SESSION_EMAIL),
+            'ttl' => self::CODE_TTL_MINUTES,
         ]);
     }
 
@@ -124,7 +133,7 @@ class PasswordResetController extends Controller
         // diffInMinutes is signed in Carbon 3 — parse explicitly and ask a
         // yes/no question instead.
         $expired = Carbon::parse($row->created_at)
-            ->addMinutes((int) config('emailjs.code_ttl_minutes'))
+            ->addMinutes(self::CODE_TTL_MINUTES)
             ->isPast();
 
         if ($expired) {
@@ -145,7 +154,7 @@ class PasswordResetController extends Controller
     }
 
     /** Send a fresh code for the address already being verified. */
-    public function resend(Request $request, EmailJsMailer $mailer)
+    public function resend(Request $request, SmtpMailer $mailer)
     {
         $email = $request->session()->get(self::SESSION_EMAIL);
 
@@ -163,7 +172,7 @@ class PasswordResetController extends Controller
                 ['token' => Hash::make($code), 'created_at' => now()]
             );
 
-            $mailer->sendVerificationCode($email, $user->first_name ?: 'there', $code);
+            $mailer->sendVerificationCode($email, $user->first_name ?: 'there', $code, self::CODE_TTL_MINUTES);
         }
 
         return back()->with('status', 'A new code has been sent.');
@@ -182,7 +191,7 @@ class PasswordResetController extends Controller
         ]);
     }
 
-    public function update(Request $request, EmailJsMailer $mailer)
+    public function update(Request $request, SmtpMailer $mailer)
     {
         if (! $request->session()->get(self::SESSION_VERIFIED)) {
             return redirect()->route('password.request');

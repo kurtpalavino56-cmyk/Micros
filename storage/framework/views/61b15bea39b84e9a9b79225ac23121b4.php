@@ -149,7 +149,7 @@
         <p class="auth-sub">
             We sent a 6-digit verification code to <strong><?php echo e($email); ?></strong>.
             Enter it below to continue. The code expires in
-            <?php echo e(config('emailjs.code_ttl_minutes')); ?> minutes.
+            <?php echo e($ttl); ?> minutes.
         </p>
 
         <?php if(session('status')): ?>
