@@ -63,13 +63,14 @@
        ================================ */
 
     .student-sidebar .sidebar-toggle {
-        align-self: flex-end;
+        align-self: stretch;
 
-        width: 38px;
-        height: 38px;
+        width: 100%;
+        min-height: 56px;
+        padding: 10px 14px;
 
         border: 0;
-        border-radius: 10px;
+        border-radius: 13px;
 
         background: transparent;
 
@@ -77,9 +78,10 @@
 
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-end;
+        gap: 8px;
 
-        margin: 0 6px 14px;
+        margin: 0 0 14px;
 
         cursor: pointer;
 
@@ -89,15 +91,32 @@
     }
 
     .student-sidebar .sidebar-toggle:hover {
-        background: rgba(255,255,255,.10);
+        background: transparent;
         color: #fff;
     }
 
     .student-sidebar .sidebar-toggle svg {
         width: 20px;
         height: 20px;
+        grid-area: 1 / 1;
+    }
 
-        transition: transform .25s ease;
+    .student-sidebar .sidebar-toggle-icon {
+        width: 38px;
+        height: 38px;
+        flex: 0 0 38px;
+        display: grid;
+        place-items: center;
+        border-radius: 10px;
+        transition: background-color .2s ease;
+    }
+
+    .student-sidebar .sidebar-toggle-icon:hover {
+        background: rgba(255,255,255,.10);
+    }
+
+    .student-sidebar .sidebar-toggle .sidebar-icon-hamburger {
+        display: none;
     }
 
 
@@ -238,15 +257,23 @@
     .student-sidebar-layout.sidebar-collapsed
     .student-sidebar .sidebar-toggle {
         align-self: center;
+        width: 38px;
+        min-height: 38px;
+        padding: 0;
+        justify-content: center;
         margin-left: auto;
         margin-right: auto;
     }
 
     .student-sidebar-layout.sidebar-collapsed
-    .student-sidebar .sidebar-toggle svg {
-        transform: rotate(180deg);
+    .student-sidebar .sidebar-toggle .sidebar-icon-close {
+        display: none;
     }
 
+    .student-sidebar-layout.sidebar-collapsed
+    .student-sidebar .sidebar-toggle .sidebar-icon-hamburger {
+        display: block;
+    }
 
     .student-sidebar-layout.sidebar-collapsed
     .student-sidebar .side-link {
@@ -321,6 +348,9 @@
 
         .student-sidebar .sidebar-toggle {
             flex: 0 0 38px;
+            width: 38px;
+            min-height: 38px;
+            padding: 0;
 
             margin: 0 8px 0 0;
         }
@@ -347,11 +377,6 @@
             padding: 10px 14px;
         }
 
-        .student-sidebar-layout.sidebar-collapsed
-        .student-sidebar .sidebar-toggle svg {
-            transform: none;
-        }
-
         .student-sidebar-layout > .main {
             padding: 24px 22px 42px;
         }
@@ -360,7 +385,10 @@
 
 <aside class="student-sidebar" id="student-sidebar">
     <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Collapse sidebar" aria-expanded="true" title="Collapse sidebar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/><path d="M3 5v14"/></svg>
+        <span class="sidebar-toggle-icon">
+            <svg class="sidebar-icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
+            <svg class="sidebar-icon-hamburger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </span>
     </button>
     <a href="{{ route('dashboard') }}" class="side-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
         <span class="side-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13h4v8H3zM10 9h4v12h-4zM17 3h4v18h-4z"/><path d="M3 21h18"/></svg></span>

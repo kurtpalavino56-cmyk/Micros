@@ -5,9 +5,12 @@ html,body{scrollbar-width:none;-ms-overflow-style:none;}
     .layout.faculty-sidebar-layout{display:grid;grid-template-columns:244px minmax(0,1fr);min-height:calc(100vh - var(--faculty-topbar-height));align-items:start;transition:grid-template-columns .25s ease;}
     .layout.faculty-sidebar-layout.sidebar-collapsed{grid-template-columns:78px minmax(0,1fr);}
     .layout.faculty-sidebar-layout .faculty-sidebar{background:#09255f;padding:24px 10px 20px;display:flex;flex-direction:column;gap:5px;border-right:1px solid rgba(255,255,255,.08);height:calc(100vh - var(--faculty-topbar-height));position:sticky;top:var(--faculty-topbar-height);z-index:900;align-self:start;overflow:hidden;transition:padding .25s ease,width .25s ease;}
-    .faculty-sidebar .sidebar-toggle{align-self:flex-end;width:38px;height:38px;border:0;border-radius:10px;background:transparent;color:rgba(255,255,255,.75);display:flex;align-items:center;justify-content:center;margin:0 6px 14px;cursor:pointer;transition:background-color .2s ease,color .2s ease;}
-    .faculty-sidebar .sidebar-toggle:hover{background:rgba(255,255,255,.10);color:#fff;}
-    .faculty-sidebar .sidebar-toggle svg{width:20px;height:20px;transition:transform .25s ease;}
+    .faculty-sidebar .sidebar-toggle{align-self:stretch;width:100%;min-height:56px;padding:10px 14px;border:0;border-radius:13px;background:transparent;color:rgba(255,255,255,.75);display:flex;align-items:center;justify-content:flex-end;gap:8px;margin:0 0 14px;cursor:pointer;transition:background-color .2s ease,color .2s ease;}
+    .faculty-sidebar .sidebar-toggle:hover{background:transparent;color:#fff;}
+    .faculty-sidebar .sidebar-toggle-icon{width:38px;height:38px;flex:0 0 38px;display:grid;place-items:center;border-radius:10px;transition:background-color .2s ease;}
+    .faculty-sidebar .sidebar-toggle-icon:hover{background:rgba(255,255,255,.10);}
+    .faculty-sidebar .sidebar-toggle-icon svg{grid-area:1 / 1;width:20px;height:20px;}
+    .faculty-sidebar .sidebar-toggle-icon .sidebar-icon-hamburger{display:none;}
     .faculty-sidebar .side-link{display:flex;align-items:center;gap:15px;min-height:56px;padding:10px 14px;border-radius:13px;color:rgba(255,255,255,.78);font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap;overflow:hidden;transition:background-color .2s ease,color .2s ease,transform .15s ease;}
     .faculty-sidebar .side-link:not(.active):hover{background:rgba(255,255,255,.07);color:#fff;}
     .faculty-sidebar .side-link:not(.active):active{transform:scale(.98);}
@@ -19,8 +22,9 @@ html,body{scrollbar-width:none;-ms-overflow-style:none;}
     .faculty-sidebar .side-link.active .side-icon-box svg{color:#09255f;}
     .faculty-sidebar .side-label{overflow:hidden;opacity:1;transition:opacity .18s ease,width .25s ease;}
     .faculty-sidebar .side-divider{width:100%;border:0;border-top:1px solid rgba(255,255,255,.16);margin:10px 0;}
-    .faculty-sidebar-layout.sidebar-collapsed .sidebar-toggle{align-self:center;margin-left:auto;margin-right:auto;}
-    .faculty-sidebar-layout.sidebar-collapsed .sidebar-toggle svg{transform:rotate(180deg);}
+    .faculty-sidebar-layout.sidebar-collapsed .sidebar-toggle{align-self:center;width:38px;min-height:38px;padding:0;justify-content:center;margin-left:auto;margin-right:auto;}
+    .faculty-sidebar-layout.sidebar-collapsed .sidebar-toggle .sidebar-icon-close{display:none;}
+    .faculty-sidebar-layout.sidebar-collapsed .sidebar-toggle .sidebar-icon-hamburger{display:block;}
     .faculty-sidebar-layout.sidebar-collapsed .side-link{justify-content:center;gap:0;padding-left:8px;padding-right:8px;}
     .faculty-sidebar-layout.sidebar-collapsed .side-label{width:0;opacity:0;}
     .faculty-sidebar-layout > .main{padding:28px 32px 48px;min-width:0;transition:padding .25s ease;}
@@ -29,19 +33,21 @@ html,body{scrollbar-width:none;-ms-overflow-style:none;}
     @media (max-width:1024px){
         .layout.faculty-sidebar-layout,.layout.faculty-sidebar-layout.sidebar-collapsed{grid-template-columns:1fr;}
         .layout.faculty-sidebar-layout .faculty-sidebar{flex-direction:row;align-items:center;overflow-x:auto;position:static;height:auto;padding:10px 14px;border-right:0;border-bottom:1px solid var(--line);}
-        .faculty-sidebar .sidebar-toggle{flex:0 0 38px;margin:0 8px 0 0;}
+        .faculty-sidebar .sidebar-toggle{flex:0 0 38px;width:38px;min-height:38px;padding:0;margin:0 8px 0 0;}
         .faculty-sidebar .side-link{flex:0 0 auto;min-height:48px;}
         .faculty-sidebar .side-divider{width:1px;height:30px;border-top:0;border-left:1px solid rgba(255,255,255,.16);margin:0 4px;}
         .faculty-sidebar .side-label,.faculty-sidebar-layout.sidebar-collapsed .side-label{width:auto;opacity:1;}
         .faculty-sidebar-layout.sidebar-collapsed .side-link{justify-content:flex-start;gap:15px;padding:10px 14px;}
         .faculty-sidebar-layout > .main{padding:24px 22px 42px;}
-        .faculty-sidebar-layout.sidebar-collapsed .sidebar-toggle svg{transform:none;}
     }
 </style>
 
 <aside class="faculty-sidebar" id="faculty-sidebar">
     <button class="sidebar-toggle" id="faculty-sidebar-toggle" type="button" aria-label="Collapse sidebar" aria-expanded="true" title="Collapse sidebar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/><path d="M3 5v14"/></svg>
+        <span class="sidebar-toggle-icon">
+            <svg class="sidebar-icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
+            <svg class="sidebar-icon-hamburger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </span>
     </button>
     <a href="{{ route('faculty.dashboard') }}" class="side-link {{ request()->routeIs('faculty.dashboard') ? 'active' : '' }}">
         <span class="side-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13h4v8H3zM10 9h4v12h-4zM17 3h4v18h-4z"/><path d="M3 21h18"/></svg></span>
