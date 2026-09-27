@@ -1611,7 +1611,3 @@ class FacultyController extends Controller
         return back()->with('success', 'Badge saved and linked to this course.');
     }
 }
-
-
-
-
