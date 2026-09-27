@@ -38,6 +38,7 @@
     .page-head h2{font-size:28px;margin:0 0 6px;}
     .page-head p{margin:0 0 22px;color:var(--muted);font-size:14.5px;}
     .grid{display:grid;grid-template-columns:320px 1fr;gap:22px;align-items:start;}
+    .layout.student-sidebar-layout { display: grid; }
     .panel{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);}
     .panel-hd{padding:16px 20px;border-bottom:1px solid var(--line);font-weight:800;font-size:14px;
         display:flex;justify-content:space-between;align-items:center;}
