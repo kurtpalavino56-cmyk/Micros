@@ -389,6 +389,13 @@
                         <svg class="ico"><use href="#i-trash"/></svg>Delete course
                     </button>
                 </form>
+
+                @if ($course->can_toggle_publish && $course->is_published)
+                    <form method="POST" action="{{ route('admin.courses.publish', $course->id) }}">
+                        @csrf
+                        <button type="submit" class="btn btn-outline">Unpublish course</button>
+                    </form>
+                @endif
             </div>
 
             @if ($course->status_key === 'pending')
@@ -768,3 +775,4 @@
 @include('components.responsive')
 </body>
 </html>
+

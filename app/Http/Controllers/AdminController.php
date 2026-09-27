@@ -573,6 +573,8 @@ class AdminController extends Controller
             'certificate' => CertificateBuilder::data($c),
             'status' => $c->statusLabel(),
             'status_key' => $this->statusKey($c),
+            'is_published' => (bool) $c->is_published,
+            'can_toggle_publish' => $c->approval_status === 'approved' && (bool) $c->is_approved,
             'students' => (int) $c->enrollments_count,
             'faculty' => 1,
             'percent' => (int) round((float) DB::table('enrollments')->where('course_id', $c->id)->avg('progress_percent')),

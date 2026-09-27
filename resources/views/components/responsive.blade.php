@@ -607,6 +607,9 @@
                 ].join(' ').toLowerCase()
                 : '';
 
+            if (label.indexOf('unpublish') !== -1) {
+                return 'unpublish';
+            }
             if (/\brevoke\b/.test(label)) {
                 return 'revoke';
             }
@@ -614,7 +617,7 @@
         }
 
         function requiresTimer(form, kind) {
-            if (kind === 'revoke') {
+            if (kind === 'revoke' || kind === 'unpublish') {
                 return true;
             }
 
@@ -672,13 +675,18 @@
             previousFocus = document.activeElement;
 
             var isRevoke = kind === 'revoke';
-            var actionLabel = isRevoke ? 'Revoke' : 'Delete';
+            var isUnpublish = kind === 'unpublish';
+            var actionLabel = isRevoke ? 'Revoke' : (isUnpublish ? 'Unpublish' : 'Delete');
             var delayed = requiresTimer(form, kind);
 
-            title.textContent = isRevoke ? 'Confirm certificate revocation' : 'Confirm deletion';
+            title.textContent = isRevoke
+                ? 'Confirm certificate revocation'
+                : (isUnpublish ? 'Confirm course unpublishing' : 'Confirm deletion');
             message.textContent = isRevoke
                 ? 'Are you sure you want to revoke this certificate? This action cannot be undone.'
-                : 'Are you sure you want to delete this item? This action cannot be undone.';
+                : (isUnpublish
+                    ? 'This course will be hidden from new students and new enrollments will be blocked. Students already enrolled can continue learning and complete the course.'
+                    : 'Are you sure you want to delete this item? This action cannot be undone.');
 
             confirmButton.disabled = delayed;
             confirmButton.textContent = delayed ? actionLabel + ' (3)' : actionLabel;
@@ -769,5 +777,6 @@
         });
     })();
 </script>
+
 
 
