@@ -13,6 +13,9 @@ use App\Http\Middleware\RoleBasedAccess;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\View;
 
+Route::get('/complaints/{id}/attachment', [PageController::class, 'complaintAttachment'])
+    ->whereNumber('id')->middleware('auth')->name('complaints.attachment');
+
 // ══════════════════════════════════════════════════════════════════════════
 // UPSKILL — route map
 //
@@ -351,3 +354,4 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty']
         ->whereNumber('id')->whereNumber('moduleIndex')->name('faculty.quiz.destroy');
 
 });
+

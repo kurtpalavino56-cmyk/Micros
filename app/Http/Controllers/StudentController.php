@@ -419,6 +419,15 @@ class StudentController extends Controller
         // module on each visit.
         $course = Course::with(['modules.lessons', 'modules.quiz.questions', 'quizzes.questions', 'creator'])->findOrFail($id);
 
+        // Draft or unapproved courses are visible only to students who were
+        // already enrolled before the course was unpublished.
+        if (! $course->is_published || ! $course->is_approved) {
+            $alreadyEnrolled = Enrollment::where('user_id', $auth->id)
+                ->where('course_id', $course->id)
+                ->exists();
+            abort_unless($alreadyEnrolled, 404);
+        }
+
         $instructor = $course->creator;
 
         // The description page lists the course's lesson rows.
@@ -515,6 +524,7 @@ class StudentController extends Controller
     {
         $auth = Auth::user();
         $course = Course::findOrFail($id);
+        abort_unless($course->is_published && $course->is_approved, 404);
         $requiredPrerequisiteIds = collect($course->prerequisite_ids ?? [])
             ->map(fn ($prerequisiteId) => (int) $prerequisiteId)
             ->filter(fn ($prerequisiteId) => $prerequisiteId > 0)
@@ -1991,14 +2001,7 @@ class StudentController extends Controller
 
         if ($request->hasFile('attachment') && $request->file('attachment')->isValid()) {
             $file = $request->file('attachment');
-            $dir = public_path('uploads/complaints');
-            if (! is_dir($dir)) {
-                mkdir($dir, 0775, true);
-            }
-            $stored = uniqid('help_').'.'.strtolower($file->getClientOriginalExtension() ?: 'jpg');
-            $file->move($dir, $stored);
-
-            $attachmentUrl = 'uploads/complaints/'.$stored;
+            $attachmentUrl = $file->store('complaints', 'local');
             $attachmentName = $file->getClientOriginalName();
         }
 
@@ -2068,5 +2071,6 @@ class StudentController extends Controller
         return $choice;
     }
 }
+
 
 

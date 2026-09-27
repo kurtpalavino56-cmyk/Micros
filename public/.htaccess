@@ -5,6 +5,10 @@
 
     RewriteEngine On
 
+    # Complaint uploads contain private student messages and must be served
+    # through the authenticated, ownership-checked application route.
+    RewriteRule ^uploads/complaints/ - [F,L,NC]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
@@ -23,3 +27,4 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+

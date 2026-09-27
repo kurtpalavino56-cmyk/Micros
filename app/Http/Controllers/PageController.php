@@ -18,6 +18,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -280,7 +281,7 @@ class PageController extends Controller
     }
 
     /**
-     * Move an uploaded Help Center image into public/uploads/complaints.
+     * Store uploaded Help Center images outside the public web root.
      *
      * @return array{url: ?string, name: ?string}
      */
@@ -292,18 +293,40 @@ class PageController extends Controller
 
         $file = $request->file('attachment');
 
-        $dir = public_path('uploads/complaints');
-        if (! is_dir($dir)) {
-            mkdir($dir, 0775, true);
-        }
-
-        $name = uniqid('help_').'.'.strtolower($file->getClientOriginalExtension() ?: 'jpg');
-        $file->move($dir, $name);
+        $path = $file->store('complaints', 'local');
 
         return [
-            'url' => 'uploads/complaints/'.$name,
+            'url' => $path,
             'name' => $file->getClientOriginalName(),
         ];
+    }
+
+    /** Serve a complaint attachment only to its owner or an administrator. */
+    public function complaintAttachment(int $id)
+    {
+        $complaint = Complaint::findOrFail($id);
+        $viewer = Auth::user();
+        $isAdmin = (int) $viewer->role_id === User::ROLE_ADMIN;
+        $isOwner = $complaint->source === 'student'
+            && (int) $complaint->user_id === (int) $viewer->id;
+        abort_unless($isAdmin || $isOwner, 403);
+
+        $storedPath = (string) $complaint->attachment_url;
+        if (str_starts_with($storedPath, 'uploads/complaints/')) {
+            // Support existing records while Apache/Nginx direct access is
+            // being disabled. Constrain the legacy path to this directory.
+            $name = basename($storedPath);
+            $path = public_path('uploads/complaints/'.$name);
+        } else {
+            abort_unless(str_starts_with($storedPath, 'complaints/'), 404);
+            $path = Storage::disk('local')->path($storedPath);
+        }
+        abort_unless(is_file($path), 404);
+
+        return response()->file($path, [
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /** Navbar section link → smooth-scroll target on the homepage. */
@@ -795,3 +818,4 @@ class PageController extends Controller
         return redirect()->route('Homepage', ['certificate' => $serial]);
     }
 }
+

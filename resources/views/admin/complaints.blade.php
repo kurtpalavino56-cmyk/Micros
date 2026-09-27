@@ -235,12 +235,12 @@
                                 <div class="attach">
                                     @if ($selected->attachmentIsImage())
                                         {{-- Click to open full size --}}
-                                        <img src="{{ asset($selected->attachment_url) }}"
+                                        <img src="{{ route('complaints.attachment', $selected->id) }}"
                                              alt="{{ $selected->attachment_name }}"
                                              onclick="openLightbox(this.src)">
                                     @else
                                         <a class="attach-file" target="_blank"
-                                           href="{{ asset($selected->attachment_url) }}">
+                                           href="{{ route('complaints.attachment', $selected->id) }}">
                                             📎 {{ $selected->attachment_name ?? 'Attachment' }}
                                         </a>
                                     @endif

@@ -194,11 +194,11 @@
                             @if ($selected->attachment_url)
                                 <div class="msg-attach">
                                     @if ($selected->attachmentIsImage())
-                                        <img src="{{ asset($selected->attachment_url) }}"
+                                        <img src="{{ route('complaints.attachment', $selected->id) }}"
                                              alt="{{ $selected->attachment_name }}"
                                              onclick="openLightbox(this.src)">
                                     @else
-                                        <a href="{{ asset($selected->attachment_url) }}" target="_blank"
+                                        <a href="{{ route('complaints.attachment', $selected->id) }}" target="_blank"
                                            style="text-decoration:underline;font-size:12.5px;">
                                             ðŸ“Ž {{ $selected->attachment_name ?? 'Attachment' }}
                                         </a>
@@ -361,3 +361,4 @@
 @include('components.responsive')
 </body>
 </html>
+
