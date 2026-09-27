@@ -18,7 +18,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -46,7 +45,9 @@ class PageController extends Controller
         // Featured strip, latest published fill the Latest strip.
         $cards = fn ($courses) => $courses->map(fn (Course $c) => [
             'title' => $c->title,
-            'description' => Str::limit((string) $c->description, 110),
+            'description' => filled($c->short_description)
+                ? $c->short_description
+                : Str::limit(trim(html_entity_decode(strip_tags((string) $c->description), ENT_QUOTES | ENT_HTML5, 'UTF-8')), 110),
             'professor' => $c->instructor ?? 'Faculty',
             'hours' => (int) filter_var($c->duration, FILTER_SANITIZE_NUMBER_INT),
             'rating' => 0,
@@ -281,7 +282,7 @@ class PageController extends Controller
     }
 
     /**
-     * Store uploaded Help Center images outside the public web root.
+     * Move an uploaded Help Center image into public/uploads/complaints.
      *
      * @return array{url: ?string, name: ?string}
      */
@@ -293,40 +294,18 @@ class PageController extends Controller
 
         $file = $request->file('attachment');
 
-        $path = $file->store('complaints', 'local');
+        $dir = public_path('uploads/complaints');
+        if (! is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+
+        $name = uniqid('help_').'.'.strtolower($file->getClientOriginalExtension() ?: 'jpg');
+        $file->move($dir, $name);
 
         return [
-            'url' => $path,
+            'url' => 'uploads/complaints/'.$name,
             'name' => $file->getClientOriginalName(),
         ];
-    }
-
-    /** Serve a complaint attachment only to its owner or an administrator. */
-    public function complaintAttachment(int $id)
-    {
-        $complaint = Complaint::findOrFail($id);
-        $viewer = Auth::user();
-        $isAdmin = (int) $viewer->role_id === User::ROLE_ADMIN;
-        $isOwner = $complaint->source === 'student'
-            && (int) $complaint->user_id === (int) $viewer->id;
-        abort_unless($isAdmin || $isOwner, 403);
-
-        $storedPath = (string) $complaint->attachment_url;
-        if (str_starts_with($storedPath, 'uploads/complaints/')) {
-            // Support existing records while Apache/Nginx direct access is
-            // being disabled. Constrain the legacy path to this directory.
-            $name = basename($storedPath);
-            $path = public_path('uploads/complaints/'.$name);
-        } else {
-            abort_unless(str_starts_with($storedPath, 'complaints/'), 404);
-            $path = Storage::disk('local')->path($storedPath);
-        }
-        abort_unless(is_file($path), 404);
-
-        return response()->file($path, [
-            'Cache-Control' => 'private, no-store',
-            'X-Content-Type-Options' => 'nosniff',
-        ]);
     }
 
     /** Navbar section link → smooth-scroll target on the homepage. */
@@ -360,7 +339,9 @@ class PageController extends Controller
 
         $cards->setCollection($cards->getCollection()->map(fn (Course $c) => [
                 'title' => $c->title,
-                'description' => Str::limit((string) $c->description, 110),
+                'description' => filled($c->short_description)
+                    ? $c->short_description
+                    : Str::limit(trim(html_entity_decode(strip_tags((string) $c->description), ENT_QUOTES | ENT_HTML5, 'UTF-8')), 110),
                 'professor' => $c->instructor ?? 'Faculty',
                 'hours' => (int) filter_var($c->duration, FILTER_SANITIZE_NUMBER_INT),
                 'rating' => 0,

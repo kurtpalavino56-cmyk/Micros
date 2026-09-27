@@ -14,6 +14,7 @@ class CourseCreationService
         $title = trim($data['title'] ?? '') ?: 'Untitled Course';
         $course = Course::create([
             'title' => $title,
+            'short_description' => trim($data['short_description'] ?? ''),
             'heading' => null,
             'subheading' => null,
             'slug' => $this->uniqueSlug($title),
@@ -168,3 +169,4 @@ class CourseCreationService
         return $slug;
     }
 }
+

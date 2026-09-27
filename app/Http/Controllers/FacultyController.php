@@ -535,6 +535,7 @@ class FacultyController extends Controller
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
+            'short_description' => ['required', 'string', 'max:120'],
             'description' => ['nullable', 'string'],
             'category' => ['nullable', 'string', 'max:120'],
             'program' => ['nullable', 'string', 'max:120'],
@@ -574,6 +575,7 @@ class FacultyController extends Controller
 
         $attributes = [
             'title' => $title,
+            'short_description' => trim($data['short_description']),
             'heading' => null,
             'subheading' => null,
             'description' => $this->sanitizeRichText($data['description'] ?? ''),
@@ -969,6 +971,7 @@ class FacultyController extends Controller
 
         $data = $request->validate([
             'title' => ['nullable', 'string', 'max:255'],
+            'short_description' => ['required', 'string', 'max:120'],
             'description' => ['nullable', 'string'],
             'category' => ['nullable', 'string', 'max:120'],
             'program' => ['nullable', 'string', 'max:120'],
@@ -1584,5 +1587,6 @@ class FacultyController extends Controller
         return back()->with('success', 'Badge saved and linked to this course.');
     }
 }
+
 
 

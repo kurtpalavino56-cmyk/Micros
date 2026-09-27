@@ -9,7 +9,10 @@
     .public-course__eyebrow{color:#f7d889;font-size:.76rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin:0 0 .7rem}
     .public-course h1{font-size:clamp(2rem,4vw,3.1rem);line-height:1.08;margin:0 0 .7rem;color:#fff}
     .public-course__sub{font-size:1.05rem;color:rgba(255,255,255,.8);margin:0 0 1rem;max-width:680px}
-    .public-course__desc{font-size:.95rem;line-height:1.7;color:rgba(255,255,255,.78);max-width:720px}
+    .public-course__desc{font-size:.95rem;line-height:1.6;color:rgba(255,255,255,.82);max-width:720px;margin:.4rem 0 0}
+    .public-course__full-description{margin-top:1.25rem;color:#40516e;font-size:.98rem;line-height:1.75}
+    .public-course__full-description > :first-child{margin-top:0}
+    .public-course__full-description > :last-child{margin-bottom:0}
     .public-course__thumb{min-height:210px;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.03)),url('{{ $course->thumbnail_url ? asset($course->thumbnail_url) : asset('Images/PSU_Front_Building.jpg') }}') center/cover}
     .public-course__actions{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1.4rem}
     .public-course__button{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:.8rem 1.2rem;font-weight:800;background:#e5b43c;color:#08245f}
@@ -36,7 +39,18 @@
                 <p class="public-course__eyebrow">{{ $course->category ?: 'Microcredential' }} · {{ $course->level ?: 'Beginner' }}</p>
                 <h1>{{ $course->heading ?: $course->title }}</h1>
                 @if($course->subheading)<p class="public-course__sub">{{ $course->subheading }}</p>@endif
-                <p class="public-course__desc">{!! $course->description ?: 'Explore this microcredential and discover the skills you can build with UpSkill PSU.' !!}</p>
+                @php
+                    $shortDescription = trim((string) $course->short_description);
+                    if ($shortDescription === '') {
+                        $shortDescription = \Illuminate\Support\Str::limit(
+                            trim(html_entity_decode(strip_tags((string) $course->description), ENT_QUOTES | ENT_HTML5, 'UTF-8')),
+                            120
+                        );
+                    }
+                @endphp
+                @if($shortDescription !== '')
+                    <p class="public-course__desc">{{ $shortDescription }}</p>
+                @endif
                 <div class="public-course__actions">
                     <a class="public-course__button" href="{{ $loginUrl }}">Sign in to enroll →</a>
                     <a class="public-course__button public-course__button--secondary" href="{{ route('register') }}">Create an account</a>
@@ -44,6 +58,12 @@
             </div>
             <div class="public-course__thumb" role="img" aria-label="{{ $course->title }} course image"></div>
         </div>
+
+        @if(trim(strip_tags((string) $course->description)) !== '')
+            <article class="public-course__panel public-course__full-description">
+                {!! $course->description !!}
+            </article>
+        @endif
 
         <div class="public-course__grid">
             <article class="public-course__panel">
@@ -68,3 +88,4 @@
     </div>
 </section>
 @endsection
+

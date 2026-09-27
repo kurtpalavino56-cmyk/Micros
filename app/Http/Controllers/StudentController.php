@@ -386,7 +386,9 @@ class StudentController extends Controller
         $courses = $matched->map(fn (Course $c) => (object) [
             'id' => $c->id,
             'title' => $c->title,
-            'description' => $c->description,
+            'description' => filled($c->short_description)
+                ? $c->short_description
+                : trim(html_entity_decode(strip_tags((string) $c->description), ENT_QUOTES | ENT_HTML5, 'UTF-8')),
             'category' => $c->category,
             'level' => $c->level,
             'instructor' => $c->instructor,
@@ -418,15 +420,6 @@ class StudentController extends Controller
         // module quiz and would otherwise lazy-load quiz + questions per
         // module on each visit.
         $course = Course::with(['modules.lessons', 'modules.quiz.questions', 'quizzes.questions', 'creator'])->findOrFail($id);
-
-        // Draft or unapproved courses are visible only to students who were
-        // already enrolled before the course was unpublished.
-        if (! $course->is_published || ! $course->is_approved) {
-            $alreadyEnrolled = Enrollment::where('user_id', $auth->id)
-                ->where('course_id', $course->id)
-                ->exists();
-            abort_unless($alreadyEnrolled, 404);
-        }
 
         $instructor = $course->creator;
 
@@ -524,7 +517,6 @@ class StudentController extends Controller
     {
         $auth = Auth::user();
         $course = Course::findOrFail($id);
-        abort_unless($course->is_published && $course->is_approved, 404);
         $requiredPrerequisiteIds = collect($course->prerequisite_ids ?? [])
             ->map(fn ($prerequisiteId) => (int) $prerequisiteId)
             ->filter(fn ($prerequisiteId) => $prerequisiteId > 0)
@@ -2001,7 +1993,14 @@ class StudentController extends Controller
 
         if ($request->hasFile('attachment') && $request->file('attachment')->isValid()) {
             $file = $request->file('attachment');
-            $attachmentUrl = $file->store('complaints', 'local');
+            $dir = public_path('uploads/complaints');
+            if (! is_dir($dir)) {
+                mkdir($dir, 0775, true);
+            }
+            $stored = uniqid('help_').'.'.strtolower($file->getClientOriginalExtension() ?: 'jpg');
+            $file->move($dir, $stored);
+
+            $attachmentUrl = 'uploads/complaints/'.$stored;
             $attachmentName = $file->getClientOriginalName();
         }
 

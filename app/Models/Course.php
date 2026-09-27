@@ -11,6 +11,7 @@ class Course extends Model
 {
     protected $fillable = [
         'title',
+        'short_description',
         'heading',
         'subheading',
         'slug',
@@ -200,3 +201,4 @@ class Course extends Model
         return $this->hasMany(StackingFrameworkRequirement::class);
     }
 }
+

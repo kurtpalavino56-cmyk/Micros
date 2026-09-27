@@ -569,6 +569,14 @@
                 </div>
 
                 <div class="field">
+                    <label for="course-short-description">Short Description <span class="req">*</span></label>
+                    <textarea class="textarea" id="course-short-description" name="short_description"
+                              maxlength="120" rows="2" required
+                              placeholder="A brief plain-text summary shown on course cards.">{{ old('short_description', $course->short_description ?? '') }}</textarea>
+                    <small class="field-hint">Up to 120 characters. This appears on course cards and near the course title on the public page.</small>
+                </div>
+
+                <div class="field">
                     <label>Description <span class="req">*</span></label>
                     @include('components.rich-text-editor', ['name' => 'description', 'id' => 'course-description-editor', 'value' => old('description', $course->description ?? ''), 'placeholder' => 'Describe the micro-credential, its purpose, and what learners will achieve.'])
                 </div>
@@ -1139,3 +1147,4 @@
 </script>
 </body>
 </html>
+
