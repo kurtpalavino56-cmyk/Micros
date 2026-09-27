@@ -49,6 +49,29 @@ class FacultyController extends Controller
             ->withCount(['modules', 'enrollments'])
             ->latest()
             ->get();
+        $monthStarts = collect(range(5, 0))
+            ->map(fn ($offset) => now()->subMonths($offset)->startOfMonth());
+        $enrollmentDates = Enrollment::whereIn('course_id', $courses->pluck('id'))
+            ->where('enrolled_at', '>=', $monthStarts->first())
+            ->pluck('enrolled_at');
+        $monthlyCounts = $monthStarts->map(function (Carbon $month) use ($enrollmentDates) {
+            $nextMonth = $month->copy()->addMonth();
+
+            return (object) [
+                'label' => $month->format('M'),
+                'count' => $enrollmentDates->filter(function ($date) use ($month, $nextMonth) {
+                    $enrolledAt = $date instanceof Carbon ? $date : Carbon::parse($date);
+
+                    return $enrolledAt->gte($month) && $enrolledAt->lt($nextMonth);
+                })->count(),
+            ];
+        });
+        $monthlyMax = max(1, (int) $monthlyCounts->max('count'));
+        $monthlyEnrollments = $monthlyCounts->map(fn ($month) => (object) [
+            'label' => $month->label,
+            'count' => $month->count,
+            'percent' => (int) round(($month->count / $monthlyMax) * 100),
+        ]);
 
         $stats = [
             'total_courses' => $courses->count(),
@@ -60,6 +83,7 @@ class FacultyController extends Controller
         return view('faculty.dashboard', [
             'user' => UserPresenter::faculty($auth),
             'stats' => $stats,
+            'monthlyEnrollments' => $monthlyEnrollments,
             'courses' => $courses->map(fn (Course $c) => (object) [
                 'id' => $c->id,
                 'title' => $c->title,
@@ -1587,6 +1611,7 @@ class FacultyController extends Controller
         return back()->with('success', 'Badge saved and linked to this course.');
     }
 }
+
 
 
 

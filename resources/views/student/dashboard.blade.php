@@ -30,6 +30,9 @@
     {{-- Browser tab icon (favicon) --}}
     <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
     :root{
         --navy:#13176b;
@@ -368,6 +371,72 @@
     @media (max-width: 700px) { .topbar { padding: 11px 16px; } .top-search, .nav-pills { display: none; } .main { padding: 20px 16px 42px; } .hero { padding: 24px 22px; } .hero h2 { font-size: 29px; } .stats { gap: 9px; } .stat-card { min-height: 105px; padding: 13px; } .stat-top .num { font-size: 25px; } .course-card { align-items: flex-start; flex-wrap: wrap; } .course-info { min-width: calc(100% - 88px); } .btn-start { margin-left: 85px; } }
     @media (max-width: 480px) { .stats { grid-template-columns: 1fr 1fr; } .stat-card .label { font-size: 10px; } .hero-meta { display: none; } }
 </style>
+<style>
+main.student-dashboard {
+  --dash-navy:#0B1B45; --dash-navy-deep:#071233; --dash-royal:#2447D4;
+  --dash-gold:#F4C430; --dash-gold-soft:#FFF5D1; --dash-canvas:#F4F6FB;
+  --dash-ink:#0E1A3A; --dash-muted:#64748B; --dash-line:#E6EAF2;
+  color:var(--dash-ink);font-family:'Inter',ui-sans-serif,system-ui,sans-serif;
+  padding:28px clamp(18px,3vw,42px) 56px;min-width:0;
+}
+.layout:has(main.student-dashboard){background:var(--dash-canvas);}
+main.student-dashboard h1,main.student-dashboard h2,main.student-dashboard h3,main.student-dashboard h4,
+main.student-dashboard .num,main.student-dashboard .meta-num{font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif}
+main.student-dashboard .hero{position:relative;isolation:isolate;overflow:hidden;border-radius:22px;background-image:linear-gradient(90deg,rgba(11,27,69,.98) 0%,rgba(11,27,69,.9) 47%,rgba(36,71,212,.48) 100%),url('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1600&q=70');background-size:cover;background-position:center;box-shadow:0 14px 35px rgba(11,27,69,.14);color:#fff}
+main.student-dashboard .hero h2{font-size:25px;font-weight:800;letter-spacing:-.04em}
+main.student-dashboard .hero p{color:rgba(255,255,255,.72)}
+main.student-dashboard .hero .eyebrow{color:#F4C430;font-weight:700}
+main.student-dashboard .featured-course{padding:22px;border-radius:18px;background:linear-gradient(145deg,#0B1B45,#2447D4);box-shadow:0 14px 30px rgba(11,27,69,.14)}
+main.student-dashboard .featured-course small{color:#F4C430}
+main.student-dashboard .featured-course a{background:#F4C430;color:#0B1B45}
+main.student-dashboard .badges-earned-list{padding:10px!important}
+main.student-dashboard .earned-badge-row{display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:12px;color:var(--dash-ink);font-size:12px;font-weight:600}
+main.student-dashboard .earned-badge-row:hover{background:var(--dash-canvas)}
+main.student-dashboard .earned-badge-icon{display:grid;width:38px;height:38px;flex:none;place-items:center;border-radius:50%;background:#F4C430;color:#0B1B45;font-size:19px}
+main.student-dashboard .stats{gap:15px;margin:22px 0 30px}
+main.student-dashboard .stat-card{position:relative;min-height:176px;padding:20px 22px;align-items:stretch;text-align:left;border:0;border-radius:18px;color:#fff;box-shadow:0 12px 26px rgba(11,27,69,.12)}
+main.student-dashboard .stat-card{position:relative;min-height:176px;padding:20px 22px;align-items:stretch;text-align:left;border:0;border-radius:18px;color:#fff;box-shadow:0 12px 26px rgba(11,27,69,.12);transition:transform .2s ease,box-shadow .2s ease}
+main.student-dashboard .stat-card:hover{transform:translateY(-4px);box-shadow:0 18px 32px rgba(11,27,69,.2)}
+main.student-dashboard .stat-card.c-navy{background:#0B1B45}
+main.student-dashboard .stat-card.c-gold{background:#F4C430;color:#0B1B45}
+main.student-dashboard .stat-card.c-cyan{background:#2447D4}
+main.student-dashboard .stat-card.c-deep{background:#FFF5D1;color:#0B1B45;box-shadow:inset 0 0 0 1px rgba(244,196,48,.35)}
+main.student-dashboard .stat-card:after{content:"";position:absolute;width:124px;height:124px;right:-35px;top:-44px;border-radius:50%;background:rgba(255,255,255,.11)}
+main.student-dashboard .stat-top{position:static;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:0;margin:0}
+main.student-dashboard .stat-top svg{width:38px;height:38px;margin-bottom:18px;padding:9px;border-radius:12px;background:rgba(255,255,255,.12);color:#F4C430}
+main.student-dashboard .stat-card.c-gold .stat-top svg,main.student-dashboard .stat-card.c-deep .stat-top svg{background:rgba(11,27,69,.09);color:#0B1B45}
+main.student-dashboard .stat-top .num{font-size:38px;color:inherit;line-height:1}
+main.student-dashboard .stat-card .label{margin-top:8px;font-size:13px;color:inherit;font-weight:600;opacity:.78}
+main.student-dashboard .content-grid{grid-template-columns:minmax(0,1.7fr) minmax(270px,.8fr);gap:22px}
+main.student-dashboard .courses-head h3{font-size:19px;font-weight:700;color:var(--dash-ink)}
+main.student-dashboard .courses-head .enroll-more{font-size:12px;color:var(--dash-royal)}
+main.student-dashboard .course-card,main.student-dashboard .panel{border:1px solid var(--dash-line);border-radius:17px;background:#fff;box-shadow:0 5px 18px rgba(11,27,69,.045)}
+main.student-dashboard .course-card,main.student-dashboard .panel{border:1px solid var(--dash-line);border-radius:17px;background:#fff;box-shadow:0 5px 18px rgba(11,27,69,.045);transition:transform .2s ease,box-shadow .2s ease}
+main.student-dashboard .course-card:hover,main.student-dashboard .panel:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(11,27,69,.1)}
+main.student-dashboard .course-card{gap:14px;padding:15px;margin-bottom:12px}
+main.student-dashboard .thumb{width:58px;height:58px;border-radius:12px;background-color:#EEF2FF}
+main.student-dashboard .course-info h4{font-size:13px;font-weight:700;color:var(--dash-ink)}
+main.student-dashboard .course-info .cat{font-size:11px;color:var(--dash-muted)}
+main.student-dashboard .progress-track{height:7px;background:#EDF1F8}
+main.student-dashboard .progress-fill{background:linear-gradient(90deg,var(--dash-royal),#5975E8)}
+main.student-dashboard .pct{font-size:11px;color:var(--dash-muted)}
+main.student-dashboard .btn-start{border:0;border-radius:999px;background:var(--dash-navy);padding:9px 15px;color:#fff;font-size:11px;font-weight:700}
+main.student-dashboard .btn-start{border:0;border-radius:999px;background:var(--dash-navy);padding:9px 15px;color:#fff;font-size:11px;font-weight:700;transition:transform .18s ease,background-color .18s ease}
+main.student-dashboard .btn-start:hover{transform:translateY(-1px);background:#2447D4}
+main.student-dashboard .btn-start.btn-completed{background:#EAF7F0;color:#168253}
+main.student-dashboard .courses-area-title{color:var(--dash-muted);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+main.student-dashboard .panel{overflow:hidden;margin-bottom:17px;min-height:0}
+main.student-dashboard .panel-head{padding:14px 17px;border-bottom:1px solid #EEF1F6;background:#fff;color:var(--dash-ink);font-size:13px;font-weight:700}
+main.student-dashboard .panel-body{padding:16px 17px;color:var(--dash-muted);font-size:12px}
+main.student-dashboard .prog-item-title{color:var(--dash-ink);font-size:11px}
+main.student-dashboard .prog-item-pct{color:#C9960C;font-size:11px}
+main.student-dashboard .prog-bar{height:7px;background:#EDF1F8}
+main.student-dashboard .prog-bar-fill{background:var(--dash-royal)}
+main.student-dashboard .prog-bar-fill.prog-bar-done{background:#27A879}
+main.student-dashboard .empty-state{border-color:var(--dash-line);border-radius:15px;background:#fff;color:var(--dash-muted)}
+@media(max-width:980px){main.student-dashboard .content-grid{grid-template-columns:1fr}}
+@media(max-width:640px){main.student-dashboard{padding:20px 14px 40px}main.student-dashboard .stats{gap:9px;margin:16px 0 22px}main.student-dashboard .stat-card{min-height:142px;padding:14px 11px}main.student-dashboard .stat-top svg{width:32px;height:32px;margin-bottom:12px}main.student-dashboard .stat-top .num{font-size:25px}main.student-dashboard .course-card{flex-direction:row;align-items:center}main.student-dashboard .thumb{width:52px;height:52px}}
+</style>
 </head>
 <body>
 
@@ -376,7 +445,7 @@
 <div class="layout student-sidebar-layout">
     @include('components.student-sidebar')
 
-    <main class="main">
+    <main class="main student-dashboard">
         @php $featuredCourse = $inProgressCourses->first() ?? $completedCourses->first(); @endphp
         <section class="hero">
             <div class="hero-copy">
@@ -389,15 +458,19 @@
         </section>
 
         <section class="stats" aria-label="Learning summary">
-            <div class="stat-card c-navy"><div class="stat-top"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h12v20l-6-4-6 4V2z"/></svg><span class="num">{{ $stats['active_courses'] ?? 0 }}</span></div><div class="label">Courses in progress</div></div>
+            <!-- <div class="stat-card c-navy"><div class="stat-top"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h12v20l-6-4-6 4V2z"/></svg><span class="num">{{ $stats['active_courses'] ?? 0 }}</span></div><div class="label">Courses in progress</div></div>
             <div class="stat-card c-gold"><div class="stat-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg><span class="num">{{ $stats['completed'] ?? 0 }}</span></div><div class="label">Completed credentials</div></div>
             <div class="stat-card c-cyan"><div class="stat-top"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5" stroke="currentColor" fill="none" stroke-width="2"/></svg><span class="num">{{ $stats['badges_earned'] ?? 0 }}</span></div><div class="label">Skills and badges</div></div>
-            <div class="stat-card c-deep"><div class="stat-top"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2l3 6 7 1-5 5 1.5 7L12 17l-6.5 4L7 14 2 9l7-1 3-6z" fill="currentColor"/></svg><span class="num">{{ $stats['certificates'] ?? 0 }}</span></div><div class="label">Certificates earned</div></div>
+            <div class="stat-card c-deep"><div class="stat-top"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2l3 6 7 1-5 5 1.5 7L12 17l-6.5 4L7 14 2 9l7-1 3-6z" fill="currentColor"/></svg><span class="num">{{ $stats['certificates'] ?? 0 }}</span></div><div class="label">Certificates earned</div></div> -->
+            <div class="stat-card c-navy"><div class="stat-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5V22l-6-4-6 4z"/></svg><span class="num">{{ $stats['active_courses'] ?? 0 }}</span></div><div class="label">Courses in progress</div></div>
+            <div class="stat-card c-gold"><div class="stat-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg><span class="num">{{ $stats['completed'] ?? 0 }}</span></div><div class="label">Completed credentials</div></div>
+            <div class="stat-card c-cyan"><div class="stat-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 16 9 5 9-5"/></svg><span class="num">{{ $stats['badges_earned'] ?? 0 }}</span></div><div class="label">Skills and badges</div></div>
+            <div class="stat-card c-deep"><div class="stat-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg><span class="num">{{ $stats['certificates'] ?? 0 }}</span></div><div class="label">Certificates earned</div></div>
         </section>
 
         <div class="content-grid">
             <section class="courses-col">
-                <div class="courses-head"><h3>Your course progress</h3><a href="{{ route('courses.browse') }}" class="enroll-more">View all courses <span class="dashboard-chevron">&rsaquo;</span></a></div>
+                <div class="courses-head"><h3>Your course progress</h3><a href="{{ route('courses.enrolled') }}" class="enroll-more">View all courses <span class="dashboard-chevron">&rsaquo;</span></a></div>
                 @php $inProgressCourses = $inProgressCourses ?? collect(); $completedCourses = $completedCourses ?? collect(); @endphp
                 @if ($inProgressCourses->isEmpty() && $completedCourses->isEmpty())
                     <div class="empty-state">You haven't enrolled in any courses yet.<br><a href="{{ route('courses.browse') }}" class="enroll-more">Browse courses to get started</a></div>
@@ -425,7 +498,7 @@
                         @endforeach
                     </div></div>
                 @endif
-                <div class="panel"><div class="panel-head"><span>Badges earned</span><a href="{{ route('badges.index') }}">View all <span class="dashboard-chevron">&rsaquo;</span></a></div><div class="panel-body">@forelse ($badges ?? [] as $badge)<p>{{ $badge->name ?? $badge }}</p>@empty<p>No badges earned yet.</p>@endforelse</div></div>
+                <div class="panel"><div class="panel-head"><span>Badges earned</span><a href="{{ route('badges.index') }}">View all <span class="dashboard-chevron">&rsaquo;</span></a></div><div class="panel-body badges-earned-list">@forelse ($badges ?? [] as $badge)<div class="earned-badge-row"><span class="earned-badge-icon" aria-hidden="true">✦</span><span>{{ $badge->name ?? $badge }}</span></div>@empty<p>No badges earned yet.</p>@endforelse</div></div>
             </aside>
         </div>
     </main>

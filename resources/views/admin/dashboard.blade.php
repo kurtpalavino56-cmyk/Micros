@@ -8,6 +8,9 @@
 
     <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
         /* =========================================================
@@ -449,6 +452,75 @@
             }
         }
     </style>
+<style>
+:root {}
+main.admin-dashboard {
+  --dash-navy:#0B1B45; --dash-navy-deep:#071233; --dash-royal:#2447D4;
+  --dash-gold:#F4C430; --dash-gold-soft:#FFF5D1; --dash-canvas:#F4F6FB;
+  --dash-ink:#0E1A3A; --dash-muted:#64748B; --dash-line:#E6EAF2;
+  color:var(--dash-ink); font-family:'Inter',ui-sans-serif,system-ui,sans-serif;
+  padding:32px clamp(20px,3vw,44px) 56px; min-width:0;
+}
+main.admin-dashboard h1,main.admin-dashboard h2,main.admin-dashboard h3,main.admin-dashboard h4,
+main.admin-dashboard .page-heading,main.admin-dashboard .stat-val {
+  font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif;
+}
+.layout:has(main.admin-dashboard){background:var(--dash-canvas);}
+main.admin-dashboard .page-heading{font-size:27px;font-weight:800;letter-spacing:-.04em;color:var(--dash-ink);line-height:1.2}
+main.admin-dashboard .page-eyebrow{margin-bottom:7px;color:#C9960C;font-size:10px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}
+main.admin-dashboard .page-sub{margin-top:7px;color:var(--dash-muted);font-size:14px}
+main.admin-dashboard .stats-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+main.admin-dashboard .stats-grid{gap:16px;margin:24px 0 0}
+main.admin-dashboard .stat-card{min-height:126px;padding:21px 22px;border:1px solid var(--dash-line);border-radius:18px;background:#fff;box-shadow:0 5px 18px rgba(11,27,69,.045);text-align:left}
+main.admin-dashboard .stat-val{font-size:32px;font-weight:800;line-height:1;color:var(--dash-navy)}
+main.admin-dashboard .stat-lbl{margin-top:10px;font-size:12px;font-weight:600;letter-spacing:.01em;color:var(--dash-muted)}
+main.admin-dashboard .two-col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:22px}
+main.admin-dashboard .two-col.monitor-grid,main.admin-dashboard .two-col.active-grid{grid-template-columns:minmax(0,3fr) minmax(280px,2fr)}
+main.admin-dashboard .card{min-width:0;padding:0 20px 18px;border:1px solid var(--dash-line);border-radius:18px;background:#fff;box-shadow:0 5px 18px rgba(11,27,69,.045)}
+main.admin-dashboard .stat-card{position:relative;min-height:152px;padding:25px 22px 22px 27px;border:1px solid var(--dash-line);border-radius:18px;background:#fff;box-shadow:0 5px 18px rgba(11,27,69,.045);text-align:left;overflow:hidden}
+main.admin-dashboard .stat-card:before{content:"";position:absolute;left:0;top:22px;bottom:22px;width:4px;border-radius:0 5px 5px 0;background:var(--dash-gold)}
+main.admin-dashboard .stat-val{font-size:40px;font-weight:800;line-height:1;color:var(--dash-ink)}
+main.admin-dashboard .stat-lbl{margin-top:10px;font-size:13px;font-weight:500;letter-spacing:0;color:var(--dash-muted)}
+main.admin-dashboard .two-col{display:grid;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:22px}
+main.admin-dashboard .two-col.monitor-grid{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
+main.admin-dashboard .two-col.active-grid{grid-template-columns:minmax(0,1.4fr) minmax(320px,1fr)}
+main.admin-dashboard .card{min-width:0;padding:0 20px 18px;border:1px solid var(--dash-line);border-radius:18px;background:#fff;box-shadow:0 5px 18px rgba(11,27,69,.045);transition:transform .2s ease,box-shadow .2s ease}
+main.admin-dashboard .card:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(11,27,69,.09)}
+main.admin-dashboard .card-hd{min-height:58px;margin:0 -20px 14px;padding:0 20px;border-bottom:1px solid #EEF1F6;background:#fff;color:var(--dash-ink)}
+main.admin-dashboard .card-title{font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif;font-size:14px;font-weight:700;color:var(--dash-ink)}
+main.admin-dashboard .view-all{font-size:12px;font-weight:700;color:var(--dash-royal)}
+main.admin-dashboard .chart-row{margin:13px 0}
+main.admin-dashboard .chart-lbl{margin-bottom:8px;color:var(--dash-muted);font-size:12px;font-weight:500}
+main.admin-dashboard .bar-track{height:8px;border-radius:999px;background:#EDF1F8;overflow:hidden}
+main.admin-dashboard .bar-fill{height:100%;border-radius:999px;background:var(--dash-royal)}
+main.admin-dashboard .course-item{gap:13px;padding:13px 0;border-bottom:1px solid #EEF1F6}
+main.admin-dashboard .course-item:hover{background:var(--dash-canvas)}
+main.admin-dashboard .course-thumb{width:42px;height:42px;border-radius:12px;background:var(--dash-gold-soft)}
+main.admin-dashboard .course-name{font-size:13px;font-weight:700;color:var(--dash-ink)}
+main.admin-dashboard .course-meta{margin-top:4px;color:var(--dash-muted);font-size:11px}
+main.admin-dashboard .course-pct{font-family:'Plus Jakarta Sans',sans-serif;color:var(--dash-ink);font-size:13px;font-weight:700}
+main.admin-dashboard .badge-card{border:1px solid var(--dash-line);border-radius:13px;background:#fff;padding:13px}
+main.admin-dashboard .active-grid .badge-card{transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+main.admin-dashboard .active-grid .badge-card:hover{transform:translateY(-2px);border-color:rgba(244,196,48,.75);box-shadow:0 7px 18px rgba(11,27,69,.07)}
+main.admin-dashboard .badge-name{font-size:12px;font-weight:700;color:var(--dash-ink)}
+main.admin-dashboard .badge-count{margin-top:4px;font-size:11px;color:var(--dash-muted)}
+main.admin-dashboard .chart-row:last-child{margin-bottom:0}
+main.admin-dashboard .snapshot-hero{position:relative;overflow:hidden;margin-bottom:12px;padding:19px 20px;border-radius:16px;background:#0B1B45;color:#fff}
+main.admin-dashboard .snapshot-hero:after{content:"";position:absolute;right:-25px;top:-50px;width:130px;height:130px;border-radius:50%;background:rgba(244,196,48,.16);filter:blur(3px)}
+main.admin-dashboard .snapshot-hero span,main.admin-dashboard .snapshot-hero strong,main.admin-dashboard .snapshot-hero small{position:relative;display:block;z-index:1}
+main.admin-dashboard .snapshot-hero span{font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.62)}
+main.admin-dashboard .snapshot-hero strong{margin-top:10px;font:700 42px/1 'Plus Jakarta Sans',sans-serif;color:#fff}
+main.admin-dashboard .snapshot-hero small{margin-top:8px;font-size:11px;color:rgba(255,255,255,.65)}
+main.admin-dashboard .snapshot-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+main.admin-dashboard .snapshot-metric{min-width:0;padding:12px;border-radius:12px;background:var(--dash-canvas)}
+main.admin-dashboard .snapshot-metric strong,main.admin-dashboard .snapshot-metric span{display:block}
+main.admin-dashboard .snapshot-metric strong{font:700 17px 'Plus Jakarta Sans',sans-serif;color:var(--dash-ink)}
+main.admin-dashboard .snapshot-metric span{margin-top:4px;font-size:10px;line-height:1.3;color:var(--dash-muted)}
+@media(max-width:900px){main.admin-dashboard .two-col.monitor-grid,main.admin-dashboard .two-col.active-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){main.admin-dashboard .two-col.monitor-grid,main.admin-dashboard .two-col.active-grid{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}}
+@media(max-width:680px){main.admin-dashboard{padding:24px 16px 40px}main.admin-dashboard .two-col,main.admin-dashboard .two-col.monitor-grid,main.admin-dashboard .two-col.active-grid{grid-template-columns:1fr}main.admin-dashboard .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}main.admin-dashboard .stat-card{min-height:108px;padding:17px}}
+@media(max-width:860px){main.admin-dashboard .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
 </head>
 
 <body>
@@ -458,8 +530,9 @@
     <div class="layout">
         @include('components.admin-sidebar')
 
-        <main class="main">
+        <main class="main admin-dashboard">
 
+            <div class="page-eyebrow">ADMIN CONSOLE</div>
             <div class="page-heading">Welcome back, Admin</div>
             <div class="page-sub">Here's what's happening on your platform today.</div>
 
@@ -487,7 +560,7 @@
             </div>
 
             {{-- LIVE MONITORING + PLATFORM SNAPSHOT --}}
-            <div class="two-col" style="margin-bottom: 18px;">
+            <div class="two-col monitor-grid" style="margin-bottom: 18px;">
                 <div class="card">
                     <div class="card-hd">
                         <span class="card-title">Live Monitoring Feed</span>
@@ -500,34 +573,22 @@
                         <span class="card-title">Current Platform Snapshot</span>
                     </div>
 
-                    <div class="chart-row">
-                        <div class="chart-lbl">
-                            Students on platform &ndash; {{ $stats['total_students'] }}
-                        </div>
+                    <div class="snapshot-hero">
+                        <span>Students on platform</span>
+                        <strong>{{ $stats['total_students'] }}</strong>
+                        <small>Learning across {{ count($activeCourses ?? []) }} active courses</small>
                     </div>
 
-                    <div class="chart-row">
-                        <div class="chart-lbl">
-                            Badges issued &ndash; {{ $stats['badges_issued'] }}
-                        </div>
-                    </div>
-
-                    <div class="chart-row">
-                        <div class="chart-lbl">
-                            Average quiz score &ndash; {{ $stats['course_score_avg'] }}%
-                        </div>
-                    </div>
-
-                    <div class="chart-row">
-                        <div class="chart-lbl">
-                            Enrollments recorded &ndash; {{ $stats['students_enrolled'] }}
-                        </div>
+                    <div class="snapshot-metrics">
+                        <div class="snapshot-metric"><strong>{{ $stats['badges_issued'] }}</strong><span>Badges issued</span></div>
+                        <div class="snapshot-metric"><strong>{{ $stats['course_score_avg'] }}%</strong><span>Avg. quiz score</span></div>
+                        <div class="snapshot-metric"><strong>{{ $stats['students_enrolled'] }}</strong><span>Enrollments</span></div>
                     </div>
                 </div>
             </div>
 
             {{-- ACTIVE COURSES + RECENT BADGES --}}
-            <div class="two-col">
+            <div class="two-col active-grid">
 
                 {{-- Active Courses --}}
                 <div class="card">
@@ -574,7 +635,7 @@
             </div>
 
             {{-- ENROLLMENT + COMPLETION CHARTS --}}
-            <div class="two-col">
+            <div class="two-col analytics-grid">
 
                 {{-- Enrollment by Courses --}}
                 <div class="card">
@@ -614,11 +675,10 @@
                     @endforeach
                 </div>
             </div>
+    </main>
+</div>
 
-        </main>
-    </div>
-
-    {{-- SCRIPTS --}}
+            {{-- SCRIPTS --}}
     <script>
         function toggleSection(id) {
             const section = document.getElementById(id);
