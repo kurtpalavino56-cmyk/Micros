@@ -309,7 +309,7 @@
     .hero::after { content: ''; position: absolute; right: -5%; top: -80px; width: 320px; height: 320px; border: 1px solid rgba(255,255,255,.16); border-radius: 50%; box-shadow: 0 0 0 25px rgba(255,255,255,.04), 0 0 0 52px rgba(255,255,255,.03); }
     .hero-copy { position: relative; z-index: 1; max-width: 650px; }
     .eyebrow { margin: 0 0 7px; color: #f7d889; font-size: 12px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
-    .hero h2 { margin: 0 0 8px; color: #fff; font-size: clamp(29px, 3.2vw, 44px); line-height: 1.08; letter-spacing: -.035em; }
+    .hero h2 { margin: 0 0 7px; color: #fff; font-size: clamp(29px, 3.2vw, 44px); line-height: 1.5; letter-spacing: -.035em; }
     .hero p { max-width: 560px; margin: 0; color: rgba(255,255,255,.78); font-size: 14px; }
     .hero-meta { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 17px; }
     .hero-meta span { border: 1px solid rgba(255,255,255,.19); background: rgba(255,255,255,.10); border-radius: 999px; padding: 6px 11px; font-size: 11px; font-weight: 700; }
@@ -382,8 +382,13 @@ main.student-dashboard {
 .layout:has(main.student-dashboard){background:var(--dash-canvas);}
 main.student-dashboard h1,main.student-dashboard h2,main.student-dashboard h3,main.student-dashboard h4,
 main.student-dashboard .num,main.student-dashboard .meta-num{font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif}
-main.student-dashboard .hero{position:relative;isolation:isolate;overflow:hidden;border-radius:22px;background-image:linear-gradient(90deg,rgba(11,27,69,.98) 0%,rgba(11,27,69,.9) 47%,rgba(36,71,212,.48) 100%),url('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1600&q=70');background-size:cover;background-position:center;box-shadow:0 14px 35px rgba(11,27,69,.14);color:#fff}
-main.student-dashboard .hero h2{font-size:25px;font-weight:800;letter-spacing:-.04em}
+main.student-dashboard .hero{position:relative;isolation:isolate;overflow:hidden;border-radius:22px;background-image:linear-gradient(90deg,rgba(11,27,69,.98) 20%,rgba(11,27,69,.9) 45%,rgba(36, 71, 212, 0.88) 100%);background-size:cover;background-position:center;box-shadow:0 14px 35px rgba(11,27,69,.14);color:#fff}
+main.student-dashboard .hero-copy{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+main.student-dashboard .hero-copy .eyebrow,
+main.student-dashboard .hero-copy h2,
+main.student-dashboard .hero-copy>p{margin:0}
+main.student-dashboard .hero-copy .hero-meta{margin-top:0}
+main.student-dashboard .hero h2{font-size:35px;font-weight:800;letter-spacing:-.04em}
 main.student-dashboard .hero p{color:rgba(255,255,255,.72)}
 main.student-dashboard .hero .eyebrow{color:#F4C430;font-weight:700}
 main.student-dashboard .featured-course{padding:22px;border-radius:18px;background:linear-gradient(145deg,#0B1B45,#2447D4);box-shadow:0 14px 30px rgba(11,27,69,.14)}
@@ -450,9 +455,9 @@ main.student-dashboard .empty-state{border-color:var(--dash-line);border-radius:
         <section class="hero">
             <div class="hero-copy">
                 <p class="eyebrow">Continue your learning</p>
-                <h2>Welcome back, {{ $user->name ?? 'Student' }}</h2>
+                <h2>Hello, {{ $user->name ?? 'Student' }} !</h2>
                 <p>Build in-demand skills, earn microcredentials, and take the next step in your Penn State journey.</p>
-                <div class="hero-meta"><span>Student ID: {{ $user->student_id ?? '—' }}</span><span>Flexible learning</span><span>Recognized credentials</span></div>
+                <div class="hero-meta"><span>Student ID: {{ $user->student_id ?? '—' }}</span></div>
             </div>
             <a href="{{ route('courses.browse') }}" class="hero-action">Explore courses</a>
         </section>
