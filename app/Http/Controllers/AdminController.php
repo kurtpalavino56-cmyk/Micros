@@ -10,6 +10,7 @@ use App\Models\AcademicCreditRecognition;
 use App\Models\Announcement;
 use App\Models\Complaint;
 use App\Models\ComplaintReply;
+use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\CourseCategory;
 use App\Models\Enrollment;
@@ -32,6 +33,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -1445,6 +1447,48 @@ class AdminController extends Controller
             });
     }
 
+    public function certificates()
+    {
+        return view('admin.certificates', [
+            'user' => UserPresenter::admin(Auth::user()),
+            'certificates' => Certificate::with(['user', 'course', 'revoker'])
+                ->orderByDesc('issued_at')
+                ->orderByDesc('id')
+                ->paginate(20),
+        ]);
+    }
+
+    public function revokeCertificate(Request $request, int $id)
+    {
+        $data = $request->validate([
+            'revocation_reason' => ['required', 'string', 'min:5', 'max:1000'],
+        ]);
+
+        $pdfPath = DB::transaction(function () use ($id, $data): string {
+            $certificate = Certificate::query()->whereKey($id)->lockForUpdate()->firstOrFail();
+
+            if ($certificate->status === 'revoked') {
+                throw ValidationException::withMessages([
+                    'certificate' => 'This certificate has already been revoked.',
+                ]);
+            }
+
+            $certificate->status = 'revoked';
+            $certificate->revoked_at = now();
+            $certificate->revoked_by = Auth::id();
+            $certificate->revocation_reason = trim($data['revocation_reason']);
+            // Remove the pre-revocation PDF from the public disk. The next
+            // authenticated download regenerates it with the revoked mark.
+            $pdfPath = 'certificates/'.$certificate->serial.'.pdf';
+            $certificate->file_path = null;
+            $certificate->save();
+
+            return $pdfPath;
+        });
+        Storage::disk('public')->delete($pdfPath);
+
+        return back()->with('success', 'Certificate revoked.');
+    }
     public function pathways()
     {
         return view('admin.pathways', [

@@ -135,7 +135,9 @@ Route::post('/forgot-password/resend', [PasswordResetController::class, 'resend'
 
 Route::get('/reset-password', [PasswordResetController::class, 'showReset'])->name('password.reset');
 Route::post('/reset-password', [PasswordResetController::class, 'update'])->name('password.update');
-Route::get('/monitoring/live', [PageController::class, 'monitoringLive'])->name('monitoring.live');
+Route::get('/monitoring/live', [PageController::class, 'monitoringLive'])
+    ->middleware([PreventBackHistory::class, RoleBasedAccess::class.':admin'])
+    ->name('monitoring.live');
 
 // ══════════════════════════════════════════════════════════════════════════
 // ADMIN ROUTES
@@ -143,6 +145,10 @@ Route::get('/monitoring/live', [PageController::class, 'monitoringLive'])->name(
 
 Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':admin'])->group(function () {
     Route::get('/Admin-dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+
+    Route::get('/Admin-certificates', [AdminController::class, 'certificates'])->name('admin.certificates');
+    Route::post('/Admin-certificates/{id}/revoke', [AdminController::class, 'revokeCertificate'])
+        ->whereNumber('id')->name('admin.certificates.revoke');
 
     Route::get('/Admin-profile', [AdminController::class, 'profile'])->name('admin.profile');
     Route::patch('/Admin-profile', [AdminController::class, 'updateProfile'])->name('admin.profile.update');
@@ -255,6 +261,10 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':student']
         ->whereNumber('id')->name('courses.complete');
     Route::get('/courses/{courseId}/lesson/{lessonId}', [StudentController::class, 'lesson'])
         ->whereNumber('courseId')->whereNumber('lessonId')->name('courses.lesson');
+    Route::post('/courses/{courseId}/lessons/{lessonId}/start', [StudentController::class, 'startLesson'])
+        ->whereNumber('courseId')->whereNumber('lessonId')->name('courses.lessons.start');
+    Route::post('/courses/{courseId}/lessons/{lessonId}/complete', [StudentController::class, 'completeLesson'])
+        ->whereNumber('courseId')->whereNumber('lessonId')->name('courses.lessons.complete');
     Route::get('/quiz/{id}', [StudentController::class, 'quiz'])->whereNumber('id')->name('quiz.show');
 
     Route::get('/courses/enrolled', [StudentController::class, 'enrolledCourses'])->name('courses.enrolled');
