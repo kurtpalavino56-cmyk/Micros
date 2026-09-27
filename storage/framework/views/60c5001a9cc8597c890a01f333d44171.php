@@ -365,10 +365,12 @@
 
                 <div class="field">
                     <label for="email">Username</label>
+                    
                     <input type="text" id="email" name="email"
                         value="<?php echo e(old('email')); ?>"
                         placeholder="Enter your username or email"
-                        autocomplete="username" required>
+                        autocomplete="username" autocapitalize="none"
+                        autocorrect="off" spellcheck="false" required>
                 </div>
 
                 <div class="field">

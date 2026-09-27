@@ -35,9 +35,16 @@ class LoginController extends Controller
 
         $login = trim($credentials['email']);
 
+        // Case-insensitive match on BOTH email and username. The previous
+        // exact match broke on phones: mobile keyboards auto-capitalize the
+        // first letter ("admin1" arrives as "Admin1"), and SQLite's '='
+        // comparison is case-sensitive, so legitimate users were rejected.
+        // LOWER() on both sides works identically on SQLite and MySQL.
+        $loginLower = mb_strtolower($login);
+
         $user = User::query()
-            ->where('email', $login)
-            ->orWhere('username', $login)
+            ->whereRaw('LOWER(email) = ?', [$loginLower])
+            ->orWhereRaw('LOWER(username) = ?', [$loginLower])
             ->first();
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
