@@ -365,14 +365,10 @@
 
                 <div class="field">
                     <label for="email">Username</label>
-                    {{-- autocapitalize/autocorrect/spellcheck off: mobile
-                         keyboards otherwise capitalize the first letter
-                         ("admin1" → "Admin1") and silently break logins. --}}
                     <input type="text" id="email" name="email"
                         value="{{ old('email') }}"
                         placeholder="Enter your username or email"
-                        autocomplete="username" autocapitalize="none"
-                        autocorrect="off" spellcheck="false" required>
+                        autocomplete="username" required>
                 </div>
 
                 <div class="field">

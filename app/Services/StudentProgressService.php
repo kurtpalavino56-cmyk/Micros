@@ -207,13 +207,24 @@ class StudentProgressService
                 ->where('user_id', $student->id)
                 ->where('lesson_id', $lesson->id)
                 ->exists();
-            DB::table('lesson_completions')->insertOrIgnore([
-                'user_id' => $student->id,
-                'lesson_id' => $lesson->id,
-                'completed_at' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            if ($alreadyDone) {
+                DB::table('lesson_completions')
+                    ->where('user_id', $student->id)
+                    ->where('lesson_id', $lesson->id)
+                    ->update([
+                        'server_verified_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+            } else {
+                DB::table('lesson_completions')->insertOrIgnore([
+                    'user_id' => $student->id,
+                    'lesson_id' => $lesson->id,
+                    'completed_at' => now(),
+                    'server_verified_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
 
             if (! $alreadyDone) {
                 AnalyticsEvent::create([
@@ -258,6 +269,7 @@ class StudentProgressService
             $completedCount = DB::table('lesson_completions')
                 ->where('user_id', $enrollment->user_id)
                 ->whereIn('lesson_id', $lessonIds)
+                ->whereNotNull('server_verified_at')
                 ->distinct('lesson_id')
                 ->count('lesson_id');
 

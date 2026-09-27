@@ -48,8 +48,6 @@ class DatabaseSeeder extends Seeder
         $this->seedEnrolments($courses, $students);
         $this->seedAnalyticsCredentials($courses, $students);
         $this->seedAnalyticsCompetencies($students);
-        $this->call(AdminAccountsSeeder::class);
-
     }
 
     private function seedRoles(): void
