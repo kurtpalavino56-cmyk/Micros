@@ -420,6 +420,13 @@ class StudentController extends Controller
         // module quiz and would otherwise lazy-load quiz + questions per
         // module on each visit.
         $course = Course::with(['modules.lessons', 'modules.quiz.questions', 'quizzes.questions', 'creator'])->findOrFail($id);
+        $enrollment = Enrollment::where('user_id', $auth->id)
+            ->where('course_id', $course->id)
+            ->first();
+        abort_unless(
+            ($course->is_published && $course->is_approved) || $enrollment,
+            404
+        );
 
         $instructor = $course->creator;
 
@@ -439,7 +446,6 @@ class StudentController extends Controller
             'passing_score' => $quizModel->passing_score,
         ] : null;
 
-        $enrollment = Enrollment::where('user_id', $auth->id)->where('course_id', $course->id)->first();
         $progressPercent = $this->syncEnrollmentProgress($course, $enrollment);
         $completionReady = $enrollment
             ? $this->courseCompletion->isReady($course, $enrollment)
@@ -517,6 +523,14 @@ class StudentController extends Controller
     {
         $auth = Auth::user();
         $course = Course::findOrFail($id);
+        $existingEnrollment = Enrollment::where('user_id', $auth->id)
+            ->where('course_id', $course->id)
+            ->first();
+        if ($existingEnrollment) {
+            return redirect()->route('courses.learn', $course->id);
+        }
+        abort_unless($course->is_published && $course->is_approved, 404);
+
         $requiredPrerequisiteIds = collect($course->prerequisite_ids ?? [])
             ->map(fn ($prerequisiteId) => (int) $prerequisiteId)
             ->filter(fn ($prerequisiteId) => $prerequisiteId > 0)
@@ -2070,6 +2084,7 @@ class StudentController extends Controller
         return $choice;
     }
 }
+
 
 
 

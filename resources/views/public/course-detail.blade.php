@@ -13,6 +13,13 @@
     .public-course__full-description{margin-top:1.25rem;color:#40516e;font-size:.98rem;line-height:1.75}
     .public-course__full-description > :first-child{margin-top:0}
     .public-course__full-description > :last-child{margin-bottom:0}
+    .public-course__full-description h2{margin:1.5rem 0 .65rem;color:#08245f;font-size:1.55rem;line-height:1.3}
+    .public-course__full-description h3{margin:1.25rem 0 .55rem;color:#123b78;font-size:1.28rem;line-height:1.35}
+    .public-course__full-description h4{margin:1rem 0 .45rem;color:#214b84;font-size:1.08rem;line-height:1.4}
+    .public-course__full-description p{margin:0 0 1rem}
+    .public-course__full-description ul,.public-course__full-description ol{margin:.6rem 0 1rem;padding-left:1.6rem}
+    .public-course__full-description li{margin:.3rem 0}
+    .public-course__full-description a{color:#1c5ca8;text-decoration:underline}
     .public-course__thumb{min-height:210px;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.03)),url('{{ $course->thumbnail_url ? asset($course->thumbnail_url) : asset('Images/PSU_Front_Building.jpg') }}') center/cover}
     .public-course__actions{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1.4rem}
     .public-course__button{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:.8rem 1.2rem;font-weight:800;background:#e5b43c;color:#08245f}
@@ -88,4 +95,5 @@
     </div>
 </section>
 @endsection
+
 

@@ -38,15 +38,13 @@ class CourseModerationService
         }
     }
 
-    public function togglePublish(Course $course, int $adminId): bool
+    public function togglePublish(Course $course): bool
     {
-        $course->is_published = ! $course->is_published;
-        if ($course->is_published) {
-            $course->approval_status = 'approved';
-            $course->is_approved = true;
-            $course->approved_by = $course->approved_by ?? $adminId;
-            $course->approved_at = $course->approved_at ?? now();
+        if ($course->approval_status !== 'approved' || ! $course->is_approved) {
+            throw new \DomainException('Only approved courses can be published or unpublished.');
         }
+
+        $course->is_published = ! $course->is_published;
         $course->save();
 
         return (bool) $course->is_published;
@@ -68,3 +66,4 @@ class CourseModerationService
         return $title;
     }
 }
+

@@ -86,6 +86,13 @@
         .status-pending .dot { background: var(--yellow); }
         .status-denied .dot { background: #d64545; }
         .status-draft .dot { background: #a3adbd; }
+        .publication-status {
+            display: inline-flex; align-items: center; border-radius: 999px;
+            padding: 4px 9px; margin-left: 7px; font-size: .68rem;
+            font-weight: 700; letter-spacing: .02em;
+        }
+        .publication-status.is-published { background: #e8f7ee; color: #187443; }
+        .publication-status.is-unpublished { background: #fff4dc; color: #8a5a00; }
 
         .star-form { display: flex; }
         .star-btn {
@@ -129,6 +136,19 @@
         .btn:hover { background: #f5f7fa; }
         .btn-approve { background: var(--yellow); border-color: var(--yellow); color: var(--navy); }
         .btn-approve:hover { background: var(--yellow-dark); }
+        .btn-publish { background: #edf7f1; border-color: #cce9d7; color: #176b3b; }
+        .btn-publish:hover { background: #dff1e6; }
+        .btn-unpublish { background: #fff4dc; border-color: #f0dfb8; color: #805400; }
+        .btn-unpublish:hover { background: #ffedc2; }
+        .publish-confirm-dialog {
+            width: min(440px, calc(100vw - 32px)); border: 0; border-radius: 16px;
+            padding: 24px; color: var(--text); box-shadow: 0 24px 70px rgba(7,21,80,.28);
+        }
+        .publish-confirm-dialog::backdrop { background: rgba(5,15,48,.58); }
+        .publish-confirm-dialog h2 { margin: 0 0 10px; color: var(--navy); font-size: 1.15rem; }
+        .publish-confirm-dialog p { margin: 0; color: var(--muted); line-height: 1.55; font-size: .9rem; }
+        .publish-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+        .publish-dialog-actions button { min-width: 104px; }
 
         .empty-state {
             padding: 40px 24px; border: 1px solid var(--line); border-radius: 12px;
@@ -195,6 +215,11 @@
                             <span class="status status-{{ $course->status_key }}">
                                 <span class="dot"></span>{{ $course->status }}
                             </span>
+                            @if ($course->can_toggle_publish)
+                                <span class="publication-status {{ $course->is_published ? 'is-published' : 'is-unpublished' }}">
+                                    {{ $course->is_published ? 'Published' : 'Unpublished' }}
+                                </span>
+                            @endif
 
                             <form class="star-form" method="POST" action="{{ route('admin.courses.feature', $course->id) }}" onclick="event.stopPropagation();">
                                 @csrf
@@ -258,6 +283,18 @@
                                     <button type="button" class="btn">Deny</button>
                                 </a>
                             </div>
+                        @elseif ($course->can_toggle_publish)
+                            <div class="actions" onclick="event.stopPropagation();">
+                                <form method="POST" action="{{ route('admin.courses.publish', $course->id) }}">
+                                    @csrf
+                                    <button type="button"
+                                            class="btn {{ $course->is_published ? 'btn-unpublish' : 'btn-publish' }}"
+                                            data-published="{{ $course->is_published ? '1' : '0' }}"
+                                            onclick="toggleCoursePublication(this)">
+                                        {{ $course->is_published ? 'Unpublish' : 'Publish' }}
+                                    </button>
+                                </form>
+                            </div>
                         @endif
                     </div>
                 @endforeach
@@ -270,7 +307,41 @@
     </main>
 </div>
 
+<dialog class="publish-confirm-dialog" id="unpublish-confirm-dialog" aria-labelledby="unpublish-confirm-title">
+    <h2 id="unpublish-confirm-title">Unpublish this course?</h2>
+    <p>
+        The course will be hidden from new students and new enrollments will be blocked.
+        Students already enrolled can keep learning and complete the course.
+    </p>
+    <div class="publish-dialog-actions">
+        <button type="button" class="btn" onclick="closeUnpublishConfirmation()">Cancel</button>
+        <button type="button" class="btn btn-unpublish" onclick="confirmUnpublish()">Unpublish</button>
+    </div>
+</dialog>
+
 <script>
+    var pendingPublicationForm = null;
+    function toggleCoursePublication(button) {
+        var form = button.closest('form');
+        if (button.dataset.published === '1') {
+            pendingPublicationForm = form;
+            document.getElementById('unpublish-confirm-dialog').showModal();
+            return;
+        }
+        form.submit();
+    }
+    function closeUnpublishConfirmation() {
+        document.getElementById('unpublish-confirm-dialog').close();
+        pendingPublicationForm = null;
+    }
+    function confirmUnpublish() {
+        if (!pendingPublicationForm) return;
+        var form = pendingPublicationForm;
+        pendingPublicationForm = null;
+        document.getElementById('unpublish-confirm-dialog').close();
+        form.submit();
+    }
+
     (function () {
         var tabs = document.querySelectorAll('.tab');
         var cards = document.querySelectorAll('.course-card');

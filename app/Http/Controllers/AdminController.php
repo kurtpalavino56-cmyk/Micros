@@ -525,6 +525,7 @@ class AdminController extends Controller
                 'status_key' => $this->statusKey($c),
                 'percent' => (int) round((float) DB::table('enrollments')->where('course_id', $c->id)->avg('progress_percent')),
                 'is_published' => (bool) $c->is_published,
+                'can_toggle_publish' => $c->approval_status === 'approved' && (bool) $c->is_approved,
                 'is_featured' => (bool) $c->is_featured,
                 // "Subject is Related on" — faculty/admin only, never shown
                 // to students. Lets an admin see what a submitted course
@@ -722,7 +723,11 @@ class AdminController extends Controller
     public function togglePublishCourse(int $id, CourseModerationService $moderation)
     {
         $course = Course::findOrFail($id);
-        $published = $moderation->togglePublish($course, (int) Auth::id());
+        try {
+            $published = $moderation->togglePublish($course);
+        } catch (\DomainException $e) {
+            return back()->withErrors(['publish' => $e->getMessage()]);
+        }
 
         return back()->with('success', '"'.$course->title.'" is now '
             .($published ? 'published.' : 'unpublished — hidden from students.'));
@@ -1542,3 +1547,4 @@ class AdminController extends Controller
         return back()->with('success', 'Pathway deleted.');
     }
 }
+
