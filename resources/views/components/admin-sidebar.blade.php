@@ -267,7 +267,12 @@
     <div class="sb-section open"><div class="sb-section-hd"><div class="sb-hd-left"><span class="sb-section-label">Management</span></div></div><div class="sb-items">
         <a href="{{ route('admin.usermanagement') }}" class="sb-item {{ request()->routeIs('admin.usermanagement', 'admin.users.*') ? 'active' : '' }}"><span class="sb-item-text">User Management</span></a>
         <a href="{{ route('admin.courses') }}" class="sb-item {{ request()->routeIs('admin.courses*') ? 'active' : '' }}"><span class="sb-item-text">Courses &amp; Badges</span></a>
+        {{-- Certificates: renders only when the route exists. It is not
+             registered yet, so without this guard the link 500s EVERY
+             admin page (the sidebar is included everywhere). --}}
+        @if (Route::has('admin.certificates'))
         <a href="{{ route('admin.certificates') }}" class="sb-item {{ request()->routeIs('admin.certificates*') ? 'active' : '' }}"><span class="sb-item-text">Certificates</span></a>
+        @endif
         <a href="{{ route('admin.facultycodes') }}" class="sb-item {{ request()->routeIs('admin.facultycodes') ? 'active' : '' }}"><span class="sb-item-text">Faculty Codes</span></a>
         <a href="{{ route('admin.categories') }}" class="sb-item {{ request()->routeIs('admin.categories*') ? 'active' : '' }}"><span class="sb-item-text">Program Categories</span></a>
         <a href="{{ route('admin.pathways') }}" class="sb-item {{ request()->routeIs('admin.pathways*') ? 'active' : '' }}"><span class="sb-item-text">Learning Pathways</span></a>

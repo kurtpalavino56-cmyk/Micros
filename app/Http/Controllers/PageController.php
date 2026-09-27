@@ -45,9 +45,7 @@ class PageController extends Controller
         // Featured strip, latest published fill the Latest strip.
         $cards = fn ($courses) => $courses->map(fn (Course $c) => [
             'title' => $c->title,
-            'description' => filled($c->short_description)
-                ? $c->short_description
-                : Str::limit(trim(html_entity_decode(strip_tags((string) $c->description), ENT_QUOTES | ENT_HTML5, 'UTF-8')), 110),
+            'description' => Str::limit((string) $c->description, 110),
             'professor' => $c->instructor ?? 'Faculty',
             'hours' => (int) filter_var($c->duration, FILTER_SANITIZE_NUMBER_INT),
             'rating' => 0,
@@ -339,9 +337,7 @@ class PageController extends Controller
 
         $cards->setCollection($cards->getCollection()->map(fn (Course $c) => [
                 'title' => $c->title,
-                'description' => filled($c->short_description)
-                    ? $c->short_description
-                    : Str::limit(trim(html_entity_decode(strip_tags((string) $c->description), ENT_QUOTES | ENT_HTML5, 'UTF-8')), 110),
+                'description' => Str::limit((string) $c->description, 110),
                 'professor' => $c->instructor ?? 'Faculty',
                 'hours' => (int) filter_var($c->duration, FILTER_SANITIZE_NUMBER_INT),
                 'rating' => 0,
@@ -799,4 +795,3 @@ class PageController extends Controller
         return redirect()->route('Homepage', ['certificate' => $serial]);
     }
 }
-

@@ -10,7 +10,6 @@ use App\Models\AcademicCreditRecognition;
 use App\Models\Announcement;
 use App\Models\Complaint;
 use App\Models\ComplaintReply;
-use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\CourseCategory;
 use App\Models\Enrollment;
@@ -33,7 +32,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -525,7 +523,6 @@ class AdminController extends Controller
                 'status_key' => $this->statusKey($c),
                 'percent' => (int) round((float) DB::table('enrollments')->where('course_id', $c->id)->avg('progress_percent')),
                 'is_published' => (bool) $c->is_published,
-                'can_toggle_publish' => $c->approval_status === 'approved' && (bool) $c->is_approved,
                 'is_featured' => (bool) $c->is_featured,
                 // "Subject is Related on" — faculty/admin only, never shown
                 // to students. Lets an admin see what a submitted course
@@ -573,8 +570,6 @@ class AdminController extends Controller
             'certificate' => CertificateBuilder::data($c),
             'status' => $c->statusLabel(),
             'status_key' => $this->statusKey($c),
-            'is_published' => (bool) $c->is_published,
-            'can_toggle_publish' => $c->approval_status === 'approved' && (bool) $c->is_approved,
             'students' => (int) $c->enrollments_count,
             'faculty' => 1,
             'percent' => (int) round((float) DB::table('enrollments')->where('course_id', $c->id)->avg('progress_percent')),
@@ -725,11 +720,7 @@ class AdminController extends Controller
     public function togglePublishCourse(int $id, CourseModerationService $moderation)
     {
         $course = Course::findOrFail($id);
-        try {
-            $published = $moderation->togglePublish($course);
-        } catch (\DomainException $e) {
-            return back()->withErrors(['publish' => $e->getMessage()]);
-        }
+        $published = $moderation->togglePublish($course, (int) Auth::id());
 
         return back()->with('success', '"'.$course->title.'" is now '
             .($published ? 'published.' : 'unpublished — hidden from students.'));
@@ -1454,48 +1445,6 @@ class AdminController extends Controller
             });
     }
 
-    public function certificates()
-    {
-        return view('admin.certificates', [
-            'user' => UserPresenter::admin(Auth::user()),
-            'certificates' => Certificate::with(['user', 'course', 'revoker'])
-                ->orderByDesc('issued_at')
-                ->orderByDesc('id')
-                ->paginate(20),
-        ]);
-    }
-
-    public function revokeCertificate(Request $request, int $id)
-    {
-        $data = $request->validate([
-            'revocation_reason' => ['required', 'string', 'min:5', 'max:1000'],
-        ]);
-
-        $pdfPath = DB::transaction(function () use ($id, $data): string {
-            $certificate = Certificate::query()->whereKey($id)->lockForUpdate()->firstOrFail();
-
-            if ($certificate->status === 'revoked') {
-                throw ValidationException::withMessages([
-                    'certificate' => 'This certificate has already been revoked.',
-                ]);
-            }
-
-            $certificate->status = 'revoked';
-            $certificate->revoked_at = now();
-            $certificate->revoked_by = Auth::id();
-            $certificate->revocation_reason = trim($data['revocation_reason']);
-            // Remove the pre-revocation PDF from the public disk. The next
-            // authenticated download regenerates it with the revoked mark.
-            $pdfPath = 'certificates/'.$certificate->serial.'.pdf';
-            $certificate->file_path = null;
-            $certificate->save();
-
-            return $pdfPath;
-        });
-        Storage::disk('public')->delete($pdfPath);
-
-        return back()->with('success', 'Certificate revoked.');
-    }
     public function pathways()
     {
         return view('admin.pathways', [
@@ -1549,4 +1498,3 @@ class AdminController extends Controller
         return back()->with('success', 'Pathway deleted.');
     }
 }
-
