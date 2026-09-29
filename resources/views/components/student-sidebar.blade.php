@@ -32,7 +32,7 @@
        ================================ */
 
     .layout.student-sidebar-layout .student-sidebar {
-        background: #09255f;
+        background: #0B1B45;
 
         padding: 24px 10px 20px;
 

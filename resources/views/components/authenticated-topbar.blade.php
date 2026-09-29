@@ -61,7 +61,7 @@
 </header>
 
 <style>
-    .auth-topbar{--navy:#0d1b6e;--gold:#dba617;--gold-light:#ffd84a;background:linear-gradient(115deg,#071550 0%,#0d1b6e 58%,#102b83 100%);display:flex;align-items:center;justify-content:space-between;padding:12px 28px;gap:20px;position:sticky;top:0;z-index:1000;border-bottom:1px solid rgba(255,255,255,.1);box-shadow:0 8px 24px rgba(7,21,80,.2);}
+    .auth-topbar{--navy:#0d1b6e;--gold:#dba617;--gold-light:#ffd84a;background:linear-gradient(115deg, #001B33 0%,#071550 0%,#0d1b6e 58%,#102b83 100%);display:flex;align-items:center;justify-content:space-between;padding:12px 28px;gap:20px;position:sticky;top:0;z-index:1000;border-bottom:1px solid rgba(255,255,255,.1);box-shadow:0 8px 24px rgba(7,21,80,.2);}
     .auth-topbar-brand{display:flex;align-items:center;gap:12px;color:#fff;white-space:nowrap;}
     .auth-topbar-logo{width:42px;height:42px;border-radius:50%;background:transparent;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
     .auth-topbar-logo img{width:100%;height:100%;object-fit:contain;padding:3px;}

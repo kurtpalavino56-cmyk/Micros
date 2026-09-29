@@ -30,7 +30,7 @@
 <style>
 /* ── Navbar ── */
 .navbar {
-    background: linear-gradient(115deg, #001289 0%, #1235c7 58%, #2457e8 100%);
+    background: linear-gradient(115deg, #001B33  0%, #001289 35%, #1235c7 58%, #2457e8 100%);
     position: sticky;
     top: 0;
     z-index: 1000;
