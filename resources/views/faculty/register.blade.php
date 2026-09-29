@@ -151,12 +151,13 @@
         .register-login {
             text-align: center;
             font-size: 0.83rem;
-            color: var(--gold);
-            font-weight: 700;
+            color:rgba(255,255,255,0.4);
+            
         }
         .register-login a {
             color: var(--gold);
             transition: opacity 0.2s;
+            font-weight: 700;
         }
         .register-login a:hover { opacity: 0.75; }
 
@@ -423,7 +424,8 @@
             </form>
 
             <div class="register-login">
-                <a href="{{ route('login') }}">Already have an Account? Login here</a>
+                Already have an Account? 
+                <a href="{{ route('login') }}">Login here</a>
             </div>
 
             {{-- Not faculty? Use the regular student registration --}}

@@ -281,6 +281,7 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':student']
     Route::post('/profile/complete', [StudentController::class, 'completeProfile'])->name('profile.complete');
 
     Route::get('/pathways', [StudentController::class, 'pathways'])->name('pathways.index');
+    Route::post('/pathways/select', [StudentController::class, 'selectPathway'])->name('pathways.select');
     Route::get('/stacking-progress', [StudentController::class, 'stackingProgress'])->name('stacking.progress');
     Route::post('/stacking-progress/{frameworkId}/recognition', [StudentController::class, 'requestAcademicCreditRecognition'])
         ->whereNumber('frameworkId')->name('stacking.recognition.request');

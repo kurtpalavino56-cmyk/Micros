@@ -74,9 +74,8 @@ class StudentController extends Controller
 
         return view('student.onboarding', [
             'user' => UserPresenter::student($auth),
-            'pathways' => Pathway::query()->where('is_active', true)->with('courses')->orderBy('name')->get(),
+            'schools' => SchoolCatalog::all(),
             'skill_options' => SkillCatalog::all(),
-            'skill_groups' => SkillCatalog::groups(),
         ]);
     }
 
@@ -1539,116 +1538,128 @@ class StudentController extends Controller
     public function pathways()
     {
         $auth = Auth::user();
-
-        // ── The student's real learning footprint ────────────────────────
         $enrollments = Enrollment::with('course')->where('user_id', $auth->id)->get();
         $completed = $enrollments->where('completion_status', MicrocredentialCompletionService::STATUS_COMPLETED);
-        $inProgress = $enrollments->where('completion_status', '!=', MicrocredentialCompletionService::STATUS_COMPLETED)
-            ->where('progress_percent', '>', 0);
-
         $completedTitles = $completed->map(fn ($e) => $e->course->title ?? '')->filter()->values();
-
-        // Skills/competencies earned from completed courses (skills + category + title keywords)
         $competencies = $completed
-            ->flatMap(fn ($e) => collect($e->course->skills ?? [])->concat([$e->course->category])->filter())
-            ->merge($auth->skills_have ?? [])   // self-declared skills from About Me
+            ->flatMap(fn ($e) => collect(array_merge((array) ($e->course->related_skills ?? []), (array) ($e->course->skills ?? [])))
+                ->concat([$e->course->category])->filter())
+            ->merge($auth->skills_have ?? [])
             ->filter()
             ->unique()
             ->values();
 
-        // ── Pick the student's desired pathway from what they're learning ─
-        $pathways = DB::table('pathways')->where('is_active', true)->get();
-        $selectedPathway = $auth->pathway_id
-            ? $pathways->firstWhere('id', (int) $auth->pathway_id)
-            : null;
-        $pathway = $selectedPathway ?: $this->bestPathwayFor($pathways, $enrollments, $competencies);
+        $availablePathways = Pathway::query()
+            ->where('is_active', true)
+            ->with(['courses' => fn ($query) => $query->where('is_published', true)])
+            ->orderBy('name')
+            ->get();
+        $selectedPathway = $availablePathways->firstWhere('id', (int) $auth->pathway_id);
 
-        $desiredComps = collect(json_decode($pathway->desired_competencies ?? '[]', true) ?: [])
-            ->merge(json_decode($pathway->missing_competencies ?? '[]', true) ?: [])
-            ->merge(json_decode($pathway->current_competencies ?? '[]', true) ?: [])
-            ->filter()->unique()->values();
-
-        // Which desired competencies the student already has / still misses
-        $currentComps = $desiredComps->filter(fn ($c) => $this->studentHasCompetency($c, $competencies, $completedTitles))->values();
-        $missingComps = $desiredComps->reject(fn ($c) => $this->studentHasCompetency($c, $competencies, $completedTitles))->values();
-
-        // Readiness = share of desired competencies already earned
-        $readiness = $desiredComps->count() > 0
+        $pathwayCourses = $selectedPathway?->courses ?? collect();
+        $desiredComps = collect($selectedPathway?->desired_competencies ?? [])
+            ->merge($selectedPathway?->current_competencies ?? [])
+            ->merge($selectedPathway?->missing_competencies ?? [])
+            ->merge($pathwayCourses->flatMap(fn ($course) => collect(array_merge((array) ($course->related_skills ?? []), (array) ($course->skills ?? [])))
+                ->concat([$course->category])->filter()))
+            ->filter()
+            ->unique()
+            ->values();
+        $currentComps = $desiredComps
+            ->filter(fn ($item) => $this->studentHasCompetency((string) $item, $competencies, $completedTitles))
+            ->values();
+        $missingComps = $desiredComps
+            ->reject(fn ($item) => $this->studentHasCompetency((string) $item, $competencies, $completedTitles))
+            ->values();
+        $readiness = $desiredComps->isNotEmpty()
             ? (int) round(($currentComps->count() / $desiredComps->count()) * 100)
             : 0;
 
-        // ── Roadmap steps from the student's actual course progress ──────
-        $palette = ['#2DD4CF', '#D8C84A', '#E5483D', '#8B5CF6', '#F59E0B'];
-        $steps = $enrollments->take(4)->values()->map(function ($e, $i) use ($palette) {
-            $status = $e->completion_status === MicrocredentialCompletionService::STATUS_COMPLETED
-                ? 'completed'
-                : ($e->progress_percent > 0 ? 'current' : 'locked');
+        $enrollmentsByCourse = $enrollments->keyBy('course_id');
+        $completedIds = $completed->pluck('course_id')->map(fn ($id) => (int) $id);
+        $currentCourse = $pathwayCourses->first(function ($course) use ($enrollmentsByCourse, $completedIds) {
+            $enrollment = $enrollmentsByCourse->get($course->id);
 
-            return [
-                'label' => 'Goal '.($i + 1),
-                'title' => Str::limit($e->course->title ?? 'Course', 18, ''),
-                'color' => $status === 'locked' ? '#9CA3AF' : $palette[$i % count($palette)],
-                'status' => $status,
-            ];
-        })->all();
-        if ($steps === []) {
-            $steps = json_decode($pathway->steps ?? '[]', true) ?: [];
+            return $enrollment && ! $completedIds->contains((int) $course->id);
+        }) ?? $pathwayCourses->first(fn ($course) => ! $completedIds->contains((int) $course->id));
+
+        $steps = [];
+        if ($selectedPathway) {
+            $steps = $pathwayCourses->values()->map(function ($course, $index) use ($completedIds, $currentCourse) {
+                $status = $completedIds->contains((int) $course->id)
+                    ? 'completed'
+                    : (($currentCourse && (int) $currentCourse->id === (int) $course->id) ? 'current' : 'locked');
+
+                return [
+                    'label' => 'Goal '.($index + 1),
+                    'title' => $course->title,
+                    'status' => $status,
+                ];
+            })->all();
         }
 
-        // ── Smart recommendations ────────────────────────────────────────
-        $recommendations = $this->buildRecommendations($auth, $enrollments, $missingComps, $pathway, $auth->skills_want ?? []);
+        $currentEnrollment = $currentCourse ? $enrollmentsByCourse->get($currentCourse->id) : null;
+        $currentCourseSkills = collect($currentCourse ? array_merge((array) ($currentCourse->related_skills ?? []), (array) ($currentCourse->skills ?? [])) : [])
+            ->filter()->unique()->values();
+        $skillsDone = $currentCourseSkills->filter(fn ($skill) => $this->studentHasCompetency((string) $skill, $competencies, $completedTitles))->count();
+        $destination = $selectedPathway?->destination ?: ($selectedPathway?->desired_title ?: $selectedPathway?->name);
+        $recommendations = $this->buildRecommendations(
+            $auth,
+            $enrollments,
+            $missingComps,
+            $selectedPathway ?? (object) [],
+            $auth->skills_want ?? []
+        );
 
         return view('student.pathways', [
             'user' => UserPresenter::student($auth),
-            'pathway' => [
-                'steps' => $steps,
-                'destination' => $pathway->destination ?? 'Full Stack Web Developer',
-                'destination_color' => $pathway->destination_color ?? '#5FD93D',
-                'connector_to_destination' => $pathway->connector_color ?? '#2563EB',
+            'availablePathways' => $availablePathways,
+            'selectedPathway' => $selectedPathway,
+            'pathwaySteps' => $steps,
+            'pathwayDestination' => $destination,
+            'pathwayCourseCount' => $pathwayCourses->count(),
+            'pathwayCompleteCount' => $pathwayCourses->filter(fn ($course) => $completedIds->contains((int) $course->id))->count(),
+            'currentGoal' => $currentCourse ? [
+                'id' => $currentCourse->id,
+                'title' => $currentCourse->title,
+                'description' => Str::limit(trim(strip_tags((string) ($currentCourse->short_description ?? $currentCourse->description ?? 'Continue along your selected pathway.'))), 180),
+                'pct' => (int) ($currentEnrollment->progress_percent ?? 0),
+                'skillsDone' => $skillsDone,
+                'skillsTotal' => $currentCourseSkills->count(),
+                'url' => route('courses.show', $currentCourse->id),
+            ] : null,
+            'currentCompetencies' => $competencies->take(12)->values()->all(),
+            'nextCompetencies' => $currentCourseSkills->reject(fn ($skill) => $this->studentHasCompetency((string) $skill, $competencies, $completedTitles))->take(12)->values()->all(),
+            'pathwayMatch' => [
+                'percent' => $pathwayCourses->count() > 0 ? (int) round(($completedIds->intersect($pathwayCourses->pluck('id'))->count() / $pathwayCourses->count()) * 100) : 0,
+                'complete' => $pathwayCourses->filter(fn ($course) => $completedIds->contains((int) $course->id))->count(),
+                'total' => $pathwayCourses->count(),
+                'next' => $currentCourse?->title ?? ($destination ?: 'Choose a pathway'),
             ],
             'recommendations' => $recommendations,
             'desiredPathway' => [
-                'title' => $pathway->desired_title ?? $pathway->name ?? 'Career Pathway',
-                'current_competencies' => $currentComps->all() ?: ['—'],
-                'missing_competencies' => $missingComps->all() ?: ['—'],
+                'title' => $selectedPathway?->desired_title ?? $selectedPathway?->name,
+                'current_competencies' => $currentComps->all(),
+                'missing_competencies' => $missingComps->all(),
             ],
             'readinessPercent' => $readiness,
-            'readinessLabel' => $pathway->readiness_label ?? ($pathway->desired_title ?? 'this Pathway'),
+            'readinessLabel' => $selectedPathway?->readiness_label ?? $destination,
         ]);
     }
 
-    /**
-     * Chooses the pathway that best matches what the student is actually
-     * studying (course titles/categories vs. pathway names/destinations),
-     * falling back to the first active pathway.
-     */
-    private function bestPathwayFor($pathways, $enrollments, $competencies)
+    public function selectPathway(Request $request)
     {
-        if ($pathways->isEmpty()) {
-            return (object) [];
-        }
+        $data = $request->validate([
+            'pathway_id' => ['required', 'integer', 'exists:pathways,id'],
+        ]);
 
-        $skillsWantText = collect(Auth::user()->skills_want ?? [])->implode(' ');
-        $haystack = strtolower($enrollments->map(fn ($e) => ($e->course->title ?? '').' '.($e->course->category ?? '').' '.implode(' ', $e->course->skills ?? []))->implode(' ').' '.$skillsWantText);
+        $pathway = Pathway::query()
+            ->where('is_active', true)
+            ->findOrFail($data['pathway_id']);
 
-        $best = $pathways->first();
-        $score = -1;
-        foreach ($pathways as $p) {
-            $s = 0;
-            foreach (array_filter([$p->name ?? null, $p->destination ?? null, $p->desired_title ?? null]) as $kw) {
-                foreach (preg_split('/\s+/', strtolower($kw)) as $word) {
-                    if (strlen($word) > 3 && str_contains($haystack, $word)) {
-                        $s++;
-                    }
-                }
-            }
-            if ($s > $score) {
-                $score = $s;
-                $best = $p;
-            }
-        }
+        Auth::user()->forceFill(['pathway_id' => $pathway->id])->save();
 
-        return $best;
+        return redirect()->route('pathways.index')->with('success', 'Your pathway has been selected.');
     }
 
     /** Loose competency match: skill text, category, or a completed course title containing it. */
@@ -1692,7 +1703,8 @@ class StudentController extends Controller
             ->get();
 
         $scored = $candidates->map(function ($course) use ($missingComps, $activeMap, $pathway, $skillsWant) {
-            $text = strtolower($course->title.' '.($course->category ?? '').' '.implode(' ', $course->skills ?? []));
+            $courseSkills = array_merge((array) ($course->related_skills ?? []), (array) ($course->skills ?? []));
+            $text = strtolower($course->title.' '.($course->category ?? '').' '.implode(' ', $courseSkills));
 
             $score = 0;
             foreach ($missingComps as $comp) {
@@ -1731,6 +1743,7 @@ class StudentController extends Controller
             $enrollment = $activeMap->get($row['course']->id);
 
             return [
+                'course_id' => $row['course']->id,
                 'title' => ($enrollment ? 'Finish: ' : 'Take: ').Str::limit($row['course']->title, 32, ''),
                 'completion' => (int) ($enrollment->progress_percent ?? 0),
             ];

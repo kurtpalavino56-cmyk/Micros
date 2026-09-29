@@ -151,12 +151,12 @@
         .register-login {
             text-align: center;
             font-size: 0.83rem;
-            color: var(--gold);
-            font-weight: 700;
+            color:rgba(255,255,255,0.4);
         }
         .register-login a {
             color: var(--gold);
             transition: opacity 0.2s;
+            font-weight: 700;
         }
         .register-login a:hover { opacity: 0.75; }
 
@@ -321,7 +321,7 @@
         <div class="register-form-panel">
 
             <a href="{{ url('/') }}" class="register-back" title="Back to Home">
-                <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> 
             </a>
 
             <h1 class="register-form-panel__heading">Let's get you started!</h1>
@@ -413,7 +413,8 @@
             </form>
 
             <div class="register-login">
-                <a href="{{ route('login') }}">Already have an Account? Login here</a>
+                Already have an Account?
+                <a href="{{ route('login') }}">Login here</a>
             </div>
 
             {{-- Faculty staff register with an admin-issued Faculty Code --}}
