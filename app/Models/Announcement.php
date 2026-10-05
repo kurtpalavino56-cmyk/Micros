@@ -13,6 +13,7 @@ class Announcement extends Model
         'audience',
         'created_by',
         'is_published',
+        'is_pinned',
         'published_at',
     ];
 
@@ -20,6 +21,7 @@ class Announcement extends Model
     {
         return [
             'is_published' => 'boolean',
+            'is_pinned' => 'boolean',
             'audience' => 'array',
             'published_at' => 'datetime',
         ];
@@ -31,7 +33,9 @@ class Announcement extends Model
         $audience = $this->audience;
 
         // No audience recorded (older rows) = everyone.
-        return empty($audience) || in_array($roleName, $audience, true);
+        return empty($audience)
+            || in_array('public', $audience, true)
+            || in_array($roleName, $audience, true);
     }
 
     public function author(): BelongsTo

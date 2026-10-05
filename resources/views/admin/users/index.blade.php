@@ -66,6 +66,10 @@
         }
 
         /* Toolbar */
+        .user-management-heading {
+            margin-bottom: 20px;
+        }
+
         .user-tools {
             width: 100%;
             display: flex;
@@ -457,6 +461,13 @@
 
         {{-- MAIN CONTENT --}}
         <main class="main">
+
+            <header class="page-head user-management-heading">
+                <div>
+                    <h1>User Management</h1>
+                    <p>Manage student and faculty accounts, roles, and platform access.</p>
+                </div>
+            </header>
 
             <div class="user-tools">
                 @php $roleTab = $roleTab ?? 'students'; @endphp

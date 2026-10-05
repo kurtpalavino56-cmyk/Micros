@@ -217,15 +217,10 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':admin'])-
 
     Route::get('/Admin-academic-credit-recognition', [AdminController::class, 'academicCreditRecognitionRequests'])
         ->name('admin.academic-credit-recognition');
-    Route::post('/Admin-academic-credit-recognition/{id}/recommend', [AdminController::class, 'recommendAcademicCreditRecognition'])
-        ->whereNumber('id')->name('admin.academic-credit-recognition.recommend');
-    Route::post('/Admin-academic-credit-recognition/{id}/endorse', [AdminController::class, 'endorseAcademicCreditRecognition'])
-        ->whereNumber('id')->name('admin.academic-credit-recognition.endorse');
-    Route::post('/Admin-academic-credit-recognition/{id}/record', [AdminController::class, 'recordAcademicCreditRecognition'])
-        ->whereNumber('id')->name('admin.academic-credit-recognition.record');
-    Route::post('/Admin-academic-credit-recognition/{id}/deny', [AdminController::class, 'denyAcademicCreditRecognition'])
-        ->whereNumber('id')->name('admin.academic-credit-recognition.deny');
+    Route::get('/Admin-credit-evidence/{userId}/{frameworkId}', [AdminController::class, 'creditEvidenceReport'])
+        ->whereNumber('userId')->whereNumber('frameworkId')->name('admin.credit-evidence');
 
+    Route::get('/Admin-report/download', [AdminController::class, 'downloadAnalyticsReport'])->name('admin.report.download');
     Route::get('/Admin-report', [AdminController::class, 'report'])->name('admin.report');
 
     // #3 — Announcements (sidebar item under Analytics)
@@ -233,6 +228,8 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':admin'])-
     Route::post('/Admin-announcements', [AdminController::class, 'storeAnnouncement'])->name('admin.announcements.store');
     Route::patch('/Admin-announcements/{id}', [AdminController::class, 'updateAnnouncement'])
         ->whereNumber('id')->name('admin.announcements.update');
+    Route::post('/Admin-announcements/{id}/pin', [AdminController::class, 'toggleAnnouncementPin'])
+        ->whereNumber('id')->name('admin.announcements.pin');
     Route::post('/Admin-announcements/{id}/delete', [AdminController::class, 'destroyAnnouncement'])
         ->whereNumber('id')->name('admin.announcements.destroy');
 
@@ -269,6 +266,15 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':student']
     Route::post('/courses/{courseId}/lessons/{lessonId}/complete', [StudentController::class, 'completeLesson'])
         ->whereNumber('courseId')->whereNumber('lessonId')->name('courses.lessons.complete');
     Route::get('/quiz/{id}', [StudentController::class, 'quiz'])->whereNumber('id')->name('quiz.show');
+    Route::post('/quiz/{id}/start', [StudentController::class, 'startQuiz'])->whereNumber('id')->name('quiz.start');
+    Route::post('/quiz/{id}/attempt', [StudentController::class, 'submitStandaloneQuiz'])
+        ->whereNumber('id')->name('quiz.submit');
+    Route::get('/lesson-activities/{id}', [StudentController::class, 'showLessonActivity'])
+        ->whereNumber('id')->name('lesson-activities.show');
+    Route::post('/lesson-activities/{id}/submissions', [StudentController::class, 'submitLessonActivity'])
+        ->whereNumber('id')->name('lesson-activities.submit');
+    Route::get('/lesson-activity-submissions/{submissionId}/download', [StudentController::class, 'downloadLessonActivitySubmission'])
+        ->whereNumber('submissionId')->name('lesson-activities.download');
 
     Route::get('/courses/enrolled', [StudentController::class, 'enrolledCourses'])->name('courses.enrolled');
     Route::get('/badges', [StudentController::class, 'badges'])->name('badges.index');
@@ -283,8 +289,9 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':student']
     Route::get('/pathways', [StudentController::class, 'pathways'])->name('pathways.index');
     Route::post('/pathways/select', [StudentController::class, 'selectPathway'])->name('pathways.select');
     Route::get('/stacking-progress', [StudentController::class, 'stackingProgress'])->name('stacking.progress');
-    Route::post('/stacking-progress/{frameworkId}/recognition', [StudentController::class, 'requestAcademicCreditRecognition'])
-        ->whereNumber('frameworkId')->name('stacking.recognition.request');
+    Route::get('/stacking-progress/{frameworkId}/evidence-report', [StudentController::class, 'creditEvidenceReport'])
+        ->whereNumber('frameworkId')->name('stacking.evidence-report');
+    Route::get('/analytics/report', [StudentController::class, 'downloadAnalyticsReport'])->name('analytics.report');
     Route::get('/analytics', [StudentController::class, 'analytics'])->name('analytics.index');
 
     // #4 — Help Centre inbox (envelope beside the notification bell)
@@ -305,19 +312,26 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty']
     Route::patch('/Faculty-profile', [FacultyController::class, 'updateProfile'])->name('faculty.profile.update');
 
     Route::get('/Faculty-analytics', [FacultyController::class, 'analytics'])->name('faculty.analytics');
-    // Download the whole Faculty Analytics page as a PDF report
+    Route::get('/Faculty-analytics/live', [FacultyController::class, 'analyticsLive'])->name('faculty.analytics.live');
     Route::get('/Faculty-analytics/report', [FacultyAnalyticsReportController::class, 'download'])
         ->name('faculty.analytics.report');
 
-    // Faculty inbox — announcements addressed to faculty by the admin
+    // Faculty inbox — private message threads between faculty and admins
     Route::get('/Faculty-inbox', [FacultyController::class, 'inbox'])->name('faculty.inbox');
-    Route::post('/Faculty-inbox/read-all', [FacultyController::class, 'markInboxRead'])->name('faculty.inbox.readAll');
+    Route::post('/Faculty-inbox/{id}/reply', [StudentController::class, 'replyComplaint'])
+        ->whereNumber('id')->name('faculty.inbox.reply');
 
     Route::get('/Faculty-students', [FacultyController::class, 'students'])->name('faculty.students');
+    Route::get('/Faculty-students/{id}', [FacultyController::class, 'courseStudents'])
+        ->whereNumber('id')->name('faculty.students.course');
 
     Route::get('/Faculty-mycourses', [FacultyController::class, 'courses'])->name('faculty.courses');
     Route::get('/Faculty-mycourses/manage/{id?}', [FacultyController::class, 'manage'])
         ->whereNumber('id')->name('faculty.courses.manage');
+    Route::post('/Faculty-mycourses/manage/{id}/submit-for-approval', [FacultyController::class, 'submitForApproval'])
+        ->whereNumber('id')->name('faculty.courses.submit-for-approval');
+    Route::get('/Faculty-mycourses/manage/{id}/activity-reviews', [FacultyController::class, 'activityReviews'])
+        ->whereNumber('id')->name('faculty.activities.reviews');
     Route::post('/Faculty-enrollments/{enrollment}/verify', [FacultyController::class, 'verifyEnrollment'])
         ->whereNumber('enrollment')->name('faculty.enrollments.verify');
 
@@ -345,6 +359,22 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty']
         ->whereNumber('id')->whereNumber('moduleIndex')->whereNumber('lessonId')->name('faculty.lesson.update');
     Route::post('/Faculty-mycourses/manage/{id}/modules/{moduleIndex}/lessons/{key}/delete', [FacultyController::class, 'deleteLesson'])
         ->whereNumber('id')->whereNumber('moduleIndex')->name('faculty.lesson.delete');
+    Route::post('/Faculty-mycourses/manage/{id}/lessons/{lessonId}/activities', [FacultyController::class, 'storeLessonActivity'])
+        ->whereNumber('id')->whereNumber('lessonId')->name('faculty.lesson-activity.store');
+    Route::post('/Faculty-mycourses/manage/{id}/activities/{activityId}/update', [FacultyController::class, 'updateLessonActivity'])
+        ->whereNumber('id')->whereNumber('activityId')->name('faculty.lesson-activity.update');
+    Route::post('/Faculty-mycourses/manage/{id}/activities/{activityId}/remove', [FacultyController::class, 'destroyLessonActivity'])
+        ->whereNumber('id')->whereNumber('activityId')->name('faculty.lesson-activity.destroy');
+    Route::post('/Faculty-mycourses/manage/{id}/reorder/modules', [FacultyController::class, 'reorderModules'])
+        ->whereNumber('id')->name('faculty.modules.reorder');
+    Route::post('/Faculty-mycourses/manage/{id}/modules/{moduleId}/reorder/lessons', [FacultyController::class, 'reorderLessons'])
+        ->whereNumber('id')->whereNumber('moduleId')->name('faculty.lessons.reorder');
+    Route::post('/Faculty-mycourses/manage/{id}/lessons/{lessonId}/reorder/assessments', [FacultyController::class, 'reorderLessonAssessments'])
+        ->whereNumber('id')->whereNumber('lessonId')->name('faculty.lesson-assessments.reorder');
+    Route::post('/Faculty-mycourses/{id}/activity-reviews/{activityId}/submissions/{submissionId}', [FacultyController::class, 'reviewLessonActivitySubmission'])
+        ->whereNumber('id')->whereNumber('activityId')->whereNumber('submissionId')->name('faculty.lesson-activity.review');
+    Route::get('/Faculty-lesson-activity-submissions/{submissionId}/download', [StudentController::class, 'downloadLessonActivitySubmission'])
+        ->whereNumber('submissionId')->name('faculty.lesson-activities.download');
 
     Route::get('/Faculty-mycourses/manage/{id}/modules/{moduleIndex}/quiz/create', [FacultyController::class, 'quizCreate'])
         ->whereNumber('id')->whereNumber('moduleIndex')->name('faculty.quiz.create');
@@ -354,5 +384,9 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty']
     Route::post('/Faculty-mycourses/manage/{id}/modules/{moduleIndex}/quiz/delete', [FacultyController::class, 'destroyQuiz'])
         ->whereNumber('id')->whereNumber('moduleIndex')->name('faculty.quiz.destroy');
 
-});
+    Route::get('/Faculty-mycourses/manage/{id}/lessons/{lessonId}/quiz/create', [FacultyController::class, 'lessonQuizCreate'])
+        ->whereNumber('id')->whereNumber('lessonId')->name('faculty.lesson-quiz.create');
+    Route::post('/Faculty-mycourses/manage/{id}/lessons/{lessonId}/quiz', [FacultyController::class, 'storeLessonQuiz'])
+        ->whereNumber('id')->whereNumber('lessonId')->name('faculty.lesson-quiz.store');
 
+});

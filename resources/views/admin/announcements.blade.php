@@ -75,11 +75,17 @@
     .pill{display:inline-block;background:#eef1fb;color:var(--navy);font-size:11.5px;
         font-weight:800;padding:4px 11px;border-radius:999px;margin-right:6px;}
     .pill.faculty{background:#fdf3d7;color:#c4930f;}
+    .pill.public{background:#e8f5ee;color:#136c3e;}
+    .pill.pinned{background:#fff4cf;color:#806208;}
     .alert{padding:11px 14px;border-radius:12px;margin-bottom:18px;font-size:14px;}
     .alert-ok{background:#ecfdf3;border:1px solid #a7f3d0;color:#065f46;}
     .alert-err{background:#fff1f2;border:1px solid #fecdd3;color:#b91c1c;}
     .empty{color:var(--muted);text-align:center;padding:34px 8px;font-size:14px;}
     .actions{display:flex;gap:8px;flex-shrink:0;}
+    .btn-pin{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--line);
+        color:var(--navy);padding:8px 14px;border-radius:999px;font-weight:700;font-size:12.5px;}
+    .btn-pin.is-pinned{background:#fff8df;border-color:#e9cf72;color:#806208;}
+    .btn-pin svg{width:14px;height:14px;}
     @media(max-width:640px){.ann-head{flex-direction:column;}}
 </style>
 </head>
@@ -159,8 +165,12 @@
                 <div class="audience-row">
                     <span class="audience-label">Who Can See Your Announcement</span>
                     <div class="audience-opts">
-                        <label><input type="checkbox" name="audience[]" value="student" checked> Student</label>
-                        <label><input type="checkbox" name="audience[]" value="faculty" checked> Faculty</label>
+                        <label><input type="checkbox" name="audience[]" value="public"
+                            @checked(in_array('public', old('audience', ['public']), true))> Public</label>
+                        <label><input type="checkbox" name="audience[]" value="student"
+                            @checked(in_array('student', old('audience', ['public']), true))> Student</label>
+                        <label><input type="checkbox" name="audience[]" value="faculty"
+                            @checked(in_array('faculty', old('audience', ['public']), true))> Faculty</label>
                     </div>
                 </div>
             </div>
@@ -182,12 +192,23 @@
                             @foreach ($a->audience as $role)
                                 <span class="pill {{ $role }}">{{ ucfirst($role) }}</span>
                             @endforeach
+                            @if ($a->is_pinned)
+                                <span class="pill pinned">Pinned</span>
+                            @endif
                         </div>
                         <div class="ann-meta" style="margin-top:8px;">
                             By {{ $a->author }} · {{ $a->created_at?->format('M j, Y g:i A') }}
                         </div>
                     </div>
                     <div class="actions">
+                        <form method="POST" action="{{ route('admin.announcements.pin', $a->id) }}">
+                            @csrf
+                            <button type="submit" class="btn-pin {{ $a->is_pinned ? 'is-pinned' : '' }}"
+                                aria-label="{{ $a->is_pinned ? 'Unpin' : 'Pin' }} {{ $a->title }}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-5 5-3-3-6 6v4H3v-4l6-6-3-3 5-5 5 5z"/></svg>
+                                {{ $a->is_pinned ? 'Unpin' : 'Pin' }}
+                            </button>
+                        </form>
                         <button type="button" class="btn-ghost"
                                 onclick="toggleEdit({{ $a->id }})">Edit</button>
                         <form method="POST" action="{{ route('admin.announcements.destroy', $a->id) }}"
@@ -215,6 +236,8 @@
                         <div class="audience-row">
                             <span class="audience-label">Who Can See Your Announcement</span>
                             <div class="audience-opts">
+                                <label><input type="checkbox" name="audience[]" value="public"
+                                    @checked(in_array('public', $a->audience, true))> Public</label>
                                 <label><input type="checkbox" name="audience[]" value="student"
                                     @checked(in_array('student', $a->audience, true))> Student</label>
                                 <label><input type="checkbox" name="audience[]" value="faculty"
@@ -232,6 +255,25 @@
 </div>
 
 <script>
+    document.querySelectorAll('.audience-opts').forEach(function (group) {
+        var publicOption = group.querySelector('input[value="public"]');
+        var roleOptions = group.querySelectorAll('input[value="student"], input[value="faculty"]');
+
+        if (!publicOption) return;
+
+        publicOption.addEventListener('change', function () {
+            if (publicOption.checked) {
+                roleOptions.forEach(function (option) { option.checked = false; });
+            }
+        });
+
+        roleOptions.forEach(function (option) {
+            option.addEventListener('change', function () {
+                if (option.checked) publicOption.checked = false;
+            });
+        });
+    });
+
     function toggleEdit(id) {
         var f = document.getElementById('edit-' + id);
         if (f) f.style.display = f.style.display === 'none' ? 'block' : 'none';

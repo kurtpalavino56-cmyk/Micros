@@ -1,4 +1,4 @@
-﻿{{--
+{{--
     resources/views/courses_browse.blade.php
 
     Expected data from the controller, e.g.:
@@ -49,35 +49,35 @@
     button{font-family:inherit;cursor:pointer;}
 
     /* Topbar */
-    .topbar{background:var(--navy);display:flex;align-items:center;justify-content:space-between;padding:14px 28px;gap:20px;}
-    .brand{display:flex;align-items:center;gap:14px;color:#fff;white-space:nowrap;}
-    .brand .logo{width:46px;height:46px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .brand .logo svg{width:30px;height:30px;}
-    .nav-pills{display:flex;gap:14px;...}
-    .brand h1{font-size:24px;letter-spacing:1px;margin:0;font-weight:800;}
-    .brand .logo img{width:100%;height:100%;object-fit:contain;border-radius:50%;padding:3px;}
-    .nav-pills{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-items:center;}
-    .nav-pills a{background:transparent;color:#fff;font-weight:700;padding:10px 18px;border-radius:10px;font-size:15px;transition:color .15s ease, background-color .15s ease;}
-    .nav-pills a:hover{color:var(--gold);}
-    .nav-pills a.is-active{color:var(--gold);background:rgba(255,255,255,0.08);}
-    .icon-cluster{display:flex;align-items:center;gap:14px;}
-    .icon-circle{width:42px;height:42px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-    .icon-circle svg{width:22px;height:22px;color:var(--navy);}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /* Layout */
     .layout{display:grid;grid-template-columns:264px 1fr;min-height:calc(100vh - 74px);align-items:start;}
 
     /* Sidebar */
-    .sidebar{background:var(--navy);padding:26px 16px;display:flex;flex-direction:column;gap:6px;margin:0 10px 24px 24px;border-radius:22px;box-shadow:0 16px 34px rgba(19,23,107,0.28);height:fit-content;position:sticky;top:0;}
-    .side-link{display:flex;align-items:center;gap:14px;padding:14px;border-radius:14px;font-weight:700;font-size:16px;color:#fff;transition:color .15s ease;}
+
+
     /* hover: text + icon turn gold (non-active links) */
-    .side-link:not(.active):hover{color:var(--gold);}
-    .side-link:not(.active):hover .side-icon-box svg{color:var(--gold);}
-    .side-link svg{width:26px;height:26px;flex-shrink:0;}
-    .side-link.active{background:var(--cyan);color:var(--navy);}
-    .side-icon-box{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .side-icon-box svg{width:26px;height:26px;color:#fff;transition:color .15s ease;}
-    .side-link.active .side-icon-box svg{color:var(--navy);}
+
+
+
+
+
+
+
 
     /* Main */
     .main{padding:32px 36px 60px;}
@@ -103,24 +103,26 @@
     .btn-recommended.is-on svg{fill:rgba(12,15,77,.18);}
 
     /* Course grid */
-    .courses-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(380px, 1fr));gap:28px;}
-    .browse-card{border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:var(--shadow);background:#fff;display:flex;flex-direction:column;}
-    .card-thumb{height:230px;background:var(--gold);background-size:cover;background-position:center;}
-    .card-body{padding:20px 22px 24px;}
+    .courses-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(min(100%, 290px), 1fr));gap:18px;}
+    .browse-card{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;display:flex;flex-direction:column;min-width:0;transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease;}
+    .browse-card:hover{border-color:#b9c4dc;box-shadow:0 8px 20px rgba(19,23,107,.08);transform:translateY(-2px);}
+    .card-thumb{height:160px;background:#e8edf7;background-size:cover;background-position:center;}
+    .card-body{padding:16px 17px 15px;display:flex;flex-direction:column;flex:1;}
     .tags{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
-    .tag{padding:8px 18px;border-radius:999px;font-weight:700;font-size:13px;}
-    .tag-category{background:var(--tag-cat);color:#fff;}
-    .tag-level{background:var(--tag-level-bg);color:var(--navy);}
-    .browse-card h3{margin:0 0 10px;font-size:22px;color:var(--navy);line-height:1.25;}
-    .browse-card .desc{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
-    .meta{display:flex;align-items:center;gap:18px;color:var(--muted);font-size:14px;flex-wrap:wrap;}
+    .tag{padding:4px 9px;border-radius:5px;font-weight:650;font-size:11px;}
+    .tag-category{background:#edf1f8;color:#344054;}
+    .tag-level{background:#fff6d7;color:#69500b;}
+    .browse-card h3{margin:0 0 8px;font-size:18px;color:#182230;line-height:1.35;}
+    .browse-card .desc{margin:0 0 14px;color:var(--muted);font-size:13px;line-height:1.55;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+    .meta{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;flex-wrap:wrap;margin-top:auto;padding-top:10px;border-top:1px solid #edf0f4;}
     .meta span{display:flex;align-items:center;gap:6px;}
     .meta svg{width:16px;height:16px;flex-shrink:0;}
+    .browse-card__cta{display:flex;align-items:center;justify-content:space-between;padding-top:12px;margin-top:12px;border-top:1px solid #edf0f4;color:#13176b;font-size:13px;font-weight:750;}
     .empty-state{border:1px dashed var(--line);border-radius:16px;padding:40px;text-align:center;color:var(--muted);grid-column:1/-1;}
 
     @media (max-width:980px){
         .layout{grid-template-columns:1fr;}
-        .sidebar{flex-direction:row;overflow-x:auto;position:static;margin:14px;border-radius:16px;}
+
         .courses-grid{grid-template-columns:1fr;}
     }
 </style>
@@ -137,7 +139,7 @@
     {{-- Main content --}}
     <main class="main">
 
-        <div class="page-head">
+        <div class="page-head student-page-heading">
             <h2>Browse All Courses</h2>
             <p>{{ count($courses) }} {{ count($courses) === 1 ? 'course' : 'courses' }} available</p>
         </div>
@@ -212,10 +214,10 @@
                             @if($course->instructor)
                                 <span>{{ $course->instructor }}</span>
                             @endif
-                            @if($course->duration)
+                            @if($course->learning_hours || $course->duration)
                                 <span>
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-                                    {{ $course->duration }}
+                                    {{ $course->learning_hours ? $course->learning_hours.' hours' : $course->duration }}
                                 </span>
                             @endif
                             @if($course->lessons_count)
@@ -225,6 +227,7 @@
                                 </span>
                             @endif
                         </div>
+                        <div class="browse-card__cta">View course details</div>
                     </div>
                 </a>
             @empty
@@ -287,4 +290,3 @@
     @include('components.responsive')
 </body>
 </html>
-

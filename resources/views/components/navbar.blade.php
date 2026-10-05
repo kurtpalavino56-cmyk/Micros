@@ -13,7 +13,7 @@
             <li><a href="{{ url('/microcredentials') }}" data-nav-target="featured" class="navbar__link {{ request()->is('microcredentials') ? 'active' : '' }}">Microcredentials</a></li>
             <li><a href="{{ request()->is('/') ? '#latest-courses' : url('/#latest-courses') }}" data-nav-target="latest-courses" class="navbar__link {{ request()->is('explore') ? 'active' : '' }}">Explore</a></li>
             <li><a href="{{ url('/announcements') }}" data-nav-target="announcements" class="navbar__link {{ request()->is('announcements') ? 'active' : '' }}">Announcement</a></li>
-            <li><a href="{{ url('/students') }}"          class="navbar__link {{ request()->is('students') ? 'active' : '' }}">Students</a></li>
+            <li><a href="{{ url('/students') }}"          class="navbar__link {{ request()->is('students') ? 'active' : '' }}">Verify</a></li>
         </ul><div class="navbar__panel-divider"></div><div class="navbar__actions" id="navActions">
             <a href="{{ url('/login') }}"    class="navbar__action-link">Login</a>
             <a href="{{ url('/register') }}" class="btn btn-gold navbar__enroll-btn">Enroll Now</a>

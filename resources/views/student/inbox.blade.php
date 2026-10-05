@@ -1,15 +1,19 @@
-﻿{{--
-    resources/views/student/Inbox.blade.php
-    The envelope beside the notification bell â€” the student's Help Center
-    complaints and the administrators' replies.
-    Expects: $user (UserPresenter::student), $threads, $selected, $unreadCount.
+@php
+    $isFacultyInbox = $isFacultyInbox ?? false;
+    $inboxIndexRoute = $isFacultyInbox ? 'faculty.inbox' : 'inbox.index';
+    $inboxReplyRoute = $isFacultyInbox ? 'faculty.inbox.reply' : 'inbox.reply';
+    $newMessageRoute = $isFacultyInbox ? 'help.store' : 'inbox.store';
+@endphp
+{{--
+    Shared student/faculty Inbox UI for private support threads with admins.
+    Expects: $user, $threads, $selected, $unreadCount, and optional $isFacultyInbox.
 --}}
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Inbox | Upskill</title>
+<title>{{ $isFacultyInbox ? 'Inbox | Upskill Faculty' : 'My Inbox | Upskill' }}</title>
     {{-- Browser tab icon (favicon) --}}
     <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
@@ -21,24 +25,20 @@
         background:linear-gradient(135deg,#f8faff 0%,#f7f8fc 100%);}
     a{text-decoration:none;color:inherit;}
     button{font-family:inherit;cursor:pointer;}
-    .topbar{background:var(--navy);display:flex;align-items:center;justify-content:space-between;
-        padding:14px 28px;gap:20px;}
-    .brand{display:flex;align-items:center;gap:14px;color:#fff;}
-    .brand .logo{width:46px;height:46px;border-radius:50%;background:#fff;display:flex;
-        align-items:center;justify-content:center;overflow:hidden;}
-    .brand .logo img{width:100%;height:100%;object-fit:contain;padding:3px;}
-    .brand h1{font-size:24px;letter-spacing:1px;margin:0;font-weight:800;}
-    .icon-cluster{display:flex;align-items:center;gap:14px;}
-    .icon-circle{position:relative;width:42px;height:42px;border-radius:50%;background:#fff;
-        display:flex;align-items:center;justify-content:center;overflow:visible;}
-    .icon-circle svg{width:22px;height:22px;color:var(--navy);}
+
+
+
+
+
+
+
+
     .icon-badge{position:absolute;top:-3px;right:-3px;background:var(--red);color:#fff;
         border-radius:999px;font-size:10px;font-weight:800;padding:2px 6px;line-height:1.3;}
     .wrap{max-width:1120px;margin:28px auto;padding:0 22px 60px;}
     .page-head h2{font-size:28px;margin:0 0 6px;}
     .page-head p{margin:0 0 22px;color:var(--muted);font-size:14.5px;}
     .grid{display:grid;grid-template-columns:320px 1fr;gap:22px;align-items:start;}
-    .layout.student-sidebar-layout { display: grid; }
     .panel{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);}
     .panel-hd{padding:16px 20px;border-bottom:1px solid var(--line);font-weight:800;font-size:14px;
         display:flex;justify-content:space-between;align-items:center;}
@@ -49,7 +49,7 @@
     .thread-top{display:flex;align-items:center;gap:8px;margin-bottom:3px;}
     .thread-subject{font-weight:800;font-size:14px;flex:1;min-width:0;overflow:hidden;
         text-overflow:ellipsis;white-space:nowrap;}
-    .dot{width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;}
+    .dot{width:8px;height:8px;border-radius:50%;background:#f4c430;flex-shrink:0;}
     .thread-meta{font-size:12px;color:var(--muted);}
     .status{font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:999px;}
     .status.open{background:#fef3c7;color:#92400e;}
@@ -127,22 +127,30 @@
     #lightbox .lb-close{position:absolute;top:20px;right:26px;background:#fff;border:none;
         border-radius:999px;width:40px;height:40px;font-size:20px;font-weight:800;
         color:var(--navy);cursor:pointer;line-height:1;}
-    .count-pill{background:var(--red);color:#fff;border-radius:999px;font-size:11px;
+    .count-pill{background:#f4c430;color:#172554;border-radius:999px;font-size:11px;
         font-weight:800;padding:3px 9px;}
     @media(max-width:900px){.grid{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
-@include('components.student-navigation')
+@if ($isFacultyInbox)
+    @include('components.authenticated-topbar')
+@else
+    @include('components.student-navigation')
+@endif
 
-<div class="layout student-sidebar-layout">
-    @include('components.student-sidebar')
+<div class="layout {{ $isFacultyInbox ? 'faculty-sidebar-layout' : 'student-sidebar-layout' }}">
+    @if ($isFacultyInbox)
+        @include('components.faculty-sidebar')
+    @else
+        @include('components.student-sidebar')
+    @endif
     <main class="main">
         <div class="wrap">
-    <div class="page-head">
-        <h2>My Inbox</h2>
-        <p>Announcements from the administrators appear on your
-           <a href="{{ route('notifications.index') }}" style="color:var(--navy);font-weight:700;text-decoration:underline;">notifications page</a>.</p>
+    <div class="page-head {{ $isFacultyInbox ? 'faculty-page-heading' : 'student-page-heading' }}">
+        <h2>{{ $isFacultyInbox ? 'Inbox' : 'My Inbox' }}</h2>
+        <p>Private message threads with administrators appear here. Announcements are separate and appear on your
+           <a href="{{ route('notifications.index') }}" style="color:var(--navy);text-decoration:underline;">notifications page</a>.</p>
     </div>
 
     @if (session('success'))
@@ -163,7 +171,7 @@
             </div>
             @forelse ($threads as $t)
                 <a class="thread {{ $selected && $selected->id === $t->id ? 'active' : '' }}"
-                   href="{{ route('inbox.index', ['thread' => $t->id]) }}">
+                   href="{{ route($inboxIndexRoute, ['thread' => $t->id]) }}">
                     <div class="thread-top">
                         <span class="thread-subject">{{ $t->subject }}</span>
                         @if ($t->unreadForStudent())<span class="dot"></span>@endif
@@ -222,7 +230,7 @@
                 </div>
 
                 <div class="reply-box">
-                    <form method="POST" action="{{ route('inbox.reply', $selected->id) }}">
+                    <form method="POST" action="{{ route($inboxReplyRoute, $selected->id) }}">
                         @csrf
                         <textarea name="body" placeholder="Write a reply..." required></textarea>
                         <div style="margin-top:12px;">
@@ -240,7 +248,7 @@
     <div class="panel new-card">
         <div class="panel-hd"><span>Send a New Message</span></div>
         <div style="padding:22px 24px;">
-            <form method="POST" action="{{ route('inbox.store') }}" enctype="multipart/form-data">
+            <form method="POST" action="{{ route($newMessageRoute) }}" enctype="multipart/form-data">
                 @csrf
                 <div class="field">
                     <label for="subject">Subject</label>
@@ -361,4 +369,3 @@
 @include('components.responsive')
 </body>
 </html>
-

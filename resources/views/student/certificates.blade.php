@@ -31,20 +31,6 @@
     a { text-decoration: none; color: inherit; }
     button { font-family: inherit; }
 
-    /* Student shell: keep the sidebar and page content in two columns.
-       This page previously omitted the display:grid declaration and therefore
-       the sidebar expanded across the full viewport. */
-    .layout.student-sidebar-layout {
-        display: grid;
-        grid-template-columns: 244px minmax(0, 1fr);
-        min-height: calc(100vh - 70px);
-        align-items: stretch;
-    }
-
-    .layout.student-sidebar-layout.sidebar-collapsed {
-        grid-template-columns: 78px minmax(0, 1fr);
-    }
-
     /* Main content */
     .main {
         padding: 34px 38px 64px;
@@ -193,7 +179,7 @@
     @include('components.student-sidebar')
 
     <main class="main">
-        <header class="page-head">
+        <header class="page-head student-page-heading">
             <h2>My Certificates</h2>
             <p>Your earned microcredential certificates.</p>
         </header>

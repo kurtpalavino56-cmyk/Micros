@@ -2,23 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Announcement;
 use App\Models\Badge;
 use App\Models\Certificate;
+use App\Models\CompetencyUnit;
+use App\Models\Complaint;
 use App\Models\Course;
 use App\Models\CourseCategory;
 use App\Models\CourseLesson;
 use App\Models\CourseModule;
 use App\Models\Enrollment;
+use App\Models\LessonActivity;
+use App\Models\LessonActivitySubmission;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
 use App\Services\CourseCreationService;
 use App\Services\CourseLessonService;
 use App\Services\CourseModuleService;
+use App\Services\CourseReadinessService;
+use App\Services\LearningOutcomeService;
 use App\Services\MicrocredentialCompletionService;
 use App\Services\QuizManagementService;
+use App\Services\StudentProgressService;
 use App\Support\CertificateBuilder;
-use App\Support\CompletionStatusPresenter;
 use App\Support\SkillCatalog;
 use App\Support\UserPresenter;
 use Carbon\Carbon;
@@ -26,7 +31,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 /**
  * FacultyController — all Faculty_* pages, backed by the database.
@@ -101,30 +108,70 @@ class FacultyController extends Controller
     {
         $auth = Auth::user();
 
-        $students = Enrollment::with(['user', 'course'])
-            ->whereHas('course', fn ($q) => $q->where('created_by', $auth->id))
+        $courses = Course::where('created_by', $auth->id)
+            ->withCount([
+                'enrollments',
+                'enrollments as faculty_reviews_count' => fn ($query) => $query
+                    ->where('faculty_verification_status', 'pending')
+                    ->where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION),
+            ])
+            ->latest()
             ->get()
-            ->groupBy('user_id')
-            ->map(function ($rows) {
-                $user = $rows->first()->user;
-
-                return (object) [
-                    'name' => $user->name ?? 'Student',
-                    'student_id' => $user->student_id ?? $user->user_code ?? '',
-                    'avatar_url' => $user->avatar_url,
-                    'courses' => $rows->map(fn ($e) => (object) [
-                        'title' => $e->course->title ?? 'Course',
-                        'percent' => (int) $e->progress_percent,
-                        'completed' => $e->completion_status === MicrocredentialCompletionService::STATUS_COMPLETED,
-                    ])->values(),
-                ];
-            })
-            ->sortBy('name')
-            ->values();
+            ->map(fn (Course $course) => (object) [
+                'id' => $course->id,
+                'title' => $course->title,
+                'status' => $course->statusLabel(),
+                'students_count' => (int) $course->enrollments_count,
+                'faculty_reviews_count' => $course->requires_faculty_verification ? (int) $course->faculty_reviews_count : 0,
+                'requires_faculty_verification' => (bool) $course->requires_faculty_verification,
+            ]);
 
         return view('faculty.students', [
             'user' => UserPresenter::faculty($auth),
-            'students' => $students,
+            'courses' => $courses,
+        ]);
+    }
+
+    /** Show an owned course's paginated enrollment roster and review queue. */
+    public function courseStudents(Request $request, int $id)
+    {
+        $course = $this->ownedCourse($id);
+        $filter = $request->query('filter', 'needs_review');
+        if (! in_array($filter, ['needs_review', 'all'], true)) {
+            $filter = 'needs_review';
+        }
+
+        $enrollments = Enrollment::query()
+            ->where('course_id', $course->id)
+            ->with('user')
+            ->when($filter === 'needs_review', function ($query) use ($course) {
+                if (! $course->requires_faculty_verification) {
+                    return $query->whereRaw('1 = 0');
+                }
+
+                return $query->where('faculty_verification_status', 'pending')
+                    ->where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION);
+            })
+            ->orderByRaw("CASE WHEN faculty_verification_status = 'pending' AND completion_status = ? THEN 0 ELSE 1 END", [MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION])
+            ->orderBy('id')
+            ->paginate(20)
+            ->withQueryString();
+
+        $needsReviewCount = $course->requires_faculty_verification
+            ? Enrollment::query()
+                ->where('course_id', $course->id)
+                ->where('faculty_verification_status', 'pending')
+                ->where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
+                ->count()
+            : 0;
+
+        return view('faculty.students.course', [
+            'user' => UserPresenter::faculty(Auth::user()),
+            'course' => $course,
+            'enrollments' => $enrollments,
+            'filter' => $filter,
+            'needsReviewCount' => $needsReviewCount,
+            'totalStudents' => Enrollment::where('course_id', $course->id)->count(),
         ]);
     }
 
@@ -269,7 +316,7 @@ class FacultyController extends Controller
         $auth = Auth::user();
         $courseIds = Course::where('created_by', $auth->id)->pluck('id')->all() ?: [0];
         $enrollBase = Enrollment::whereIn('course_id', $courseIds);
-
+        $learnerIds = (clone $enrollBase)->select('user_id')->distinct();
         // Cumulative learner growth, one point per month for the last year.
         // N+1 fix: this ran 12 separate COUNT queries (one per month). The
         // cumulative total equals the number of learners whose FIRST
@@ -303,16 +350,60 @@ class FacultyController extends Controller
         $learnerSuccess = [
             ['label' => 'Completed one or more courses',         'count' => $progressRows->where('done', 1)->count()],
             ['label' => 'Got through at least half of a course', 'count' => $progressRows->where('done', 0)->where('best', '>=', 50)->count()],
-            ['label' => 'Started a course',                      'count' => $progressRows->where('done', 0)->where('best', '<', 50)->count()],
+            ['label' => 'Below 50% progress',                     'count' => $progressRows->where('done', 0)->where('best', '<', 50)->count()],
         ];
+        $courseAnalytics = Course::query()
+            ->where('created_by', $auth->id)
+            ->withCount([
+                'enrollments',
+                'enrollments as completed_enrollments_count' => fn ($query) => $query
+                    ->where('completion_status', MicrocredentialCompletionService::STATUS_COMPLETED),
+            ])
+            ->addSelect([
+                'average_quiz_score' => DB::table('quiz_attempts')
+                    ->join('quizzes', 'quizzes.id', '=', 'quiz_attempts.quiz_id')
+                    ->whereColumn('quizzes.course_id', 'courses.id')
+                    ->whereNotNull('quiz_attempts.score')
+                    ->selectRaw('AVG(quiz_attempts.score)'),
+                'scored_attempts_count' => DB::table('quiz_attempts')
+                    ->join('quizzes', 'quizzes.id', '=', 'quiz_attempts.quiz_id')
+                    ->whereColumn('quizzes.course_id', 'courses.id')
+                    ->whereNotNull('quiz_attempts.score')
+                    ->selectRaw('COUNT(*)'),
+                'passed_attempts_count' => DB::table('quiz_attempts')
+                    ->join('quizzes', 'quizzes.id', '=', 'quiz_attempts.quiz_id')
+                    ->whereColumn('quizzes.course_id', 'courses.id')
+                    ->whereNotNull('quiz_attempts.score')
+                    ->where('quiz_attempts.passed', true)
+                    ->selectRaw('COUNT(*)'),
+                'pending_reviews_count' => DB::table('lesson_activity_submissions')
+                    ->join('lesson_activities', 'lesson_activities.id', '=', 'lesson_activity_submissions.lesson_activity_id')
+                    ->join('course_lessons', 'course_lessons.id', '=', 'lesson_activities.lesson_id')
+                    ->whereColumn('course_lessons.course_id', 'courses.id')
+                    ->where('lesson_activity_submissions.status', 'submitted')
+                    ->selectRaw('COUNT(*)'),
+            ])
+            ->orderBy('title')
+            ->get()
+            ->map(fn (Course $course) => (object) [
+                'title' => $course->title,
+                'enrolled' => (int) $course->enrollments_count,
+                'completed' => (int) $course->completed_enrollments_count,
+                'completion_rate' => $course->enrollments_count > 0
+                    ? (int) round($course->completed_enrollments_count / $course->enrollments_count * 100)
+                    : null,
+                'average_score' => $course->average_quiz_score !== null ? (int) round((float) $course->average_quiz_score) : null,
+                'scored_attempts' => (int) $course->scored_attempts_count,
+                'pass_rate' => $course->scored_attempts_count > 0
+                    ? (int) round($course->passed_attempts_count / $course->scored_attempts_count * 100)
+                    : null,
+                'pending_reviews' => (int) $course->pending_reviews_count,
+            ]);
 
         return view('faculty.analytics', [
             'user' => UserPresenter::faculty($auth),
-            'onlineNow' => (int) DB::table('sessions')->whereNotNull('user_id')
+            'onlineNow' => (int) DB::table('sessions')->whereIn('user_id', $learnerIds)
                 ->where('last_activity', '>=', now()->subMinutes(5)->getTimestamp())
-                ->distinct()->count('user_id'),
-            'activeThisMonth' => (clone $enrollBase)
-                ->where('enrolled_at', '>=', now()->startOfMonth())
                 ->distinct()->count('user_id'),
             'stats' => [
                 'total_learners' => (clone $enrollBase)->distinct()->count('user_id'),
@@ -323,6 +414,55 @@ class FacultyController extends Controller
             ],
             'academyStats' => $academyStats,
             'learnerSuccess' => $learnerSuccess,
+            'courseAnalytics' => $courseAnalytics,
+        ]);
+    }
+
+    public function analyticsLive()
+    {
+        $courseIds = Course::query()->where('created_by', Auth::id())->pluck('id')->all();
+        $learnerIds = Enrollment::query()->whereIn('course_id', $courseIds)->select('user_id')->distinct();
+        $events = DB::table('analytics_events')->whereIn('user_id', $learnerIds)
+            ->where(function ($query) use ($courseIds) {
+                $query->where(function ($courseEvents) use ($courseIds) {
+                    $courseEvents->where('entity_type', 'course')->whereIn('entity_id', $courseIds);
+                })->orWhere(function ($lessonEvents) use ($courseIds) {
+                    $lessonEvents->where('entity_type', 'lesson')->whereExists(function ($lessons) use ($courseIds) {
+                        $lessons->selectRaw('1')->from('course_lessons')
+                            ->whereColumn('course_lessons.id', 'analytics_events.entity_id')
+                            ->whereIn('course_lessons.course_id', $courseIds);
+                    });
+                })->orWhere(function ($quizEvents) use ($courseIds) {
+                    $quizEvents->where('entity_type', 'quiz')->whereExists(function ($quizzes) use ($courseIds) {
+                        $quizzes->selectRaw('1')->from('quizzes')
+                            ->whereColumn('quizzes.id', 'analytics_events.entity_id')
+                            ->whereIn('quizzes.course_id', $courseIds);
+                    });
+                });
+            })
+            ->orderByDesc('occurred_at')
+            ->limit(5)
+            ->get(['event_type', 'metadata', 'occurred_at']);
+
+        $labels = [
+            'enrollment' => 'New student enrolled',
+            'course_completed' => 'Course completed',
+            'lesson_completed' => 'Lesson completed',
+            'quiz_passed' => 'Quiz passed',
+        ];
+
+        return response()->json([
+            'stats' => [
+                'active_users' => (int) DB::table('sessions')->whereIn('user_id', $learnerIds)
+                    ->where('last_activity', '>=', now()->subMinutes(5)->getTimestamp())
+                    ->distinct()->count('user_id'),
+            ],
+            'activity' => $events->map(fn ($event) => [
+                'title' => $labels[$event->event_type] ?? ucfirst(str_replace('_', ' ', $event->event_type)),
+                'detail' => data_get(json_decode($event->metadata ?? 'null', true), 'detail', 'Course activity recorded'),
+                'time' => Carbon::parse($event->occurred_at)->diffForHumans(),
+                'type' => 'event',
+            ])->values(),
         ]);
     }
 
@@ -357,7 +497,7 @@ class FacultyController extends Controller
 
     // ── Manage Course ─────────────────────────────────────────────────────
 
-    public function manage(?int $id = null)
+    public function manage(CourseReadinessService $courseReadiness, ?int $id = null)
     {
         $auth = Auth::user();
 
@@ -365,7 +505,14 @@ class FacultyController extends Controller
             ? Course::where('created_by', $auth->id)->findOrFail($id)
             : Course::where('created_by', $auth->id)->oldest()->firstOrFail();
 
-        $course->load(['modules.lessons', 'modules.quiz.questions']);
+        $course->load([
+            'modules.lessons.quizzes.questions',
+            'modules.lessons.activities' => fn ($query) => $query->withCount([
+                'submissions',
+                'submissions as pending_submissions_count' => fn ($submissions) => $submissions->where('status', 'submitted'),
+            ]),
+            'modules.quiz.questions',
+        ]);
 
         // Modules — idx/key carry the real ids so every Blade form
         // (add lesson, add quiz, delete) targets the right records.
@@ -377,7 +524,7 @@ class FacultyController extends Controller
                 // 'subtitle' is a short plain-text preview for the compact
                 // header row; 'description' keeps the raw CKEditor HTML so
                 // the edit form can load it back into the editor.
-                'subtitle' => \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags((string) $m->description)))), 90),
+                'subtitle' => Str::limit(trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags((string) $m->description)))), 90),
                 'description' => $m->description,
                 'lessons' => $m->lessons->map(fn (CourseLesson $l) => (object) [
                     'id' => $l->id,
@@ -391,6 +538,25 @@ class FacultyController extends Controller
                     'content' => $l->content,
                     'duration_raw' => (int) filter_var((string) $l->duration, FILTER_SANITIZE_NUMBER_INT),
                     'thumbnail_url' => ($l->type === 'Image' && $l->file_url) ? asset($l->file_url) : null,
+                    'quiz' => $l->quizzes->where('is_active', true)->first() ? (object) [
+                        'id' => $l->quizzes->where('is_active', true)->first()->id,
+                        'title' => $l->quizzes->where('is_active', true)->first()->title,
+                        'questions_count' => $l->quizzes->where('is_active', true)->first()->questions->count(),
+                        'passing_score' => $l->quizzes->where('is_active', true)->first()->passing_score,
+                        'sort_order' => $l->quizzes->where('is_active', true)->first()->sort_order,
+                    ] : null,
+                    'activities' => $l->activities->where('is_active', true)->map(fn (LessonActivity $activity) => (object) [
+                        'id' => $activity->id,
+                        'title' => $activity->title,
+                        'activity_type' => $activity->activity_type,
+                        'instructions' => $activity->instructions,
+                        'is_required' => $activity->is_required,
+                        'max_points' => $activity->max_points,
+                        'passing_percent' => $activity->passing_percent,
+                        'sort_order' => $activity->sort_order,
+                        'submissions_count' => $activity->submissions_count,
+                        'pending_submissions_count' => $activity->pending_submissions_count,
+                    ])->values(),
                 ])->values(),
                 'quiz' => $m->quiz ? (object) [
                     'title' => $m->quiz->title,
@@ -399,40 +565,6 @@ class FacultyController extends Controller
                 ] : null,
             ];
         })->values();
-
-        // Enrolled students for the right-hand column. Institutional
-        // completion fields (enrollment_id, completion_status,
-        // faculty_verification_status, academic_unit_confirmation_status)
-        // are ADDED alongside the existing fields below — nothing existing
-        // is removed or renamed.
-        $students = Enrollment::with('user')
-            ->where('course_id', $course->id)
-            ->get()
-            ->map(fn (Enrollment $e) => (object) [
-                'name' => $e->user->name ?? 'Student',
-                'student_id' => $e->user->student_id ?? $e->user->user_code ?? '',
-                'status' => $e->completion_status === MicrocredentialCompletionService::STATUS_COMPLETED ? 'Completed' : 'Active',
-                'avatar_url' => $e->user->avatar_url ?? null,
-                'enrollment_id' => $e->id,
-                'completion_status' => $e->completion_status,
-                'faculty_verification_status' => $e->faculty_verification_status,
-                'academic_unit_confirmation_status' => $e->academic_unit_confirmation_status,
-                // The verify action is only meaningful once mastery has
-                // been reached and the course actually requires faculty
-                // sign-off — evaluate() never lets faculty_verification_status
-                // move past 'not_required' otherwise, so this mirrors that
-                // gate rather than introducing a new rule.
-                // Mirrors the server-side rule in MicrocredentialCompletionService:
-                // only offer verification once mastery is reached.
-                'faculty_verification_pending' => $e->faculty_verification_status === 'pending'
-                    && $e->completion_status === MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION,
-                'institutional_label' => CompletionStatusPresenter::institutionalLabel(
-                    $e->completion_status,
-                    $e->faculty_verification_status,
-                    $e->academic_unit_confirmation_status,
-                ),
-            ])
-            ->values();
 
         // Average score per quiz in this course.
         $quizAverages = Quiz::where('course_id', $course->id)
@@ -455,16 +587,101 @@ class FacultyController extends Controller
                 'title' => $course->title,
                 'description' => $course->description,
                 'status' => $course->statusLabel(),
+                'approval_status' => $course->approval_status,
                 'level' => $course->level,
-                'students_count' => $students->count(),
+                'students_count' => Enrollment::where('course_id', $course->id)->count(),
                 'modules_count' => $modules->count(),
                 'lessons_count' => $modules->sum(fn ($m) => $m->lessons->count()),
                 'thumbnail_url' => $course->thumbnail_url,
             ],
             'modules' => $modules,
-            'students' => $students,
             'quizAverages' => $quizAverages,
+            'readinessChecklist' => $courseReadiness->checklist($course),
+            'canSubmitForApproval' => $course->approval_status === 'draft' && $courseReadiness->isReady($course),
+            'pendingActivityReviews' => LessonActivitySubmission::query()
+                ->where('status', 'submitted')
+                ->whereHas('activity', fn ($query) => $query
+                    ->where('is_active', true)
+                    ->where('activity_type', 'assignment')
+                    ->whereHas('lesson', fn ($lessonQuery) => $lessonQuery->where('course_id', $course->id)))
+                ->count(),
         ]);
+    }
+
+    /** Show the faculty review queue for assignments in an owned course. */
+    public function activityReviews(Request $request, int $id)
+    {
+        $course = $this->ownedCourse($id);
+        $status = $request->query('status', 'pending');
+        if (! in_array($status, ['pending', 'reviewed', 'all'], true)) {
+            $status = 'pending';
+        }
+
+        $activityId = filter_var($request->query('activity_id'), FILTER_VALIDATE_INT);
+        if ($activityId !== false && $activityId > 0) {
+            LessonActivity::query()
+                ->where('id', $activityId)
+                ->where('is_active', true)
+                ->where('activity_type', 'assignment')
+                ->whereHas('lesson', fn ($query) => $query->where('course_id', $course->id))
+                ->firstOrFail();
+        } else {
+            $activityId = null;
+        }
+
+        $courseSubmissions = LessonActivitySubmission::query()
+            ->whereHas('activity', fn ($query) => $query
+                ->where('is_active', true)
+                ->where('activity_type', 'assignment')
+                ->whereHas('lesson', fn ($lessonQuery) => $lessonQuery->where('course_id', $course->id)));
+
+        $pendingCount = (clone $courseSubmissions)->where('status', 'submitted')->count();
+        $reviewedCount = (clone $courseSubmissions)->whereIn('status', ['passed', 'needs_revision'])->count();
+        $allCount = (clone $courseSubmissions)->count();
+
+        $submissions = (clone $courseSubmissions)
+            ->with(['activity.lesson.module', 'student', 'reviewer'])
+            ->when($activityId, fn ($query) => $query->where('lesson_activity_id', $activityId))
+            ->when($status === 'pending', fn ($query) => $query->where('status', 'submitted'))
+            ->when($status === 'reviewed', fn ($query) => $query->whereIn('status', ['passed', 'needs_revision']))
+            ->latest('submitted_at')
+            ->latest('id')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('faculty.courses.activity-reviews', [
+            'user' => UserPresenter::faculty(Auth::user()),
+            'course' => $course,
+            'submissions' => $submissions,
+            'status' => $status,
+            'activityId' => $activityId,
+            'pendingCount' => $pendingCount,
+            'reviewedCount' => $reviewedCount,
+            'allCount' => $allCount,
+        ]);
+    }
+
+    /** Submit a complete draft course for administrator review. */
+    public function submitForApproval(CourseReadinessService $courseReadiness, int $id)
+    {
+        $course = $this->ownedCourse($id);
+        abort_unless($course->approval_status === 'draft', 409);
+
+        $missingRequirements = $courseReadiness->missingRequirements($course);
+        if ($missingRequirements !== []) {
+            return back()
+                ->withErrors(['submission' => 'Complete the course readiness checklist before submitting it.']);
+        }
+
+        $course->update([
+            'approval_status' => 'pending',
+            'is_approved' => false,
+            'is_published' => false,
+            'denial_feedback' => null,
+        ]);
+
+        return redirect()->route('faculty.courses.manage', $course->id)
+            ->with('success', 'Course submitted for administrator approval.');
     }
 
     /**
@@ -521,6 +738,7 @@ class FacultyController extends Controller
             'prereqOptions' => $this->prerequisiteOptions(),
             // #10 Badge / certificate options for the award section.
             'badgeOptions' => $this->badgeOptions(),
+            'competencyUnitOptions' => CompetencyUnit::orderBy('title')->get(['id', 'title']),
         ]);
     }
 
@@ -530,6 +748,7 @@ class FacultyController extends Controller
     public function editForm(int $id)
     {
         $course = $this->ownedCourse($id);
+        $course->load('learningOutcomes');
 
         return view('faculty.courses.create', [
             'user' => UserPresenter::faculty(Auth::user()),
@@ -543,6 +762,7 @@ class FacultyController extends Controller
             'prereqOptions' => $this->prerequisiteOptions($course->id),
             // #10 Badge / certificate options for the award section.
             'badgeOptions' => $this->badgeOptions(),
+            'competencyUnitOptions' => CompetencyUnit::orderBy('title')->get(['id', 'title']),
         ]);
     }
 
@@ -553,7 +773,7 @@ class FacultyController extends Controller
      * re-checks it — otherwise a faculty member could swap the content of
      * an already-published course without review.
      */
-    public function updateCourse(Request $request, int $id)
+    public function updateCourse(Request $request, int $id, LearningOutcomeService $learningOutcomes)
     {
         $course = $this->ownedCourse($id);
 
@@ -565,21 +785,30 @@ class FacultyController extends Controller
             'program' => ['nullable', 'string', 'max:120'],
             'level' => ['nullable', 'string', 'max:60'],
             'pqf_level' => ['nullable', 'regex:/^[5-8]$/'],
+            'target_learners' => ['nullable', 'string', 'max:5000'],
+            'delivery_mode' => ['nullable', 'string', 'in:online,blended,face_to_face,self_paced'],
+            'learning_hours' => ['nullable', 'integer', 'min:1', 'max:10000'],
+            'assessment_strategy' => ['nullable', 'string', 'max:10000'],
+            'grading_rubric' => ['nullable', 'string', 'max:10000'],
+            'credit_bearing' => ['nullable'],
+            'credit_equivalency' => ['nullable', 'string', 'max:255'],
+            'equivalent_course' => ['nullable', 'string', 'max:255'],
             'duration' => ['nullable', 'numeric', 'min:0'],
             'passing_score' => ['nullable', 'integer', 'min:0', 'max:100'],
             'learning_objectives' => ['nullable', 'string'],
+            'learning_outcomes' => ['nullable', 'array', 'max:50'],
+            'learning_outcomes.*.description' => ['required_with:learning_outcomes', 'string', 'max:2000'],
+            'learning_outcomes.*.competency_unit_id' => ['nullable', 'integer', 'exists:competency_units,id'],
             'competencies' => ['nullable', 'array'],
             'competencies.*' => ['string', 'max:120'],
             'prerequisites' => ['nullable', 'string', 'max:120'],
             'thumbnail' => ['nullable', 'image', 'max:51200'],
-            'status' => ['nullable', 'string', 'in:draft,submit,pending'],
             'change_note' => ['nullable', 'string', 'max:2000'],
             'prerequisite_ids' => ['nullable', 'array'],
             'prerequisite_ids.*' => ['integer', 'exists:courses,id'],
             'badge_enabled' => ['nullable'],
             'badge_name' => ['nullable', 'string', 'max:120'],
             'badge_description' => ['nullable', 'string', 'max:400'],
-            'badge_level' => ['nullable', 'string', 'max:40'],
             'badge_icon_base64' => ['nullable', 'string'],
             'requires_faculty_verification' => ['nullable', 'boolean'],
             'related_skills' => ['nullable', 'array'],
@@ -589,7 +818,7 @@ class FacultyController extends Controller
 
         $selectedPrerequisiteIds = $this->prerequisiteIdsFrom($request, $course->id);
         if ($this->wouldCreatePrerequisiteCycle((int) $course->id, $selectedPrerequisiteIds)) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 'prerequisite_ids' => 'These prerequisites would create a course dependency cycle. Choose different prerequisite courses.',
             ]);
         }
@@ -610,6 +839,14 @@ class FacultyController extends Controller
             'program' => $data['program'] ?? null,
             'level' => $data['level'] ?? 'Beginner',
             'pqf_level' => $data['pqf_level'] ?? null,
+            'target_learners' => trim((string) ($data['target_learners'] ?? '')) ?: null,
+            'delivery_mode' => $data['delivery_mode'] ?? null,
+            'learning_hours' => isset($data['learning_hours']) ? (int) $data['learning_hours'] : null,
+            'assessment_strategy' => trim((string) ($data['assessment_strategy'] ?? '')) ?: null,
+            'grading_rubric' => trim((string) ($data['grading_rubric'] ?? '')) ?: null,
+            'credit_bearing' => $request->boolean('credit_bearing'),
+            'credit_equivalency' => trim((string) ($data['credit_equivalency'] ?? '')) ?: null,
+            'equivalent_course' => trim((string) ($data['equivalent_course'] ?? '')) ?: null,
             'duration' => $hours > 0 ? $hours.'h' : null,
             'passing_score' => (int) ($data['passing_score'] ?? 75),
         ];
@@ -624,21 +861,22 @@ class FacultyController extends Controller
             $attributes['thumbnail_url'] = $this->storeThumbnail($request);
         }
 
-        // Saving as draft parks it; anything else goes back for approval.
-        if (($data['status'] ?? 'submit') === 'draft') {
-            $attributes['approval_status'] = 'draft';
-            $attributes['is_approved'] = false;
-            $attributes['is_published'] = false;
-        } elseif ($course->approval_status === 'approved' || $course->is_approved) {
-            $attributes['approval_status'] = 'pending';
-            $attributes['is_approved'] = false;
-            $attributes['approved_at'] = null;
-            $attributes['approved_by'] = null;
-        } else {
-            $attributes['approval_status'] = 'pending';
-        }
+        // Saving any course details returns it to the private authoring state.
+        // Faculty explicitly resubmit from Manage Course after readiness checks pass.
+        $attributes['approval_status'] = 'draft';
+        $attributes['is_approved'] = false;
+        $attributes['is_published'] = false;
+        $attributes['approved_at'] = null;
+        $attributes['approved_by'] = null;
 
         $course->update($attributes);
+        $outcomes = $data['learning_outcomes'] ?? [];
+        if ($outcomes === []) {
+            $outcomes = collect($this->linesToArray($data['learning_objectives'] ?? null) ?? [])
+                ->map(fn (string $description): array => ['description' => $description])
+                ->all();
+        }
+        $learningOutcomes->sync($course, $outcomes);
 
         // Written directly rather than through update(). If 'related_skills'
         // is missing from Course::$fillable, mass assignment discards it
@@ -811,13 +1049,13 @@ class FacultyController extends Controller
         * Keep this list aligned with the editor configuration.
         */
         $allowed = '<p><br>'
-            . '<strong><b><em><i><u><s><del>'
-            . '<sub><sup><span>'
-            . '<h1><h2><h3><h4>'
-            . '<ul><ol><li>'
-            . '<blockquote><pre><code>'
-            . '<a><img>'
-            . '<figure><figcaption><oembed>';
+            .'<strong><b><em><i><u><s><del>'
+            .'<sub><sup><span>'
+            .'<h1><h2><h3><h4>'
+            .'<ul><ol><li>'
+            .'<blockquote><pre><code>'
+            .'<a><img>'
+            .'<figure><figcaption><oembed>';
 
         $html = strip_tags($html, $allowed);
 
@@ -911,7 +1149,8 @@ class FacultyController extends Controller
 
                             if ($property === 'text-align'
                                 && preg_match('/^(left|center|right|justify)$/i', $styleValue)) {
-                                $safeStyles[] = 'text-align:' . strtolower($styleValue);
+                                $safeStyles[] = 'text-align:'.strtolower($styleValue);
+
                                 continue;
                             }
 
@@ -919,12 +1158,12 @@ class FacultyController extends Controller
                             // Restrict these properties and formats to prevent CSS injection.
                             if (in_array($property, ['color', 'background-color'], true)
                                 && preg_match('/^(#[0-9a-f]{3,8}|(?:rgb|hsl)a?\([0-9.%+,\s-]+\))$/i', $styleValue)) {
-                                $safeStyles[] = $property . ':' . $styleValue;
+                                $safeStyles[] = $property.':'.$styleValue;
                             }
                         }
 
                         if ($safeStyles) {
-                            $safe[] = 'style="' . e(implode(';', $safeStyles)) . '"';
+                            $safe[] = 'style="'.e(implode(';', $safeStyles)).'"';
                         }
 
                         continue;
@@ -960,12 +1199,12 @@ class FacultyController extends Controller
                         }
                     }
 
-                    $safe[] = $name . '="' . e($value) . '"';
+                    $safe[] = $name.'="'.e($value).'"';
                 }
 
-                return '<' . $tag
-                    . ($safe ? ' ' . implode(' ', $safe) : '')
-                    . '>';
+                return '<'.$tag
+                    .($safe ? ' '.implode(' ', $safe) : '')
+                    .'>';
             },
             $html
         );
@@ -975,35 +1214,53 @@ class FacultyController extends Controller
 
     private function saveInlineBadge(Request $request, Course $course): ?int
     {
-        if (! $request->boolean('badge_enabled')) return null;
+        if (! $request->boolean('badge_enabled')) {
+            return null;
+        }
         $name = trim((string) $request->input('badge_name'));
-        if ($name === '') throw \Illuminate\Validation\ValidationException::withMessages(['badge_name' => 'Badge name is required when badge issuance is enabled.']);
+        if ($name === '') {
+            throw ValidationException::withMessages(['badge_name' => 'Badge name is required when badge issuance is enabled.']);
+        }
         $badge = $course->badge ?: new Badge;
         $badge->name = $name;
         $badge->description = trim((string) $request->input('badge_description')) ?: null;
-        $badge->badge_level = trim((string) $request->input('badge_level')) ?: null;
+        $badge->badge_level = null;
         $badge->is_active = true;
         $icon = (string) $request->input('badge_icon_base64');
-        if ($icon !== '' && str_starts_with($icon, 'data:image/')) $badge->icon_url = $icon;
+        if ($icon !== '' && str_starts_with($icon, 'data:image/')) {
+            $badge->icon_url = $icon;
+        }
         $badge->save();
+
         return (int) $badge->id;
     }
 
-    public function createStore(Request $request, CourseCreationService $courseCreationService)
+    public function createStore(Request $request, CourseCreationService $courseCreationService, LearningOutcomeService $learningOutcomes)
     {
         $auth = Auth::user();
 
         $data = $request->validate([
-            'title' => ['nullable', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:255'],
             'short_description' => ['required', 'string', 'max:120'],
             'description' => ['nullable', 'string'],
             'category' => ['nullable', 'string', 'max:120'],
             'program' => ['nullable', 'string', 'max:120'],
             'level' => ['nullable', 'string', 'max:60'],
             'pqf_level' => ['nullable', 'regex:/^[5-8]$/'],
+            'target_learners' => ['nullable', 'string', 'max:5000'],
+            'delivery_mode' => ['nullable', 'string', 'in:online,blended,face_to_face,self_paced'],
+            'learning_hours' => ['nullable', 'integer', 'min:1', 'max:10000'],
+            'assessment_strategy' => ['nullable', 'string', 'max:10000'],
+            'grading_rubric' => ['nullable', 'string', 'max:10000'],
+            'credit_bearing' => ['nullable'],
+            'credit_equivalency' => ['nullable', 'string', 'max:255'],
+            'equivalent_course' => ['nullable', 'string', 'max:255'],
             'duration' => ['nullable', 'numeric', 'min:0'],
             'passing_score' => ['nullable', 'integer', 'min:0', 'max:100'],
             'learning_objectives' => ['nullable', 'string'],
+            'learning_outcomes' => ['nullable', 'array', 'max:50'],
+            'learning_outcomes.*.description' => ['required_with:learning_outcomes', 'string', 'max:2000'],
+            'learning_outcomes.*.competency_unit_id' => ['nullable', 'integer', 'exists:competency_units,id'],
             'competencies' => ['nullable', 'array'],
             'competencies.*' => ['string', 'max:120'],
             'prerequisites' => ['nullable', 'string', 'max:120'],
@@ -1015,14 +1272,11 @@ class FacultyController extends Controller
             'related_skills' => ['nullable', 'array'],
             'related_skills.*' => ['string', 'max:80'],
             'related_skills_csv' => ['nullable', 'string', 'max:4000'],
-            // The Blade radios use "draft" and "submit" (submit = pending approval)
-            'status' => ['nullable', 'string', 'in:draft,submit,pending'],
             'prerequisite_ids' => ['nullable', 'array'],
             'prerequisite_ids.*' => ['integer', 'exists:courses,id'],
             'badge_enabled' => ['nullable'],
             'badge_name' => ['nullable', 'string', 'max:120'],
             'badge_description' => ['nullable', 'string', 'max:400'],
-            'badge_level' => ['nullable', 'string', 'max:40'],
             'badge_icon_base64' => ['nullable', 'string'],
             // See the NOTE above about checkbox values — validated as
             // present-or-absent only; CourseCreationService reads the
@@ -1032,6 +1286,13 @@ class FacultyController extends Controller
 
         try {
             $course = $courseCreationService->create($request, $data, $auth);
+            $outcomes = $data['learning_outcomes'] ?? [];
+            if ($outcomes === []) {
+                $outcomes = collect($this->linesToArray($data['learning_objectives'] ?? null) ?? [])
+                    ->map(fn (string $description): array => ['description' => $description])
+                    ->all();
+            }
+            $learningOutcomes->sync($course, $outcomes);
         } catch (\Throwable $e) {
             report($e);
 
@@ -1054,6 +1315,7 @@ class FacultyController extends Controller
         ]);
         $data['module_description'] = $this->sanitizeRichText($data['module_description'] ?? '');
         $courseModuleService->create($course, $data);
+        $this->returnCourseToDraft($course);
 
         return redirect()->route('faculty.courses.manage', $course->id);
     }
@@ -1068,12 +1330,13 @@ class FacultyController extends Controller
                 'module_title' => ['nullable', 'string', 'max:255'],
                 'module_description' => ['nullable', 'string', 'max:10000'],
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return back()->withErrors($e->errors())->withInput()->with('open_module_edit', $module->id);
         }
 
         $data['module_description'] = $this->sanitizeRichText($data['module_description'] ?? '');
         $courseModuleService->update($module, $data);
+        $this->returnCourseToDraft($course);
 
         return redirect()->route('faculty.courses.manage', $course->id)
             ->with('success', 'Module updated.');
@@ -1083,6 +1346,7 @@ class FacultyController extends Controller
     {
         $course = $this->ownedCourse($id);
         $courseModuleService->deleteByKey($course, $key);
+        $this->returnCourseToDraft($course);
 
         return redirect()->route('faculty.courses.manage', $course->id);
     }
@@ -1108,6 +1372,7 @@ class FacultyController extends Controller
                 ->withErrors(['lesson_content' => 'The lesson could not be saved: '.$e->getMessage()])
                 ->with('open_lesson_form', $module->id);
         }
+        $this->returnCourseToDraft($course);
 
         return redirect()->route('faculty.courses.manage', $course->id);
     }
@@ -1136,6 +1401,7 @@ class FacultyController extends Controller
                 ->withErrors(['lesson_content' => 'The lesson could not be saved: '.$e->getMessage()])
                 ->with('open_lesson_edit', $lesson->id);
         }
+        $this->returnCourseToDraft($course);
 
         return redirect()->route('faculty.courses.manage', $course->id)
             ->with('success', 'Lesson updated.');
@@ -1145,6 +1411,7 @@ class FacultyController extends Controller
     {
         $course = $this->ownedCourse($id);
         $courseLessonService->deleteByKey($course, $key);
+        $this->returnCourseToDraft($course);
 
         return redirect()->route('faculty.courses.manage', $course->id);
     }
@@ -1199,6 +1466,14 @@ class FacultyController extends Controller
         $course = $this->ownedCourse($id);
         $module = CourseModule::where('course_id', $course->id)->findOrFail($moduleIndex);
         $questionsChanged = $quizManagementService->save($request, $course, $module);
+        $this->returnCourseToDraft($course);
+
+        if ($request->boolean('inline')) {
+            return redirect()->route('faculty.quiz.create', [$course->id, $module->id, 'inline' => 1])
+                ->with('success', $questionsChanged
+                    ? 'Quiz saved. The questions changed, so students may attempt it again.'
+                    : 'Quiz saved. The new settings apply to students immediately.');
+        }
 
         return redirect()->route('faculty.courses.manage', $course->id)
             ->with('success', $questionsChanged
@@ -1206,56 +1481,277 @@ class FacultyController extends Controller
                 : 'Quiz saved. The new settings apply to students immediately.');
     }
 
+    public function lessonQuizCreate(int $id, int $lessonId)
+    {
+        $course = $this->ownedCourse($id);
+        $lesson = CourseLesson::where('course_id', $course->id)->findOrFail($lessonId);
+        $quizModel = Quiz::with('questions')->where('lesson_id', $lesson->id)->first();
+        $quiz = $quizModel ? (object) [
+            'title' => $quizModel->title,
+            'items' => $quizModel->questions->count(),
+            'passing_score' => $quizModel->passing_score,
+            'attempts' => $quizModel->attempts,
+            'time_limit' => $quizModel->time_limit,
+            'instructions' => $quizModel->instructions ?? '',
+            'questions' => $quizModel->questions->map(function (QuizQuestion $question): array {
+                $options = $question->options ?? [];
+                $correct = $question->correct_answer !== null ? array_search($question->correct_answer, $options, true) : null;
+
+                return [
+                    'text' => $question->question,
+                    'type' => $question->type ?? 'Multiple Choice',
+                    'points' => (int) $question->points,
+                    'choices' => $options,
+                    'correct' => $correct === false ? null : $correct,
+                    'answer' => ($question->type === 'Identification') ? $question->correct_answer : null,
+                ];
+            })->values()->all(),
+        ] : null;
+
+        return view('faculty.courses.index', [
+            'mode' => 'quiz',
+            'user' => UserPresenter::faculty(Auth::user()),
+            'course' => (object) ['id' => $course->id, 'title' => $course->title],
+            'moduleIdx' => null,
+            'lessonId' => $lesson->id,
+            'moduleTitle' => $lesson->title.' (Lesson quiz)',
+            'quiz' => $quiz,
+        ]);
+    }
+
+    public function storeLessonQuiz(Request $request, int $id, int $lessonId, QuizManagementService $quizManagementService)
+    {
+        $course = $this->ownedCourse($id);
+        $lesson = CourseLesson::where('course_id', $course->id)->findOrFail($lessonId);
+        $questionsChanged = $quizManagementService->saveForLesson($request, $course, $lesson);
+        $this->returnCourseToDraft($course);
+
+        if ($request->boolean('inline')) {
+            return redirect()->route('faculty.lesson-quiz.create', [$course->id, $lesson->id, 'inline' => 1])
+                ->with('success', $questionsChanged
+                    ? 'Lesson quiz saved. Students will need a new attempt for the revised questions.'
+                    : 'Lesson quiz saved.');
+        }
+
+        return redirect()->route('faculty.courses.manage', $course->id)
+            ->with('success', $questionsChanged
+                ? 'Lesson quiz saved. Students will need a new attempt for the revised questions.'
+                : 'Lesson quiz saved.');
+    }
+
+    public function storeLessonActivity(Request $request, int $id, int $lessonId)
+    {
+        $course = $this->ownedCourse($id);
+        $lesson = CourseLesson::where('course_id', $course->id)->findOrFail($lessonId);
+        $validator = Validator::make($request->all(), [
+            'title' => ['required', 'string', 'max:255'],
+            'activity_type' => ['required', 'string', 'in:practice,reflection,assignment'],
+            'instructions' => ['nullable', 'string', 'max:10000'],
+            'max_points' => ['nullable', 'required_if:activity_type,assignment', 'integer', 'min:1', 'max:10000'],
+            'passing_percent' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput()->with('open_activity_form', $lesson->id);
+        }
+        $data = $validator->validated();
+
+        $lesson->activities()->create([
+            ...$data,
+            'is_required' => $request->boolean('is_required'),
+            'max_points' => $data['max_points'] ?? null,
+            'passing_percent' => $data['passing_percent'] ?? null,
+            'sort_order' => max(
+                (int) $lesson->activities()->max('sort_order'),
+                (int) $lesson->quizzes()->max('sort_order'),
+            ) + 1,
+            'is_active' => true,
+        ]);
+        $this->returnCourseToDraft($course);
+
+        return redirect()->route('faculty.courses.manage', $course->id)->with('success', 'Lesson activity added.');
+    }
+
+    public function updateLessonActivity(Request $request, int $id, int $activityId)
+    {
+        $course = $this->ownedCourse($id);
+        $activity = LessonActivity::query()
+            ->whereHas('lesson', fn ($query) => $query->where('course_id', $course->id))
+            ->where('is_active', true)
+            ->findOrFail($activityId);
+        $validator = Validator::make($request->all(), [
+            'title' => ['required', 'string', 'max:255'],
+            'activity_type' => ['required', 'string', 'in:practice,reflection,assignment'],
+            'instructions' => ['nullable', 'string', 'max:10000'],
+            'max_points' => ['nullable', 'required_if:activity_type,assignment', 'integer', 'min:1', 'max:10000'],
+            'passing_percent' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput()->with('open_activity_edit', $activity->id);
+        }
+        $data = $validator->validated();
+        $activity->update([
+            ...$data,
+            'is_required' => $request->boolean('is_required'),
+            'max_points' => $data['max_points'] ?? null,
+            'passing_percent' => $data['passing_percent'] ?? null,
+        ]);
+        $this->returnCourseToDraft($course);
+
+        return redirect()->route('faculty.courses.manage', $course->id)->with('success', 'Lesson activity updated.');
+    }
+
+    public function destroyLessonActivity(int $id, int $activityId)
+    {
+        $course = $this->ownedCourse($id);
+        $activity = LessonActivity::query()
+            ->whereHas('lesson', fn ($query) => $query->where('course_id', $course->id))
+            ->where('is_active', true)
+            ->findOrFail($activityId);
+        $activity->update(['is_active' => false]);
+        $this->returnCourseToDraft($course);
+
+        return redirect()->route('faculty.courses.manage', $course->id)
+            ->with('success', 'Activity removed from the lesson. Existing submissions were retained.');
+    }
+
+    public function reorderModules(Request $request, int $id)
+    {
+        $course = $this->ownedCourse($id);
+        $items = $request->validate(['items' => ['required', 'array'], 'items.*' => ['required', 'integer', 'distinct']])['items'];
+        $moduleIds = $course->modules()->pluck('id')->map(fn ($moduleId) => (int) $moduleId)->sort()->values();
+        abort_unless(collect($items)->map(fn ($item) => (int) $item)->sort()->values()->all() === $moduleIds->all(), 422);
+
+        DB::transaction(function () use ($course, $items): void {
+            foreach ($items as $position => $moduleId) {
+                CourseModule::where('course_id', $course->id)->whereKey($moduleId)->update(['order' => $position + 1]);
+            }
+        });
+        $this->returnCourseToDraft($course);
+
+        return response()->json(['saved' => true]);
+    }
+
+    public function reorderLessons(Request $request, int $id, int $moduleId)
+    {
+        $course = $this->ownedCourse($id);
+        $module = CourseModule::where('course_id', $course->id)->findOrFail($moduleId);
+        $items = $request->validate(['items' => ['required', 'array'], 'items.*' => ['required', 'integer', 'distinct']])['items'];
+        $lessonIds = $module->lessons()->pluck('id')->map(fn ($lessonId) => (int) $lessonId)->sort()->values();
+        abort_unless(collect($items)->map(fn ($item) => (int) $item)->sort()->values()->all() === $lessonIds->all(), 422);
+
+        DB::transaction(function () use ($module, $items): void {
+            foreach ($items as $position => $lessonId) {
+                CourseLesson::where('module_id', $module->id)->whereKey($lessonId)->update(['order' => $position + 1]);
+            }
+        });
+        $this->returnCourseToDraft($course);
+
+        return response()->json(['saved' => true]);
+    }
+
+    public function reorderLessonAssessments(Request $request, int $id, int $lessonId)
+    {
+        $course = $this->ownedCourse($id);
+        $lesson = CourseLesson::where('course_id', $course->id)->findOrFail($lessonId);
+        $items = $request->validate([
+            'items' => ['required', 'array'],
+            'items.*.type' => ['required', 'in:activity,quiz'],
+            'items.*.id' => ['required', 'integer'],
+        ])['items'];
+        $submittedKeys = collect($items)->map(fn ($item) => $item['type'].':'.(int) $item['id']);
+        abort_unless($submittedKeys->unique()->count() === $submittedKeys->count(), 422);
+        $expectedKeys = LessonActivity::where('lesson_id', $lesson->id)->where('is_active', true)->pluck('id')
+            ->map(fn ($activityId) => 'activity:'.(int) $activityId)
+            ->concat(Quiz::where('lesson_id', $lesson->id)->where('is_active', true)->pluck('id')->map(fn ($quizId) => 'quiz:'.(int) $quizId))
+            ->sort()->values();
+        abort_unless($submittedKeys->sort()->values()->all() === $expectedKeys->all(), 422);
+
+        DB::transaction(function () use ($lesson, $items): void {
+            foreach ($items as $position => $item) {
+                $model = $item['type'] === 'activity'
+                    ? LessonActivity::where('lesson_id', $lesson->id)->where('is_active', true)->findOrFail($item['id'])
+                    : Quiz::where('lesson_id', $lesson->id)->where('is_active', true)->findOrFail($item['id']);
+                $model->update(['sort_order' => $position + 1]);
+            }
+        });
+        $this->returnCourseToDraft($course);
+
+        return response()->json(['saved' => true]);
+    }
+
+    public function reviewLessonActivitySubmission(
+        Request $request,
+        int $id,
+        int $activityId,
+        int $submissionId,
+        StudentProgressService $studentProgress
+    ) {
+        $course = $this->ownedCourse($id);
+        $activity = LessonActivity::query()->whereHas('lesson', fn ($query) => $query->where('course_id', $course->id))->findOrFail($activityId);
+        abort_unless($activity->activity_type === 'assignment', 404);
+        $submission = LessonActivitySubmission::query()
+            ->where('lesson_activity_id', $activity->id)
+            ->where('status', 'submitted')
+            ->findOrFail($submissionId);
+        $data = $request->validate([
+            'score' => ['required', 'integer', 'min:0', 'max:'.(int) ($activity->max_points ?? 10000)],
+            'feedback' => ['nullable', 'string', 'max:5000'],
+        ]);
+        $percent = (int) round(((int) $data['score'] / max(1, (int) $activity->max_points)) * 100);
+        $submission->update([
+            'score' => (int) $data['score'],
+            'feedback' => trim((string) ($data['feedback'] ?? '')) ?: null,
+            'status' => $percent >= (int) ($activity->passing_percent ?? 70) ? 'passed' : 'needs_revision',
+            'reviewed_by' => Auth::id(),
+            'reviewed_at' => now(),
+        ]);
+
+        $enrollment = Enrollment::query()->where('user_id', $submission->user_id)->where('course_id', $course->id)->first();
+        if ($enrollment) {
+            if ($submission->status === 'passed') {
+                $studentProgress->completeLessonIfRequirementsSatisfied($course, $activity->lesson, $enrollment);
+            }
+
+            $studentProgress->syncEnrollmentProgress($course, $enrollment);
+            app(MicrocredentialCompletionService::class)->evaluate($enrollment);
+        }
+
+        return redirect()->route('faculty.activities.reviews', [
+            'id' => $course->id,
+            'status' => 'pending',
+            'activity_id' => $activity->id,
+        ])->with('success', 'Submission reviewed and feedback saved.');
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     // ── Inbox ─────────────────────────────────────────────────────────────
 
-    /**
-     * Faculty inbox — announcements the admin addressed to faculty.
-     *
-     * Announcements have no per-user read rows, so "read" is a watermark on
-     * the user (announcements_read_at): anything posted after it is unread.
-     */
-    public function inbox()
+    /** Faculty inbox — the faculty member's message threads with administrators. */
+    public function inbox(Request $request)
     {
         $auth = Auth::user();
-        $watermark = $auth->announcements_read_at;
-
-        $announcements = Announcement::with('author')
-            ->where('is_published', true)
-            ->latest('published_at')
+        $threads = Complaint::with('replies.author')
+            ->where('user_id', $auth->id)
             ->get()
-            ->filter(fn (Announcement $a) => $a->visibleTo('faculty'))
-            ->map(function (Announcement $a) use ($watermark) {
-                $postedAt = $a->published_at ?? $a->created_at;
-
-                return (object) [
-                    'id' => $a->id,
-                    'title' => $a->title,
-                    'body' => $a->body,
-                    'author' => $a->author->name ?? 'Administrator',
-                    'posted_at' => $postedAt,
-                    'unread' => $postedAt && (! $watermark || $watermark->lt($postedAt)),
-                ];
-            })
+            ->sortByDesc(fn (Complaint $complaint) => $complaint->lastActivityAt())
             ->values();
+
+        $selectedId = (int) $request->query('thread', $threads->first()->id ?? 0);
+        $selected = $threads->firstWhere('id', $selectedId);
+
+        if ($selected && $selected->unreadForSender()) {
+            $selected->student_read_at = now();
+            $selected->save();
+        }
 
         return view('faculty.inbox', [
             'user' => UserPresenter::faculty($auth),
-            'announcements' => $announcements,
-            'unreadCount' => $announcements->where('unread', true)->count(),
+            'threads' => $threads,
+            'selected' => $selected,
+            'unreadCount' => $threads->filter->unreadForSender()->count(),
+            'isFacultyInbox' => true,
         ]);
-    }
-
-    /** Mark every announcement as read by moving the watermark to now. */
-    public function markInboxRead()
-    {
-        $user = Auth::user();
-        $user->announcements_read_at = now();
-        $user->save();
-
-        return redirect()->route('faculty.inbox')
-            ->with('success', 'All announcements marked as read.');
     }
 
     /**
@@ -1270,6 +1766,7 @@ class FacultyController extends Controller
         if ($title === null) {
             return back()->withErrors(['quiz' => 'That module has no quiz to delete.']);
         }
+        $this->returnCourseToDraft($course);
 
         return redirect()->route('faculty.courses.manage', $course->id)
             ->with('success', '"'.$title.'" was deleted.');
@@ -1384,6 +1881,22 @@ class FacultyController extends Controller
     private function ownedCourse(int $id): Course
     {
         return Course::where('created_by', Auth::id())->findOrFail($id);
+    }
+
+    /** Keep submitted or published courses private when their content changes. */
+    private function returnCourseToDraft(Course $course): void
+    {
+        if ($course->approval_status === 'draft' && ! $course->is_approved && ! $course->is_published) {
+            return;
+        }
+
+        $course->update([
+            'approval_status' => 'draft',
+            'is_approved' => false,
+            'is_published' => false,
+            'approved_by' => null,
+            'approved_at' => null,
+        ]);
     }
 
     /**
@@ -1588,7 +2101,6 @@ class FacultyController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'description' => ['nullable', 'string', 'max:400'],
-            'badge_level' => ['nullable', 'string', 'max:40'],
             'icon_base64' => ['nullable', 'string'],
         ]);
 
@@ -1596,7 +2108,7 @@ class FacultyController extends Controller
 
         $badge->name = $data['name'];
         $badge->description = $data['description'] ?? null;
-        $badge->badge_level = $data['badge_level'] ?? null;
+        $badge->badge_level = null;
         $badge->is_active = true;
 
         if (! empty($data['icon_base64']) && str_starts_with($data['icon_base64'], 'data:image/')) {

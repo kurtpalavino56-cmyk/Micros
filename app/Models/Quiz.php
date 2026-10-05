@@ -11,6 +11,7 @@ class Quiz extends Model
     protected $fillable = [
         'course_id',
         'module_id',
+        'lesson_id',
         'title',
         'description',
         'passing_score',
@@ -18,6 +19,7 @@ class Quiz extends Model
         'time_limit',
         'instructions',
         'is_active',
+        'sort_order',
         'questions_changed_at',
     ];
 
@@ -37,6 +39,11 @@ class Quiz extends Model
     public function module(): BelongsTo
     {
         return $this->belongsTo(CourseModule::class, 'module_id');
+    }
+
+    public function lesson(): BelongsTo
+    {
+        return $this->belongsTo(CourseLesson::class, 'lesson_id');
     }
 
     public function questions(): HasMany

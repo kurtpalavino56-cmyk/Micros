@@ -7,9 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Complaint — a Help Centre message raised by a student. The admin reads it
- * from Admin › Complaint Inbox and replies; the student sees the thread from
- * the inbox icon beside their notification bell.
+ * Complaint — a Help Centre message thread raised by a student, faculty member,
+ * or website visitor. Administrators reply from the Complaint Inbox.
  */
 class Complaint extends Model
 {
@@ -93,9 +92,25 @@ class Complaint extends Model
     /** Does the student have something new to read? */
     public function unreadForStudent(): bool
     {
+        return $this->unreadForSender();
+    }
+
+    /** Does the account that opened the thread have something new to read? */
+    public function unreadForSender(): bool
+    {
         $at = $this->lastActivityAt();
 
         return $at && (! $this->student_read_at || $this->student_read_at->lt($at));
+    }
+
+    /** Role label shown to administrators in the support inbox. */
+    public function senderRoleLabel(): string
+    {
+        if ($this->isFromVisitor()) {
+            return 'Visitor';
+        }
+
+        return $this->user?->isFaculty() ? 'Faculty' : 'Student';
     }
 
     /** Does the admin have something new to read? */

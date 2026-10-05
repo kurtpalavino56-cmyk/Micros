@@ -19,10 +19,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * PageController — public / shared pages: Homepage, the Students
- * directory, the notifications feed, global search, and the JSON
+ * PageController — public / shared pages: Homepage, credential lookup,
+ * the notifications feed, global search, and the JSON
  * endpoint that powers the live-monitoring widgets.
  */
 class PageController extends Controller
@@ -73,9 +74,8 @@ class PageController extends Controller
         // ── Hero counters — real, live site-wide numbers ─────────────
         $stats = [
             'courses' => Course::where('is_published', true)->where('is_approved', true)->count(),
-            // Same rule as the Student Directory: every active student
-            // account. Deactivated accounts are excluded, but a student who
-            // has not joined a course yet still counts.
+            // Count every active student account, including students who
+            // have not enrolled in a course yet.
             'learners' => User::where('role_id', User::ROLE_STUDENT)
                 ->where('is_active', true)
                 ->count(),
@@ -99,13 +99,7 @@ class PageController extends Controller
     }
 
     /**
-     * Build the homepage announcement feed from real site activity:
-     * published admin announcements first, then auto-generated items for
-     * newly published courses, this month's enrollment count, and the
-     * latest badge awards.
-     */
-    /**
-     * Admin announcements as notification entries, filtered to the audience
+     * Return admin announcements for notifications, filtered to the audience
      * the admin chose (student / faculty). Guests see only announcements
      * addressed to everyone.
      *
@@ -118,13 +112,14 @@ class PageController extends Controller
 
         return Announcement::with('author')
             ->where('is_published', true)
+            ->orderByDesc('is_pinned')
             ->latest('published_at')
             ->get()
             ->filter(function (Announcement $a) use ($role) {
                 $audience = $a->audience;
 
-                // No audience recorded (older rows) or both roles = everyone.
-                if (empty($audience) || count($audience) >= 2) {
+                // No audience recorded, both roles, or Public = everyone.
+                if (empty($audience) || count($audience) >= 2 || in_array('public', $audience, true)) {
                     return true;
                 }
 
@@ -146,10 +141,9 @@ class PageController extends Controller
             ->values();
     }
 
+    /** Build the homepage feed from published, audience-visible announcements. */
     private function buildAnnouncements()
     {
-        $items = collect();
-
         // 1) Manually published announcements (if any exist).
         //    Each announcement carries an audience (student / faculty), set by
         //    the admin on Admin › Announcements. Guests on the public homepage
@@ -157,14 +151,15 @@ class PageController extends Controller
         $viewerRole = Auth::check() ? Auth::user()->roleName() : null;
 
         $manual = Announcement::where('is_published', true)
+            ->orderByDesc('is_pinned')
             ->latest('published_at')
             ->get()
             ->filter(function (Announcement $a) use ($viewerRole) {
                 $audience = $a->audience;
 
-                // Rows created before the audience column existed, or aimed at
-                // both roles, are public.
-                if (empty($audience) || count($audience) >= 2) {
+                // Rows created before the audience column existed, aimed at
+                // both roles, or marked Public are visible to everyone.
+                if (empty($audience) || count($audience) >= 2 || in_array('public', $audience, true)) {
                     return true;
                 }
 
@@ -174,52 +169,24 @@ class PageController extends Controller
             })
             ->take(3)
             ->map(fn (Announcement $a) => [
+                'id' => $a->id,
                 'type' => 'general',
                 'label' => 'Announcement',
                 'date' => ($a->published_at ?? $a->created_at)?->format('F j, Y') ?? '',
                 'title' => $a->title,
                 'desc' => Str::limit((string) $a->body, 160),
+                'full_body' => (string) $a->body,
+                'has_more' => Str::length((string) $a->body) > 160,
             ])
             ->values();
-        $items = $items->concat($manual);
 
-        // New-course activity is intentionally NOT surfaced here. It is a
-        // per-student notification (see the "Student / guest" branch of
-        // notificationsFeed()/notificationPreview() below), not a public
-        // landing-page announcement — a course going live shouldn't be
-        // broadcast to guests, faculty, or the admin dashboard.
-
-        // 2) Enrollment activity this month.
-        $monthEnroll = Enrollment::where('created_at', '>=', now()->startOfMonth())->count();
-        if ($monthEnroll > 0) {
-            $items->push([
-                'type' => 'event',
-                'label' => 'Enrollment',
-                'date' => now()->format('F Y'),
-                'title' => $monthEnroll.' new '.Str::plural('enrollment', $monthEnroll).' this month',
-                'desc' => 'Students are actively enrolling across our microcredential courses this month.',
-            ]);
-        }
-
-        // 3) Latest badge award.
-        $latestBadge = UserBadge::with('badge')->latest('earned_at')->first();
-        if ($latestBadge) {
-            $items->push([
-                'type' => 'general',
-                'label' => 'Achievement',
-                'date' => $latestBadge->earned_at?->format('F j, Y') ?? '',
-                'title' => 'Badge Awarded: '.($latestBadge->badge->name ?? 'Badge'),
-                'desc' => 'A learner just earned the "'.($latestBadge->badge->name ?? 'Badge').'" badge.',
-            ]);
-        }
-
-        return $items->take(5)->values();
+        return $manual;
     }
 
     /**
      * Help Center — a public contact form. Anyone can use it, signed in or
      * not; a visitor supplies their name and email so the admin can reply by
-     * mail, while a signed-in student's reply lands in their inbox.
+     * mail, while a signed-in student's or faculty member's reply lands in Inbox.
      */
     public function help()
     {
@@ -257,7 +224,7 @@ class PageController extends Controller
 
         $complaint = Complaint::create([
             'user_id' => $auth?->id,
-            'source' => $auth ? 'student' : 'visitor',
+            'source' => $auth?->isFaculty() ? 'faculty' : ($auth ? 'student' : 'visitor'),
             'guest_name' => $auth ? null : $data['guest_name'],
             'guest_email' => $auth ? null : $data['guest_email'],
             'subject' => $data['subject'],
@@ -270,9 +237,14 @@ class PageController extends Controller
             'student_read_at' => $auth ? now() : null,
         ]);
 
-        // A signed-in student can follow the thread in their inbox.
+        // Signed-in learners and faculty can follow their thread in Inbox.
         if ($auth && $auth->isStudent()) {
             return redirect()->route('inbox.index', ['thread' => $complaint->id])
+                ->with('success', 'Your message was sent to the administrators.');
+        }
+
+        if ($auth && $auth->isFaculty()) {
+            return redirect()->route('faculty.inbox', ['thread' => $complaint->id])
                 ->with('success', 'Your message was sent to the administrators.');
         }
 
@@ -308,6 +280,23 @@ class PageController extends Controller
         ];
     }
 
+    /** Serve a support-thread attachment only to its sender or an administrator. */
+    public function complaintAttachment(int $id): BinaryFileResponse
+    {
+        $complaint = Complaint::findOrFail($id);
+        $viewer = Auth::user();
+
+        abort_unless($viewer->isAdmin() || (int) $complaint->user_id === (int) $viewer->id, 403);
+
+        $filename = basename((string) $complaint->attachment_url);
+        abort_if($filename === '' || $filename === '.', 404);
+
+        $path = public_path('uploads/complaints/'.$filename);
+        abort_unless(is_file($path), 404);
+
+        return response()->file($path);
+    }
+
     /** Navbar section link → smooth-scroll target on the homepage. */
     public function announcementsRedirect()
     {
@@ -338,18 +327,18 @@ class PageController extends Controller
             ->withQueryString();
 
         $cards->setCollection($cards->getCollection()->map(fn (Course $c) => [
-                'title' => $c->title,
-                'description' => filled($c->short_description)
-                    ? $c->short_description
-                    : Str::limit(trim(html_entity_decode(strip_tags((string) $c->description), ENT_QUOTES | ENT_HTML5, 'UTF-8')), 110),
-                'professor' => $c->instructor ?? 'Faculty',
-                'hours' => (int) filter_var($c->duration, FILTER_SANITIZE_NUMBER_INT),
-                'rating' => 0,
-                'category' => $c->category ?? 'General',
-                'level' => $c->level ?? 'Beginner',
-                'image' => $c->thumbnail_url ? asset($c->thumbnail_url) : null,
-                'slug' => route('public.courses.show', $c->id),
-            ])->values());
+            'title' => $c->title,
+            'description' => filled($c->short_description)
+                ? $c->short_description
+                : Str::limit(trim(html_entity_decode(strip_tags((string) $c->description), ENT_QUOTES | ENT_HTML5, 'UTF-8')), 110),
+            'professor' => $c->instructor ?? 'Faculty',
+            'hours' => (int) filter_var($c->duration, FILTER_SANITIZE_NUMBER_INT),
+            'rating' => 0,
+            'category' => $c->category ?? 'General',
+            'level' => $c->level ?? 'Beginner',
+            'image' => $c->thumbnail_url ? asset($c->thumbnail_url) : null,
+            'slug' => route('public.courses.show', $c->id),
+        ])->values());
 
         return view('public.explore-courses', [
             'courses' => $cards,
@@ -362,7 +351,7 @@ class PageController extends Controller
     /** Public description page; enrollment remains protected behind login. */
     public function publicCourse(int $id)
     {
-        $course = Course::with(['modules.lessons', 'quizzes.questions', 'creator'])
+        $course = Course::with(['modules.lessons', 'quizzes.questions', 'creator', 'learningOutcomes', 'badge'])
             ->where('is_published', true)
             ->where('is_approved', true)
             ->findOrFail($id);
@@ -373,58 +362,30 @@ class PageController extends Controller
         ]);
     }
 
-    /**
-     * Students directory — real students (role_id = 3) with the courses
-     * each one is enrolled in, replacing the Blade's built-in dummy list.
-     */
-    public function students()
+    /** Public certificate lookup by the credential ID printed on each certificate. */
+    public function students(Request $request)
     {
-        $students = User::query()
-            ->where('role_id', User::ROLE_STUDENT)
-            ->where('is_active', true)
-            // Every active student account appears, whether or not they have
-            // joined a course yet. Their course list simply shows as empty.
-            ->with(['enrollments.course'])
-            ->orderBy('first_name')
-            ->get();
+        $credentialId = strtoupper(trim((string) $request->query('credential_id', '')));
+        $credential = null;
 
-        // N+1 fix: certificate serials were looked up one query PER completed
-        // enrollment PER student. Fetch every certificate for the listed
-        // students in a single query and key it by "user_id-course_id".
-        $serials = Certificate::query()
-            ->whereIn('user_id', $students->pluck('id')->all() ?: [0])
-            ->get(['user_id', 'course_id', 'serial'])
-            ->keyBy(fn (Certificate $c) => $c->user_id.'-'.$c->course_id);
+        if ($credentialId !== '') {
+            $certificate = Certificate::with(['user', 'course'])
+                ->where('serial', $credentialId)
+                ->first();
 
-        $students = $students
-            ->map(function (User $u) use ($serials) {
-                return (object) [
-                    'name' => $u->name,
-                    'student_id' => $u->student_id ?? $u->user_code,
-                    'avatar_url' => $u->avatar_url,
-                    // A completed course carries its certificate serial so
-                    // the QR can encode a real verification URL. Courses
-                    // still in progress carry none, and the Blade shows no
-                    // QR for them.
-                    'courses' => $u->enrollments->map(function ($e) use ($u, $serials) {
-                        $serial = null;
+            if ($certificate && $certificate->course) {
+                $credential = CertificateBuilder::pdfData($certificate);
+                $credential['credential_id'] = $credential['serial'];
+                $credential['credential_title'] = $credential['course_title'];
+                $credential['issued_at'] = $credential['date_completed'];
+            }
+        }
 
-                        if ($e->completion_status === MicrocredentialCompletionService::STATUS_COMPLETED) {
-                            $serial = $serials->get($u->id.'-'.$e->course_id)?->serial;
-                        }
-
-                        return [
-                            'title' => $e->course->title ?? 'Course',
-                            'completed' => $e->completion_status === MicrocredentialCompletionService::STATUS_COMPLETED,
-                            'verify_url' => $serial
-                                ? CertificateBuilder::verifyUrl($serial)
-                                : null,
-                        ];
-                    })->values()->all(),
-                ];
-            });
-
-        return view('public.students', ['students' => $students]);
+        return view('public.students', [
+            'credentialId' => $credentialId,
+            'credential' => $credential,
+            'hasSearched' => $credentialId !== '',
+        ]);
     }
 
     /**
@@ -799,4 +760,3 @@ class PageController extends Controller
         return redirect()->route('Homepage', ['certificate' => $serial]);
     }
 }
-

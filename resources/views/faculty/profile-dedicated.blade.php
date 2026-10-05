@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     <title>Faculty Profile | Upskill</title>
     <style>
         :root {
@@ -30,52 +33,6 @@
             margin: 0 auto;
             padding: 24px 20px 48px;
             margin-top: calc(var(--topbar-h) + 20px);
-        }
-
-        .topbar {
-            position: fixed;
-            inset: 0 0 auto 0;
-            height: var(--topbar-h);
-            width: 100%;
-            padding: 0 20px;
-            background: var(--navy);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 14px;
-            z-index: 200;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.16);
-        }
-
-        .topbar-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-transform: uppercase;
-            color: var(--white);
-            font-weight: 800;
-            letter-spacing: 2px;
-            text-decoration: none;
-            font-size: 0.95rem;
-        }
-
-        .brand-logo {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--white);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--navy);
-            font-weight: 800;
-            font-size: 0.9rem;
-        }
-
-        .topbar-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
         }
 
         .search-wrap {
@@ -106,47 +63,6 @@
 
         .search-wrap input::placeholder {
             color: rgba(255,255,255,0.68);
-        }
-
-        .topbar-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .topbar-link,
-        .topbar-button {
-            border: 1px solid rgba(255,255,255,0.22);
-            background: rgba(255,255,255,0.12);
-            color: var(--white);
-            border-radius: 999px;
-            padding: 9px 14px;
-            text-decoration: none;
-            font-size: 0.85rem;
-            font-weight: 700;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-        }
-
-        .topbar-button {
-            background: rgba(255,255,255,0.16);
-            border-color: rgba(255,255,255,0.22);
-        }
-
-        .topbar-avatar {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.18);
-            border: 1px solid rgba(255,255,255,0.22);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--white);
-            font-weight: 700;
-            text-decoration: none;
         }
 
         .page-header {
@@ -346,10 +262,10 @@
     @include('components.authenticated-topbar')
 
     <div class="page-shell">
-        <div class="page-header">
+        <div class="page-header faculty-page-heading">
             <div>
-                <h1>Faculty Profile</h1>
-                <p>Manage your faculty profile and teaching information.</p>
+                <h1 class="faculty-page-title">Faculty Profile</h1>
+                <p class="faculty-page-subtitle">Manage your faculty profile and teaching information.</p>
             </div>
         </div>
 

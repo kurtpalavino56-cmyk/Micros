@@ -7,8 +7,19 @@ use App\Models\Notification;
 
 class CourseModerationService
 {
+    public function __construct(private CourseReadinessService $courseReadiness) {}
+
     public function approve(Course $course, int $adminId): void
     {
+        if ($course->approval_status !== 'pending') {
+            throw new \DomainException('Only courses submitted for review can be approved.');
+        }
+
+        $missingRequirements = $this->courseReadiness->missingRequirements($course);
+        if ($missingRequirements !== []) {
+            throw new \DomainException('This course is incomplete. The faculty member must complete: '.implode(', ', $missingRequirements).'.');
+        }
+
         $course->approval_status = 'approved';
         $course->is_approved = true;
         $course->is_published = true;
@@ -66,4 +77,3 @@ class CourseModerationService
         return $title;
     }
 }
-

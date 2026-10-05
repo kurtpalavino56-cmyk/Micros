@@ -47,9 +47,8 @@
         @include('components.student-sidebar')
         <main class="main">
             <div class="page">
-                <header class="page-head">
+                <header class="page-head student-page-heading">
                     <div>
-                        <p class="eyebrow">Approved learning combinations</p>
                         <h1>Stacking Progress</h1>
                         <p class="subtitle">Track officially completed microcredentials toward approved frameworks.</p>
                     </div>
@@ -79,15 +78,9 @@
                             <div class="percent">{{ $item['completion_percentage'] }}%</div>
                         </div>
 
-                        @if($item['can_request_recognition'])
-                            <form method="POST" action="{{ route('stacking.recognition.request', $framework->id) }}" style="margin-top:16px;">
-                                @csrf
-                                <button type="submit" style="background:#0a1f6e;color:#fff;border:0;border-radius:999px;padding:10px 16px;font-weight:800;cursor:pointer;">Request Academic Credit Recognition</button>
-                            </form>
-                        @elseif($item['recognition'] ?? null)
-                            <div style="margin-top:14px;padding:10px 12px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0;color:#344054;font-weight:700;">
-                                Recognition status: {{ ucfirst(str_replace('_', ' ', $item['recognition']->status)) }}
-                            </div>
+                        @if($isMet)
+                            <a href="{{ route('stacking.evidence-report', $framework->id) }}" target="_blank" rel="noopener" style="display:inline-block;margin-top:16px;background:#0a1f6e;color:#fff;border-radius:999px;padding:10px 16px;font-weight:800;">Generate academic credit evidence report</a>
+                            <p class="framework-description">The report documents completed credentials for review by the academic unit. Credit decisions and registrar recording take place through institutional processes outside UpSkill.</p>
                         @endif
                         <table class="requirements">
                             <thead><tr><th>Microcredential</th><th>Order</th><th>Type</th><th>Completion</th></tr></thead>

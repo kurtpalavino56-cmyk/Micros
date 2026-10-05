@@ -7,8 +7,8 @@ use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\QuizAttemptAnswer;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class QuizAttemptService
 {
@@ -66,7 +66,7 @@ class QuizAttemptService
 
     /** @param array<string, mixed> $result */
     /** @return array<string, mixed> */
-    public function submit(User $student, Quiz $quiz, array $result): array
+    public function submit(User $student, Quiz $quiz, array $result, ?Carbon $startedAt = null): array
     {
         $status = $this->retakeStatus($quiz, $student->id);
         if ($status['exhausted']) {
@@ -81,13 +81,13 @@ class QuizAttemptService
         $percent = $grade['score'];
         $passed = $grade['passed'];
 
-        DB::transaction(function () use ($student, $quiz, $grade, $percent, $passed): void {
+        DB::transaction(function () use ($student, $quiz, $grade, $percent, $passed, $startedAt): void {
             $attempt = QuizAttempt::create([
                 'user_id' => $student->id,
                 'quiz_id' => $quiz->id,
                 'score' => $percent,
                 'passed' => $passed,
-                'started_at' => now(),
+                'started_at' => $startedAt ?? now(),
                 'submitted_at' => now(),
             ]);
 

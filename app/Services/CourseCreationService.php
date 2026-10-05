@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Badge;
 use App\Models\Course;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -25,6 +26,14 @@ class CourseCreationService
             'program' => $data['program'] ?? null,
             'level' => $data['level'] ?? 'Beginner',
             'pqf_level' => $data['pqf_level'] ?? null,
+            'target_learners' => trim((string) ($data['target_learners'] ?? '')) ?: null,
+            'delivery_mode' => $data['delivery_mode'] ?? null,
+            'learning_hours' => filled($data['learning_hours'] ?? null) ? (int) $data['learning_hours'] : null,
+            'assessment_strategy' => trim((string) ($data['assessment_strategy'] ?? '')) ?: null,
+            'grading_rubric' => trim((string) ($data['grading_rubric'] ?? '')) ?: null,
+            'credit_bearing' => $request->boolean('credit_bearing'),
+            'credit_equivalency' => trim((string) ($data['credit_equivalency'] ?? '')) ?: null,
+            'equivalent_course' => trim((string) ($data['equivalent_course'] ?? '')) ?: null,
             'duration' => ((int) ($data['duration'] ?? 0)) > 0 ? ((int) $data['duration']).'h' : null,
             'passing_score' => (int) ($data['passing_score'] ?? 75),
             'instructor' => $author->name,
@@ -32,7 +41,7 @@ class CourseCreationService
             'is_featured' => false,
             'thumbnail_url' => $this->storeThumbnail($request),
             'is_published' => false,
-            'approval_status' => ($data['status'] ?? 'submit') === 'draft' ? 'draft' : 'pending',
+            'approval_status' => 'draft',
             'is_approved' => false,
         ]);
 
@@ -61,7 +70,9 @@ class CourseCreationService
     private function sanitizeRichText(?string $html): string
     {
         $html = trim((string) $html);
-        if ($html === '') return '';
+        if ($html === '') {
+            return '';
+        }
         $allowed = '<p><br><strong><b><em><i><u><ul><ol><li><h2><h3><h4><blockquote><a><img>';
         $html = strip_tags($html, $allowed);
         $html = preg_replace_callback('/<([a-z0-9]+)\b([^>]*)>/i', function ($match) {
@@ -72,38 +83,55 @@ class CourseCreationService
                 'img' => ['src', 'alt', 'title', 'width', 'height'],
                 default => [],
             };
-            if ($allowedAttrs === []) return '<'.$tag.'>';
-            preg_match_all('/([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s>]+))/u', $attrs, $parts, PREG_SET_ORDER);
-            $safe=[];
-            foreach ($parts as $part) {
-                $name=strtolower($part[1]);
-                if (!in_array($name,$allowedAttrs,true)) continue;
-                $value=$part[2]!==''?$part[2]:($part[3]!==''?$part[3]:$part[4]);
-                if (in_array($name,['href','src'],true)) {
-                    $value=trim($value);
-                    if (preg_match('/^(javascript|vbscript|data):/i',$value)) continue;
-                    if ($name==='src' && !preg_match('/^(https?:\/\/|\/)/i',$value)) continue;
-                }
-                $safe[]=$name.'="'.e($value).'"';
+            if ($allowedAttrs === []) {
+                return '<'.$tag.'>';
             }
-            return '<'.$tag.($safe?' '.implode(' ',$safe):'').'>';
+            preg_match_all('/([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s>]+))/u', $attrs, $parts, PREG_SET_ORDER);
+            $safe = [];
+            foreach ($parts as $part) {
+                $name = strtolower($part[1]);
+                if (! in_array($name, $allowedAttrs, true)) {
+                    continue;
+                }
+                $value = $part[2] !== '' ? $part[2] : ($part[3] !== '' ? $part[3] : $part[4]);
+                if (in_array($name, ['href', 'src'], true)) {
+                    $value = trim($value);
+                    if (preg_match('/^(javascript|vbscript|data):/i', $value)) {
+                        continue;
+                    }
+                    if ($name === 'src' && ! preg_match('/^(https?:\/\/|\/)/i', $value)) {
+                        continue;
+                    }
+                }
+                $safe[] = $name.'="'.e($value).'"';
+            }
+
+            return '<'.$tag.($safe ? ' '.implode(' ', $safe) : '').'>';
         }, $html);
+
         return trim($html);
     }
 
     private function saveInlineBadge(Request $request, Course $course): ?int
     {
-        if (! $request->boolean('badge_enabled')) return null;
+        if (! $request->boolean('badge_enabled')) {
+            return null;
+        }
         $name = trim((string) $request->input('badge_name'));
-        if ($name === '') throw new \InvalidArgumentException('Badge name is required when badge issuance is enabled.');
-        $badge = $course->badge ?: new \App\Models\Badge;
+        if ($name === '') {
+            throw new \InvalidArgumentException('Badge name is required when badge issuance is enabled.');
+        }
+        $badge = $course->badge ?: new Badge;
         $badge->name = $name;
         $badge->description = trim((string) $request->input('badge_description')) ?: null;
-        $badge->badge_level = trim((string) $request->input('badge_level')) ?: null;
+        $badge->badge_level = null;
         $badge->is_active = true;
         $icon = (string) $request->input('badge_icon_base64');
-        if ($icon !== '' && str_starts_with($icon, 'data:image/')) $badge->icon_url = $icon;
+        if ($icon !== '' && str_starts_with($icon, 'data:image/')) {
+            $badge->icon_url = $icon;
+        }
         $badge->save();
+
         return (int) $badge->id;
     }
 
@@ -169,4 +197,3 @@ class CourseCreationService
         return $slug;
     }
 }
-

@@ -1,564 +1,628 @@
 @extends('layouts.app')
 
-@section('title', 'Students | UpSkill – PSU Microcredentials')
+@section('title', 'Credential Verification | UpSkill')
 
 @push('styles')
 <style>
-/* ── Students page header ── */
-.students-hero {
-    background: linear-gradient(170deg, var(--navy) 0%, var(--navy-dark) 55%, #0e2b8e 100%);
-    padding: 3.5rem 0 4.5rem;
-    text-align: center;
-}
-.students-hero__title {
-    font-family: var(--font-display);
-    font-size: 2.4rem;
-    font-weight: 800;
-    color: var(--white);
-    margin-bottom: 0.4rem;
-}
-.students-hero__sub {
-    color: rgba(255,255,255,0.75);
-    font-size: 0.98rem;
-    margin-bottom: 2rem;
-}
+    .credential-lookup-page {
+        display: flex;
+        flex-direction: column;
+        min-height: calc(100vh - 150px);
+        background: linear-gradient(170deg, var(--navy) 0%, var(--navy-dark) 55%, #0e2b8e 100%);
+    }
 
-/* Search bar */
-.student-search {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    background: var(--white);
-    border-radius: 50px;
-    padding: 0.45rem 0.45rem 0.45rem 1.4rem;
-    max-width: 560px;
-    margin: 0 auto;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.22);
-}
-.student-search svg {
-    width: 20px; height: 20px;
-    color: var(--text-muted);
-    flex-shrink: 0;
-}
-.student-search__input {
-    flex: 1;
-    border: none;
-    outline: none;
-    background: none;
-    font-family: var(--font-body);
-    font-size: 0.95rem;
-    color: var(--navy);
-    min-width: 0;
-}
-.student-search__input::placeholder { color: var(--text-muted); opacity: 0.7; }
-.student-search__btn {
-    background: var(--gold);
-    color: var(--navy-dark);
-    border: none;
-    border-radius: 50px;
-    font-weight: 700;
-    font-size: 0.88rem;
-    padding: 0.6rem 1.6rem;
-    cursor: pointer;
-    transition: background var(--transition), box-shadow var(--transition);
-    flex-shrink: 0;
-}
-.student-search__btn:hover { background: var(--gold-light); box-shadow: 0 6px 18px rgba(232,168,0,0.4); }
-.students-hero__hint {
-    margin-top: 0.85rem;
-    font-size: 0.8rem;
-    color: rgba(255,255,255,0.55);
-}
-.students-hero__hint code {
-    background: rgba(255,255,255,0.12);
-    border-radius: 6px;
-    padding: 0.1rem 0.45rem;
-    font-size: 0.78rem;
-    color: var(--gold-light);
-}
+    .students-hero {
+        display: flex;
+        flex: 1 0 auto;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 20px;
+        background: transparent;
+        text-align: center;
+        width: 100%;
+    }
 
-/* ── Directory section ── */
-.students-section { padding: 3.5rem 0 5rem; }
-.students-section__head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 1.8rem;
-    flex-wrap: wrap;
-}
-.students-count { font-size: 0.9rem; color: var(--text-muted); font-weight: 500; }
+    .credential-lookup {
+        width: min(100%, 760px);
+        margin: 0 auto;
+        text-align: center;
+    }
 
-/* Grid of student cards */
-.students-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 1.4rem;
-}
-.student-card {
-    background: var(--card-bg);
-    border: 1px solid rgba(10,31,110,0.08);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-card);
-    padding: 1.6rem 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    transition: transform var(--transition), box-shadow var(--transition);
-}
-.student-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 30px rgba(10,31,110,0.16);
-}
-.student-card__avatar {
-    width: 52px; height: 52px;
-    border-radius: 50%;
-    background: var(--navy);
-    color: var(--gold-light);
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 1.05rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    letter-spacing: 0.02em;
-}
-.student-card__name {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 1rem;
-    color: var(--navy);
-    margin-bottom: 0.35rem;
-}
-.student-card__id {
-    display: inline-block;
-    background: rgba(232,168,0,0.14);
-    color: var(--navy);
-    border: 1px solid rgba(232,168,0,0.45);
-    border-radius: 50px;
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    padding: 0.18rem 0.75rem;
-    font-variant-numeric: tabular-nums;
-}
+    .credential-lookup h1 {
+        margin: 0;
+        color: var(--white);
+        font-family: var(--font-display);
+        font-size: 2.4rem;
+        font-weight: 800;
+        line-height: 1.25;
+    }
 
-/* Empty state */
-.students-empty {
-    display: none;
-    text-align: center;
-    padding: 4rem 1rem;
-    color: var(--text-muted);
-}
-.students-empty__title {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 1.15rem;
-    color: var(--navy);
-    margin-bottom: 0.4rem;
-}
-.students-empty p { font-size: 0.9rem; }
+    .credential-lookup__intro {
+        margin: 0 0 2rem;
+        color: rgba(255,255,255,.75);
+        font-size: .98rem;
+    }
 
-/* ── Student profile modal ── */
-.student-card { cursor: pointer; }
-.student-card:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
-.student-card__avatar-img {
-    width: 52px; height: 52px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
-}
+    .credential-search {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        padding: .45rem;
+        padding-left: 1.4rem;
+        border: 0;
+        border-radius: 50px;
+        background: #fff;
+        box-shadow: 0 10px 30px rgba(0,0,0,.22);
+        text-align: left;
+    }
 
-.student-modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(7,21,80,0.55);
-    z-index: 2000;
-    align-items: center;
-    justify-content: center;
-    padding: 1.2rem;
-}
-.student-modal-overlay.open { display: flex; }
+    .credential-search:focus-within {
+        box-shadow: 0 0 0 3px rgba(255, 213, 1, .45), 0 10px 30px rgba(0, 0, 0, .22);
+    }
 
-.student-modal {
-    background: var(--white);
-    border-radius: var(--radius-lg);
-    width: 100%;
-    max-width: 520px;
-    max-height: 88vh;
-    overflow-y: auto;
-    box-shadow: 0 24px 60px rgba(0,0,0,0.35);
-    position: relative;
-}
-.student-modal__close {
-    position: absolute;
-    top: 0.8rem; right: 1rem;
-    background: none;
-    border: none;
-    color: rgba(255,255,255,0.85);
-    font-size: 1.7rem;
-    line-height: 1;
-    cursor: pointer;
-    z-index: 1;
-}
-.student-modal__close:hover { color: var(--gold-light); }
+    .credential-search__icon {
+        width: 20px;
+        height: 20px;
+        margin-left: 0;
+        color: var(--text-muted);
+        flex: 0 0 auto;
+    }
 
-.student-modal__header {
-    background: linear-gradient(170deg, var(--navy) 0%, var(--navy-dark) 100%);
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    padding: 1.8rem 1.8rem 1.6rem;
-    display: flex;
-    align-items: center;
-    gap: 1.1rem;
-}
-.student-modal__avatar {
-    width: 72px; height: 72px;
-    border-radius: 50%;
-    background: var(--gold);
-    color: var(--navy-dark);
-    font-family: var(--font-display);
-    font-weight: 800;
-    font-size: 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    border: 3px solid rgba(255,255,255,0.35);
-    overflow: hidden;
-}
-.student-modal__avatar img { width: 100%; height: 100%; object-fit: cover; }
-.student-modal__name {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 1.25rem;
-    color: var(--white);
-    margin-bottom: 0.4rem;
-}
-.student-modal__header .student-card__id {
-    color: var(--white);
-    background: rgba(255,255,255,0.12);
-    border-color: rgba(232,168,0,0.7);
-}
+    .credential-search__input {
+        width: 100%;
+        min-width: 0;
+        height: 46px;
+        padding: 0;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--navy);
+        font: 400 .95rem var(--font-body);
+    }
 
-.student-modal__body { padding: 1.5rem 1.8rem 1.8rem; }
-.student-modal__section-title {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: var(--navy);
-    margin-bottom: 0.9rem;
-}
+    .credential-lookup-page .credential-search input.credential-search__input[type="search"],
+    .credential-lookup-page .credential-search input.credential-search__input[type="search"]:focus {
+        border: 0 !important;
+        border-radius: 0;
+        outline: 0 !important;
+        box-shadow: none !important;
+        background: transparent;
+    }
 
-/* Course rows */
-.course-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.9rem;
-    border: 1px solid rgba(10,31,110,0.12);
-    border-radius: var(--radius-md);
-    padding: 0.85rem 1rem;
-    margin-bottom: 0.7rem;
-    background: var(--white);
-}
-.course-row__title {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--navy);
-}
+    .credential-search__input::placeholder {
+        color: #929db0;
+        opacity: .7;
+    }
 
-/* Completed course → glowing green + Completed badge + QR code */
-.course-row.completed {
-    border-color: #22c55e;
-    background: #f0fdf4;
-    box-shadow: 0 0 12px rgba(34,197,94,0.55);
-    animation: courseGlow 2s ease-in-out infinite;
-}
-@keyframes courseGlow {
-    0%, 100% { box-shadow: 0 0 8px  rgba(34,197,94,0.40); }
-    50%      { box-shadow: 0 0 18px rgba(34,197,94,0.75); }
-}
-@media (prefers-reduced-motion: reduce) {
-    .course-row.completed { animation: none; }
-}
-.course-row__badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    background: #22c55e;
-    color: var(--white);
-    border-radius: 50px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    padding: 0.22rem 0.7rem;
-    margin-top: 0.35rem;
-    text-transform: uppercase;
-}
-.course-row__qr {
-    width: 58px; height: 58px;
-    border-radius: 8px;
-    border: 1px solid #bbf7d0;
-    background: var(--white);
-    padding: 3px;
-    flex-shrink: 0;
-}
-.course-row--none {
-    font-size: 0.88rem;
-    color: var(--text-muted);
-    padding: 0.5rem 0;
-}
+    .credential-search__button {
+        display: inline-flex;
+        min-height: 42px;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        flex: 0 0 auto;
+        padding: 0 18px;
+        border: 0;
+        border-radius: 50px;
+        background: var(--gold);
+        color: var(--navy-dark);
+        cursor: pointer;
+        font: 700 .88rem var(--font-body);
+        transition: background var(--transition), box-shadow var(--transition);
+    }
 
-@media (max-width: 600px) {
-    .students-hero__title { font-size: 1.8rem; }
-    .student-search { flex-wrap: nowrap; }
-    .student-search__btn { padding: 0.55rem 1.1rem; }
-}
+    .credential-search__button:hover {
+        background: var(--gold-light);
+        box-shadow: 0 6px 18px rgba(232,168,0,.4);
+    }
+
+    .credential-search__button svg {
+        width: 17px;
+        height: 17px;
+    }
+
+    .credential-search__tools {
+        display: flex;
+        min-height: 20px;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 8px;
+        color: rgba(255,255,255,.72);
+        font-size: 12px;
+    }
+
+    .students-hero__hint {
+        margin: .85rem 0 0;
+        color: rgba(255,255,255,.55);
+        font-size: .8rem;
+    }
+
+    .students-hero__hint code {
+        padding: .1rem .45rem;
+        border-radius: 6px;
+        background: rgba(255,255,255,.12);
+        color: var(--gold-light);
+        font-size: .78rem;
+    }
+
+    .credential-dropzone {
+        display: flex;
+        width: min(100%, 520px);
+        min-height: 76px;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin: 1.1rem auto 0;
+        padding: 14px 18px;
+        border: 1px dashed rgba(255,255,255,.5);
+        border-radius: 12px;
+        background: rgba(255,255,255,.06);
+        color: rgba(255,255,255,.9);
+        cursor: pointer;
+        text-align: left;
+        transition: background var(--transition), border-color var(--transition);
+    }
+
+    .credential-dropzone:hover,
+    .credential-dropzone.is-dragging {
+        border-color: var(--gold-light);
+        background: rgba(255,255,255,.12);
+    }
+
+    .credential-dropzone:focus-within {
+        outline: 2px solid var(--gold-light);
+        outline-offset: 3px;
+    }
+
+    .credential-dropzone__icon {
+        width: 25px;
+        height: 25px;
+        flex: 0 0 auto;
+        color: var(--gold-light);
+    }
+
+    .credential-dropzone__copy { display: grid; gap: 3px; }
+    .credential-dropzone__copy strong { color: #fff; font-size: .9rem; }
+    .credential-dropzone__copy span { color: rgba(255,255,255,.68); font-size: .78rem; }
+
+    .credential-dropzone input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        clip-path: inset(50%);
+    }
+
+    .credential-scan-status {
+        min-height: 18px;
+    }
+
+    .credential-lookup-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 5000;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        background: rgba(7, 21, 80, .68);
+        backdrop-filter: blur(3px);
+    }
+
+    .credential-lookup-modal__dialog {
+        position: relative;
+        width: min(100%, 440px);
+        padding: 30px 28px 26px;
+        border: 1px solid rgba(10, 31, 110, .1);
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, .3);
+        text-align: center;
+    }
+
+    .credential-lookup-modal__icon {
+        display: grid;
+        width: 48px;
+        height: 48px;
+        margin: 0 auto 14px;
+        place-items: center;
+        border-radius: 50%;
+        background: #fff4cf;
+        color: #806208;
+    }
+
+    .credential-lookup-modal__icon svg { width: 24px; height: 24px; }
+    .credential-lookup-modal__dialog h2 {
+        margin: 0 0 8px;
+        color: var(--navy);
+        font-family: var(--font-display);
+        font-size: 20px;
+        font-weight: 800;
+    }
+
+    .credential-lookup-modal__dialog p {
+        margin: 0 0 22px;
+        color: var(--text-muted);
+        font-size: 14px;
+        line-height: 1.55;
+    }
+
+    .credential-lookup-modal__close {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        display: grid;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: #65718a;
+        cursor: pointer;
+        font-size: 25px;
+        line-height: 1;
+    }
+
+    .credential-lookup-modal__close:hover { background: #f1f4fa; color: var(--navy); }
+
+    .credential-lookup-modal__button {
+        min-height: 42px;
+        padding: 0 22px;
+        border: 0;
+        border-radius: 50px;
+        background: var(--gold);
+        color: var(--navy-dark);
+        cursor: pointer;
+        font: 700 14px var(--font-body);
+    }
+
+    .credential-lookup-modal__button:hover { background: var(--gold-light); }
+
+    .certfloat-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 6000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px 16px;
+        overflow-y: auto;
+        background: rgba(6, 13, 46, .76);
+        backdrop-filter: blur(4px);
+    }
+
+    .certfloat {
+        position: relative;
+        width: min(100%, 720px);
+        max-height: calc(100vh - 48px);
+        overflow-y: auto;
+        padding: 22px;
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, .5);
+    }
+
+    .certfloat__close {
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        z-index: 2;
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, .92);
+        color: #64748b;
+        cursor: pointer;
+        font-size: 25px;
+        line-height: 1;
+    }
+
+    .certfloat__close:hover { color: var(--navy); }
+    .certfloat__verified {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        margin-bottom: 16px;
+        padding: 6px 14px;
+        border: 1px solid #a7f3d0;
+        border-radius: 999px;
+        background: #ecfdf3;
+        color: #065f46;
+        font-size: 12.5px;
+        font-weight: 800;
+    }
+
+    .certfloat__verified.is-revoked { border-color: #fecaca; background: #fff1f2; color: #b42318; }
+    .certfloat__verified svg { width: 14px; height: 14px; }
+    .certfloat__btn {
+        width: 100%;
+        min-height: 44px;
+        margin-top: 18px;
+        border: 0;
+        border-radius: 10px;
+        background: #0a1f6e;
+        color: #fff;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .certfloat__btn:hover { background: #071550; }
+
+    @media (max-width: 600px) {
+        .students-hero { padding: 2.5rem 16px; }
+        .credential-lookup h1 { font-size: 1.8rem; }
+        .credential-search { flex-wrap: wrap; }
+        .credential-search__icon { margin-left: 2px; }
+        .credential-search__input { flex: 1 1 calc(100% - 40px); }
+        .credential-search__button { flex: 1 1 0; }
+        .credential-dropzone { min-height: 72px; padding: 12px; }
+        .certfloat { padding: 14px; }
+        .certfloat__verified { margin-bottom: 10px; }
+        .certfloat__btn { margin-top: 12px; }
+    }
 </style>
 @endpush
 
 @section('content')
+<main class="credential-lookup-page">
+    <section class="students-hero">
+        <div class="credential-lookup" aria-labelledby="credential-lookup-title">
+        <h1 id="credential-lookup-title">Verification</h1>
+        <p class="credential-lookup__intro">Verify a certificate by Credential ID or scan its QR code.</p>
 
-{{--
-    Dummy data for now. Later, pass real students from a controller:
-
-        return view('public.students', ['students' => $students]);
-
-    where each student has ->name, ->student_id, ->avatar_url, and
-    ->courses (a list of ['title' => ..., 'completed' => true/false]).
---}}
-@php
-    $students = $students ?? collect([
-        (object)['name' => 'Juan Dela Cruz',      'student_id' => '23-LN-0417', 'avatar_url' => null, 'courses' => [
-            ['title' => 'Full-Stack Web Development with Laravel', 'completed' => true],
-            ['title' => 'Database Fundamentals',                   'completed' => false],
-        ]],
-        (object)['name' => 'Maria Clara Santos',  'student_id' => '23-LN-1189', 'avatar_url' => null, 'courses' => [
-            ['title' => 'Introduction to Artificial Intelligence', 'completed' => true],
-            ['title' => 'Machine Learning Essentials',             'completed' => true],
-            ['title' => 'Computer Networking Fundamentals',        'completed' => false],
-        ]],
-        (object)['name' => 'Jose Rizal Mercado',  'student_id' => '24-LN-0562', 'avatar_url' => null, 'courses' => [
-            ['title' => 'Computer Networking Fundamentals',        'completed' => false],
-        ]],
-        (object)['name' => 'Andres Bonifacio',    'student_id' => '24-LN-2031', 'avatar_url' => null, 'courses' => [
-            ['title' => 'Database Fundamentals',                   'completed' => true],
-            ['title' => 'Full-Stack Web Development with Laravel', 'completed' => false],
-        ]],
-        (object)['name' => 'Gabriela Silang',     'student_id' => '25-LN-0748', 'avatar_url' => null, 'courses' => [
-            ['title' => 'Introduction to Computing',               'completed' => false],
-        ]],
-        (object)['name' => 'Emilio Aguinaldo',    'student_id' => '25-LN-1394', 'avatar_url' => null, 'courses' => [
-            ['title' => 'IT Projects Management',                  'completed' => true],
-        ]],
-        (object)['name' => 'Melchora Aquino',     'student_id' => '25-LN-2216', 'avatar_url' => null, 'courses' => [
-            ['title' => 'Web Development Fundamentals',            'completed' => false],
-            ['title' => 'Data Management Essentials',              'completed' => false],
-        ]],
-        (object)['name' => 'Antonio Luna',        'student_id' => '26-LN-0083', 'avatar_url' => null, 'courses' => [
-            ['title' => 'Computer Organization Basics',            'completed' => true],
-            ['title' => 'Introduction to Computing',               'completed' => false],
-        ]],
-        (object)['name' => 'Gregoria de Jesus',   'student_id' => '26-LN-0925', 'avatar_url' => null, 'courses' => []],
-    ]);
-@endphp
-
-{{-- ── Header with Student ID search ── --}}
-<section class="students-hero">
-    <div class="container">
-        <h1 class="students-hero__title">Students</h1>
-        <p class="students-hero__sub">Look up an enrolled student by their Student ID.</p>
-
-        <div class="student-search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>
-            </svg>
-            <input type="text"
-                   id="studentSearchInput"
-                   class="student-search__input"
-                   placeholder="Search by Student ID…"
-                   autocomplete="off">
-            <button type="button" class="student-search__btn" onclick="filterStudents()">Search</button>
+        <form class="credential-search" id="credentialLookupForm" method="GET" action="{{ route('students.index') }}">
+            <svg class="credential-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+            <input class="credential-search__input" id="credentialIdInput" type="search" name="credential_id"
+                value="{{ $credentialId }}" placeholder="PSU-LC-MC-2026-123456" autocomplete="off" required
+                aria-label="Certificate Credential ID">
+            <button class="credential-search__button" id="credentialSearchButton" type="submit">Search</button>
+        </form>
+        <label class="credential-dropzone" id="credentialDropzone" for="credentialImageInput">
+            <svg class="credential-dropzone__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16.5v1A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5v-1"/><path d="m8 9 4-4 4 4M12 5v10"/></svg>
+            <span class="credential-dropzone__copy">
+                <strong>Drop a QR image here or click to upload</strong>
+                <span>Choose an image of the certificate QR code</span>
+            </span>
+            <input id="credentialImageInput" type="file" accept="image/*" aria-label="Upload an image of a certificate QR code">
+        </label>
+        <p class="students-hero__hint">Credential ID format: <code>PSU-LC-MC-2026-123456</code></p>
+        <div class="credential-search__tools">
+            <span class="credential-scan-status" id="credentialScanStatus" role="status" aria-live="polite"></span>
         </div>
-        <p class="students-hero__hint">Student ID format: <code>23-LN-0417</code></p>
-    </div>
-</section>
-
-{{-- ── Student directory ── --}}
-<section class="students-section">
-    <div class="container">
-
-        <div class="students-section__head">
-            <h2 class="section-title" style="margin-bottom:0;">Student Directory</h2>
-            <span class="students-count" id="studentsCount">{{ count($students) }} students</span>
         </div>
+    </section>
 
-        <div class="students-grid" id="studentsGrid">
-            @foreach ($students as $i => $student)
-                @php
-                    $parts = preg_split('/\s+/', trim($student->name));
-                    $initials = strtoupper(substr($parts[0], 0, 1) . substr(end($parts), 0, 1));
-                @endphp
-                <div class="student-card"
-                     role="button"
-                     tabindex="0"
-                     onclick="openStudentModal({{ $i }})"
-                     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openStudentModal({{ $i }});}"
-                     data-student-id="{{ strtolower($student->student_id) }}"
-                     data-student-name="{{ strtolower($student->name) }}">
-                    @if ($student->avatar_url ?? null)
-                        <img class="student-card__avatar-img" src="{{ $student->avatar_url }}" alt="{{ $student->name }}">
-                    @else
-                        <div class="student-card__avatar">{{ $initials }}</div>
-                    @endif
-                    <div>
-                        <div class="student-card__name">{{ $student->name }}</div>
-                        <span class="student-card__id">{{ $student->student_id }}</span>
-                    </div>
+</main>
+@if ($credential)
+    <div class="certfloat-overlay" id="credentialCertificateModal" role="presentation">
+        <section class="certfloat" role="dialog" aria-modal="true" aria-labelledby="credentialCertificateTitle" tabindex="-1">
+            <button class="certfloat__close" type="button" data-close-certificate-modal aria-label="Close">&times;</button>
+            @if(($credential['status'] ?? 'active') === 'revoked')
+                <div class="certfloat__verified is-revoked" id="credentialCertificateTitle" role="status">Revoked Certificate</div>
+            @else
+                <div class="certfloat__verified" id="credentialCertificateTitle" role="status">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                    Verified Certificate
                 </div>
-            @endforeach
-        </div>
-
-        <div class="students-empty" id="studentsEmpty">
-            <div class="students-empty__title">No student found</div>
-            <p>No Student ID matches your search. Check the format (e.g. 23-LN-0417) and try again.</p>
-        </div>
-
+            @endif
+            @include('components.certificate', ['cert' => $credential])
+            <button class="certfloat__btn" type="button" data-close-certificate-modal>Continue to UPSKILL</button>
+        </section>
     </div>
-</section>
-
-{{-- ── Student profile modal ── --}}
-<div class="student-modal-overlay" id="studentModalOverlay" onclick="if(event.target===this)closeStudentModal()">
-    <div class="student-modal" role="dialog" aria-modal="true" aria-label="Student profile">
-        <button type="button" class="student-modal__close" onclick="closeStudentModal()" aria-label="Close">&times;</button>
-
-        <div class="student-modal__header">
-            <div id="modalAvatar" class="student-modal__avatar"></div>
-            <div>
-                <div class="student-modal__name" id="modalName"></div>
-                <span class="student-card__id" id="modalStudentId"></span>
+@endif
+@if ($hasSearched && !$credential)
+    <div class="credential-lookup-modal" id="credentialNotFoundModal" role="presentation">
+        <section class="credential-lookup-modal__dialog" role="alertdialog" aria-modal="true" aria-labelledby="credentialNotFoundTitle" aria-describedby="credentialNotFoundMessage" tabindex="-1">
+            <button class="credential-lookup-modal__close" type="button" data-close-credential-modal aria-label="Close">&times;</button>
+            <div class="credential-lookup-modal__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01"/><path d="M10.3 3.9 2.6 17.2A2 2 0 0 0 4.3 20h15.4a2 2 0 0 0 1.7-2.8L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
             </div>
-        </div>
-
-        <div class="student-modal__body">
-            <div class="student-modal__section-title">Taken Courses</div>
-            <div id="modalCourses"></div>
-        </div>
+            <h2 id="credentialNotFoundTitle">Certificate not found</h2>
+            <p id="credentialNotFoundMessage">No certificate matches that Credential ID. Check the ID printed on the certificate and try again.</p>
+            <button class="credential-lookup-modal__button" type="button" data-close-credential-modal>Try again</button>
+        </section>
     </div>
-</div>
-
-<script>
-    window.STUDENTS_DATA = @json($students->values());
-</script>
-
+@endif
 @endsection
 
 @push('scripts')
 <script>
-    const searchInput   = document.getElementById('studentSearchInput');
-    const studentCards  = document.querySelectorAll('#studentsGrid .student-card');
-    const emptyState    = document.getElementById('studentsEmpty');
-    const countEl       = document.getElementById('studentsCount');
-    const totalStudents = studentCards.length;
+    (function () {
+        const form = document.getElementById('credentialLookupForm');
+        const credentialInput = document.getElementById('credentialIdInput');
+        const imageInput = document.getElementById('credentialImageInput');
+        const dropzone = document.getElementById('credentialDropzone');
+        const status = document.getElementById('credentialScanStatus');
+        const notFoundModal = document.getElementById('credentialNotFoundModal');
+        const certificateModal = document.getElementById('credentialCertificateModal');
 
-    function filterStudents() {
-        const q = searchInput.value.trim().toLowerCase();
-        let visible = 0;
+        if (dropzone && imageInput) {
+            ['dragenter', 'dragover'].forEach(function (eventName) {
+                dropzone.addEventListener(eventName, function (event) {
+                    event.preventDefault();
+                    dropzone.classList.add('is-dragging');
+                });
+            });
 
-        studentCards.forEach(function (card) {
-            const matches = q === ''
-                || card.dataset.studentId.includes(q)
-                || card.dataset.studentName.includes(q);
-            card.style.display = matches ? 'flex' : 'none';
-            if (matches) visible++;
-        });
-
-        emptyState.style.display = visible === 0 ? 'block' : 'none';
-        countEl.textContent = q === ''
-            ? totalStudents + ' students'
-            : visible + ' of ' + totalStudents + ' students';
-    }
-
-    // Filter live as the user types, and on Enter
-    searchInput.addEventListener('input', filterStudents);
-    searchInput.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') filterStudents();
-    });
-
-    /* ── Student profile modal ─────────────────────── */
-    const modalOverlay = document.getElementById('studentModalOverlay');
-
-    function initialsOf(name) {
-        const parts = name.trim().split(/\s+/);
-        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    }
-
-    function escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
-
-    function openStudentModal(index) {
-        const s = window.STUDENTS_DATA[index];
-        if (!s) return;
-
-        // Header: photo (or initials), name, Student ID
-        const avatarEl = document.getElementById('modalAvatar');
-        avatarEl.innerHTML = s.avatar_url
-            ? '<img src="' + escapeHtml(s.avatar_url) + '" alt="' + escapeHtml(s.name) + '">'
-            : initialsOf(s.name);
-        document.getElementById('modalName').textContent      = s.name;
-        document.getElementById('modalStudentId').textContent = s.student_id;
-
-        // Taken courses list
-        const coursesEl = document.getElementById('modalCourses');
-        const courses   = s.courses || [];
-        coursesEl.innerHTML = '';
-
-        if (courses.length === 0) {
-            coursesEl.innerHTML = '<div class="course-row--none">No courses taken yet.</div>';
-        } else {
-            courses.forEach(function (c) {
-                const row = document.createElement('div');
-                if (c.completed) {
-                    // Completed → green glow + Completed badge + QR code beside it.
-                    // The QR encodes a verification string for the certificate.
-                    // Encode the certificate's verification URL, so a scan
-                    // opens UPSKILL with the certificate floating over the
-                    // homepage. Falls back to the site root for a completed
-                    // course that has no certificate row yet.
-                    const qrData = encodeURIComponent(c.verify_url || @json(url('/')));
-                    row.className = 'course-row completed';
-                    row.innerHTML =
-                        '<div>' +
-                            '<div class="course-row__title">' + escapeHtml(c.title) + '</div>' +
-                            '<span class="course-row__badge">&#10003; Completed</span>' +
-                        '</div>' +
-                        '<img class="course-row__qr" alt="Completion QR code" ' +
-                             'src="https://api.qrserver.com/v1/create-qr-code/?size=116x116&data=' + qrData + '">';
-                } else {
-                    // Not completed → plain row
-                    row.className = 'course-row';
-                    row.innerHTML = '<div class="course-row__title">' + escapeHtml(c.title) + '</div>';
+            dropzone.addEventListener('dragleave', function (event) {
+                if (!event.relatedTarget || !dropzone.contains(event.relatedTarget)) {
+                    dropzone.classList.remove('is-dragging');
                 }
-                coursesEl.appendChild(row);
+            });
+
+            dropzone.addEventListener('drop', function (event) {
+                event.preventDefault();
+                dropzone.classList.remove('is-dragging');
+
+                const file = event.dataTransfer.files && event.dataTransfer.files[0];
+                if (!file) return;
+
+                if (!file.type.startsWith('image/')) {
+                    status.textContent = 'Choose an image file containing the certificate QR code.';
+                    return;
+                }
+
+                const transfer = new DataTransfer();
+                transfer.items.add(file);
+                imageInput.files = transfer.files;
+                imageInput.dispatchEvent(new Event('change', { bubbles: true }));
             });
         }
 
-        modalOverlay.classList.add('open');
-        document.body.style.overflow = 'hidden';
-    }
+        if (notFoundModal) {
+            function closeNotFoundModal() {
+                notFoundModal.remove();
+                document.body.style.overflow = '';
+                credentialInput.focus();
+            }
 
-    function closeStudentModal() {
-        modalOverlay.classList.remove('open');
-        document.body.style.overflow = '';
-    }
+            notFoundModal.querySelectorAll('[data-close-credential-modal]').forEach(function (button) {
+                button.addEventListener('click', closeNotFoundModal);
+            });
+            notFoundModal.addEventListener('click', function (event) {
+                if (event.target === notFoundModal) closeNotFoundModal();
+            });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && document.getElementById('credentialNotFoundModal')) {
+                    closeNotFoundModal();
+                }
+            });
+            document.body.style.overflow = 'hidden';
+            notFoundModal.querySelector('.credential-lookup-modal__close').focus();
+        }
 
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && modalOverlay.classList.contains('open')) closeStudentModal();
-    });
+        if (certificateModal) {
+            function closeCertificateModal() {
+                certificateModal.remove();
+                document.body.style.overflow = '';
+                if (window.history.replaceState) {
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+                credentialInput.focus();
+            }
+
+            certificateModal.querySelectorAll('[data-close-certificate-modal]').forEach(function (button) {
+                button.addEventListener('click', closeCertificateModal);
+            });
+            certificateModal.addEventListener('click', function (event) {
+                if (event.target === certificateModal) closeCertificateModal();
+            });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && document.getElementById('credentialCertificateModal')) {
+                    closeCertificateModal();
+                }
+            });
+            document.body.style.overflow = 'hidden';
+            certificateModal.querySelector('.certfloat__close').focus();
+        }
+
+        function credentialIdFromQr(text) {
+            const match = text.match(/PSU-LC-MC-\d{4}-\d{6}/i);
+            return match ? match[0].toUpperCase() : null;
+        }
+
+        function detectWithBrowser(file) {
+            if (!('BarcodeDetector' in window) || !('createImageBitmap' in window)) {
+                return Promise.resolve(null);
+            }
+
+            return createImageBitmap(file).then(function (bitmap) {
+                const detector = new BarcodeDetector({ formats: ['qr_code'] });
+                return detector.detect(bitmap).then(function (codes) {
+                    bitmap.close();
+                    return codes.length ? codes[0].rawValue : null;
+                }, function (error) {
+                    bitmap.close();
+                    throw error;
+                });
+            });
+        }
+
+        function loadQrDecoder() {
+            if (window.jsQR) return Promise.resolve();
+
+            return new Promise(function (resolve, reject) {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        function detectWithFallback(file) {
+            return loadQrDecoder().then(function () {
+                return new Promise(function (resolve, reject) {
+                    const image = new Image();
+                    const imageUrl = URL.createObjectURL(file);
+                    image.onload = function () {
+                        try {
+                            const scale = Math.min(1, 2200 / Math.max(image.naturalWidth, image.naturalHeight));
+                            const canvas = document.createElement('canvas');
+                            canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+                            canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+                            const context = canvas.getContext('2d', { willReadFrequently: true });
+                            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+                            const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+                            const result = window.jsQR(pixels.data, pixels.width, pixels.height, { inversionAttempts: 'attemptBoth' });
+                            URL.revokeObjectURL(imageUrl);
+                            resolve(result ? result.data : null);
+                        } catch (error) {
+                            URL.revokeObjectURL(imageUrl);
+                            reject(error);
+                        }
+                    };
+                    image.onerror = function () {
+                        URL.revokeObjectURL(imageUrl);
+                        reject(new Error('The selected image could not be read.'));
+                    };
+                    image.src = imageUrl;
+                });
+            });
+        }
+
+        imageInput.addEventListener('change', async function () {
+            const file = imageInput.files && imageInput.files[0];
+            if (!file) return;
+
+            status.textContent = 'Scanning the QR code…';
+
+            try {
+                let qrText = null;
+
+                try {
+                    qrText = await detectWithBrowser(file);
+                } catch (error) {
+                    qrText = null;
+                }
+
+                if (!qrText) qrText = await detectWithFallback(file);
+
+                const credentialId = qrText ? credentialIdFromQr(qrText) : null;
+                if (!credentialId) {
+                    status.textContent = qrText
+                        ? 'That QR code does not contain a recognized Credential ID.'
+                        : 'No QR code was found. Enter the Credential ID printed on the certificate.';
+                    imageInput.value = '';
+                    return;
+                }
+
+                credentialInput.value = credentialId;
+                status.textContent = 'Credential ID scanned. Searching…';
+                form.requestSubmit();
+            } catch (error) {
+                status.textContent = 'Automatic scanning could not read this image. Enter the Credential ID manually.';
+            } finally {
+                imageInput.value = '';
+            }
+        });
+    })();
 </script>
 @endpush

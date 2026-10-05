@@ -13,7 +13,7 @@ class QuizGradingService
      * client-supplied score is intentionally ignored because it is not evidence
      * of what the student actually answered.
      *
-     * @param array<string, mixed> $result
+     * @param  array<string, mixed>  $result
      * @return array{correct:int,total:int,score:int,passed:bool,answers:array<string,array{answer:string|null,correct:bool,correct_answer:string|null}>}
      */
     public function grade(Quiz $quiz, array $result): array
@@ -37,7 +37,15 @@ class QuizGradingService
             $correctLetter = $correctPosition === false
                 ? null
                 : chr(65 + (int) $correctPosition);
-            $isCorrect = $selected !== null && $correctLetter !== null && $selected === $correctLetter;
+            if (($question->type ?? null) === 'Identification') {
+                $selectedAnswer = trim((string) ($submitted[$questionId] ?? ''));
+                $isCorrect = $selectedAnswer !== ''
+                    && mb_strtolower(preg_replace('/\s+/', ' ', $selectedAnswer))
+                        === mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $question->correct_answer)));
+                $selected = $selectedAnswer;
+            } else {
+                $isCorrect = $selected !== null && $correctLetter !== null && $selected === $correctLetter;
+            }
 
             if ($isCorrect) {
                 $correct++;

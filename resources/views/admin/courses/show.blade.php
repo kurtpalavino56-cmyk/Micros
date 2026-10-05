@@ -73,6 +73,15 @@
         .banner-note   { background: var(--yellow-soft); border: 1px solid var(--yellow); color: var(--yellow-text); }
         .banner-denied { background: #fff1f0; border: 1px solid #f3c8c4; color: var(--danger); }
         .alert-success { background: #eaf8ef; border: 1px solid #ccebd6; color: #166534; border-radius: 10px; padding: 11px 16px; font-size: .86rem; font-weight: 600; margin-bottom: 14px; }
+        .alert-error { background: #fff1f0; border: 1px solid #f3c8c4; color: var(--danger); border-radius: 10px; padding: 11px 16px; font-size: .86rem; font-weight: 600; margin-bottom: 14px; }
+        .approval-readiness { margin-bottom: 16px; }
+        .approval-readiness h2 { margin: 0 0 4px; font-size: .95rem; color: var(--title); }
+        .approval-readiness p { margin: 0 0 12px; font-size: .8rem; color: var(--muted); }
+        .approval-checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 9px 16px; }
+        .approval-check { display: flex; align-items: flex-start; gap: 8px; color: #475467; font-size: .8rem; line-height: 1.45; }
+        .approval-check-mark { flex: 0 0 17px; width: 17px; height: 17px; border: 1px solid #d0d5dd; border-radius: 50%; color: #98a2b3; text-align: center; font-size: .65rem; font-weight: 800; }
+        .approval-check.complete .approval-check-mark { border-color: #86efac; background: #f0fdf4; color: #15803d; }
+        .approval-disabled { opacity: .5; cursor: not-allowed; }
 
         /* Hero */
         .hero { display: grid; grid-template-columns: 196px minmax(0, 1fr) 270px; gap: 0 24px; align-items: stretch; padding: 16px; margin-bottom: 16px; }
@@ -202,6 +211,21 @@
         .lesson-desc { margin: 0 0 6px; line-height: 1.5; }
         .lesson-empty { font-style: italic; }
         .lesson-file { color: var(--blue); font-weight: 600; text-decoration: underline; }
+        .lesson-assessment { margin-top: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+        .lesson-assessment-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-bottom: 6px; color: var(--title); font-size: .87rem; font-weight: 700; }
+        .lesson-assessment-meta { color: var(--muted); font-size: .75rem; font-weight: 500; }
+        .assessment-instructions, .activity-instructions { margin: 6px 0 10px; color: #4b5563; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .assessment-question { padding: 10px 0; border-top: 1px solid var(--line); }
+        .assessment-question:first-of-type { border-top: 0; }
+        .assessment-question-title { margin-bottom: 5px; color: var(--text); font-weight: 600; }
+        .assessment-options { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+        .assessment-options li { padding: 5px 8px; border-radius: 5px; background: #f5f7fa; }
+        .assessment-options li.is-correct { background: #eaf8ef; color: #166534; font-weight: 600; }
+        .assessment-answer { color: #166534; font-weight: 600; }
+        .lesson-activity { margin-top: 10px; padding: 10px 12px; border-left: 3px solid var(--blue); background: #fff; }
+        .lesson-activity-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; color: var(--title); font-weight: 700; }
+        .lesson-activity-meta { color: var(--muted); font-size: .74rem; font-weight: 500; }
+        .activity-rubric { margin: 6px 0 0; padding: 8px 10px; overflow-x: auto; border-radius: 6px; background: #f5f7fa; color: #4b5563; font: .76rem/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; }
         .quiz-instructions { margin-bottom: 10px; font-style: italic; }
         .quiz-question { padding: 8px 0; border-top: 1px solid var(--line); }
         .quiz-question:first-of-type { border-top: 0; }
@@ -329,6 +353,9 @@
         @if (session('success'))
             <div class="alert-success">{{ session('success') }}</div>
         @endif
+        @error('approval')
+            <div class="alert-error" role="alert">{{ $message }}</div>
+        @enderror
 
         @if (! empty($course->change_note))
             <div class="banner banner-note"><strong>What the author changed</strong>{{ $course->change_note }}</div>
@@ -375,10 +402,14 @@
                 <span class="status-pill status-{{ $course->status_key }}"><span class="dot"></span>{{ $course->status }}</span>
 
                 @if ($course->status_key === 'pending')
-                    <form method="POST" action="{{ route('admin.courses.approve', $course->id) }}">
-                        @csrf
-                        <button type="submit" class="btn btn-approve"><svg class="ico"><use href="#i-check"/></svg>Approve</button>
-                    </form>
+                    @if ($course->can_approve)
+                        <form method="POST" action="{{ route('admin.courses.approve', $course->id) }}">
+                            @csrf
+                            <button type="submit" class="btn btn-approve"><svg class="ico"><use href="#i-check"/></svg>Approve</button>
+                        </form>
+                    @else
+                        <button type="button" class="btn btn-approve approval-disabled" disabled title="The course is missing required content">Incomplete course</button>
+                    @endif
                     <button type="button" class="btn btn-outline" id="deny-open"><svg class="ico"><use href="#i-msg"/></svg>Deny with feedback</button>
                 @endif
 
@@ -417,6 +448,21 @@
             @endif
         </section>
 
+        @if ($course->status_key === 'pending')
+            <section class="card approval-readiness" aria-labelledby="approval-readiness-title">
+                <h2 id="approval-readiness-title">Approval readiness</h2>
+                <p>{{ $course->can_approve ? 'Required course content is in place.' : 'Approval is unavailable until the missing requirements are completed.' }}</p>
+                <div class="approval-checks">
+                    @foreach ($course->readiness_checklist as $check)
+                        <div class="approval-check {{ $check['complete'] ? 'complete' : '' }}">
+                            <span class="approval-check-mark" aria-hidden="true">{{ $check['complete'] ? '✓' : '!' }}</span>
+                            <span>{{ $check['label'] }}@unless($check['complete'])<br><small>{{ $check['detail'] }}</small>@endunless</span>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
         <div class="cols">
 
             {{-- ── LEFT ── --}}
@@ -430,6 +476,15 @@
                     <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-users"/></svg></span><div><small>Students</small><b>{{ $course->students }}</b></div></div>
                     <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-layers"/></svg></span><div><small>Modules</small><b>{{ $course->modules_count }}</b></div></div>
                     <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-play"/></svg></span><div><small>Lessons</small><b>{{ $course->lessons_count }}</b></div></div>
+                </section>
+
+                <section class="card">
+                    <div class="card-title"><svg class="ico"><use href="#i-file"/></svg>Micro-credential syllabus details</div>
+                    <div class="chip-row"><span class="chip">PQF {{ $course->pqf_level ? 'Level '.$course->pqf_level : 'not specified' }}</span><span class="chip">{{ $course->learning_hours ? $course->learning_hours.' learning hours' : 'Learning hours not specified' }}</span><span class="chip">{{ $course->delivery_mode ? Illuminate\Support\Str::headline($course->delivery_mode) : 'Delivery mode not specified' }}</span></div>
+                    <p><strong>Intended learners:</strong> {{ $course->target_learners ?: 'Not specified' }}</p>
+                    <p><strong>Assessment strategy:</strong> {{ $course->assessment_strategy ?: 'Not specified' }}</p>
+                    <p><strong>Mastery criteria:</strong> {{ $course->grading_rubric ?: 'Not specified' }}</p>
+                    @if(!empty($course->learning_outcomes))<strong>Measurable learning outcomes</strong><ul class="obj-list">@foreach($course->learning_outcomes as $outcome)<li>{{ $outcome }}</li>@endforeach</ul>@endif
                 </section>
 
                 <div class="stack">
@@ -466,17 +521,6 @@
                         @endif
                     </section>
                 </div>
-
-                @if (! empty($course->objectives))
-                <section class="card">
-                    <div class="card-title"><svg class="ico"><use href="#i-target"/></svg>Learning objectives</div>
-                    <ul class="obj-list">
-                        @foreach ($course->objectives as $objective)
-                            <li>{{ $objective }}</li>
-                        @endforeach
-                    </ul>
-                </section>
-                @endif
 
                 <section class="card">
                     <div class="card-title"><svg class="ico"><use href="#i-file"/></svg>Course content</div>
@@ -534,6 +578,66 @@
                                         @if ($lFile)
                                             <p class="lesson-desc"><a class="lesson-file" href="{{ $lFile }}" target="_blank" rel="noopener">Open attached file ({{ $lesson->file_name ?? 'file' }})</a></p>
                                         @endif
+                                        @foreach($lesson->lesson_quizzes as $lessonQuiz)
+                                            <section class="lesson-assessment">
+                                                <div class="lesson-assessment-title">
+                                                    <span>{{ $lessonQuiz->title }}</span>
+                                                    <span class="lesson-assessment-meta">
+                                                        Lesson quiz · {{ $lessonQuiz->questions_count }} {{ $lessonQuiz->questions_count === 1 ? 'question' : 'questions' }} · Pass {{ $lessonQuiz->passing_score }}%
+                                                        @if ($lessonQuiz->time_limit)
+                                                            · {{ $lessonQuiz->time_limit }} min
+                                                        @endif
+                                                    </span>
+                                                </div>
+                                                @if ($lessonQuiz->instructions)
+                                                    <div class="assessment-instructions">{{ $lessonQuiz->instructions }}</div>
+                                                @endif
+                                                @forelse ($lessonQuiz->questions as $qi => $question)
+                                                    <div class="assessment-question">
+                                                        <div class="assessment-question-title">Q{{ $qi + 1 }}. {{ $question->question }}</div>
+                                                        <div class="lesson-assessment-meta">{{ $question->type }}{{ $question->points ? ' · ' . $question->points . ' pts' : '' }}</div>
+                                                        @if (! empty($question->options))
+                                                            <ul class="assessment-options">
+                                                                @foreach ($question->options as $oi => $option)
+                                                                    <li class="{{ $option === $question->correct_answer ? 'is-correct' : '' }}">
+                                                                        {{ chr(65 + $oi) }}. {{ $option }}
+                                                                        @if ($option === $question->correct_answer)
+                                                                            · Correct answer
+                                                                        @endif
+                                                                    </li>
+                                                                @endforeach
+                                                            </ul>
+                                                        @elseif ($question->correct_answer)
+                                                            <div class="assessment-answer">Answer: {{ $question->correct_answer }}</div>
+                                                        @endif
+                                                    </div>
+                                                @empty
+                                                    <p class="lesson-desc lesson-empty">No questions have been added to this quiz.</p>
+                                                @endforelse
+                                            </section>
+                                        @endforeach
+                                        @foreach($lesson->lesson_activities as $lessonActivity)
+                                            <section class="lesson-activity">
+                                                <div class="lesson-activity-head">
+                                                    <span>{{ $lessonActivity->title }} <span class="lesson-assessment-meta">({{ Illuminate\Support\Str::headline($lessonActivity->activity_type) }})</span></span>
+                                                    <span class="lesson-activity-meta">
+                                                        {{ $lessonActivity->is_required ? 'Required' : 'Optional' }}
+                                                        @if ($lessonActivity->activity_type === 'assignment')
+                                                            · {{ $lessonActivity->max_points ?? '—' }} points · Pass {{ $lessonActivity->passing_percent ?? 70 }}%
+                                                        @endif
+                                                    </span>
+                                                </div>
+                                                @if (filled($lessonActivity->instructions))
+                                                    <div class="activity-instructions">{{ $lessonActivity->instructions }}</div>
+                                                @else
+                                                    <p class="lesson-desc lesson-empty">No instructions have been added to this activity.</p>
+                                                @endif
+                                                @if (! empty($lessonActivity->rubric))
+                                                    <div class="lesson-assessment-meta">Rubric</div>
+                                                    <pre class="activity-rubric">{{ json_encode($lessonActivity->rubric, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                                                @endif
+                                            </section>
+                                        @endforeach
                                         @if (! $hasBody && ! $hasDesc && ! $lVideo && ! $lFile)
                                             <p class="lesson-desc lesson-empty">No content has been added to this lesson yet.</p>
                                         @endif
@@ -594,9 +698,6 @@
                         <div class="award-none">No badge designed yet</div>
                     @endif
                     <div class="award-name" style="margin-top:8px;">{{ $course->badge }}</div>
-                    @if ($course->badge_level)
-                        <div class="award-sub">{{ $course->badge_level }}</div>
-                    @endif
 
                     <div class="cert-head">
                         <svg class="ico"><use href="#i-award"/></svg>Certificate
@@ -775,4 +876,3 @@
 @include('components.responsive')
 </body>
 </html>
-

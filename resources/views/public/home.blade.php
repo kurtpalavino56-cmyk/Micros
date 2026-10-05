@@ -706,6 +706,21 @@
         line-height: 1.6;
     }
 
+    .ann-card__desc .full-text {
+        white-space: pre-wrap;
+    }
+
+    .ann-card__more {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--navy);
+        cursor: pointer;
+        font: 700 0.82rem var(--font-body);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+
     .latest {
         background: linear-gradient(180deg, #f5c518 0%, #f2b400 100%);
         padding: 5rem 0;
@@ -953,7 +968,7 @@
     <div class="container">
         <div class="section-header">
             <h2 class="section-title">Announcements</h2>
-            <span class="section-tag">Latest updates</span>
+            <span class="section-tag">Latest announcements</span>
         </div>
 
         @php $announcements = $announcements ?? []; @endphp
@@ -966,11 +981,17 @@
                             <span class="ann-card__date">{{ $ann['date'] }}</span>
                         </div>
                         <div class="ann-card__title">{{ $ann['title'] }}</div>
-                        <p class="ann-card__desc">{{ $ann['desc'] }}</p>
+                        <p class="ann-card__desc">
+                            <span class="preview-text">{{ $ann['desc'] }}</span>
+                            <span class="full-text" hidden>{{ $ann['full_body'] }}</span>
+                        </p>
+                        @if ($ann['has_more'])
+                            <button class="ann-card__more" type="button" aria-expanded="false">More</button>
+                        @endif
                     </div>
                 </div>
             @empty
-                <p style="color:var(--muted);padding:18px 4px;">No announcements yet — check back soon for new courses and site updates.</p>
+                <p style="color:var(--muted);padding:18px 4px;">No announcements have been posted yet.</p>
             @endforelse
         </div>
     </div>
@@ -1010,6 +1031,21 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.ann-card__more').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const card = button.closest('.ann-card');
+                const previewText = card.querySelector('.preview-text');
+                const fullText = card.querySelector('.full-text');
+                const isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+                previewText.hidden = !isExpanded;
+                fullText.hidden = isExpanded;
+                button.setAttribute('aria-expanded', String(!isExpanded));
+                button.textContent = isExpanded ? 'More' : 'Less';
+                card.classList.toggle('is-expanded', !isExpanded);
+            });
+        });
+
         document.querySelectorAll('a[href="#announcements"], a[href*="announcements"]').forEach(function (link) {
             link.addEventListener('click', function (e) {
                 const target = document.getElementById('announcements');
@@ -1175,4 +1211,3 @@ document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeCe
 @endif
 
 @endsection
-

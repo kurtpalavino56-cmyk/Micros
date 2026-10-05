@@ -4,14 +4,84 @@ namespace App\Services;
 
 use App\Models\AnalyticsEvent;
 use App\Models\Course;
+use App\Models\CourseLesson;
 use App\Models\Enrollment;
 use App\Models\QuizAttempt;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class StudentProgressService
 {
     public function __construct(private QuizAttemptService $quizAttempts) {}
+
+    public function lessonRequirementsSatisfied(CourseLesson $lesson, Enrollment $enrollment): bool
+    {
+        $lesson->loadMissing(['activities', 'quizzes.questions']);
+
+        foreach ($lesson->activities->where('is_active', true)->where('is_required', true) as $activity) {
+            if ($enrollment->enrolled_at && $activity->created_at && $activity->created_at->gt($enrollment->enrolled_at)) {
+                continue;
+            }
+
+            $acceptedStatuses = $activity->activity_type === 'assignment'
+                ? ['passed']
+                : ['completed', 'passed'];
+
+            if (! $activity->submissions()
+                ->where('user_id', $enrollment->user_id)
+                ->whereIn('status', $acceptedStatuses)
+                ->exists()) {
+                return false;
+            }
+        }
+
+        foreach ($lesson->quizzes->where('is_active', true) as $quiz) {
+            if ($enrollment->enrolled_at && $quiz->created_at && $quiz->created_at->gt($enrollment->enrolled_at)) {
+                continue;
+            }
+
+            if ($quiz->questions->isEmpty()) {
+                continue;
+            }
+
+            if (! QuizAttempt::query()
+                ->where('quiz_id', $quiz->id)
+                ->where('user_id', $enrollment->user_id)
+                ->where('passed', true)
+                ->whereNotNull('submitted_at')
+                ->exists()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function completeLessonIfRequirementsSatisfied(
+        Course $course,
+        CourseLesson $lesson,
+        Enrollment $enrollment
+    ): bool {
+        if (! $this->lessonRequirementsSatisfied($lesson, $enrollment)) {
+            return false;
+        }
+
+        $alreadyVerified = DB::table('lesson_completions')
+            ->where('user_id', $enrollment->user_id)
+            ->where('lesson_id', $lesson->id)
+            ->whereNotNull('server_verified_at')
+            ->exists();
+
+        if (! $alreadyVerified) {
+            $this->persistLessonCompletions($course, $enrollment->user, [(string) $lesson->id]);
+        }
+
+        $this->syncLessonsCompletedFlag($course, $enrollment);
+        $this->syncEnrollmentProgress($course, $enrollment);
+
+        return true;
+    }
 
     /**
      * Derive module scores exclusively from server-created quiz attempt answers.
@@ -23,7 +93,7 @@ class StudentProgressService
      * its own attempt query (plus one per questions table lookup), which is
      * what made dashboards with several enrolled courses so query-heavy.
      *
-     * @param array<string, int> $scores
+     * @param  array<string, int>  $scores
      */
     public function earnedModuleScores(Course $course, array $scores, int $userId): array
     {
@@ -85,13 +155,27 @@ class StudentProgressService
             (array) ($state['module_scores'] ?? []),
             (int) $enrollment->user_id
         );
-        $percent = $this->calculateProgressPercent($course, $scores);
+        $course->loadMissing([
+            'modules.quiz.questions',
+            'modules.lessons.quizzes.questions',
+            'modules.lessons.activities',
+        ]);
+        $percent = $this->calculateProgressPercent(
+            $course,
+            $scores,
+            (int) $enrollment->user_id,
+            $enrollment->enrolled_at
+        );
 
-        if ((int) $enrollment->progress_percent !== $percent) {
-            // Progress only ever updates progress_percent. It must never
-            // touch is_completed (legacy) or completion_status: official
-            // completion belongs solely to MicrocredentialCompletionService.
+        $stateChanged = $scores !== (array) ($state['module_scores'] ?? []);
+
+        if ((int) $enrollment->progress_percent !== $percent || $stateChanged) {
+            // Progress synchronization must never touch is_completed
+            // (legacy) or completion_status; official completion belongs
+            // solely to MicrocredentialCompletionService.
             $enrollment->progress_percent = $percent;
+            $state['module_scores'] = $scores;
+            $enrollment->progress_state = $state;
             $enrollment->save();
         }
 
@@ -99,7 +183,134 @@ class StudentProgressService
     }
 
     /** @param array<string, int> $moduleScores */
-    public function calculateProgressPercent(Course $course, array $moduleScores): int
+    public function calculateProgressPercent(
+        Course $course,
+        array $moduleScores,
+        ?int $userId = null,
+        ?Carbon $enrolledAt = null
+    ): int {
+        if ($userId === null) {
+            $course->loadMissing('modules.quiz.questions');
+
+            return $this->calculateQuizAccuracyPercent($course, $moduleScores);
+        }
+
+        return $this->progressBreakdown($course, $userId, $enrolledAt)['percent'];
+    }
+
+    /**
+     * @return array{
+     *     percent: int,
+     *     lessons: array{completed: int, total: int},
+     *     activities: array{completed: int, total: int},
+     *     quizzes: array{completed: int, total: int}
+     * }
+     */
+    public function progressBreakdown(Course $course, int $userId, ?Carbon $enrolledAt = null): array
+    {
+        $course->loadMissing([
+            'modules.quiz.questions',
+            'modules.lessons.quizzes.questions',
+            'modules.lessons.activities',
+        ]);
+
+        $lessons = $course->modules->flatMap(fn ($module) => $module->lessons)->values();
+        $lessonIds = $lessons->pluck('id')->unique()->values();
+        $totalLessons = $lessonIds->count();
+        $completedLessons = $lessonIds->isEmpty()
+            ? 0
+            : DB::table('lesson_completions')
+                ->where('user_id', $userId)
+                ->whereIn('lesson_id', $lessonIds)
+                ->whereNotNull('server_verified_at')
+                ->distinct()
+                ->count('lesson_id');
+
+        $requiredActivities = $lessons
+            ->flatMap(fn ($lesson) => $lesson->activities)
+            ->filter(fn ($activity) => $activity->is_active && $activity->is_required)
+            ->filter(fn ($activity) => ! $enrolledAt || ! $activity->created_at || ! $activity->created_at->gt($enrolledAt))
+            ->values();
+        $totalActivities = $requiredActivities->count();
+        $completedActivities = 0;
+
+        if ($totalActivities > 0) {
+            $assignmentIds = $requiredActivities
+                ->where('activity_type', 'assignment')
+                ->pluck('id')
+                ->values();
+            $otherActivityIds = $requiredActivities
+                ->reject(fn ($activity) => $activity->activity_type === 'assignment')
+                ->pluck('id')
+                ->values();
+
+            $activitySubmissions = DB::table('lesson_activity_submissions')
+                ->where('user_id', $userId)
+                ->where(function ($query) use ($assignmentIds, $otherActivityIds): void {
+                    if ($assignmentIds->isNotEmpty()) {
+                        $query->where(fn ($assignmentQuery) => $assignmentQuery
+                            ->whereIn('lesson_activity_id', $assignmentIds)
+                            ->where('status', 'passed'));
+                    }
+
+                    if ($otherActivityIds->isNotEmpty()) {
+                        $otherActivityQuery = fn ($otherQuery) => $otherQuery
+                            ->whereIn('lesson_activity_id', $otherActivityIds)
+                            ->whereIn('status', ['completed', 'passed']);
+
+                        if ($assignmentIds->isNotEmpty()) {
+                            $query->orWhere($otherActivityQuery);
+                        } else {
+                            $query->where($otherActivityQuery);
+                        }
+                    }
+                });
+
+            $completedActivities = $activitySubmissions
+                ->distinct()
+                ->count('lesson_activity_id');
+        }
+
+        $quizzes = $course->modules
+            ->flatMap(fn ($module) => collect([$module->quiz])->merge(
+                $module->lessons->flatMap(fn ($lesson) => $lesson->quizzes)
+            ))
+            ->filter(fn ($quiz) => $quiz && ($quiz->relationLoaded('questions')
+                ? $quiz->questions->isNotEmpty()
+                : $quiz->questions()->exists()))
+            ->filter(fn ($quiz) => ! $quiz->lesson_id
+                || ! $enrolledAt
+                || ! $quiz->created_at
+                || ! $quiz->created_at->gt($enrolledAt))
+            ->unique('id')
+            ->values();
+        $totalQuizzes = $quizzes->count();
+        $quizIds = $quizzes->pluck('id');
+        $completedQuizzes = $quizIds->isEmpty()
+            ? 0
+            : QuizAttempt::query()
+                ->where('user_id', $userId)
+                ->whereIn('quiz_id', $quizIds)
+                ->where('passed', true)
+                ->whereNotNull('submitted_at')
+                ->distinct('quiz_id')
+                ->count('quiz_id');
+
+        $totalItems = $totalLessons + $totalActivities + $totalQuizzes;
+        $completedItems = min($completedLessons, $totalLessons)
+            + min($completedActivities, $totalActivities)
+            + min($completedQuizzes, $totalQuizzes);
+
+        return [
+            'percent' => $totalItems === 0 ? 0 : (int) min(100, round(($completedItems / $totalItems) * 100)),
+            'lessons' => ['completed' => min($completedLessons, $totalLessons), 'total' => $totalLessons],
+            'activities' => ['completed' => min($completedActivities, $totalActivities), 'total' => $totalActivities],
+            'quizzes' => ['completed' => min($completedQuizzes, $totalQuizzes), 'total' => $totalQuizzes],
+        ];
+    }
+
+    /** @param array<string, int> $moduleScores */
+    private function calculateQuizAccuracyPercent(Course $course, array $moduleScores): int
     {
         $totalQuestions = 0;
         $totalCorrect = 0;
@@ -109,8 +320,6 @@ class StudentProgressService
                 continue;
             }
 
-            // Use the eager-loaded questions collection when the controller
-            // provided it; only hit the database when it was not loaded.
             $questionCount = $module->quiz->relationLoaded('questions')
                 ? $module->quiz->questions->count()
                 : $module->quiz->questions()->count();
@@ -125,11 +334,9 @@ class StudentProgressService
             }
         }
 
-        if ($totalQuestions === 0) {
-            return 0;
-        }
-
-        return (int) min(100, round(($totalCorrect / $totalQuestions) * 100));
+        return $totalQuestions === 0
+            ? 0
+            : (int) min(100, round(($totalCorrect / $totalQuestions) * 100));
     }
 
     /** @param array<int, string> $saved */

@@ -3,31 +3,101 @@
 namespace App\Services;
 
 use App\Models\AnalyticsEvent;
+use App\Models\CompetencyProgress;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\QuizAttempt;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class CourseCompletionService
 {
     public function isReady(Course $course, Enrollment $enrollment): bool
     {
-        if ((int) $enrollment->progress_percent >= 100) {
-            return true;
+        $course->loadMissing([
+            'modules.quiz.questions',
+            'modules.lessons.quizzes.questions',
+            'modules.lessons.activities',
+            'learningOutcomes',
+        ]);
+
+        $lessons = $course->modules->flatMap(fn ($module) => $module->lessons);
+        $lessonIds = $lessons->pluck('id')->unique();
+
+        if ($lessonIds->isNotEmpty()) {
+            $verifiedLessonIds = DB::table('lesson_completions')
+                ->where('user_id', $enrollment->user_id)
+                ->whereIn('lesson_id', $lessonIds)
+                ->whereNotNull('server_verified_at')
+                ->distinct()
+                ->pluck('lesson_id')
+                ->map(fn ($id) => (int) $id);
+
+            if ($verifiedLessonIds->count() < $lessonIds->count()) {
+                return false;
+            }
         }
 
-        $hasQuizQuestions = $course->modules->contains(
-            fn ($module) => $module->quiz && $module->quiz->questions->isNotEmpty()
-        );
-        if ($hasQuizQuestions) {
-            return false;
+        foreach ($lessons as $lesson) {
+            foreach ($lesson->activities->where('is_active', true)->where('is_required', true) as $activity) {
+                if ($enrollment->enrolled_at && $activity->created_at && $activity->created_at->gt($enrollment->enrolled_at)) {
+                    continue;
+                }
+
+                $acceptedStatuses = $activity->activity_type === 'assignment'
+                    ? ['passed']
+                    : ['completed', 'passed'];
+
+                if (! $activity->submissions()
+                    ->where('user_id', $enrollment->user_id)
+                    ->whereIn('status', $acceptedStatuses)
+                    ->exists()) {
+                    return false;
+                }
+            }
         }
 
-        $lessonCount = $course->lessons->count();
-        $completedLessons = collect((array) data_get($enrollment->progress_state, 'completed_lessons', []))
-            ->intersect($course->lessons->pluck('id')->map(fn ($id) => (string) $id))
-            ->count();
+        $quizzes = $course->modules->flatMap(fn ($module) => collect([$module->quiz])->merge(
+            $module->lessons->flatMap(fn ($lesson) => $lesson->quizzes)
+        ))->filter(fn ($quiz) => $quiz && $quiz->questions->isNotEmpty());
 
-        return $lessonCount > 0 && $completedLessons >= $lessonCount;
+        foreach ($quizzes as $quiz) {
+            if ($quiz->lesson_id && $enrollment->enrolled_at && $quiz->created_at && $quiz->created_at->gt($enrollment->enrolled_at)) {
+                continue;
+            }
+
+            if (! QuizAttempt::query()
+                ->where('quiz_id', $quiz->id)
+                ->where('user_id', $enrollment->user_id)
+                ->where('passed', true)
+                ->whereNotNull('submitted_at')
+                ->exists()) {
+                return false;
+            }
+        }
+
+        $competencyUnitIds = $course->learningOutcomes
+            ->reject(fn ($outcome) => $enrollment->enrolled_at
+                && $outcome->updated_at
+                && $outcome->updated_at->gt($enrollment->enrolled_at))
+            ->pluck('competency_unit_id')
+            ->filter()
+            ->unique();
+
+        if ($competencyUnitIds->isNotEmpty()) {
+            $masteredCount = CompetencyProgress::query()
+                ->where('user_id', $enrollment->user_id)
+                ->whereIn('competency_unit_id', $competencyUnitIds)
+                ->where('status', 'completed')
+                ->distinct()
+                ->count('competency_unit_id');
+
+            if ($masteredCount < $competencyUnitIds->count()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

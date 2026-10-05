@@ -18,9 +18,9 @@
         --admin-topbar-height: 66px;
         --admin-border: #e5e7eb;
         --admin-navy: #0d1b6e;
-        --admin-text: #f3f6ff;
-        --admin-muted: rgba(255,255,255,.68);
-        --admin-hover: rgba(255,255,255,.08);
+        --admin-text: #142653;
+        --admin-muted: #68758c;
+        --admin-hover: #f3f6fb;
         --admin-font: 'Inter', sans-serif;
     }
 
@@ -40,9 +40,9 @@
         margin: 0 !important;
         padding: 18px 12px 24px !important;
 
-        background: #071550 !important;
+        background: #fff !important;
         border: 0 !important;
-        border-right: 1px solid rgba(255,255,255,.08) !important;
+        border-right: 1px solid #e5e7eb !important;
         border-radius: 0 !important;
         box-shadow: none !important;
 
@@ -100,7 +100,7 @@
     aside.shared-admin-sidebar .sb-section-label {
         display: block !important;
 
-        color: rgba(255,255,255,.65) !important;
+        color: var(--admin-muted) !important;
 
         font-size: 11px !important;
         font-weight: 600 !important;
@@ -157,7 +157,7 @@
 
     aside.shared-admin-sidebar .sb-item:hover {
         background: var(--admin-hover) !important;
-        color: #f4c430  !important;
+        color: var(--admin-navy) !important;
     }
 
     /* aside.shared-admin-sidebar .sb-item.active,
@@ -258,6 +258,47 @@
             margin-right: 16px !important;
         }
     }
+
+    /* Shared page heading scale, matched to Stacking Frameworks. */
+    main.main .framework-header h1,
+    main.main .recognition-head h1,
+    main.main .cert-heading h1,
+    main.main .page-head > div > h1,
+    main.main .page-head > div > h2,
+    main.main .page-header .page-title,
+    main.main .admin-dashboard .page-heading,
+    main.main .user-detail-wrap .profile-main h1,
+    .page-wrap .page-head > div > .page-heading,
+    .wrap > .page-heading {
+        margin: 0 0 6px;
+        color: var(--admin-navy);
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        font-size: 32px;
+        font-weight: 700;
+        line-height: 1.15;
+    }
+
+    main.main .framework-header > div > p,
+    main.main .recognition-head > p,
+    main.main .cert-heading > p,
+    main.main .page-head > div > p,
+    main.main .page-head > div > .lead,
+    main.main .page-header > div > .page-subtitle,
+    main.main .admin-dashboard > .page-sub,
+    main.main .user-detail-wrap .profile-main .profile-role,
+    .page-wrap .page-head > div > .page-sub,
+    .wrap > .page-sub {
+        margin: 0;
+        color: #68758c;
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+
+    main.main.admin-dashboard .page-heading {
+        margin-bottom: 6px;
+    }
 </style>
 
 <aside class="sidebar shared-admin-sidebar" aria-label="Admin navigation">
@@ -272,7 +313,7 @@
         <a href="{{ route('admin.categories') }}" class="sb-item {{ request()->routeIs('admin.categories*') ? 'active' : '' }}"><span class="sb-item-text">Program Categories</span></a>
         <a href="{{ route('admin.pathways') }}" class="sb-item {{ request()->routeIs('admin.pathways*') ? 'active' : '' }}"><span class="sb-item-text">Learning Pathways</span></a>
         <a href="{{ route('admin.stacking-frameworks') }}" class="sb-item {{ request()->routeIs('admin.stacking-frameworks*') ? 'active' : '' }}"><span class="sb-item-text">Stacking Frameworks</span></a>
-        <a href="{{ route('admin.academic-credit-recognition') }}" class="sb-item {{ request()->routeIs('admin.academic-credit-recognition*') ? 'active' : '' }}"><span class="sb-item-text">Academic Credit Recognition</span></a>
+        <a href="{{ route('admin.academic-credit-recognition') }}" class="sb-item {{ request()->routeIs('admin.academic-credit-recognition*') ? 'active' : '' }}"><span class="sb-item-text">Legacy Credit Requests</span></a>
     </div></div>
     <div class="sb-section open"><div class="sb-section-hd"><div class="sb-hd-left"><span class="sb-section-label">Analytics</span></div></div><div class="sb-items">
         <a href="{{ route('admin.report') }}" class="sb-item {{ request()->routeIs('admin.report') ? 'active' : '' }}"><span class="sb-item-text">Report</span></a>

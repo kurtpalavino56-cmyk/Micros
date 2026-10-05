@@ -1,4 +1,4 @@
-﻿{{--
+{{--
     resources/views/dashboard.blade.php
 
     Single self-contained Blade view (no layout file needed).
@@ -50,22 +50,22 @@
     body{font-family:"Segoe UI", Roboto, Helvetica, Arial, sans-serif;color:var(--ink);margin:0;background:#fff;}
     a{text-decoration:none;color:inherit;}
     button{font-family:inherit;cursor:pointer;}
-    
+
 
     /* Layout */
     .layout{display:grid;grid-template-columns:264px 1fr;min-height:calc(100vh - 74px);align-items:start;}
 
     /* Sidebar */
-    .sidebar{background:var(--navy);padding:26px 16px;display:flex;flex-direction:column;gap:6px;margin:0 10px 24px 24px;border-radius:22px;box-shadow:0 16px 34px rgba(19,23,107,0.28);height:fit-content;position:sticky;top:0;}
-    .side-link{display:flex;align-items:center;gap:14px;padding:14px;border-radius:14px;font-weight:700;font-size:16px;color:#fff;transition:color .15s ease;}
+
+
     /* hover: text + icon turn gold (non-active links) */
-    .side-link:not(.active):hover{color:var(--gold);}
-    .side-link:not(.active):hover .side-icon-box svg{color:var(--gold);}
-    .side-link svg{width:26px;height:26px;flex-shrink:0;}
-    .side-link.active{background:var(--cyan);color:var(--navy);}
-    .side-icon-box{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .side-link.active .side-icon-box svg{color:var(--navy);width:26px;height:26px;}
-    .side-link:not(.active) .side-icon-box svg{color:#fff;width:26px;height:26px;transition:color .15s ease;}
+
+
+
+
+
+
+
 
     /* Main */
     .main{padding:32px 36px 60px;}
@@ -108,7 +108,7 @@
 
     @media (max-width:980px){
         .layout{grid-template-columns:1fr;}
-        .sidebar{flex-direction:row;overflow-x:auto;position:static;margin:14px;border-radius:16px;}
+
         .stats{grid-template-columns:repeat(2,1fr);}
         .content-grid{grid-template-columns:1fr;}
     }
@@ -250,40 +250,33 @@
     a { color: inherit; }
     button, input { font: inherit; }
 
-    .topbar {
-        min-height: 76px; padding: 12px 30px; gap: 22px;
-        background: rgba(255,255,255,.96); color: var(--pm-navy);
-        border-bottom: 1px solid var(--pm-line);
-        box-shadow: 0 6px 20px rgba(8,36,95,.06);
-        position: sticky; top: 0; z-index: 1000;
-        backdrop-filter: blur(16px);
-    }
-    .brand { gap: 12px; color: var(--pm-navy); }
-    .brand .logo { width: 42px; height: 42px; border: 1px solid #dce6f4; box-shadow: 0 3px 12px rgba(8,36,95,.08); }
-    .brand h1 { margin: 0; font-size: 21px; letter-spacing: .01em; font-weight: 800; }
+
+
+
+
     .brand-copy { display: flex; flex-direction: column; gap: 1px; }
     .brand-copy small { color: var(--pm-muted); font-size: 10px; letter-spacing: .04em; font-weight: 600; }
-    .nav-pills { gap: 4px; }
-    .nav-pills a { color: var(--pm-muted); padding: 9px 13px; border-radius: 9px; font-size: 13px; font-weight: 700; }
-    .nav-pills a:hover, .nav-pills a.is-active { color: var(--pm-navy); background: var(--pm-blue-soft); }
+
+
+
     .top-search { display: flex; align-items: center; gap: 9px; width: min(290px, 25vw); margin-left: auto; padding: 10px 14px; border: 1px solid var(--pm-line); border-radius: 999px; color: var(--pm-muted); }
     .top-search svg { width: 17px; height: 17px; flex: 0 0 auto; }
     .top-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--pm-ink); font-size: 12px; }
     .top-search input::placeholder { color: #9aa8bd; }
-    .icon-cluster { gap: 9px; }
-    .icon-circle { width: 38px; height: 38px; border: 1px solid var(--pm-line); background: #fff; color: var(--pm-navy); transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
-    .icon-circle:hover { transform: translateY(-2px); border-color: #b9cce8; box-shadow: 0 8px 18px rgba(8,36,95,.10); }
+
+
+
     .logout-btn { background: #fff5f5; border: 1px solid #f0cccc; color: #b84444; border-radius: 999px; padding: 8px 12px; font-weight: 700; cursor: pointer; }
 
     .layout { grid-template-columns: 244px minmax(0, 1fr); min-height: calc(100vh - 76px); }
-    .sidebar { background: linear-gradient(180deg, var(--pm-navy) 0%, var(--pm-navy-deep) 100%); margin: 0; min-height: calc(100vh - 76px); border-radius: 0; padding: 24px 14px; box-shadow: 10px 0 28px rgba(8,36,95,.12); position: sticky; top: 76px; }
-    .sidebar::after { content: ''; display: block; margin: auto 10px 6px; height: 130px; border-radius: 12px; background: linear-gradient(180deg, transparent, rgba(229,180,60,.17)), url('{{ asset('Images/PSU_Front_Building.jpg') }}') center/cover; opacity: .72; }
-    .side-link { gap: 12px; padding: 12px 13px; border-radius: 11px; color: rgba(255,255,255,.78); font-size: 13px; font-weight: 600; transition: color .2s ease, background .2s ease, transform .2s ease; }
-    .side-link:hover { color: #fff; background: rgba(255,255,255,.08); transform: translateX(2px); }
-    .side-link.active { background: var(--pm-gold); color: var(--pm-navy); box-shadow: 0 7px 16px rgba(229,180,60,.18); }
-    .side-icon-box { width: 30px; height: 30px; }
-    .side-link svg { width: 22px; height: 22px; }
-    .side-link.active .side-icon-box svg, .side-link:not(.active) .side-icon-box svg { color: currentColor; width: 22px; height: 22px; }
+
+
+
+
+
+
+
+
 
     .main { padding: 30px 34px 58px; min-width: 0; }
     .hero { position: relative; overflow: hidden; min-height: 190px; border-radius: 18px; padding: 30px 34px; margin-bottom: 22px; color: #fff; background: linear-gradient(100deg, rgba(8,36,95,.98) 0%, rgba(20,76,145,.90) 58%, rgba(20,76,145,.52) 100%), url('{{ asset('Images/PSU_Front_Building.jpg') }}') right center/cover; box-shadow: var(--pm-shadow); }
@@ -348,8 +341,8 @@
     .featured-course a { position: relative; z-index: 1; display: inline-block; border-radius: 999px; padding: 9px 14px; background: var(--pm-gold); color: var(--pm-navy); font-size: 11px; font-weight: 800; }
 
     @media (max-width: 1120px) { .top-search { width: 220px; } .stats { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } .sidebar { min-height: 0; position: static; flex-direction: row; overflow-x: auto; border-radius: 0; } .sidebar::after { display: none; } .content-grid { grid-template-columns: 1fr; } .hero-action { position: static; display: inline-block; margin-top: 16px; } }
-    @media (max-width: 700px) { .topbar { padding: 11px 16px; } .top-search, .nav-pills { display: none; } .main { padding: 20px 16px 42px; } .hero { padding: 24px 22px; } .hero h2 { font-size: 29px; } .stats { gap: 9px; } .stat-card { min-height: 105px; padding: 13px; } .stat-top .num { font-size: 25px; } .course-card { align-items: flex-start; flex-wrap: wrap; } .course-info { min-width: calc(100% - 88px); } .btn-start { margin-left: 85px; } }
+    @media (max-width: 980px) { .layout { grid-template-columns: 1fr; }   .content-grid { grid-template-columns: 1fr; } .hero-action { position: static; display: inline-block; margin-top: 16px; } }
+    @media (max-width: 700px) {   .main { padding: 20px 16px 42px; } .hero { padding: 24px 22px; } .hero h2 { font-size: 29px; } .stats { gap: 9px; } .stat-card { min-height: 105px; padding: 13px; } .stat-top .num { font-size: 25px; } .course-card { align-items: flex-start; flex-wrap: wrap; } .course-info { min-width: calc(100% - 88px); } .btn-start { margin-left: 85px; } }
     @media (max-width: 480px) { .stats { grid-template-columns: 1fr 1fr; } .stat-card .label { font-size: 10px; } .hero-meta { display: none; } }
 </style>
 <style>
@@ -434,7 +427,7 @@ main.student-dashboard .empty-state{border-color:var(--dash-line);border-radius:
     <main class="main student-dashboard">
         @php $featuredCourse = $inProgressCourses->first() ?? $completedCourses->first(); @endphp
         <section class="hero">
-            <div class="hero-copy">
+            <div class="hero-copy student-page-heading student-page-heading--inverse">
                 <p class="eyebrow">Continue your learning</p>
                 <h2>Hello, {{ $user->name ?? 'Student' }} !</h2>
                 <p>Build in-demand skills, earn microcredentials, and take the next step in your Penn State journey.</p>

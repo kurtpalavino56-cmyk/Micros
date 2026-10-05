@@ -195,7 +195,7 @@
         </td>
         <td class="stat-cell gold">
             <span class="num">{{ $stats['certificates'] ?? 0 }}</span>
-            <span class="label">Learners with Certificates</span>
+            <span class="label">Certificates Issued</span>
         </td>
         <td class="stat-cell cyan">
             <span class="num">{{ $stats['lessons_done'] ?? 0 }}</span>
@@ -203,18 +203,44 @@
         </td>
     </tr>
 </table>
-<p class="stat-note">Live Learners reflects learners online in the last hour at the moment this report was generated. Certificate and lesson figures are all-time totals.</p>
+<p class="stat-note">Live Learners reflects learners enrolled in your courses who were online in the last five minutes. Certificate and lesson figures are all-time totals.</p>
 
-{{-- ═══════════════ TOTAL ACADEMY STATISTICS ═══════════════ --}}
 <div class="section">
-    <div class="section-head">Total Academy Statistics</div>
+    <div class="section-head">Course Outcomes</div>
+    <div class="section-body">
+        @if(collect($courseAnalytics ?? [])->isNotEmpty())
+            <table class="data-table">
+                <thead><tr><th>Course</th><th class="num">Enrolled</th><th class="num">Completed</th><th class="num">Completion</th><th class="num">Avg. quiz</th><th class="num">Pass rate</th><th class="num">Reviews</th></tr></thead>
+                <tbody>
+                    @foreach($courseAnalytics as $course)
+                        <tr>
+                            <td>{{ $course->title }}</td>
+                            <td class="num">{{ $course->enrolled }}</td>
+                            <td class="num">{{ $course->completed }}</td>
+                            <td class="num">{{ $course->completion_rate === null ? '—' : $course->completion_rate . '%' }}</td>
+                            <td class="num">{{ $course->average_score === null ? '—' : $course->average_score . '%' }}</td>
+                            <td class="num">{{ $course->pass_rate === null ? '—' : $course->pass_rate . '%' }}</td>
+                            <td class="num">{{ $course->pending_reviews }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @else
+            <div class="empty-state">No courses are available for this faculty account.</div>
+        @endif
+    </div>
+</div>
+
+{{-- ═══════════════ ENROLLED LEARNER GROWTH ═══════════════ --}}
+<div class="section">
+    <div class="section-head">Enrolled Learner Growth</div>
     <div class="section-body">
         @if($points->isNotEmpty())
             <table class="data-table">
                 <thead>
                     <tr>
                         <th style="width: 34%;">Period</th>
-                        <th style="width: 46%;">Activity</th>
+                        <th style="width: 46%;">Cumulative learners</th>
                         <th class="num">Value</th>
                     </tr>
                 </thead>

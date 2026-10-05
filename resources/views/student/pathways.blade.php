@@ -26,8 +26,7 @@
     @include('components.student-sidebar')
     <main class="main">
         <div class="pathways-page">
-            <header class="page-header">
-                <p class="eyebrow">Student growth</p>
+            <header class="page-header student-page-heading">
                 <h1>My Pathways</h1>
                 <p>{{ $selectedPathway ? 'Your learning journey to '.($pathwayDestination ?: $selectedPathway->name).'.' : 'Choose a learning pathway when you are ready.' }}</p>
             </header>
@@ -175,26 +174,5 @@
     })();
 </script>
 @include('components.responsive')
-<style>
-    @media (min-width: 1025px) {
-        .layout.student-sidebar-layout {
-            display: grid;
-            grid-template-columns: 244px minmax(0, 1fr);
-            width: 100%;
-            min-width: 0;
-        }
-
-        .layout.student-sidebar-layout > .student-sidebar {
-            grid-column: 1;
-            width: 100%;
-            min-width: 0;
-        }
-
-        .layout.student-sidebar-layout > .main {
-            grid-column: 2;
-            min-width: 0;
-        }
-    }
-</style>
 </body>
 </html>

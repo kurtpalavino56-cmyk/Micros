@@ -21,7 +21,6 @@
         .framework-main { padding:30px 32px 48px !important; box-sizing:border-box; }
         .framework-content { max-width:1240px; margin:0 auto; }
         .framework-header { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin-bottom:24px; }
-        .framework-eyebrow { color:#a06f00; font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; margin-bottom:5px; }
         .framework-header h1 { margin:0 0 6px; color:var(--framework-navy); font-size:32px; line-height:1.15; }
         .framework-header p { margin:0; color:var(--framework-muted); font-size:14px; }
         .framework-header-actions { display:flex; gap:10px; flex-shrink:0; }
@@ -117,7 +116,6 @@
             <div class="framework-content">
                 <header class="framework-header">
                     <div>
-                        <div class="framework-eyebrow">Admin configuration</div>
                         <h1>Stacking frameworks</h1>
                         <p>Define approved microcredential combinations without creating academic credit automatically.</p>
                     </div>

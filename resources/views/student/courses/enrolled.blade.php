@@ -1,4 +1,4 @@
-﻿{{--
+{{--
     resources/views/student/Enrolled_Courses.blade.php
 
     The student's enrolled courses, organized into two areas:
@@ -39,32 +39,32 @@
     button{font-family:inherit;cursor:pointer;}
 
     /* Topbar */
-    .topbar{background:var(--navy);display:flex;align-items:center;justify-content:space-between;padding:14px 28px;gap:20px;}
-    .brand{display:flex;align-items:center;gap:14px;color:#fff;white-space:nowrap;}
-    .brand .logo{width:46px;height:46px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .brand .logo img{width:100%;height:100%;object-fit:contain;border-radius:50%;padding:3px;}
-    .brand h1{font-size:24px;letter-spacing:1px;margin:0;font-weight:800;}
-    .nav-pills{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-items:center;}
-    .nav-pills a{background:transparent;color:#fff;font-weight:700;padding:10px 18px;border-radius:10px;font-size:15px;transition:color .15s ease, background-color .15s ease;}
-    .nav-pills a:hover{color:var(--gold);}
-    .nav-pills a.is-active{color:var(--gold);background:rgba(255,255,255,0.08);}
-    .icon-cluster{display:flex;align-items:center;gap:14px;}
-    .icon-circle{width:42px;height:42px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;background-size:cover;background-position:center;}
-    .icon-circle svg{width:22px;height:22px;color:var(--navy);}
+
+
+
+
+
+
+
+
+
+
+
+
 
     /* Layout */
     .layout{display:grid;grid-template-columns:264px 1fr;min-height:calc(100vh - 74px);align-items:start;}
 
     /* Sidebar */
-    .sidebar{background:var(--navy);padding:26px 16px;display:flex;flex-direction:column;gap:6px;margin:24px 10px 24px 24px;border-radius:22px;box-shadow:0 16px 34px rgba(19,23,107,0.28);height:fit-content;position:sticky;top:20px;}
-    .side-link{display:flex;align-items:center;gap:14px;padding:14px;border-radius:14px;font-weight:700;font-size:16px;color:#fff;transition:color .15s ease;}
-    .side-link svg{width:26px;height:26px;flex-shrink:0;}
-    .side-link.active{background:var(--cyan);color:var(--navy);}
-    .side-icon-box{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .side-icon-box svg{width:26px;height:26px;color:#fff;transition:color .15s ease;}
-    .side-link.active .side-icon-box svg{color:var(--navy);}
-    .side-link:not(.active):hover{color:var(--gold);}
-    .side-link:not(.active):hover .side-icon-box svg{color:var(--gold);}
+
+
+
+
+
+
+
+
+
 
     /* Main */
     .main{padding:32px 36px 60px;}
@@ -97,7 +97,7 @@
 
     @media (max-width:980px){
         .layout{grid-template-columns:1fr;}
-        .sidebar{flex-direction:row;overflow-x:auto;position:static;margin:14px;border-radius:16px;}
+
         .course-card{flex-direction:column;align-items:flex-start;}
         .course-card .thumb{width:100%;height:150px;}
     }
@@ -115,7 +115,7 @@
     {{-- Main content --}}
     <main class="main">
 
-        <div class="page-head">
+        <div class="page-head student-page-heading">
             <div>
                 <h2>Enrolled Courses</h2>
                 <p>All the courses you're enrolled in, organized by your progress.</p>

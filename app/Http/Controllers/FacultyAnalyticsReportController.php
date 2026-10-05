@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Course;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -40,9 +41,9 @@ class FacultyAnalyticsReportController extends Controller
 
         $data = $page->getData();
 
-        $data['generatedAt']    = now();
-        $data['preparedBy']     = auth()->user();
-        $data['recentActivity'] = $this->recentActivity();
+        $data['generatedAt'] = now();
+        $data['preparedBy'] = auth()->user();
+        $data['recentActivity'] = $this->recentActivity((int) auth()->id());
 
         $pdf = Pdf::loadView('faculty.analytics-report-pdf', $data)
             ->setPaper('a4', 'portrait');
@@ -54,10 +55,30 @@ class FacultyAnalyticsReportController extends Controller
      * Snapshot of the Live Monitoring Feed for the report: the most recent
      * analytics events, resolved to readable titles and learner names.
      */
-    private function recentActivity(int $limit = 15): array
+    private function recentActivity(int $facultyId, int $limit = 15): array
     {
+        $courseIds = Course::query()->where('created_by', $facultyId)->pluck('id')->all();
+
         return DB::table('analytics_events')
             ->leftJoin('users', 'users.id', '=', 'analytics_events.user_id')
+            ->where(function ($query) use ($courseIds) {
+                $query->where(function ($courseEvents) use ($courseIds) {
+                    $courseEvents->where('analytics_events.entity_type', 'course')
+                        ->whereIn('analytics_events.entity_id', $courseIds);
+                })->orWhere(function ($lessonEvents) use ($courseIds) {
+                    $lessonEvents->where('analytics_events.entity_type', 'lesson')->whereExists(function ($lessons) use ($courseIds) {
+                        $lessons->selectRaw('1')->from('course_lessons')
+                            ->whereColumn('course_lessons.id', 'analytics_events.entity_id')
+                            ->whereIn('course_lessons.course_id', $courseIds);
+                    });
+                })->orWhere(function ($quizEvents) use ($courseIds) {
+                    $quizEvents->where('analytics_events.entity_type', 'quiz')->whereExists(function ($quizzes) use ($courseIds) {
+                        $quizzes->selectRaw('1')->from('quizzes')
+                            ->whereColumn('quizzes.id', 'analytics_events.entity_id')
+                            ->whereIn('quizzes.course_id', $courseIds);
+                    });
+                });
+            })
             ->orderByDesc('analytics_events.occurred_at')
             ->limit($limit)
             ->get([
@@ -68,15 +89,15 @@ class FacultyAnalyticsReportController extends Controller
                 'users.last_name',
             ])
             ->map(function ($event) {
-                $metadata   = json_decode($event->metadata ?? 'null', true) ?: [];
-                $name       = trim(($event->first_name ?? '').' '.($event->last_name ?? '')) ?: 'A learner';
+                $metadata = json_decode($event->metadata ?? 'null', true) ?: [];
+                $name = trim(($event->first_name ?? '').' '.($event->last_name ?? '')) ?: 'A learner';
                 $occurredAt = Carbon::parse($event->occurred_at);
 
                 return [
-                    'title'  => Str::headline(str_replace(['_', '-'], ' ', (string) $event->event_type)),
+                    'title' => Str::headline(str_replace(['_', '-'], ' ', (string) $event->event_type)),
                     'detail' => $metadata['detail'] ?? $metadata['description'] ?? $name,
-                    'time'   => $occurredAt->diffForHumans(),
-                    'date'   => $occurredAt->format('M j, Y g:i A'),
+                    'time' => $occurredAt->diffForHumans(),
+                    'date' => $occurredAt->format('M j, Y g:i A'),
                 ];
             })
             ->all();

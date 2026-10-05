@@ -184,7 +184,6 @@
             <button type="button" class="tab" data-filter="pending">Pending review<span class="n">{{ $count('pending') }}</span></button>
             <button type="button" class="tab" data-filter="approved">Approved<span class="n">{{ $count('approved') }}</span></button>
             <button type="button" class="tab" data-filter="denied">Denied<span class="n">{{ $count('denied') }}</span></button>
-            <button type="button" class="tab" data-filter="draft">Drafts<span class="n">{{ $count('draft') }}</span></button>
         </div>
 
         @if (session('success'))
@@ -264,14 +263,7 @@
 
                         @if ($course->status_key === 'pending')
                             <div class="actions" onclick="event.stopPropagation();">
-                                <form method="POST" action="{{ route('admin.courses.approve', $course->id) }}">
-                                    @csrf
-                                    <button type="submit" class="btn btn-approve">Approve</button>
-                                </form>
-                                {{-- Denial needs written feedback, captured on the detail page --}}
-                                <a href="{{ route('admin.courses.show', $course->id) }}#deny-panel">
-                                    <button type="button" class="btn">Deny</button>
-                                </a>
+                                <a href="{{ route('admin.courses.show', $course->id) }}" class="btn">Review course</a>
                             </div>
                         @elseif ($course->can_toggle_publish)
                             <div class="actions" onclick="event.stopPropagation();">

@@ -12,7 +12,6 @@
     .main{padding:36px 32px 60px;min-width:0;}
     .pathway-page{max-width:1180px;margin:0 auto;}
     .page-head{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:28px;flex-wrap:wrap;}
-    .eyebrow{color:#b17800;font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:11px;margin:0 0 6px;}
     h1{font-size:32px;margin:0 0 7px;}
     .lead{color:var(--muted);margin:0;font-size:14px;}
     .alert{padding:12px 14px;border-radius:10px;margin-bottom:18px;font-size:13px;}
@@ -84,7 +83,7 @@
     <main class="main">
         <div class="pathway-page">
             <div class="page-head">
-                <div><p class="eyebrow">Admin configuration</p><h1>Learning pathways</h1><p class="lead">Group published courses into guided journeys for students.</p></div>
+                <div><h1>Learning pathways</h1><p class="lead">Group published courses into guided journeys for students.</p></div>
             </div>
             @if(session('success'))<div class="alert success" role="status">{{ session('success') }}</div>@endif
             @if($errors->any())<div class="alert error" role="alert">{{ $errors->first() }}</div>@endif

@@ -53,40 +53,11 @@
     body{font-family:"Segoe UI", Roboto, Helvetica, Arial, sans-serif;color:var(--ink);margin:0;background:#fff;}
     a{text-decoration:none;color:inherit;}
     button{font-family:inherit;cursor:pointer;}
-
-    /* Topbar */
-    .topbar{background:var(--navy);display:flex;align-items:center;justify-content:space-between;padding:14px 28px;gap:20px;}
-    .brand{display:flex;align-items:center;gap:14px;color:#fff;white-space:nowrap;}
-    .brand .logo{width:46px;height:46px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .brand .logo svg{width:30px;height:30px;}
-    .brand .logo img{width:100%;height:100%;object-fit:contain;border-radius:50%;padding:3px;}
-    .brand h1{font-size:24px;letter-spacing:1px;margin:0;font-weight:800;}
-    .nav-pills{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-items:center;}
-    .nav-pills a{background:transparent;color:#fff;font-weight:700;padding:10px 18px;border-radius:10px;font-size:15px;transition:color .15s ease, background-color .15s ease;}
-    .nav-pills a:hover{color:var(--gold);}
-    .nav-pills a.is-active{color:var(--gold);background:rgba(255,255,255,0.08);}
     .search-box{display:flex;align-items:center;gap:10px;background:#fff;border-radius:999px;padding:10px 18px;min-width:240px;color:var(--muted);}
     .search-box input{border:none;outline:none;font-size:15px;width:100%;color:var(--ink);background:transparent;}
-    .icon-cluster{display:flex;align-items:center;gap:14px;}
-    .icon-circle{width:42px;height:42px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-    .icon-circle svg{width:22px;height:22px;color:var(--navy);}
 
     /* Layout */
     .layout{display:grid;grid-template-columns:264px 1fr;min-height:calc(100vh - 74px);align-items:start;}
-
-    /* Sidebar */
-    .sidebar{background:var(--navy);padding:26px 16px;display:flex;flex-direction:column;gap:6px;margin:24px 10px 24px 24px;border-radius:22px;box-shadow:0 16px 34px rgba(19,23,107,0.28);height:fit-content;position:sticky;top:20px;}
-    .side-link{display:flex;align-items:center;gap:14px;padding:14px;border-radius:14px;font-weight:700;font-size:16px;color:#fff;transition:color .15s ease;}
-    .side-link svg{width:26px;height:26px;flex-shrink:0;}
-    .side-link.active{background:var(--cyan);color:var(--navy);}
-    .side-icon-box{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(255,255,255,0.14);}
-    .side-icon-box svg{color:#fff;width:22px;height:22px;transition:color .15s ease;}
-    .side-link.active .side-icon-box{background:var(--navy);}
-    .side-link.plain .side-icon-box{background:transparent;}
-    .side-link.plain .side-icon-box svg{color:#fff;width:26px;height:26px;}
-    /* hover: text + icon turn gold (non-active links) */
-    .side-link:not(.active):hover{color:var(--gold);}
-    .side-link:not(.active):hover .side-icon-box svg{color:var(--gold);}
     .side-divider{border:none;border-top:1px solid rgba(255,255,255,0.25);margin:18px 6px;}
 
     /* Main */
@@ -138,7 +109,6 @@
 
     @media (max-width:980px){
         .layout{grid-template-columns:1fr;}
-        .sidebar{flex-direction:column;position:static;margin:14px;border-radius:16px;}
         .stats{grid-template-columns:repeat(2,1fr);}
         .content-grid{grid-template-columns:1fr;}
     }
@@ -251,10 +221,10 @@ main.faculty-dashboard .btn-quick:hover{background:var(--dash-canvas);border-col
     {{-- Main content --}}
     <main class="main faculty-dashboard">
 
-        <div class="page-head">
+        <div class="page-head faculty-page-heading">
             <div>
-                <h2>Faculty Dashboard</h2>
-                <p>Manage your Courses and Track student Performance</p>
+                <h2 class="faculty-page-title">Faculty Dashboard</h2>
+                <p class="faculty-page-subtitle">Manage your Courses and Track student Performance</p>
                 <p style="margin-top: 8px; color: var(--navy); font-weight: 700;">User Code: {{ $user->user_code ?? '-' }}</p>
             </div>
             {{-- âœ… Connected â€” goes to Faculty â€º Create Courses only --}}

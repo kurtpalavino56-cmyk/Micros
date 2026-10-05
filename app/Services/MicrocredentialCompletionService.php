@@ -23,9 +23,8 @@ use Illuminate\Support\Str;
  *  - StudentProgressService, which keeps computing `progress_percent`
  *    (a pure learning-progress metric). Reaching 100% progress there
  *    NEVER by itself causes `completion_status` to become `completed`.
- *  - CourseCompletionService, whose `isReady()` currently short-circuits
- *    on `progress_percent >= 100`. That method is untouched in this step;
- *    it is not called from here and this service does not replace it yet.
+ *  - CourseCompletionService, which provides a separate readiness check
+ *    for the student-facing completion action and does not issue credentials.
  *
  * UPSKILL microcredentials are free of charge. This service never reads
  * `Payment`/`payments`, and no gate below is defined in terms of a fee,
@@ -133,7 +132,13 @@ class MicrocredentialCompletionService
             return $enrollment;
         }
 
-        $enrollment->loadMissing(['course.modules.quiz.questions', 'course.lessons', 'course.learningOutcomes']);
+        $enrollment->loadMissing([
+            'course.modules.quiz.questions',
+            'course.modules.lessons.quizzes.questions',
+            'course.modules.lessons.activities',
+            'course.lessons',
+            'course.learningOutcomes',
+        ]);
         $course = $enrollment->course;
 
         // --- Gate 1: lessons ---------------------------------------------
@@ -277,8 +282,8 @@ class MicrocredentialCompletionService
      * on record, which changes nothing and keeps the original
      * actor/timestamp.
      *
-     * @throws \InvalidArgumentException  unknown decision value
-     * @throws \DomainException           enrollment is not awaiting institutional action
+     * @throws \InvalidArgumentException unknown decision value
+     * @throws \DomainException enrollment is not awaiting institutional action
      */
     public function recordFacultyVerification(Enrollment $enrollment, int $userId, string $decision): Enrollment
     {
@@ -321,8 +326,8 @@ class MicrocredentialCompletionService
      * the recorded decision is an idempotent no-op that still runs the
      * idempotent issuance step).
      *
-     * @throws \InvalidArgumentException  unknown decision value
-     * @throws \DomainException           enrollment is not awaiting institutional action
+     * @throws \InvalidArgumentException unknown decision value
+     * @throws \DomainException enrollment is not awaiting institutional action
      */
     public function recordAcademicUnitConfirmation(Enrollment $enrollment, int $userId, string $decision = 'confirmed'): Enrollment
     {
@@ -611,6 +616,7 @@ class MicrocredentialCompletionService
                 return CertificateBuilder::ensureFileGenerated($certificate);
             } catch (\Throwable $e) {
                 report($e);
+
                 return $certificate;
             }
         } catch (QueryException $e) {
@@ -668,7 +674,7 @@ class MicrocredentialCompletionService
     private function allLessonsCompleted(Enrollment $enrollment): bool
     {
         $course = $enrollment->course;
-        $course->loadMissing('modules.lessons');
+        $course->loadMissing('modules.lessons.activities');
         $lessonIds = $course->modules
             ->flatMap(fn ($module) => $module->lessons)
             ->pluck('id')
@@ -686,7 +692,27 @@ class MicrocredentialCompletionService
             ->distinct('lesson_id')
             ->count('lesson_id');
 
-        return $completedCount >= $lessonIds->count();
+        if ($completedCount < $lessonIds->count()) {
+            return false;
+        }
+
+        foreach ($course->modules->flatMap(fn ($module) => $module->lessons) as $lesson) {
+            foreach ($lesson->activities->where('is_active', true)->where('is_required', true) as $activity) {
+                if ($enrollment->enrolled_at && $activity->created_at && $activity->created_at->gt($enrollment->enrolled_at)) {
+                    continue;
+                }
+                $acceptableStatuses = $activity->activity_type === 'assignment' ? ['passed'] : ['completed', 'passed'];
+                $hasCompletion = $activity->submissions()
+                    ->where('user_id', $enrollment->user_id)
+                    ->whereIn('status', $acceptableStatuses)
+                    ->exists();
+                if (! $hasCompletion) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -697,8 +723,14 @@ class MicrocredentialCompletionService
         $course = $enrollment->course;
 
         $requiredQuizzes = $course->modules
-            ->map(fn ($module) => $module->quiz)
+            ->flatMap(fn ($module) => collect([$module->quiz])->merge(
+                $module->lessons->flatMap(fn ($lesson) => $lesson->quizzes)
+            ))
             ->filter(fn ($quiz) => $quiz && $quiz->questions->isNotEmpty());
+        $requiredQuizzes = $requiredQuizzes->reject(fn ($quiz) => $quiz->lesson_id
+            && $enrollment->enrolled_at
+            && $quiz->created_at
+            && $quiz->created_at->gt($enrollment->enrolled_at));
 
         if ($requiredQuizzes->isEmpty()) {
             return [true, true];
@@ -750,7 +782,13 @@ class MicrocredentialCompletionService
      */
     private function allLinkedCompetenciesMastered(Enrollment $enrollment): bool
     {
-        $competencyUnitIds = $enrollment->course->learningOutcomes
+        $outcomes = $enrollment->course->learningOutcomes;
+        if ($enrollment->enrolled_at) {
+            $outcomes = $outcomes->reject(fn ($outcome) => $outcome->updated_at
+                && $outcome->updated_at->gt($enrollment->enrolled_at));
+        }
+
+        $competencyUnitIds = $outcomes
             ->pluck('competency_unit_id')
             ->filter()
             ->unique();
@@ -872,4 +910,3 @@ class MicrocredentialCompletionService
         return self::STATUS_COMPLETED;
     }
 }
-

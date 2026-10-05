@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AcademicCreditRecognition;
 use App\Models\AnalyticsEvent;
 use App\Models\Certificate;
 use App\Models\CompetencyProgress;
@@ -10,15 +9,18 @@ use App\Models\Complaint;
 use App\Models\ComplaintReply;
 use App\Models\Course;
 use App\Models\CourseLesson;
+use App\Models\CourseModule;
 use App\Models\Enrollment;
+use App\Models\LessonActivity;
+use App\Models\LessonActivitySubmission;
 use App\Models\LessonCompletion;
 use App\Models\Pathway;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\StackingFramework;
 use App\Models\UserBadge;
-use App\Services\AcademicCreditRecognitionService;
 use App\Services\CourseCompletionService;
+use App\Services\CreditEvidenceReportService;
 use App\Services\MicrocredentialCompletionService;
 use App\Services\QuizAttemptService;
 use App\Services\StackingProgressService;
@@ -27,9 +29,9 @@ use App\Support\CertificateBuilder;
 use App\Support\SchoolCatalog;
 use App\Support\SkillCatalog;
 use App\Support\UserPresenter;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -51,7 +53,6 @@ class StudentController extends Controller
         private CourseCompletionService $courseCompletion,
         private MicrocredentialCompletionService $completionService,
         private StackingProgressService $stackingProgress,
-        private AcademicCreditRecognitionService $academicCreditRecognition,
     ) {}
 
     /**
@@ -90,7 +91,11 @@ class StudentController extends Controller
         // Eager-load quiz questions as well: the progress sync below reads
         // per-quiz question counts and newest-question timestamps, and
         // lazy-loading those cost several queries per module per course.
-        $enrollments = Enrollment::with('course.modules.quiz.questions')
+        $enrollments = Enrollment::with([
+            'course.modules.quiz.questions',
+            'course.modules.lessons.quizzes.questions',
+            'course.modules.lessons.activities',
+        ])
             ->where('user_id', $auth->id)
             ->get();
 
@@ -156,7 +161,11 @@ class StudentController extends Controller
     {
         $auth = Auth::user();
 
-        $enrollments = Enrollment::with('course.modules.quiz.questions')
+        $enrollments = Enrollment::with([
+            'course.modules.quiz.questions',
+            'course.modules.lessons.quizzes.questions',
+            'course.modules.lessons.activities',
+        ])
             ->where('user_id', $auth->id)
             ->get();
 
@@ -186,41 +195,21 @@ class StudentController extends Controller
         $frameworks = $this->stackingProgress->progressForUser((int) $auth->id);
 
         // N+1 fix: recognition records were fetched one query per framework.
-        $recognitions = AcademicCreditRecognition::query()
-            ->where('user_id', $auth->id)
-            ->whereIn('stacking_framework_id', $frameworks->pluck('framework.id')->all() ?: [0])
-            ->get()
-            ->keyBy('stacking_framework_id');
-
-        $frameworks = $frameworks->map(function (array $item) use ($auth, $recognitions) {
-            $framework = $item['framework'];
-            $record = $recognitions->get($framework->id);
-
-            $item['recognition'] = $record;
-            $item['can_request_recognition'] = $this->academicCreditRecognition->canRequestRecognition($auth, $framework);
-            $item['is_recognition_pending'] = $record && $record->status === 'pending';
-
-            return $item;
-        });
-
         return view('student.stacking-progress', [
             'user' => UserPresenter::student($auth),
             'frameworks' => $frameworks,
         ]);
     }
 
-    public function requestAcademicCreditRecognition(int $frameworkId)
+    public function creditEvidenceReport(int $frameworkId, CreditEvidenceReportService $reports)
     {
-        $auth = Auth::user();
+        $student = Auth::user();
         $framework = StackingFramework::query()->findOrFail($frameworkId);
+        $item = $this->stackingProgress->progressForUser((int) $student->id)
+            ->first(fn (array $progress): bool => (int) $progress['framework']->id === $frameworkId);
+        abort_unless($item && $item['status'] === 'requirements_met', 403);
 
-        if (! $this->academicCreditRecognition->canRequestRecognition($auth, $framework)) {
-            return back()->withErrors(['recognition' => 'This framework is not eligible for academic credit recognition yet.']);
-        }
-
-        $this->academicCreditRecognition->requestRecognition($auth, $framework, 'Student initiated recognition request.');
-
-        return back()->with('success', 'Academic credit recognition request submitted.');
+        return view('credit-evidence-report', $reports->build($student, $framework));
     }
 
     // ── First-login About Me ─────────────────────────────────────────────
@@ -392,6 +381,7 @@ class StudentController extends Controller
             'level' => $c->level,
             'instructor' => $c->instructor,
             'duration' => $c->duration,
+            'learning_hours' => $c->learning_hours,
             'lessons_count' => (int) $c->lessons_count,
             'thumbnail_url' => $c->thumbnail_url ? asset($c->thumbnail_url) : null,
         ])->values();
@@ -418,7 +408,7 @@ class StudentController extends Controller
         // modules.quiz.questions added: syncEnrollmentProgress() walks every
         // module quiz and would otherwise lazy-load quiz + questions per
         // module on each visit.
-        $course = Course::with(['modules.lessons', 'modules.quiz.questions', 'quizzes.questions', 'creator'])->findOrFail($id);
+        $course = Course::with(['modules.lessons', 'modules.quiz.questions', 'quizzes.questions', 'creator', 'learningOutcomes', 'badge'])->findOrFail($id);
         $enrollment = Enrollment::where('user_id', $auth->id)
             ->where('course_id', $course->id)
             ->first();
@@ -429,12 +419,14 @@ class StudentController extends Controller
 
         $instructor = $course->creator;
 
-        // The description page lists the course's lesson rows.
-        $modules = $course->lessons->map(fn (CourseLesson $l) => (object) [
-            'title' => $l->title,
-            'description' => $l->type.': '.trim((string) $l->duration),
-            'type' => $l->type,
-            'duration' => $l->duration,
+        $modules = $course->modules->map(fn (CourseModule $module) => (object) [
+            'title' => $module->title,
+            'description' => trim(strip_tags((string) $module->description)),
+            'lessons' => $module->lessons->map(fn (CourseLesson $lesson) => (object) [
+                'title' => $lesson->title,
+                'type' => $lesson->type,
+                'duration' => $lesson->duration,
+            ])->values(),
         ])->values();
 
         $quizModel = $course->quizzes->first();
@@ -485,9 +477,24 @@ class StudentController extends Controller
                 'title' => $course->title,
                 'heading' => $course->heading,
                 'subheading' => $course->subheading,
+                'short_description' => $course->short_description,
                 'description' => $course->description,
+                'badge_name' => $course->badge?->is_active ? $course->badge->name : null,
+                'badge_description' => $course->badge?->is_active ? $course->badge->description : null,
                 'category' => $course->category,
                 'level' => $course->level,
+                'pqf_level' => $course->pqf_level,
+                'target_learners' => $course->target_learners,
+                'delivery_mode' => $course->delivery_mode,
+                'learning_hours' => $course->learning_hours,
+                'assessment_strategy' => $course->assessment_strategy,
+                'grading_rubric' => $course->grading_rubric,
+                'credit_bearing' => (bool) $course->credit_bearing,
+                'credit_equivalency' => $course->credit_equivalency,
+                'equivalent_course' => $course->equivalent_course,
+                'learning_outcomes' => $course->learningOutcomes->isNotEmpty()
+                    ? $course->learningOutcomes->pluck('description')->values()->all()
+                    : ($course->objectives ?? []),
                 'is_featured' => (bool) $course->is_featured,
                 'instructor' => $course->instructor,
                 'duration' => $course->duration,
@@ -590,7 +597,7 @@ class StudentController extends Controller
     public function learn(int $id)
     {
         $auth = Auth::user();
-        $course = Course::with(['modules.lessons', 'modules.quiz.questions'])->findOrFail($id);
+        $course = Course::with(['modules.lessons.quizzes.questions', 'modules.lessons.activities', 'modules.quiz.questions'])->findOrFail($id);
         $enrollment = Enrollment::where('user_id', $auth->id)
             ->where('course_id', $course->id)
             ->first();
@@ -612,6 +619,19 @@ class StudentController extends Controller
                 'description' => $l->content ?: $l->title,
                 'content' => $l->content ?? '',
                 'thumbnail_url' => null,
+                'lesson_quiz' => $l->quizzes->where('is_active', true)->first() ? (object) [
+                    'id' => $l->quizzes->where('is_active', true)->first()->id,
+                    'title' => $l->quizzes->where('is_active', true)->first()->title,
+                    'passing_score' => $l->quizzes->where('is_active', true)->first()->passing_score,
+                    'sort_order' => $l->quizzes->where('is_active', true)->first()->sort_order,
+                ] : null,
+                'activities' => $l->activities->where('is_active', true)->map(fn (LessonActivity $activity) => (object) [
+                    'id' => $activity->id,
+                    'title' => $activity->title,
+                    'activity_type' => $activity->activity_type,
+                    'is_required' => $activity->is_required,
+                    'sort_order' => $activity->sort_order,
+                ])->values(),
             ])->values(),
             'quiz' => $m->quiz ? (object) [
                 'id' => $m->quiz->id,
@@ -628,6 +648,7 @@ class StudentController extends Controller
                         'letter' => chr(65 + $i),
                         'text' => (string) $text,
                     ])->all();
+
                     return [
                         'id' => (int) $q->id,
                         'label' => Str::limit((string) $q->question, 40, ''),
@@ -713,7 +734,12 @@ class StudentController extends Controller
         // added module would otherwise inherit a deleted one's score.
         $liveScores = $this->earnedModuleScores($course, $liveScores, $auth->id);
 
-        $livePercent = $this->calculateProgressPercent($course, $liveScores);
+        $progressBreakdown = $this->progressService->progressBreakdown(
+            $course,
+            (int) $auth->id,
+            $enrollment->enrolled_at
+        );
+        $livePercent = $progressBreakdown['percent'];
         $liveLessons = $this->resolveCompletedLessons(
             $course,
             array_values($state['completed_lessons'] ?? []),
@@ -748,6 +774,7 @@ class StudentController extends Controller
             'total_lessons' => $modules->sum(fn ($m) => $m->lessons->count()),
             'badge_count' => $auth->badges()->count(),
             'progress_percent' => $livePercent,
+            'progress_breakdown' => $progressBreakdown,
             'saved_progress' => [
                 'completed_lessons' => $liveLessons,
                 'module_scores' => (object) array_diff_key(
@@ -767,14 +794,22 @@ class StudentController extends Controller
     public function startLesson(int $courseId, int $lessonId, Request $request)
     {
         $student = Auth::user();
-        Enrollment::query()
+        $enrollment = Enrollment::query()
             ->where('user_id', $student->id)
             ->where('course_id', $courseId)
             ->firstOrFail();
 
-        CourseLesson::query()
+        $lesson = CourseLesson::query()
             ->where('course_id', $courseId)
             ->findOrFail($lessonId);
+        $course = Course::with(['modules.quiz.questions', 'modules.lessons.quizzes.questions', 'modules.lessons.activities'])
+            ->findOrFail($courseId);
+
+        abort_unless(
+            $this->lessonIsUnlockedForStudent($course, $lesson, (int) $student->id, $enrollment),
+            403,
+            'Complete the previous lessons and module assessment before opening this lesson.'
+        );
 
         $request->session()->put(
             $this->lessonTrackingSessionKey((int) $student->id, $courseId, $lessonId),
@@ -784,10 +819,7 @@ class StudentController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    /**
-     * Record a lesson completion only after an enrolled student has opened
-     * that lesson and spent the minimum reading interval on it.
-     */
+    /** Continue from lesson content into its first outstanding requirement. */
     public function completeLesson(int $courseId, int $lessonId, Request $request)
     {
         $student = Auth::user();
@@ -800,6 +832,14 @@ class StudentController extends Controller
         $lesson = CourseLesson::query()
             ->where('course_id', $courseId)
             ->findOrFail($lessonId);
+        $lesson->load(['quizzes.questions', 'activities']);
+
+        if (! $this->lessonIsUnlockedForStudent($course, $lesson, (int) $student->id, $enrollment)) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Complete the previous lessons and module assessment before continuing.',
+            ], 422);
+        }
 
         $alreadyVerified = DB::table('lesson_completions')
             ->where('user_id', $student->id)
@@ -812,42 +852,209 @@ class StudentController extends Controller
         if (! $alreadyVerified && (! $openedAt || now()->timestamp - $openedAt < 5)) {
             return response()->json([
                 'ok' => false,
-                'message' => 'Open the lesson and spend at least five seconds on it before marking it complete.',
+                'message' => 'Spend a few seconds in the lesson before continuing to its assessments.',
             ], 422);
         }
 
-        $this->progressService->persistLessonCompletions(
-            $course,
-            $student,
-            [(string) $lesson->id]
-        );
+        $request->session()->put($this->lessonContinuedSessionKey((int) $student->id, $courseId, $lessonId), now()->timestamp);
+        $completed = $this->progressService->completeLessonIfRequirementsSatisfied($course, $lesson, $enrollment);
 
-        $lessonIds = $course->modules->flatMap(fn ($module) => $module->lessons)->pluck('id');
-        $verifiedLessonIds = DB::table('lesson_completions')
-            ->where('user_id', $student->id)
-            ->whereIn('lesson_id', $lessonIds)
-            ->whereNotNull('server_verified_at')
-            ->pluck('lesson_id')
-            ->map(fn ($id) => (string) $id)
-            ->all();
+        if ($completed) {
+            $this->completionService->evaluate($enrollment);
+            $request->session()->forget($sessionKey);
+        }
 
-        $state = (array) ($enrollment->progress_state ?? []);
-        $state['completed_lessons'] = $this->progressService->resolveCompletedLessons(
-            $course,
-            $verifiedLessonIds,
-            $enrollment
-        );
-        $enrollment->progress_state = $state;
-        $enrollment->save();
-        $this->progressService->syncLessonsCompletedFlag($course, $enrollment);
-        $request->session()->forget($sessionKey);
+        $nextRequirement = $completed ? ['url' => null, 'pending_review' => false] : $this->nextRequiredLessonAssessment($lesson, $enrollment);
 
-        return response()->json(['ok' => true]);
+        return response()->json([
+            'ok' => true,
+            'completed' => $completed,
+            'next_url' => $nextRequirement['url'],
+            'pending_review' => $nextRequirement['pending_review'],
+            'progress_percent' => (int) $enrollment->fresh()->progress_percent,
+            'progress_breakdown' => $this->progressService->progressBreakdown($course, (int) $student->id, $enrollment->enrolled_at),
+            'message' => $nextRequirement['pending_review'] && ! $nextRequirement['url']
+                ? 'Your assignment is waiting for faculty review.'
+                : null,
+        ]);
     }
 
     private function lessonTrackingSessionKey(int $userId, int $courseId, int $lessonId): string
     {
         return 'lesson_tracking.'.$userId.'.'.$courseId.'.'.$lessonId;
+    }
+
+    private function lessonContinuedSessionKey(int $userId, int $courseId, int $lessonId): string
+    {
+        return 'lesson_continued.'.$userId.'.'.$courseId.'.'.$lessonId;
+    }
+
+    /** @return array{url: ?string, pending_review: bool} */
+    private function nextRequiredLessonAssessment(CourseLesson $lesson, Enrollment $enrollment): array
+    {
+        $lesson->loadMissing(['activities', 'quizzes.questions']);
+        $requirements = collect();
+
+        foreach ($lesson->activities->where('is_active', true)->where('is_required', true) as $activity) {
+            if ($enrollment->enrolled_at && $activity->created_at && $activity->created_at->gt($enrollment->enrolled_at)) {
+                continue;
+            }
+
+            $requirements->push(['kind' => 'activity', 'sort_order' => (int) $activity->sort_order, 'item' => $activity]);
+        }
+
+        foreach ($lesson->quizzes->where('is_active', true) as $quiz) {
+            if (($enrollment->enrolled_at && $quiz->created_at && $quiz->created_at->gt($enrollment->enrolled_at)) || $quiz->questions->isEmpty()) {
+                continue;
+            }
+
+            $requirements->push(['kind' => 'quiz', 'sort_order' => (int) $quiz->sort_order, 'item' => $quiz]);
+        }
+
+        $pendingReview = false;
+        foreach ($requirements->sortBy('sort_order') as $requirement) {
+            $item = $requirement['item'];
+
+            if ($requirement['kind'] === 'activity') {
+                $acceptedStatuses = $item->activity_type === 'assignment' ? ['passed'] : ['completed', 'passed'];
+                if ($item->submissions()->where('user_id', $enrollment->user_id)->whereIn('status', $acceptedStatuses)->exists()) {
+                    continue;
+                }
+
+                $latestSubmission = $item->submissions()->where('user_id', $enrollment->user_id)->latest('attempt_number')->first();
+                if ($item->activity_type === 'assignment' && $latestSubmission?->status === 'submitted') {
+                    return ['url' => null, 'pending_review' => true];
+                }
+
+                return ['url' => route('lesson-activities.show', $item->id), 'pending_review' => $pendingReview];
+            }
+
+            if (QuizAttempt::query()
+                ->where('quiz_id', $item->id)
+                ->where('user_id', $enrollment->user_id)
+                ->where('passed', true)
+                ->whereNotNull('submitted_at')
+                ->exists()) {
+                continue;
+            }
+
+            return ['url' => route('quiz.show', $item->id), 'pending_review' => $pendingReview];
+        }
+
+        return ['url' => null, 'pending_review' => $pendingReview];
+    }
+
+    private function lessonActivitiesSatisfied(CourseLesson $lesson, int $userId, ?Carbon $enrolledAt): bool
+    {
+        foreach ($lesson->activities->where('is_active', true)->where('is_required', true) as $activity) {
+            if ($enrolledAt && $activity->created_at && $activity->created_at->gt($enrolledAt)) {
+                continue;
+            }
+            $accepted = $activity->activity_type === 'assignment' ? ['passed'] : ['completed', 'passed'];
+            if (! $activity->submissions()->where('user_id', $userId)->whereIn('status', $accepted)->exists()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function lessonRequirementsSatisfied(CourseLesson $lesson, int $userId, ?Carbon $enrolledAt): bool
+    {
+        if (! $this->lessonActivitiesSatisfied($lesson, $userId, $enrolledAt)) {
+            return false;
+        }
+
+        foreach ($lesson->quizzes->where('is_active', true) as $quiz) {
+            if ($enrolledAt && $quiz->created_at && $quiz->created_at->gt($enrolledAt)) {
+                continue;
+            }
+            if ($quiz->questions->isEmpty()) {
+                continue;
+            }
+
+            if (! QuizAttempt::query()->where('quiz_id', $quiz->id)->where('user_id', $userId)->where('passed', true)->whereNotNull('submitted_at')->exists()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function lessonIsServerVerified(int $lessonId, int $userId): bool
+    {
+        return DB::table('lesson_completions')
+            ->where('lesson_id', $lessonId)
+            ->where('user_id', $userId)
+            ->whereNotNull('server_verified_at')
+            ->exists();
+    }
+
+    private function lessonIsUnlockedForStudent(Course $course, CourseLesson $targetLesson, int $userId, Enrollment $enrollment): bool
+    {
+        foreach ($course->modules as $module) {
+            foreach ($module->lessons as $lesson) {
+                if ((int) $lesson->id === (int) $targetLesson->id) {
+                    return true;
+                }
+
+                if (! $this->lessonIsServerVerified((int) $lesson->id, $userId)
+                    || ! $this->lessonRequirementsSatisfied($lesson, $userId, $enrollment->enrolled_at)) {
+                    return false;
+                }
+            }
+
+            if ($module->quiz && $module->quiz->questions->isNotEmpty()
+                && ! QuizAttempt::query()
+                    ->where('quiz_id', $module->quiz->id)
+                    ->where('user_id', $userId)
+                    ->where('passed', true)
+                    ->whereNotNull('submitted_at')
+                    ->exists()) {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    private function quizIsUnlockedForStudent(Quiz $quiz, int $userId): bool
+    {
+        $course = Course::with(['modules.quiz', 'modules.lessons.quizzes.questions', 'modules.lessons.activities'])
+            ->findOrFail($quiz->course_id);
+        $enrollment = Enrollment::query()->where('user_id', $userId)->where('course_id', $quiz->course_id)->first();
+        if (! $enrollment) {
+            return false;
+        }
+        $enrolledAt = $enrollment->enrolled_at;
+        $targetModuleId = $quiz->module_id ?: $quiz->lesson?->module_id;
+        $targetModuleIndex = $course->modules->search(fn ($module): bool => (int) $module->id === (int) $targetModuleId);
+        if ($targetModuleIndex === false) {
+            return false;
+        }
+
+        foreach ($course->modules->take($targetModuleIndex + 1) as $moduleIndex => $module) {
+            foreach ($module->lessons as $lesson) {
+                if ((int) $lesson->id === (int) $quiz->lesson_id) {
+                    return ($this->lessonIsServerVerified((int) $lesson->id, $userId)
+                            || session()->has($this->lessonContinuedSessionKey($userId, (int) $course->id, (int) $lesson->id)))
+                        && $this->lessonActivitiesSatisfied($lesson, $userId, $enrolledAt);
+                }
+
+                if (! $this->lessonIsServerVerified((int) $lesson->id, $userId)
+                    || ! $this->lessonRequirementsSatisfied($lesson, $userId, $enrolledAt)) {
+                    return false;
+                }
+            }
+
+            if ($moduleIndex < $targetModuleIndex && $module->quiz && $module->quiz->questions()->exists()) {
+                if (! QuizAttempt::query()->where('quiz_id', $module->quiz->id)->where('user_id', $userId)->where('passed', true)->whereNotNull('submitted_at')->exists()) {
+                    return false;
+                }
+            }
+        }
+
+        return $quiz->module_id !== null;
     }
 
     /**
@@ -859,16 +1066,295 @@ class StudentController extends Controller
         return redirect()->route('courses.learn', $courseId);
     }
 
-    public function quiz(int $id)
+    public function quiz(int $id, Request $request)
     {
-        return redirect()->route('dashboard');
+        $student = Auth::user();
+        $quiz = Quiz::with(['course', 'questions'])->where('is_active', true)->findOrFail($id);
+        $enrolled = Enrollment::query()->where('user_id', $student->id)->where('course_id', $quiz->course_id)->exists();
+        abort_unless($enrolled, 403);
+        abort_unless($this->quizIsUnlockedForStudent($quiz, (int) $student->id), 403, 'Complete the required course content before taking this quiz.');
+        $status = $this->quizAttempts->retakeStatus($quiz, (int) $student->id);
+        $latestAttempt = QuizAttempt::query()->where('quiz_id', $quiz->id)->where('user_id', $student->id)->latest('submitted_at')->first();
+        $timeLimitSeconds = max(0, (int) $quiz->time_limit * 60);
+        $sessionKey = $this->quizTrackingSessionKey((int) $student->id, (int) $quiz->id);
+        if ($status['exhausted'] || $status['unlock']) {
+            session()->forget($sessionKey);
+        } elseif ($timeLimitSeconds > 0 && ! session()->has($sessionKey)) {
+            session()->put($sessionKey, now()->timestamp);
+        }
+        $quizStartedAt = $timeLimitSeconds > 0 ? (int) session()->get($sessionKey, now()->timestamp) : null;
+
+        $viewData = [
+            'user' => UserPresenter::student($student),
+            'quiz' => $quiz,
+            'status' => $status,
+            'latestAttempt' => $latestAttempt,
+            'time_limit_seconds' => $timeLimitSeconds,
+            'timer_remaining_seconds' => $quizStartedAt === null
+                ? null
+                : max(0, $timeLimitSeconds - (now()->timestamp - $quizStartedAt)),
+        ];
+
+        if ($request->expectsJson() && $quiz->lesson_id) {
+            return response()->json([
+                'html' => view('student.courses.partials.lesson-quiz', $viewData)->render(),
+            ]);
+        }
+
+        return view('student.quiz', $viewData);
+    }
+
+    public function startQuiz(int $id, Request $request)
+    {
+        $student = Auth::user();
+        $quiz = Quiz::with(['course', 'questions'])->where('is_active', true)->findOrFail($id);
+        abort_unless(Enrollment::query()->where('user_id', $student->id)->where('course_id', $quiz->course_id)->exists(), 403);
+        abort_unless($this->quizIsUnlockedForStudent($quiz, (int) $student->id), 403, 'Complete the required course content before taking this quiz.');
+
+        $status = $this->quizAttempts->retakeStatus($quiz, (int) $student->id);
+        if ($status['exhausted'] || $status['unlock'] !== null) {
+            $request->session()->forget($this->quizTrackingSessionKey((int) $student->id, (int) $quiz->id));
+
+            return response()->json(['ok' => false, 'message' => 'This quiz is not currently available.'], 409);
+        }
+
+        $timeLimitSeconds = max(0, (int) $quiz->time_limit * 60);
+        $startedAt = null;
+        $deadline = null;
+        if ($timeLimitSeconds > 0) {
+            $sessionKey = $this->quizTrackingSessionKey((int) $student->id, (int) $quiz->id);
+            $startedAt = (int) $request->session()->get($sessionKey, 0);
+            if ($startedAt <= 0) {
+                $startedAt = now()->timestamp;
+                $request->session()->put($sessionKey, $startedAt);
+            }
+            $deadline = ($startedAt + $timeLimitSeconds) * 1000;
+        }
+
+        return response()->json(['ok' => true, 'deadline' => $deadline]);
+    }
+
+    private function quizTrackingSessionKey(int $userId, int $quizId): string
+    {
+        return 'quiz_tracking.'.$userId.'.'.$quizId;
+    }
+
+    public function submitStandaloneQuiz(int $id, Request $request)
+    {
+        $student = Auth::user();
+        $quiz = Quiz::with(['course', 'questions'])->where('is_active', true)->findOrFail($id);
+        abort_unless(Enrollment::query()->where('user_id', $student->id)->where('course_id', $quiz->course_id)->exists(), 403);
+        abort_unless($this->quizIsUnlockedForStudent($quiz, (int) $student->id), 403, 'Complete the required course content before taking this quiz.');
+        $startedAt = null;
+        if ((int) $quiz->time_limit > 0) {
+            $sessionKey = $this->quizTrackingSessionKey((int) $student->id, (int) $quiz->id);
+            $startedAt = (int) $request->session()->get($sessionKey, 0);
+            abort_if($startedAt <= 0, 422, 'Start the quiz before submitting your answers.');
+        }
+
+        $data = $request->validate([
+            'answers' => ['nullable', 'array'],
+            'answers.*' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $answers = (array) ($data['answers'] ?? []);
+        $allowedIds = $quiz->questions->pluck('id')->map(fn ($questionId) => (string) $questionId)->all();
+        abort_if(array_diff(array_keys($answers), $allowedIds) !== [], 422, 'The submitted quiz contains an invalid question.');
+        if ((int) $quiz->time_limit > 0) {
+            if (now()->timestamp - $startedAt > ((int) $quiz->time_limit * 60) + 5) {
+                $answers = [];
+            }
+        }
+
+        $result = $this->quizAttempts->submit($student, $quiz, ['answers' => $answers], $startedAt > 0 ? Carbon::createFromTimestamp($startedAt) : null);
+        if ($result['blocked']) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'No attempt is currently available. Check the attempt limit and retake lockout.',
+                ], 409);
+            }
+
+            return back()->withErrors(['quiz' => 'No attempt is currently available. Check the attempt limit and retake lockout.']);
+        }
+        if ((int) $quiz->time_limit > 0) {
+            $request->session()->forget($this->quizTrackingSessionKey((int) $student->id, (int) $quiz->id));
+        }
+
+        $enrollment = Enrollment::query()->where('user_id', $student->id)->where('course_id', $quiz->course_id)->firstOrFail();
+        $course = Course::with(['modules.quiz.questions', 'modules.lessons.quizzes.questions', 'modules.lessons.activities'])->findOrFail($quiz->course_id);
+        $lessonCompleted = false;
+        $nextRequirement = ['url' => null, 'pending_review' => false];
+
+        if ($quiz->lesson_id && $result['passed']) {
+            $lesson = CourseLesson::query()->findOrFail($quiz->lesson_id);
+            $lessonCompleted = $this->progressService->completeLessonIfRequirementsSatisfied($course, $lesson, $enrollment);
+            if ($lessonCompleted) {
+                $request->session()->forget($this->lessonTrackingSessionKey((int) $student->id, (int) $course->id, (int) $lesson->id));
+            } else {
+                $nextRequirement = $this->nextRequiredLessonAssessment($lesson, $enrollment);
+            }
+        }
+
+        $this->progressService->syncEnrollmentProgress($course, $enrollment);
+        $this->completionService->evaluate($enrollment);
+
+        if ($request->expectsJson()) {
+            $nextRequirement = $quiz->lesson_id && $result['passed'] && ! $lessonCompleted
+                ? $this->nextRequiredLessonAssessment(CourseLesson::query()->findOrFail($quiz->lesson_id), $enrollment)
+                : ['url' => null, 'pending_review' => false];
+
+            return response()->json([
+                'ok' => true,
+                'score' => $result['score'],
+                'passed' => $result['passed'],
+                'retake_unlock_at' => $result['unlock'],
+                'lesson_completed' => $lessonCompleted,
+                'next_url' => $nextRequirement['url'],
+                'pending_review' => $nextRequirement['pending_review'],
+                'progress_percent' => (int) $enrollment->fresh()->progress_percent,
+                'progress_breakdown' => $this->progressService->progressBreakdown($course, (int) $student->id, $enrollment->enrolled_at),
+            ]);
+        }
+
+        return redirect()->route('quiz.show', $quiz->id)->with('quiz_result', [
+            'score' => $result['score'],
+            'passed' => $result['passed'],
+            'lesson_completed' => $lessonCompleted,
+            'next_requirement_url' => $nextRequirement['url'],
+            'pending_review' => $nextRequirement['pending_review'],
+        ]);
+    }
+
+    public function showLessonActivity(int $id, Request $request)
+    {
+        $student = Auth::user();
+        $activity = LessonActivity::with(['lesson.course'])->where('is_active', true)->findOrFail($id);
+        $enrollment = Enrollment::query()
+            ->where('user_id', $student->id)
+            ->where('course_id', $activity->lesson->course_id)
+            ->firstOrFail();
+        $course = Course::with(['modules.quiz.questions', 'modules.lessons.quizzes.questions', 'modules.lessons.activities'])
+            ->findOrFail($activity->lesson->course_id);
+        abort_unless(
+            $this->lessonIsUnlockedForStudent($course, $activity->lesson, (int) $student->id, $enrollment),
+            403,
+            'Complete the previous lessons and module assessment before opening this activity.'
+        );
+        abort_unless(
+            $this->lessonIsServerVerified((int) $activity->lesson_id, (int) $student->id)
+                || session()->has($this->lessonContinuedSessionKey((int) $student->id, (int) $activity->lesson->course_id, (int) $activity->lesson_id)),
+            403,
+            'Open the lesson and select Continue before starting its activities.'
+        );
+        $submissions = $activity->submissions()->where('user_id', $student->id)->latest('attempt_number')->get();
+
+        $viewData = [
+            'user' => UserPresenter::student($student),
+            'activity' => $activity,
+            'submissions' => $submissions,
+            'lesson_completed' => $this->lessonIsServerVerified((int) $activity->lesson_id, (int) $student->id),
+        ];
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'html' => view('student.courses.partials.lesson-activity', $viewData)->render(),
+            ]);
+        }
+
+        return view('student.lesson-activity', $viewData);
+    }
+
+    public function submitLessonActivity(int $id, Request $request)
+    {
+        $student = Auth::user();
+        $activity = LessonActivity::with('lesson')->where('is_active', true)->findOrFail($id);
+        $enrollment = Enrollment::query()->where('user_id', $student->id)->where('course_id', $activity->lesson->course_id)->firstOrFail();
+        $course = Course::with(['modules.quiz.questions', 'modules.lessons.quizzes.questions', 'modules.lessons.activities'])
+            ->findOrFail($activity->lesson->course_id);
+        abort_unless(
+            $this->lessonIsUnlockedForStudent($course, $activity->lesson, (int) $student->id, $enrollment),
+            403,
+            'Complete the previous lessons and module assessment before submitting this activity.'
+        );
+        abort_unless(
+            $this->lessonIsServerVerified((int) $activity->lesson_id, (int) $student->id)
+                || $request->session()->has($this->lessonContinuedSessionKey((int) $student->id, (int) $activity->lesson->course_id, (int) $activity->lesson_id)),
+            403,
+            'Open the lesson and select Continue before submitting its activities.'
+        );
+        $data = $request->validate([
+            'response_text' => ['nullable', 'string', 'max:20000', 'required_without:submission_file'],
+            'submission_file' => ['nullable', 'file', 'mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,png,jpg,jpeg,zip', 'max:10240'],
+        ]);
+        $path = null;
+        if ($request->hasFile('submission_file')) {
+            $path = Storage::disk('local')->putFile('lesson-activity-submissions', $request->file('submission_file'));
+        }
+
+        $attemptNumber = ((int) $activity->submissions()->where('user_id', $student->id)->max('attempt_number')) + 1;
+        $submission = $activity->submissions()->create([
+            'user_id' => $student->id,
+            'attempt_number' => $attemptNumber,
+            'response_text' => trim((string) ($data['response_text'] ?? '')) ?: null,
+            'submission_path' => $path,
+            'status' => $activity->activity_type === 'assignment' ? 'submitted' : 'completed',
+            'submitted_at' => now(),
+        ]);
+
+        $lessonCompleted = $this->progressService->completeLessonIfRequirementsSatisfied($course, $activity->lesson, $enrollment);
+        if (! $lessonCompleted) {
+            $this->syncEnrollmentProgress($course, $enrollment);
+        } else {
+            $request->session()->forget($this->lessonTrackingSessionKey((int) $student->id, (int) $course->id, (int) $activity->lesson_id));
+        }
+
+        $this->completionService->evaluate($enrollment);
+        $nextRequirement = $lessonCompleted
+            ? ['url' => null, 'pending_review' => false]
+            : $this->nextRequiredLessonAssessment($activity->lesson, $enrollment);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'status' => $submission->status,
+                'lesson_completed' => $lessonCompleted,
+                'next_url' => $nextRequirement['url'],
+                'pending_review' => $nextRequirement['pending_review'],
+                'message' => $submission->status === 'submitted'
+                    ? 'Your assignment was submitted and is waiting for faculty review.'
+                    : 'Your activity was submitted.',
+                'progress_percent' => (int) $enrollment->fresh()->progress_percent,
+                'progress_breakdown' => $this->progressService->progressBreakdown($course, (int) $student->id, $enrollment->enrolled_at),
+            ]);
+        }
+
+        return redirect()->route('lesson-activities.show', $activity->id)->with('activity_result', [
+            'message' => 'Your activity response was submitted.',
+            'lesson_completed' => $lessonCompleted,
+            'next_requirement_url' => $nextRequirement['url'],
+            'pending_review' => $nextRequirement['pending_review'],
+        ]);
+    }
+
+    public function downloadLessonActivitySubmission(int $submissionId)
+    {
+        $student = Auth::user();
+        $submission = LessonActivitySubmission::with(['activity.lesson.course'])->findOrFail($submissionId);
+        $isStudentOwner = (int) $submission->user_id === (int) $student->id;
+        $isFacultyOwner = $student->isFaculty()
+            && (int) $submission->activity->lesson->course->created_by === (int) $student->id;
+        abort_unless($isStudentOwner || $isFacultyOwner, 403);
+        abort_unless($submission->submission_path && Storage::disk('local')->exists($submission->submission_path), 404);
+
+        return Storage::disk('local')->download($submission->submission_path, basename($submission->submission_path));
     }
 
     // ── Real-time progress saving ───────────────────────────────────────
 
     /**
-     * Called via fetch() from the course player every time the student
-     * marks a lesson complete or submits a quiz. Persists the exact player
+     * Called via fetch() from the course player as the student continues
+     * from lesson content or submits a quiz. Persists the exact player
      * state (completed lessons + per-module quiz scores) and keeps
      * enrollments.progress_percent current, so the dashboard, browse and
      * course-description pages always show the real percentage.
@@ -1020,7 +1506,18 @@ class StudentController extends Controller
 
     private function calculateProgressPercent($course, array $moduleScores): int
     {
-        return $this->progressService->calculateProgressPercent($course, $moduleScores);
+        $userId = (int) Auth::id();
+        $enrollment = Enrollment::query()
+            ->where('user_id', $userId)
+            ->where('course_id', $course->id)
+            ->first();
+
+        return $this->progressService->calculateProgressPercent(
+            $course,
+            $moduleScores,
+            $userId,
+            $enrollment?->enrolled_at
+        );
     }
 
     private function quizLastEditedAt($quiz)
@@ -1044,7 +1541,7 @@ class StudentController extends Controller
         ]);
 
         $student = Auth::user();
-        $course = Course::with('modules.lessons')->findOrFail($id);
+        $course = Course::with(['modules.lessons.quizzes.questions', 'modules.lessons.activities', 'modules.quiz.questions'])->findOrFail($id);
         $enrollment = Enrollment::query()
             ->where('user_id', $student->id)
             ->where('course_id', $course->id)
@@ -1080,7 +1577,12 @@ class StudentController extends Controller
             (array) ($data['module_scores'] ?? []),
             (int) $student->id
         );
-        $percent = $this->progressService->calculateProgressPercent($course, $moduleScores);
+        $percent = $this->progressService->calculateProgressPercent(
+            $course,
+            $moduleScores,
+            (int) $student->id,
+            $enrollment->enrolled_at
+        );
         $courseLessonIds = $course->modules
             ->flatMap(fn ($module) => $module->lessons)
             ->pluck('id');
@@ -1108,8 +1610,41 @@ class StudentController extends Controller
                 continue;
             }
 
-            $submission = $this->quizAttempts->submit($student, $quiz, $result);
+            if (! $this->quizIsUnlockedForStudent($quiz, (int) $student->id)) {
+                $quizSubmissions[(string) $moduleIndex] = ['blocked' => true, 'score' => null, 'passed' => false, 'unlock' => null];
+
+                continue;
+            }
+
+            $startedAt = null;
+            if ((int) $quiz->time_limit > 0) {
+                $sessionKey = $this->quizTrackingSessionKey((int) $student->id, (int) $quiz->id);
+                $startedAt = (int) $request->session()->get($sessionKey, 0);
+                if ($startedAt <= 0) {
+                    $quizSubmissions[(string) $moduleIndex] = [
+                        'blocked' => true,
+                        'score' => null,
+                        'passed' => false,
+                        'message' => 'Start the quiz before submitting your answers.',
+                    ];
+
+                    continue;
+                }
+                if (now()->timestamp - $startedAt > ((int) $quiz->time_limit * 60) + 5) {
+                    $result['answers'] = [];
+                }
+            }
+
+            $submission = $this->quizAttempts->submit(
+                $student,
+                $quiz,
+                $result,
+                $startedAt > 0 ? Carbon::createFromTimestamp($startedAt) : null
+            );
             $quizSubmissions[(string) $moduleIndex] = $submission;
+            if (! $submission['blocked'] && (int) $quiz->time_limit > 0) {
+                $request->session()->forget($this->quizTrackingSessionKey((int) $student->id, (int) $quiz->id));
+            }
             if ($submission['blocked']) {
                 unset($moduleScores[(string) $moduleIndex], $moduleScores[(int) $moduleIndex]);
                 if ($submission['unlock'] !== null) {
@@ -1129,7 +1664,12 @@ class StudentController extends Controller
             $moduleScores,
             (int) $student->id
         );
-        $percent = $this->progressService->calculateProgressPercent($course, $moduleScores);
+        $progressBreakdown = $this->progressService->progressBreakdown(
+            $course,
+            (int) $student->id,
+            $enrollment->enrolled_at
+        );
+        $percent = $progressBreakdown['percent'];
         $progressState = (array) $enrollment->progress_state;
         $progressState['module_scores'] = $moduleScores;
         $enrollment->progress_percent = $percent;
@@ -1169,6 +1709,7 @@ class StudentController extends Controller
         return response()->json([
             'ok' => true,
             'percent' => (int) $enrollment->progress_percent,
+            'progress_breakdown' => $progressBreakdown,
             'badge_awarded' => $badgeAwarded,
             'quiz_unlocks' => (object) $quizUnlocks,
             'quiz_attempts' => (object) $quizAttemptSummary,
@@ -1204,33 +1745,39 @@ class StudentController extends Controller
             ], 422);
         }
 
-        if (! $this->courseCompletion->isReady($course, $enrollment)) {
+        $enrollment = $this->completionService->evaluate($enrollment);
+        $learningRequirementsComplete = $enrollment->lessons_completed
+            && $enrollment->quizzes_completed
+            && $enrollment->quiz_mastery_met
+            && $enrollment->competency_mastery_met;
+
+        if (! $learningRequirementsComplete) {
             return response()->json([
                 'ok' => false,
                 'completed' => $this->completionService->isOfficiallyCompleted($enrollment),
                 'progress_percent' => (int) $enrollment->progress_percent,
-                'message' => 'Finish the required lessons and quizzes before completing this course.',
+                'message' => 'Finish all required lessons, activities, quizzes, and competency requirements before requesting course completion.',
             ], 422);
         }
 
-        // Phase 3 fix: isReady() above remains only the existing
-        // lessons/quizzes readiness check (kept for this 422 response's
-        // shape/UX) — it no longer directly awards anything.
-        // finalizeCompletion() now runs the real institutional gate chain
+        // finalizeCompletion() runs the real institutional gate chain
         // via MicrocredentialCompletionService and only issues credentials
         // once completion_status genuinely reaches 'completed'.
         $badgeAwarded = $this->finalizeCompletion($student, $course, $enrollment);
         $enrollment = $enrollment->fresh();
         $officiallyCompleted = $this->completionService->isOfficiallyCompleted($enrollment);
+        $awaitingInstitutionalReview = $enrollment->completion_status === MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION;
 
         return response()->json([
             'ok' => true,
             'completed' => $officiallyCompleted,
-            'progress_percent' => 100,
-            'pending_review' => ! $officiallyCompleted,
+            'progress_percent' => (int) $enrollment->progress_percent,
+            'pending_review' => $awaitingInstitutionalReview,
             'message' => $officiallyCompleted
                 ? null
-                : 'Your course requirements are complete. Official completion is pending institutional review.',
+                : ($awaitingInstitutionalReview
+                    ? 'Your learning requirements are complete. Official completion is pending institutional review.'
+                    : 'Your learning requirements are complete. Additional configured course requirements are still pending.'),
             'badge_awarded' => $badgeAwarded,
             'certificate_available' => $course->certificate_enabled
                 && $student->certificates()->where('course_id', $course->id)->exists(),
@@ -1538,7 +2085,12 @@ class StudentController extends Controller
     public function pathways()
     {
         $auth = Auth::user();
-        $enrollments = Enrollment::with('course')->where('user_id', $auth->id)->get();
+        $enrollments = Enrollment::with([
+            'course.modules.quiz.questions',
+            'course.modules.lessons.quizzes.questions',
+            'course.modules.lessons.activities',
+        ])->where('user_id', $auth->id)->get();
+        $enrollments->each(fn (Enrollment $enrollment) => $this->syncEnrollmentProgress($enrollment->course, $enrollment));
         $completed = $enrollments->where('completion_status', MicrocredentialCompletionService::STATUS_COMPLETED);
         $completedTitles = $completed->map(fn ($e) => $e->course->title ?? '')->filter()->values();
         $competencies = $completed
@@ -1756,82 +2308,61 @@ class StudentController extends Controller
     {
         $auth = Auth::user();
 
-        $enrollments = Enrollment::with('course.lessons')->where('user_id', $auth->id)->get();
+        $enrollments = Enrollment::with([
+            'course.modules.quiz.questions',
+            'course.modules.lessons.quizzes.questions',
+            'course.modules.lessons.activities',
+        ])->where('user_id', $auth->id)->get();
+        $enrollments->each(fn (Enrollment $enrollment) => $this->syncEnrollmentProgress($enrollment->course, $enrollment));
 
         $avgScore = QuizAttempt::where('user_id', $auth->id)->avg('score');
+        $recentQuizAttempts = QuizAttempt::query()
+            ->with('quiz.course')
+            ->where('user_id', $auth->id)
+            ->latest('submitted_at')
+            ->limit(20)
+            ->get();
 
-        // Only courses the student is still taking — a course that reaches
-        // 100% leaves this list and moves into "Enrolled Courses".
-        $activeCourses = $enrollments
-            ->filter(fn (Enrollment $e) => $e->completion_status !== MicrocredentialCompletionService::STATUS_COMPLETED)
-            ->map(function (Enrollment $e) {
-                $students = $e->course ? $e->course->enrollments()->count() : 0;
-                $faculty = 1;
-
-                return (object) [
-                    'title' => $e->course->title ?? 'Course',
-                    'meta' => $students.' Students · '.$faculty.' Faculty',
-                    'thumbnail_url' => $e->course->thumbnail_url ?? null,
-                    'percent' => (int) $e->progress_percent,
-                ];
-            })->values();
-
-        // Completed courses — shown under "Enrolled Courses".
-        $enrolledCourses = $enrollments
-            ->filter(fn (Enrollment $e) => $e->completion_status === MicrocredentialCompletionService::STATUS_COMPLETED)
-            ->sortByDesc('updated_at')
-            ->map(function (Enrollment $e) {
-                $students = $e->course ? $e->course->enrollments()->count() : 0;
-
-                return (object) [
-                    'title' => $e->course->title ?? 'Course',
-                    'meta' => $students.' Students · 1 Faculty',
-                    'thumbnail_url' => $e->course->thumbnail_url ?? null,
-                    'percent' => (int) $e->progress_percent,
-                ];
-            })->values();
-
-        // Completion Rate dropdown data: every enrolled course + its own %.
+        // Analytics progress rows: each enrolled course and its stored status.
         $completionCourses = $enrollments
             ->sortBy('course.title')
             ->map(fn (Enrollment $e) => (object) [
                 'title' => $e->course->title ?? 'Course',
                 'percent' => (int) round((float) $e->progress_percent),
+                'status' => match ($e->completion_status) {
+                    MicrocredentialCompletionService::STATUS_COMPLETED => 'Complete',
+                    MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION => 'Awaiting verification',
+                    default => 'In progress',
+                },
             ])->values();
-
-        [$enrollmentByCourse, $completionRate] = $this->courseCharts();
-
-        $recentBadges = UserBadge::query()
-            ->join('badges', 'badges.id', '=', 'user_badges.badge_id')
-            ->where('user_badges.user_id', $auth->id)
-            ->where('user_badges.status', 'active')
-            ->select('badges.name', DB::raw('COUNT(*) as earned_count'))
-            ->groupBy('badges.name')
-            ->orderByDesc('earned_count')
-            ->limit(4)
-            ->get()
-            ->map(fn ($row) => (object) ['name' => $row->name, 'earned_count' => (int) $row->earned_count])
-            ->values();
 
         return view('student.analytics', [
             'user' => UserPresenter::student($auth),
             'stats' => [
-                'active_courses' => $enrollments->where('completion_status', '!=', MicrocredentialCompletionService::STATUS_COMPLETED)->count(),
-                'badges_earned' => $auth->badges()->count(),
-                'score_avg' => $avgScore !== null ? round((float) $avgScore, 1) : 0,
-                'hours_enrolled' => $this->enrolledHours($enrollments),
+                'completed_courses' => $enrollments->where('completion_status', MicrocredentialCompletionService::STATUS_COMPLETED)->count(),
+                'badges_earned' => $auth->badges()->wherePivot('status', 'active')->count(),
+                'certificates' => $auth->certificates()->where('status', 'active')->count(),
+                'quiz_attempts_count' => QuizAttempt::where('user_id', $auth->id)->count(),
+                'score_avg' => $avgScore !== null ? round((float) $avgScore, 1) : null,
                 'competencies_mastered' => CompetencyProgress::where('user_id', $auth->id)
                     ->where('status', 'completed')
                     ->count(),
             ],
-            'activeCourses' => $activeCourses,
-            'enrolledCourses' => $enrolledCourses,
             'completionCourses' => $completionCourses,
-            'recentBadges' => $recentBadges,
-            'enrollmentByCourse' => $enrollmentByCourse,
-            'completionRate' => $completionRate,
+            'recentQuizAttempts' => $recentQuizAttempts,
             'analyticsSeries' => $this->studentAnalyticsSeries($auth->id, $enrollments),
         ]);
+    }
+
+    public function downloadAnalyticsReport()
+    {
+        $data = $this->analytics()->getData();
+        $data['generatedAt'] = now();
+        $data['preparedBy'] = Auth::user();
+
+        return Pdf::loadView('student.analytics-report-pdf', $data)
+            ->setPaper('a4', 'portrait')
+            ->download('Student-Learning-Report-'.now()->format('Y-m-d').'.pdf');
     }
 
     /**
@@ -1868,7 +2399,7 @@ class StudentController extends Controller
                 $bucketStart = fn (int $index) => $now->copy()->subDays(6 - $index)->startOfDay();
                 $bucketEnd = fn (int $index) => $bucketStart($index)->copy()->addDay();
             } else {
-                $labels = collect(range(3, 0))->map(fn (int $weeks) => 'Week '.(5 - $weeks))->all();
+                $labels = collect(range(3, 0))->map(fn (int $weeks) => $now->copy()->subWeeks($weeks)->startOfWeek()->format('M j'))->all();
                 $bucketStart = fn (int $index) => $now->copy()->subWeeks(4 - $index)->startOfWeek();
                 $bucketEnd = fn (int $index) => $bucketStart($index)->copy()->addWeek();
             }
@@ -1878,6 +2409,7 @@ class StudentController extends Controller
             $assessment = [];
             $streak = [];
             $active = [];
+            $lessons = [];
             $completedLessons = 0;
             $runningStreak = 0;
 
@@ -1886,6 +2418,7 @@ class StudentController extends Controller
                 $end = $bucketEnd($index);
                 $completed = $lessonCompletions->filter(fn (LessonCompletion $item) => $item->completed_at >= $start && $item->completed_at < $end);
                 $completedLessons += $completed->count();
+                $lessons[] = $completed->count();
                 $hours[] = round($completed->sum(fn (LessonCompletion $item) => $this->lessonDurationHours($item->lesson?->duration)), 2);
                 $scores = $attempts->filter(function (QuizAttempt $attempt) use ($start, $end) {
                     $date = $attempt->submitted_at ?? $attempt->created_at;
@@ -1903,6 +2436,7 @@ class StudentController extends Controller
             $series[$range] = [
                 'labels' => $labels,
                 'progress' => $progress,
+                'lessons' => $lessons,
                 'hours' => $hours,
                 'assessment' => $assessment,
                 'streak' => $streak,
@@ -1916,51 +2450,16 @@ class StudentController extends Controller
 
     private function lessonDurationHours(?string $duration): float
     {
-        $minutes = (float) preg_replace('/[^\d.]/', '', (string) $duration);
+        preg_match_all('/(\d+(?:\.\d+)?)\s*(hours?|hrs?|h|minutes?|mins?|m)?/i', (string) $duration, $matches, PREG_SET_ORDER);
+        $hours = 0.0;
 
-        return $minutes > 0 ? $minutes / 60 : 0.0;
-    }
+        foreach ($matches as $match) {
+            $value = (float) $match[1];
+            $unit = strtolower($match[2] ?? 'minutes');
+            $hours += in_array($unit, ['h', 'hr', 'hrs', 'hour', 'hours'], true) ? $value : $value / 60;
+        }
 
-    /**
-     * Shared chart rows: top courses by enrollment, plus average
-     * completion (progress) per course.
-     *
-     * @return array{0: Collection, 1: Collection}
-     */
-    private function courseCharts(): array
-    {
-        $rows = Enrollment::query()
-            ->join('courses', 'courses.id', '=', 'enrollments.course_id')
-            ->select(
-                'courses.title',
-                DB::raw('COUNT(*) as learners'),
-                DB::raw('AVG(enrollments.progress_percent) as avg_progress')
-            )
-            ->groupBy('courses.id', 'courses.title')
-            ->orderByDesc('learners')
-            ->limit(4)
-            ->get();
-
-        $max = max(1, (int) $rows->max('learners'));
-
-        $enrollmentByCourse = $rows->map(fn ($row) => (object) [
-            'label' => $this->shortTitle($row->title),
-            'value' => (int) $row->learners,
-            'percent' => (int) round($row->learners / $max * 100),
-        ])->values();
-
-        $completionRate = $rows->map(fn ($row) => (object) [
-            'label' => $this->shortTitle($row->title),
-            'value' => (int) round($row->avg_progress),
-            'percent' => (int) round($row->avg_progress),
-        ])->values();
-
-        return [$enrollmentByCourse, $completionRate];
-    }
-
-    private function shortTitle(string $title): string
-    {
-        return Str::limit($title, 14, '');
+        return $hours;
     }
 
     /** /courses → the browse screen. */
@@ -2033,7 +2532,7 @@ class StudentController extends Controller
 
         $complaint = Complaint::create([
             'user_id' => Auth::id(),
-            'source' => 'student',
+            'source' => Auth::user()->isFaculty() ? 'faculty' : 'student',
             'subject' => $data['subject'],
             'message' => trim($data['message']),
             'attachment_url' => $attachmentUrl,
@@ -2044,7 +2543,9 @@ class StudentController extends Controller
             'student_read_at' => now(),
         ]);
 
-        return redirect()->route('inbox.index', ['thread' => $complaint->id])
+        $inboxRoute = Auth::user()->isFaculty() ? 'faculty.inbox' : 'inbox.index';
+
+        return redirect()->route($inboxRoute, ['thread' => $complaint->id])
             ->with('success', 'Your message was sent to the administrators.');
     }
 
@@ -2055,11 +2556,12 @@ class StudentController extends Controller
             'body' => ['required', 'string', 'max:5000'],
         ]);
 
-        $complaint = Complaint::where('user_id', Auth::id())->findOrFail($id);
+        $user = Auth::user();
+        $complaint = Complaint::where('user_id', $user->id)->findOrFail($id);
 
         ComplaintReply::create([
             'complaint_id' => $complaint->id,
-            'user_id' => Auth::id(),
+            'user_id' => $user->id,
             'body' => trim($data['body']),
             'is_admin' => false,
         ]);
@@ -2068,7 +2570,9 @@ class StudentController extends Controller
         $complaint->student_read_at = now();
         $complaint->save();
 
-        return redirect()->route('inbox.index', ['thread' => $complaint->id]);
+        $inboxRoute = $user->isFaculty() ? 'faculty.inbox' : 'inbox.index';
+
+        return redirect()->route($inboxRoute, ['thread' => $complaint->id]);
     }
 
     /**
@@ -2097,7 +2601,3 @@ class StudentController extends Controller
         return $choice;
     }
 }
-
-
-
-

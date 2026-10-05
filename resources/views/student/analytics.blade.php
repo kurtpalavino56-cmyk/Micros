@@ -34,6 +34,9 @@
         .period-switch { display: flex; gap: 4px; padding: 4px; background: var(--card); border: 1px solid var(--border); border-radius: 999px; }
         .period-switch button { border: 0; border-radius: 999px; padding: 8px 16px; background: #fff; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 700; }
         .period-switch button.active { background: var(--blue); color: #fff; }
+        .download-report-btn { display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 13px;border:1px solid var(--navy);border-radius:7px;background:var(--navy);color:#fff;font-size:12px;font-weight:700;white-space:nowrap; }
+        .download-report-btn:hover { background:#202b91; }
+        .download-report-btn svg { width:16px;height:16px; }
         .stats-card, .analytics-card, .course-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 2px 8px rgba(23, 35, 60, .03); }
         .stats-card { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 16px; overflow: hidden; }
         .stat { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 14px clamp(12px, 1.5vw, 18px); }
@@ -77,10 +80,7 @@
         .course-percent { width: 34px; color: var(--text); font-size: 11px; font-weight: 800; text-align: right; }
         .status-complete { color: var(--green); font-weight: 700; }
         .status-progress { color: var(--muted); font-weight: 700; }
-        .student-sidebar-layout .student-sidebar {
-            top: 0;
-            margin: 0 10px 24px 0;
-        }
+        .status-review { color: #b54708; font-weight: 700; }
         @media (max-width: 800px) {
             .analytics-header { align-items: flex-start; flex-direction: column; }
             .period-switch { align-self: stretch; justify-content: space-between; }
@@ -101,8 +101,9 @@
             .course-table { min-width: 540px; }
         }
     </style>
+    @include('components.analytics-design')
 </head>
-<body>
+<body class="analytics-shell">
     @include('components.student-navigation')
     @php
         $courseCollection = collect($completionCourses ?? []);
@@ -117,32 +118,37 @@
             : 0;
         $weeklyHours = round(collect($weekSeries['hours'] ?? [])->sum(), 1);
         $activeDays = collect($weekSeries['active'] ?? [])->filter()->count();
-        $currentStreak = (int) (collect($weekSeries['streak'] ?? [])->max() ?? 0);
-        $assessmentAverage = round((float) ($stats['score_avg'] ?? 0), 1);
+        $currentStreak = collect($weekSeries['active'] ?? [])->reverse()->takeWhile(fn ($isActive) => (bool) $isActive)->count();
+        $assessmentAverage = isset($stats['score_avg']) ? round((float) $stats['score_avg'], 1) : null;
         $summaryStats = [
-            ['label' => 'Learning Progress', 'value' => $learningProgress . '%', 'icon' => 'trend'],
-            ['label' => 'Completion Rate', 'value' => $learningProgress . '%', 'icon' => 'check'],
-            ['label' => 'Assessment Average', 'value' => number_format($assessmentAverage, 1) . '%', 'icon' => 'award'],
-            ['label' => 'Learning Time', 'value' => $weeklyHours . 'h', 'icon' => 'clock'],
+            ['label' => 'Average Course Progress', 'value' => $learningProgress . '%', 'icon' => 'trend'],
+            ['label' => 'Courses Completed', 'value' => (int) ($stats['completed_courses'] ?? 0), 'icon' => 'check'],
+            ['label' => 'Assessment Average', 'value' => $assessmentAverage === null ? '—' : number_format($assessmentAverage, 1) . '%', 'icon' => 'award'],
+            ['label' => 'Est. Study Time / Week', 'value' => $weeklyHours . 'h', 'icon' => 'clock'],
         ];
         $courseRows = $courseCollection->map(fn ($course) => [
             'name' => $course->title ?? 'Course',
             'percent' => (int) ($course->percent ?? 0),
-            'status' => (int) ($course->percent ?? 0) >= 100 ? 'Complete' : 'In progress',
+            'status' => $course->status ?? 'In progress',
         ]);
     @endphp
     <div class="layout student-sidebar-layout">
         @include('components.student-sidebar')
         <main class="main">
             <div class="analytics-page">
-        <header class="analytics-header">
+        <header class="analytics-header student-page-heading">
             <div>
-                <p class="eyebrow">Performance overview</p>
                 <h1>My Analytics</h1>
                 <p class="subtitle">Track progress, activity, and assessment outcomes.</p>
             </div>
-            <div class="period-switch" role="group" aria-label="Analytics period">
-                <button type="button" data-period="day">Day</button><button type="button" class="active" data-period="week">Week</button><button type="button" data-period="month">Month</button>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <div class="period-switch" role="group" aria-label="Learning trend period">
+                    <button type="button" data-period="day">Day</button><button type="button" class="active" data-period="week">Week</button><button type="button" data-period="month">Month</button>
+                </div>
+                <a href="{{ route('analytics.report') }}" class="download-report-btn" title="Download your learning analytics report as a PDF">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 21h16"/></svg>
+                    Download Report
+                </a>
             </div>
         </header>
         <section class="stats-card" aria-label="Summary statistics">
@@ -165,24 +171,26 @@
         </section>
         <section class="analytics-grid" aria-label="Analytics details">
             <article class="analytics-card">
-                <div class="card-header"><div><h2>Learning Trend</h2><p>Weekly learning activity</p></div><span class="period-badge">WEEK</span></div>
+                <div class="card-header"><div><h2 id="learning-trend-title">Learning Trend</h2><p>Completed lesson time estimate</p></div><span class="period-badge" id="learning-trend-period">WEEK</span></div>
                 <div class="chart-wrap"><canvas id="learning-trend-chart"></canvas></div>
             </article>
             <article class="analytics-card">
-                <div class="card-header"><div><h2>Assessment performance</h2><p>Average score by assessment type</p></div><span class="assessment-percent">%</span></div>
-                <div class="assessment-row"><div class="assessment-label"><span>Quizzes</span><span>{{ number_format($assessmentAverage, 1) }}%</span></div><div class="progress-track"><div class="progress-fill" style="width:{{ min(100, max(0, $assessmentAverage)) }}%"></div></div></div>
+                <div class="card-header"><div><h2>Assessment performance</h2><p>Average score across your quiz attempts</p></div><span class="assessment-percent">%</span></div>
+                <div class="assessment-row"><div class="assessment-label"><span>Quizzes</span><span>{{ $assessmentAverage === null ? 'No attempts' : number_format($assessmentAverage, 1) . '%' }}</span></div><div class="progress-track"><div class="progress-fill" style="width:{{ min(100, max(0, $assessmentAverage ?? 0)) }}%"></div></div></div>
                 <div class="assessment-stats">
-                    <div class="mini-stat"><label>Competencies mastered</label><strong>{{ $stats['competencies_mastered'] ?? 0 }}</strong></div><div class="mini-stat"><label>Active learning days</label><strong>{{ $activeDays }}</strong></div>
-                    <div class="mini-stat"><label>Current streak</label><strong>{{ $currentStreak }}d</strong></div><div class="mini-stat"><label>Weekly hours</label><strong>{{ $weeklyHours }}h</strong></div>
+                    <div class="mini-stat"><label>Competencies mastered</label><strong>{{ $stats['competencies_mastered'] ?? 0 }}</strong></div><div class="mini-stat"><label>Active days this week</label><strong>{{ $activeDays }}</strong></div>
+                    <div class="mini-stat"><label>Current weekly streak</label><strong>{{ $currentStreak }}d</strong></div><div class="mini-stat"><label>Estimated lesson time this week</label><strong>{{ $weeklyHours }}h</strong></div>
                 </div>
             </article>
         </section>
         <section class="course-card" aria-labelledby="course-progress-title">
             <div class="course-header"><div><h2 id="course-progress-title">Course progress</h2><p>Progress across your enrolled courses</p></div><span class="course-count">{{ $courseRows->count() }} courses</span></div>
             <table class="course-table"><thead><tr><th>Course</th><th>Progress</th><th>Status</th></tr></thead><tbody>
-                @foreach ($courseRows as $course)
-                    <tr><td>{{ $course['name'] }}</td><td><div class="course-progress"><span class="progress-track"><span class="progress-fill" style="width:{{ $course['percent'] }}%"></span></span><span class="course-percent">{{ $course['percent'] }}%</span></div></td><td class="{{ $course['percent'] === 100 ? 'status-complete' : 'status-progress' }}">{{ $course['status'] }}</td></tr>
-                @endforeach
+                @forelse ($courseRows as $course)
+                    <tr><td>{{ $course['name'] }}</td><td><div class="course-progress"><span class="progress-track"><span class="progress-fill" style="width:{{ $course['percent'] }}%"></span></span><span class="course-percent">{{ $course['percent'] }}%</span></div></td><td class="{{ $course['status'] === 'Complete' ? 'status-complete' : ($course['status'] === 'Awaiting verification' ? 'status-review' : 'status-progress') }}">{{ $course['status'] }}</td></tr>
+                @empty
+                    <tr><td colspan="3" style="color:var(--muted);text-align:center;">Enroll in a course to see your progress here.</td></tr>
+                @endforelse
             </tbody></table>
         </section>
             </div>
@@ -192,8 +200,8 @@
         var analyticsSeries = @json($analyticsSeries ?? []);
         var learningTrendChart = new Chart(document.getElementById('learning-trend-chart'), {
             type: 'line',
-            data: { labels: @json($weekSeries['labels'] ?? []), datasets: [{ data: @json($weekSeries['hours'] ?? []), borderColor: '#1232D4', backgroundColor: 'rgba(18, 50, 212, .12)', fill: true, tension: .38, pointRadius: 4, pointHoverRadius: 5, pointBackgroundColor: '#1232D4', pointBorderColor: '#fff', pointBorderWidth: 2 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { displayColors: false } }, scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: '#718096', font: { size: 10 } } }, y: { min: 0, max: 12, ticks: { stepSize: 2, color: '#718096', font: { size: 10 } }, grid: { color: '#EDF1F7' }, border: { display: false } } } }
+            data: { labels: @json($weekSeries['labels'] ?? []), datasets: [{ label: 'Estimated hours', data: @json($weekSeries['hours'] ?? []), borderColor: '#1232D4', backgroundColor: 'rgba(18, 50, 212, .12)', fill: true, tension: .38, pointRadius: 4, pointHoverRadius: 5, pointBackgroundColor: '#1232D4', pointBorderColor: '#fff', pointBorderWidth: 2 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { displayColors: false } }, scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: '#718096', font: { size: 10 } } }, y: { min: 0, suggestedMax: 2, ticks: { stepSize: 1, color: '#718096', font: { size: 10 } }, grid: { color: '#EDF1F7' }, border: { display: false } } } }
         });
         document.querySelectorAll('[data-period]').forEach(function (button) {
             button.addEventListener('click', function () {
@@ -203,6 +211,8 @@
                 button.classList.add('active');
                 learningTrendChart.data.labels = series.labels;
                 learningTrendChart.data.datasets[0].data = series.hours;
+                learningTrendChart.options.scales.y.suggestedMax = Math.max(1, ...series.hours);
+                document.getElementById('learning-trend-period').textContent = button.dataset.period.toUpperCase();
                 learningTrendChart.update();
             });
         });

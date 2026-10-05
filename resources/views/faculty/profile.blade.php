@@ -40,6 +40,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Profile | Upskill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     {{-- Browser tab icon (favicon) --}}
     <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
@@ -61,23 +64,8 @@
     body{font-family:"Segoe UI", Roboto, Helvetica, Arial, sans-serif;color:var(--ink);margin:0;background:#fff;}
     a{text-decoration:none;color:inherit;}
     button{font-family:inherit;cursor:pointer;}
-
-    /* Topbar */
-    .topbar{background:var(--navy);display:flex;align-items:center;justify-content:space-between;padding:14px 28px;gap:20px;}
-    .brand{display:flex;align-items:center;gap:14px;color:#fff;white-space:nowrap;}
-    .brand .logo{width:46px;height:46px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .brand .logo img{width:100%;height:100%;object-fit:contain;border-radius:50%;padding:3px;}
-    .brand h1{font-size:24px;letter-spacing:1px;margin:0;font-weight:800;}
-    .nav-pills{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-items:center;}
-    .nav-pills a{background:transparent;color:#fff;font-weight:700;padding:10px 18px;border-radius:10px;font-size:15px;transition:color .15s ease, background-color .15s ease;}
-    .nav-pills a:hover{color:var(--gold);}
-    .nav-pills a.is-active{color:var(--gold);background:rgba(255,255,255,0.08);}
     .search-box{display:flex;align-items:center;gap:10px;background:#fff;border-radius:999px;padding:10px 18px;min-width:240px;color:var(--muted);}
     .search-box input{border:none;outline:none;font-size:15px;width:100%;color:var(--ink);background:transparent;}
-    .icon-cluster{display:flex;align-items:center;gap:14px;}
-    .icon-circle{width:42px;height:42px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 6px 16px rgba(19,23,107,0.12);transition:transform .2s ease, box-shadow .2s ease, background-color .2s ease;}
-    .icon-circle:hover{transform:translateY(-1px);box-shadow:0 10px 20px rgba(19,23,107,0.16);}
-    .icon-circle svg{width:22px;height:22px;color:var(--navy);}
     .notification-btn{position:relative;width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg, #ffffff 0%, #eef4ff 100%);border:1px solid rgba(19,23,107,0.08);}
     .notification-btn:hover{background:linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);}
     .notification-btn svg{width:21px;height:21px;}
@@ -85,20 +73,6 @@
 
     /* Layout */
     .layout{display:grid;grid-template-columns:264px 1fr;min-height:calc(100vh - 74px);align-items:start;}
-
-    /* Sidebar */
-    .sidebar{background:var(--navy);padding:26px 16px;display:flex;flex-direction:column;gap:6px;margin:24px 10px 24px 24px;border-radius:22px;box-shadow:0 16px 34px rgba(19,23,107,0.28);height:fit-content;position:sticky;top:20px;}
-    .side-link{display:flex;align-items:center;gap:14px;padding:14px;border-radius:14px;font-weight:700;font-size:16px;color:#fff;transition:color .15s ease;}
-    .side-link svg{width:26px;height:26px;flex-shrink:0;}
-    .side-link.active{background:var(--cyan);color:var(--navy);}
-    .side-icon-box{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(255,255,255,0.14);}
-    .side-icon-box svg{color:#fff;width:22px;height:22px;transition:color .15s ease;}
-    .side-link.active .side-icon-box{background:var(--navy);}
-    .side-link.plain .side-icon-box{background:transparent;}
-    .side-link.plain .side-icon-box svg{color:#fff;width:26px;height:26px;}
-    /* hover: text + icon turn gold (non-active links) */
-    .side-link:not(.active):hover{color:var(--gold);}
-    .side-link:not(.active):hover .side-icon-box svg{color:var(--gold);}
     .side-divider{border:none;border-top:1px solid rgba(255,255,255,0.25);margin:18px 6px;}
 
     /* Main */
@@ -342,7 +316,6 @@
     }
     @media (max-width:980px){
         .layout{grid-template-columns:1fr;}
-        .sidebar{flex-direction:column;position:static;margin:14px;border-radius:16px;}
         .courses-table-wrap{overflow-x:auto;}
     }
 
@@ -354,8 +327,6 @@
         html,body{overflow-x:hidden;}
 
         .main{padding:20px 16px 48px;}
-        .topbar{padding:12px 16px;gap:12px;flex-wrap:wrap;}
-        .brand h1{font-size:20px;}
         .search-box{min-width:0;flex:1;}
         .panel-head{font-size:17px;padding:12px 16px;}
         .panel-body{padding:18px;}
@@ -405,9 +376,6 @@
         .identity h3{font-size:20px;}
         .identity-grid{gap:10px 18px;}
         .chart{height:150px;}
-        .brand .logo{width:38px;height:38px;}
-        .brand h1{font-size:18px;}
-        .icon-cluster{gap:8px;}
     }
 </style>
 </head>
@@ -432,10 +400,10 @@
     {{-- Main content --}}
     <main class="main">
 
-        <div class="page-head">
+        <div class="page-head faculty-page-heading">
             <div>
-                <h2>My Profile</h2>
-                <p>Manage your Personal Information and Account Preferences</p>
+                <h2 class="faculty-page-title">My Profile</h2>
+                <p class="faculty-page-subtitle">Manage your Personal Information and Account Preferences</p>
             </div>
             <div class="page-actions">
                 <form action="{{ route('logout') }}" method="POST" style="display:inline;">

@@ -16,6 +16,7 @@
     "dependencies": {
         "@ckeditor/ckeditor5-image": "^48.5.2",
         "@ckeditor/ckeditor5-upload": "^48.5.2",
+        "alpinejs": "^3.17.4",
         "chart.js": "^4.5.1",
         "ckeditor5": "^48.5.2"
     }

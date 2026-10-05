@@ -51,6 +51,8 @@ class Course extends Model
         'target_learners',
         'delivery_mode',
         'learning_hours',
+        'assessment_strategy',
+        'grading_rubric',
         'mastery_passing_percent',
         'credit_bearing',
         'credit_equivalency',
@@ -201,4 +203,3 @@ class Course extends Model
         return $this->hasMany(StackingFrameworkRequirement::class);
     }
 }
-

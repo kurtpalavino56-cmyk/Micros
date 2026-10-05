@@ -10,7 +10,6 @@
         .recognition-main { padding:30px 32px 48px !important; box-sizing:border-box; }
         .recognition-content { max-width:1180px; margin:0 auto; }
         .recognition-head { margin-bottom:22px; }
-        .recognition-eyebrow { color:#a06f00; font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
         .recognition-head h1 { margin:5px 0; color:#0d1b6e; font-size:32px; line-height:1.15; }
         .recognition-head p { margin:0; color:#68758c; font-size:14px; }
         .notice { padding:12px 14px; border-radius:10px; margin-bottom:16px; font-size:13px; }
@@ -41,14 +40,34 @@
         <main class="main recognition-main">
             <div class="recognition-content">
                 <header class="recognition-head">
-                    <div class="recognition-eyebrow">Academic recognition</div>
-                    <h1>Academic Credit Recognition</h1>
-                    <p>Review completed stacking frameworks before academic credit is formally recorded.</p>
+                    <h1>Legacy Academic Credit Requests</h1>
+                    <p>Historical requests are retained for reference. UpSkill now prepares evidence reports; academic credit decisions and registrar recording must be completed through institutional processes outside this platform.</p>
                 </header>
 
                 @if(session('success'))<div class="notice ok">{{ session('success') }}</div>@endif
                 @if($errors->any())<div class="notice err">{{ $errors->first() }}</div>@endif
 
+                <h2>Students ready for an evidence report</h2>
+                <p>These stacking records meet the platform’s configured requirements. Generate a report to submit through the institution’s separate credit-review process.</p>
+                <section class="recognition-list" style="margin-bottom:24px;">
+                    @forelse($eligibleReports as $progress)
+                        @if($progress->user && $progress->framework)
+                            <article class="recognition-card">
+                                <div class="recognition-grid">
+                                    <div class="meta"><span>Student</span><strong>{{ $progress->user->name }}</strong></div>
+                                    <div class="meta"><span>Framework</span><strong>{{ $progress->framework->name }}</strong></div>
+                                    <div class="meta"><span>Platform status</span><strong>Requirements met</strong></div>
+                                    <div class="meta"><span>Ready since</span><strong>{{ $progress->requirements_met_at?->format('M j, Y') ?? '—' }}</strong></div>
+                                </div>
+                                <div class="actions"><a style="display:inline-block;border-radius:9px;padding:9px 14px;background:#0d1b6e;color:#fff;font-size:12px;font-weight:800;" href="{{ route('admin.credit-evidence', [$progress->user->id, $progress->framework->id]) }}" target="_blank" rel="noopener">Generate evidence report</a></div>
+                            </article>
+                        @endif
+                    @empty
+                        <div class="empty-card">No student stacking records have met their configured requirements yet.</div>
+                    @endforelse
+                </section>
+
+                <h2>Historical requests</h2>
                 <section class="recognition-list">
                     @forelse($recognitions as $record)
                         <article class="recognition-card">
@@ -56,13 +75,10 @@
                                 <div class="meta"><span>Learner</span><strong>{{ $record->user?->name ?? '—' }}</strong></div>
                                 <div class="meta"><span>Framework</span><strong>{{ $record->framework?->name ?? '—' }}</strong></div>
                                 <div class="meta"><span>Equivalent course</span><strong>{{ $record->framework?->equivalent_course ?? '—' }}</strong></div>
-                                <div class="meta"><span>Status</span><strong><span class="status {{ $record->status === 'registrar_recorded' ? 'done' : '' }}">{{ str_replace('_',' ',ucfirst($record->status)) }}</span></strong></div>
+                                <div class="meta"><span>Historical status</span><strong><span class="status {{ $record->status === 'registrar_recorded' ? 'done' : '' }}">{{ str_replace('_',' ',ucfirst($record->status)) }}</span></strong></div>
                             </div>
                             <div class="actions">
-                                @if($record->status==='pending')<form method="POST" action="{{ route('admin.academic-credit-recognition.recommend',$record->id) }}">@csrf<button>Recommend</button></form>@endif
-                                @if($record->status==='unit_recommended')<form method="POST" action="{{ route('admin.academic-credit-recognition.endorse',$record->id) }}">@csrf<button>Endorse</button></form>@endif
-                                @if($record->status==='dean_endorsed')<form method="POST" action="{{ route('admin.academic-credit-recognition.record',$record->id) }}">@csrf<button>Record as Registrar</button></form>@endif
-                                @if(in_array($record->status,['pending','unit_recommended','dean_endorsed'],true))<form method="POST" action="{{ route('admin.academic-credit-recognition.deny',$record->id) }}">@csrf<button class="danger">Deny</button></form>@endif
+                                @if($record->user && $record->framework)<a class="actions button" style="display:inline-block;border-radius:9px;padding:9px 14px;background:#0d1b6e;color:#fff;font-size:12px;font-weight:800;" href="{{ route('admin.credit-evidence', [$record->user->id, $record->framework->id]) }}" target="_blank" rel="noopener">Generate evidence report</a>@endif
                             </div>
                         </article>
                     @empty

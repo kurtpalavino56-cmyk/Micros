@@ -35,6 +35,16 @@ class CourseLesson extends Model
         return $this->hasMany(LessonCompletion::class, 'lesson_id');
     }
 
+    public function quizzes(): HasMany
+    {
+        return $this->hasMany(Quiz::class, 'lesson_id')->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(LessonActivity::class, 'lesson_id')->orderBy('sort_order');
+    }
+
     /**
      * Short "Video · 15m" style label used by the Faculty manage screen.
      */

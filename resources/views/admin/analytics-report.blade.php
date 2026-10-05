@@ -45,7 +45,6 @@
         /* ─── LAYOUT ─────────────────────────────────────────────── */
         .layout {
             display: flex;
-            margin-top: var(--topbar-h);
             min-height: calc(100vh - var(--topbar-h));
         }
 
@@ -59,12 +58,13 @@
         .main { margin-left: var(--sidebar-w); flex: 1; padding: 28px 30px 44px; }
         .analytics-page { max-width: 1480px; margin: 0 auto; }
         .page-header { display:flex; justify-content:space-between; align-items:flex-start; gap:24px; margin-bottom:20px; }
-        .eyebrow { color:#3c61c9; font-size:.72rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; margin-bottom:6px; }
         .page-title { color:#101d42; font-size:1.55rem; line-height:1.2; font-weight:800; letter-spacing:-.02em; }
         .page-subtitle { color:#69758c; font-size:.86rem; margin-top:7px; }
-        .header-actions { display:flex; flex-direction:column; align-items:flex-end; gap:10px; width:583px; }
+        .header-actions { display:flex; flex-direction:column; align-items:flex-end; gap:10px; width:min(100%, 583px); }
+        .download-report { display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid #1b317f;border-radius:7px;background:#fff;color:#173b99;font:700 .74rem 'Segoe UI',sans-serif;text-decoration:none; }
+        .download-report:hover { background:#edf2ff; }
         .segmented, .filter-row { display:flex; gap:5px; }
-        .filter-row { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); width:100%; }
+        .filter-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); width:100%; }
         .segmented { background:#e9eef9; border:1px solid #dce4f3; border-radius:8px; padding:3px; }
         .segment, .filter-select { border:0; background:transparent; color:#5c6880; font:600 .73rem 'Segoe UI',sans-serif; cursor:pointer; }
         .segment { padding:7px 11px; border-radius:6px; }
@@ -129,10 +129,10 @@
         @media (max-width:1200px) { .stats-grid { grid-template-columns:repeat(3,1fr); } }
         @media (max-width:900px) { .main { padding:22px 18px 35px; } .page-header { flex-direction:column; } .header-actions { align-items:flex-start; width:100%; } .dashboard-grid, .dashboard-grid.equal { grid-template-columns:1fr; } .attention-grid { grid-template-columns:repeat(2,1fr); } }
         @media (max-width:600px) { .stats-grid { grid-template-columns:repeat(2,1fr); } .filter-row, .segmented { flex-wrap:wrap; } .filter-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); } .card-heading { flex-direction:column; } .activity-tabs { align-self:flex-start; } .donut-wrap { gap:12px; } .donut { width:125px; height:125px; } .data-table { min-width:620px; } .table-card { overflow-x:auto; } .attention-grid { grid-template-columns:1fr; } .credential-grid { grid-template-columns:repeat(2,1fr); } .credential-metric:nth-child(2) { border-right:0; } }
-        .analytics-page :where(*, *::before, *::after) { border-radius:0 !important; }
     </style>
+    @include('components.analytics-design')
 </head>
-<body>
+<body class="analytics-shell">
 {{-- ════════════════════════════════════ TOP NAV ══════════════════════════════════ --}}
 @include('components.authenticated-topbar', ['user' => auth()->user()])
 <div class="layout">
@@ -144,7 +144,6 @@
     <div class="analytics-page">
         <header class="page-header">
             <div>
-                <div class="eyebrow">Data Analytics</div>
                 <h1 class="page-title">Platform Analytics</h1>
                 <p class="page-subtitle">Monitor learner engagement, course performance, competencies, and credential outcomes.</p>
             </div>
@@ -157,35 +156,50 @@
                 </div>
                 <div class="filter-row">
                     <select class="filter-select" name="category" aria-label="Category" onchange="this.form.submit()"><option value="">All Categories</option>@foreach ($categoryNames as $categoryName)<option value="{{ $categoryName }}" @selected($filters['category'] === $categoryName)>{{ $categoryName }}</option>@endforeach</select>
-                    <select class="filter-select" name="department" aria-label="Department" onchange="this.form.submit()"><option value="">All Departments</option>@foreach ($departmentNames as $departmentName)<option value="{{ $departmentName }}" @selected($filters['department'] === $departmentName)>{{ $departmentName }}</option>@endforeach</select>
                     <select class="filter-select" name="course" aria-label="Course" onchange="this.form.submit()"><option value="">All Courses</option>@foreach ($courseOptions as $courseOption)<option value="{{ $courseOption->id }}" @selected((string) $filters['course'] === (string) $courseOption->id)>{{ $courseOption->title }}</option>@endforeach</select>
-                    <select class="filter-select" name="faculty" aria-label="Faculty" onchange="this.form.submit()"><option value="">All Faculty</option>@foreach ($facultyOptions as $facultyOption)<option value="{{ $facultyOption->id }}" @selected((string) $filters['faculty'] === (string) $facultyOption->id)>{{ trim($facultyOption->first_name.' '.$facultyOption->last_name) }}</option>@endforeach</select>
                 </div>
+                <a class="download-report" href="{{ route('admin.report.download', request()->only(['period', 'activity', 'category', 'course'])) }}" title="Download this filtered platform analytics report as a PDF">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 21h16"/></svg>
+                    Download Report (PDF)
+                </a>
             </form>
         </header>
 
         <section class="stats-grid" aria-label="Key performance indicators">
             @php
                 $kpis = [
-                    ['label' => 'Total Learners', 'value' => number_format($stats['total_students']), 'trend' => 'Live', 'icon' => 'users'],
-                    ['label' => 'Active Learners', 'value' => number_format($stats['active_students']), 'trend' => '30 days', 'icon' => 'activity', 'yellow' => true],
-                    ['label' => 'Total Courses', 'value' => number_format($stats['total_courses']), 'trend' => 'Live', 'icon' => 'book'],
-                    ['label' => 'Course Completions', 'value' => number_format($stats['completions']), 'trend' => 'All time', 'icon' => 'check', 'yellow' => true],
-                    ['label' => 'Credentials Issued', 'value' => number_format($stats['credentials']), 'trend' => 'All time', 'icon' => 'award'],
-                    ['label' => 'Average Assessment Score', 'value' => $stats['course_score_avg'] . '%', 'trend' => 'Scored attempts', 'icon' => 'chart', 'yellow' => true],
+                    ['label' => 'Total Learners', 'value' => number_format($stats['total_students']), 'trend' => 'Filtered scope', 'icon' => 'users'],
+                    ['label' => 'Active Learners', 'value' => number_format($stats['active_students']), 'trend' => $period === 'all' ? 'Last 30 days' : 'Selected period', 'icon' => 'activity', 'yellow' => true],
+                    ['label' => 'Total Courses', 'value' => number_format($stats['total_courses']), 'trend' => 'Filtered scope', 'icon' => 'book'],
+                    ['label' => 'Course Completions', 'value' => number_format($stats['completions']), 'trend' => $period === 'all' ? 'All time' : 'Selected period', 'icon' => 'check', 'yellow' => true],
+                    ['label' => 'Credentials Issued', 'value' => number_format($stats['credentials']), 'trend' => $period === 'all' ? 'All time' : 'Selected period', 'icon' => 'award'],
+                    ['label' => 'Average Assessment Score', 'value' => $stats['course_score_avg'] === null ? '—' : $stats['course_score_avg'] . '%', 'trend' => 'Scored quiz attempts', 'icon' => 'chart', 'yellow' => true],
                 ];
             @endphp
             @foreach ($kpis as $kpi)
                 <article class="stat-card">
                     <div class="stat-top">
-                        <div class="stat-icon {{ !empty($kpi['yellow']) ? 'yellow' : '' }}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+                    <div class="stat-icon {{ !empty($kpi['yellow']) ? 'yellow' : '' }}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                @if ($kpi['icon'] === 'users')
+                                    <circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.4-3.4 2.7-5.4 6.5-5.4s6.1 2 6.5 5.4M16 5.2a3.5 3.5 0 0 1 0 6.8M17 14.8c2.6.5 4 2.2 4.5 5.2"/>
+                                @elseif ($kpi['icon'] === 'activity')
+                                    <path d="M3 12h4l3-7 4 14 3-7h4"/>
+                                @elseif ($kpi['icon'] === 'book')
+                                    <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22zM4 4.5v15A2.5 2.5 0 0 1 6.5 17H20"/>
+                                @elseif ($kpi['icon'] === 'check')
+                                    <circle cx="12" cy="12" r="9"/><path d="m7.5 12 3 3 6-6"/>
+                                @elseif ($kpi['icon'] === 'award')
+                                    <circle cx="12" cy="8" r="5"/><path d="m8.5 12-1 9 4.5-2.5 4.5 2.5-1-9"/>
+                                @else
+                                    <path d="M4 19V5m0 14h16M7 15l4-4 3 2 6-7"/>
+                                @endif
+                            </svg>
                         </div>
                         <span class="stat-trend">{{ $kpi['trend'] }}</span>
                     </div>
                     <div class="stat-label">{{ $kpi['label'] }}</div>
                     <div class="stat-value">{{ $kpi['value'] }}</div>
-                    <div class="stat-label">current platform total</div>
                 </article>
             @endforeach
         </section>
@@ -204,28 +218,28 @@
                 </svg>
             </article>
             <article class="card">
-                <div class="card-heading"><div><h2 class="card-title">Learner Progress Distribution</h2><p class="card-subtitle">Current learner status</p></div></div>
+                <div class="card-heading"><div><h2 class="card-title">Learner Progress Distribution</h2><p class="card-subtitle">Unique learners across the selected courses</p></div></div>
                 <div class="donut-wrap">
                     <svg class="donut" viewBox="0 0 120 120" aria-label="Progress distribution donut chart"><circle class="donut-track" cx="60" cy="60" r="52"/><circle class="donut-complete" cx="60" cy="60" r="52" style="stroke-dasharray:{{ $progress['completed'] * 3.27 }} 327"/><circle class="donut-progress" cx="60" cy="60" r="52" style="stroke-dasharray:{{ $progress['in_progress'] * 3.27 }} 327;stroke-dashoffset:-{{ $progress['completed'] * 3.27 }}"/></svg>
                     <div class="donut-legend"><div class="legend-row"><i class="legend-dot"></i>Completed <strong>{{ $progress['completed'] }}%</strong></div><div class="legend-row"><i class="legend-dot yellow"></i>In Progress <strong>{{ $progress['in_progress'] }}%</strong></div><div class="legend-row"><i class="legend-dot gray"></i>Not Started <strong>{{ $progress['not_started'] }}%</strong></div></div>
                 </div>
-                <div class="mini-stats"><div><div class="mini-label">Total Learners</div><div class="mini-value">{{ number_format($stats['total_students']) }}</div></div><div><div class="mini-label">Average Completion</div><div class="mini-value">{{ $stats['average_completion'] }}%</div></div></div>
+                <div class="mini-stats"><div><div class="mini-label">Unique Learners</div><div class="mini-value">{{ number_format($stats['total_students']) }}</div></div><div><div class="mini-label">Average Learner Progress</div><div class="mini-value">{{ $stats['average_completion'] }}%</div></div></div>
             </article>
         </section>
 
         <section class="dashboard-grid equal" aria-label="Performance analytics">
             <article class="card table-card">
-                <div class="card-heading"><div><h2 class="card-title">Course Performance</h2><p class="card-subtitle">Completion rate and average score by course</p></div></div>
-                <table class="data-table"><thead><tr><th>Course</th><th>Enrolled</th><th>Completion</th><th>Avg. Score</th></tr></thead><tbody>
+                <div class="card-heading"><div><h2 class="card-title">Course Performance</h2><p class="card-subtitle">Average learner progress and quiz score by course</p></div></div>
+                <table class="data-table"><thead><tr><th>Course</th><th>Enrolled</th><th>Avg. Progress</th><th>Avg. Score</th></tr></thead><tbody>
                     @foreach ($coursePerformance as $course)
-                        <tr><td class="course-name">{{ $course->title }}</td><td>{{ $course->enrolled }}</td><td><div class="progress-cell"><div class="progress-track"><div class="progress-fill" style="width:{{ $course->completion }}%"></div></div><span>{{ $course->completion }}%</span></div></td><td class="score">{{ $course->score }}%</td></tr>
+                        <tr><td class="course-name">{{ $course->title }}</td><td>{{ $course->enrolled }}</td><td><div class="progress-cell"><div class="progress-track"><div class="progress-fill" style="width:{{ $course->completion }}%"></div></div><span>{{ $course->completion }}%</span></div></td><td class="score">{{ $course->score === null ? '—' : $course->score . '%' }}</td></tr>
                     @endforeach
                 </tbody></table>
             </article>
             <article class="card">
-                <div class="card-heading"><div><h2 class="card-title">Assessment Performance</h2><p class="card-subtitle">Average score by assessment type</p></div><div class="assessment-metric"><small>Overall Pass Rate</small><strong>{{ $assessment['pass_rate'] }}%</strong></div></div>
-                <div class="assessment-bar"><div class="assessment-bar-head"><span>Quizzes</span><strong>{{ $assessment['average'] }}%</strong></div><div class="progress-track"><div class="progress-fill" style="width:{{ $assessment['average'] }}%"></div></div></div>
-                <div class="metric-grid"><div class="metric-box"><strong>{{ number_format($assessment['total']) }}</strong><span>Total Assessments</span></div><div class="metric-box"><strong>{{ $assessment['highest'] }}%</strong><span>Highest Average</span></div><div class="metric-box"><strong>{{ $assessment['lowest'] }}%</strong><span>Lowest Average</span></div></div>
+                <div class="card-heading"><div><h2 class="card-title">Assessment Performance</h2><p class="card-subtitle">Quiz attempt scores in the selected scope</p></div><div class="assessment-metric"><small>Pass Rate</small><strong>{{ $assessment['pass_rate'] === null ? '—' : $assessment['pass_rate'] . '%' }}</strong></div></div>
+                <div class="assessment-bar"><div class="assessment-bar-head"><span>Average quiz score</span><strong>{{ $assessment['average'] === null ? 'No attempts' : $assessment['average'] . '%' }}</strong></div><div class="progress-track"><div class="progress-fill" style="width:{{ $assessment['average'] ?? 0 }}%"></div></div></div>
+                <div class="metric-grid"><div class="metric-box"><strong>{{ number_format($assessment['total']) }}</strong><span>Scored Attempts</span></div><div class="metric-box"><strong>{{ $assessment['highest'] === null ? '—' : $assessment['highest'] . '%' }}</strong><span>Highest Score</span></div><div class="metric-box"><strong>{{ $assessment['lowest'] === null ? '—' : $assessment['lowest'] . '%' }}</strong><span>Lowest Score</span></div></div>
             </article>
         </section>
 
@@ -233,16 +247,16 @@
             <article class="card">
                 <div class="card-heading"><div><h2 class="card-title">Competency Achievement</h2><p class="card-subtitle">Mastery rate by competency area</p></div></div>
                 <div class="competency-list">@foreach ($competencies as $competency)<div class="competency-row"><span>{{ $competency->name }}</span><div class="progress-track"><div class="progress-fill" style="width:{{ $competency->mastery }}%"></div></div><strong>{{ $competency->mastery }}%</strong></div>@endforeach</div>
-                <div class="card-footer"><span>Total Competencies: <strong>{{ $totalCompetencies }}</strong></span><span>Most Mastered: <strong>{{ optional($competencies->first())->name ?? 'No data' }} ({{ optional($competencies->first())->mastery ?? 0 }}%)</strong></span></div>
+                <div class="card-footer"><span>Linked Competencies: <strong>{{ $totalCompetencies }}</strong></span><span>Highest mastery: <strong>{{ optional($competencies->first())->name ?? 'No data' }}{{ $competencies->isNotEmpty() ? ' (' . $competencies->first()->mastery . '%)' : '' }}</strong></span></div>
             </article>
             <article class="card">
                 <div class="card-heading"><div><h2 class="card-title">Credential &amp; Badge Analytics</h2><p class="card-subtitle">Credential outcomes across the platform</p></div></div>
-                <div class="credential-grid"><div class="credential-metric"><strong>{{ number_format($credentialMetrics['certificates']) }}</strong><span>Certificates</span></div><div class="credential-metric"><strong>{{ number_format($credentialMetrics['badges']) }}</strong><span>Badges</span></div><div class="credential-metric"><strong>{{ number_format($credentialMetrics['verified']) }}</strong><span>Verified Credentials</span></div><div class="credential-metric"><strong>{{ number_format($credentialMetrics['pending']) }}</strong><span>Pending Review</span></div></div>
+                <div class="credential-grid"><div class="credential-metric"><strong>{{ number_format($credentialMetrics['certificates']) }}</strong><span>Active Certificates</span></div><div class="credential-metric"><strong>{{ number_format($credentialMetrics['badges']) }}</strong><span>Badges Issued</span></div><div class="credential-metric"><strong>{{ number_format($credentialMetrics['verified']) }}</strong><span>Verifiable Certificates</span></div><div class="credential-metric"><strong>{{ number_format($credentialMetrics['pending']) }}</strong><span>Courses Awaiting Approval</span></div></div>
                 <div class="credential-heading">Credentials Issued Over Time</div><svg class="credential-chart" viewBox="0 0 760 230" preserveAspectRatio="none" aria-label="Credentials issued line chart"><path class="grid-line" d="M48 72H744M48 42H744"/><polygon class="chart-area" points="48,90 {{ $credentialActivity['points'] }} 744,90"/><polyline class="chart-line" points="{{ $credentialActivity['points'] }}"/></svg>
             </article>
         </section>
 
-        <section class="attention" aria-labelledby="attention-title"><div class="card-heading"><div><h2 class="card-title" id="attention-title">Requires Attention</h2><p class="card-subtitle">Areas that may need immediate focus</p></div></div><div class="attention-grid">@foreach ($attention as $index => $attentionCount)<div class="attention-item"><span class="warning-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3L2.5 20h19L12 3zM12 9v5m0 3h.01"/></svg></span><div><div class="attention-number">{{ $attentionCount }}</div><div class="attention-label">{{ ['Courses below 50% completion', 'Competencies below 40% mastery', 'Learners inactive for more than 14 days', 'Courses with assessment pass rates below 60%'][$index] }}</div></div></div>@endforeach</div></section>
+        <section class="attention" aria-labelledby="attention-title"><div class="card-heading"><div><h2 class="card-title" id="attention-title">Requires Attention</h2><p class="card-subtitle">Areas that may need immediate focus</p></div></div><div class="attention-grid">@foreach ($attention as $index => $attentionCount)<div class="attention-item"><span class="warning-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3L2.5 20h19L12 3zM12 9v5m0 3h.01"/></svg></span><div><div class="attention-number">{{ $attentionCount }}</div><div class="attention-label">{{ ['Courses with average progress below 50%', 'Competency categories below 40% mastery', 'Learners with enrollment updates older than 14 days', 'Quizzes with pass rates below 60%'][$index] }}</div></div></div>@endforeach</div></section>
     </div>
 
 </main>

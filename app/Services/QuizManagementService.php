@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\Course;
+use App\Models\CourseLesson;
 use App\Models\CourseModule;
+use App\Models\LessonActivity;
 use App\Models\Quiz;
 use Illuminate\Http\Request;
 
@@ -11,24 +13,41 @@ class QuizManagementService
 {
     public function save(Request $request, Course $course, CourseModule $module): bool
     {
+        return $this->persist($request, $course, ['module_id' => $module->id, 'lesson_id' => null]);
+    }
+
+    public function saveForLesson(Request $request, Course $course, CourseLesson $lesson): bool
+    {
+        return $this->persist($request, $course, ['module_id' => null, 'lesson_id' => $lesson->id]);
+    }
+
+    /** @param array{module_id: int|null, lesson_id: int|null} $scope */
+    private function persist(Request $request, Course $course, array $scope): bool
+    {
         $passing = (int) $request->input('passing_score', 0);
         if ($passing < 1 || $passing > 100) {
             $passing = 75;
         }
 
         $questions = $this->parseQuestions($request->input('questions', []));
-        $quiz = Quiz::updateOrCreate(
-            ['module_id' => $module->id],
-            [
-                'course_id' => $course->id,
-                'title' => trim($request->input('quiz_title', '')) ?: 'Untitled Quiz',
-                'passing_score' => $passing,
-                'attempts' => $request->input('attempts'),
-                'time_limit' => (int) $request->input('time_limit', 0),
-                'instructions' => trim($request->input('instructions', '')),
-                'is_active' => true,
-            ]
-        );
+        $existingQuiz = Quiz::where($scope)->first();
+        $quizData = [
+            'course_id' => $course->id,
+            'title' => trim($request->input('quiz_title', '')) ?: 'Untitled Quiz',
+            'passing_score' => $passing,
+            'attempts' => $request->input('attempts'),
+            'time_limit' => (int) $request->input('time_limit', 0),
+            'instructions' => trim($request->input('instructions', '')),
+            'is_active' => true,
+        ];
+        if ($scope['lesson_id'] !== null) {
+            $quizData['sort_order'] = $existingQuiz?->sort_order
+                ?? max(
+                    (int) LessonActivity::where('lesson_id', $scope['lesson_id'])->max('sort_order'),
+                    (int) Quiz::where('lesson_id', $scope['lesson_id'])->max('sort_order'),
+                ) + 1;
+        }
+        $quiz = Quiz::updateOrCreate($scope, $quizData);
 
         $existing = $quiz->questions()->orderBy('id')->get()
             ->map(fn ($question): array => [

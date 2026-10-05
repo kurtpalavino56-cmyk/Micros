@@ -8,9 +8,9 @@ use App\Actions\Announcements\UpdateAnnouncement;
 use App\Mail\ComplaintReplyMail;
 use App\Models\AcademicCreditRecognition;
 use App\Models\Announcement;
+use App\Models\Certificate;
 use App\Models\Complaint;
 use App\Models\ComplaintReply;
-use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\CourseCategory;
 use App\Models\Enrollment;
@@ -19,14 +19,17 @@ use App\Models\Pathway;
 use App\Models\StackingFramework;
 use App\Models\StackingFrameworkRequirement;
 use App\Models\User;
-use App\Services\AcademicCreditRecognitionService;
+use App\Models\UserStackingProgress;
 use App\Services\AdminUserManagementService;
 use App\Services\CourseModerationService;
+use App\Services\CourseReadinessService;
+use App\Services\CreditEvidenceReportService;
 use App\Services\MicrocredentialCompletionService;
 use App\Services\UserCodeService;
 use App\Support\CertificateBuilder;
 use App\Support\CompletionStatusPresenter;
 use App\Support\UserPresenter;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -286,20 +289,23 @@ class AdminController extends Controller
     // ── Announcements ─────────────────────────────────────────────────────
 
     /**
-     * Admin > Announcements. Each announcement carries an audience so it can
-     * be aimed at students, faculty, or both.
+     * Admin > Announcements. Announcements may be public or targeted to roles.
      */
     public function announcements()
     {
         $announcements = Announcement::with('author')
+            ->orderByDesc('is_pinned')
             ->latest()
             ->get()
             ->map(fn (Announcement $a) => (object) [
                 'id' => $a->id,
                 'title' => $a->title,
                 'body' => $a->body,
-                'audience' => $a->audience ?? ['student', 'faculty'],
+                'audience' => empty($a->audience) || count($a->audience) >= 2 || in_array('public', $a->audience, true)
+                    ? ['public']
+                    : $a->audience,
                 'is_published' => (bool) $a->is_published,
+                'is_pinned' => (bool) $a->is_pinned,
                 'author' => $a->author->name ?? 'Administrator',
                 'created_at' => $a->created_at,
             ])
@@ -314,10 +320,13 @@ class AdminController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string', 'max:5000'],
             'audience' => ['required', 'array', 'min:1'],
-            'audience.*' => ['in:student,faculty'],
+            'audience.*' => ['in:student,faculty,public'],
         ], [
             'audience.required' => 'Choose who can see this announcement.',
         ]);
+        if (in_array('public', $data['audience'], true)) {
+            $data['audience'] = ['public'];
+        }
 
         $createAnnouncement->execute($data, Auth::user());
 
@@ -331,8 +340,11 @@ class AdminController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string', 'max:5000'],
             'audience' => ['required', 'array', 'min:1'],
-            'audience.*' => ['in:student,faculty'],
+            'audience.*' => ['in:student,faculty,public'],
         ]);
+        if (in_array('public', $data['audience'], true)) {
+            $data['audience'] = ['public'];
+        }
 
         $updateAnnouncement->execute(Announcement::findOrFail($id), $data);
 
@@ -346,6 +358,16 @@ class AdminController extends Controller
 
         return redirect()->route('admin.announcements')
             ->with('success', '"'.$title.'" was deleted.');
+    }
+
+    public function toggleAnnouncementPin(int $id)
+    {
+        $announcement = Announcement::findOrFail($id);
+        $announcement->is_pinned = ! $announcement->is_pinned;
+        $announcement->save();
+
+        return redirect()->route('admin.announcements')
+            ->with('success', $announcement->is_pinned ? 'Announcement pinned.' : 'Announcement unpinned.');
     }
 
     // ── Complaint inbox ───────────────────────────────────────────────────
@@ -541,11 +563,18 @@ class AdminController extends Controller
      * Admin › Course Detail — full information about a single course,
      * reached by clicking its card on the Courses & Badges page.
      */
-    public function showCourse(int $id)
+    public function showCourse(CourseReadinessService $courseReadiness, int $id)
     {
-        $c = Course::with(['badge', 'creator', 'modules.lessons', 'modules.quiz.questions'])
+        $c = Course::with(['badge', 'creator', 'modules.lessons.quizzes.questions', 'modules.lessons.activities', 'modules.quiz.questions', 'learningOutcomes'])
             ->withCount('enrollments')
             ->findOrFail($id);
+
+        $readinessChecklist = $courseReadiness->checklist($c);
+        $readinessIssues = collect($readinessChecklist)
+            ->reject(fn (array $item): bool => $item['complete'])
+            ->pluck('label')
+            ->values()
+            ->all();
 
         $course = (object) [
             'id' => $c->id,
@@ -555,12 +584,18 @@ class AdminController extends Controller
             'program' => $c->program,
             'term' => $c->term,
             'level' => $c->level,
+            'pqf_level' => $c->pqf_level,
+            'target_learners' => $c->target_learners,
+            'delivery_mode' => $c->delivery_mode,
+            'learning_hours' => $c->learning_hours,
+            'assessment_strategy' => $c->assessment_strategy,
+            'grading_rubric' => $c->grading_rubric,
+            'learning_outcomes' => $c->learningOutcomes->pluck('description')->all(),
             'duration' => $c->duration,
             'instructor' => $c->creator->name ?? $c->instructor,
             'skills' => $c->skills ?? [],
             // Internal recommendation tags — admin/faculty only.
             'related_skills' => FacultyController::relatedSkillsOf($c),
-            'objectives' => $c->objectives ?? [],
             'badge' => $c->badge->name ?? '—',
             // Badge artwork and certificate configuration, so the admin can
             // see what a completing student actually receives rather than
@@ -573,6 +608,9 @@ class AdminController extends Controller
             'certificate' => CertificateBuilder::data($c),
             'status' => $c->statusLabel(),
             'status_key' => $this->statusKey($c),
+            'readiness_checklist' => $readinessChecklist,
+            'can_approve' => $readinessIssues === [],
+            'readiness_issues' => $readinessIssues,
             'is_published' => (bool) $c->is_published,
             'can_toggle_publish' => $c->approval_status === 'approved' && (bool) $c->is_approved,
             'students' => (int) $c->enrollments_count,
@@ -595,6 +633,21 @@ class AdminController extends Controller
                 'content' => $l->content,
                 'file_url' => ! empty($l->file_url) ? asset($l->file_url) : null,
                 'file_name' => ! empty($l->file_url) ? basename($l->file_url) : null,
+                'lesson_quizzes' => $l->quizzes->map(fn ($quiz) => (object) [
+                    'title' => $quiz->title,
+                    'questions_count' => $quiz->questions->count(),
+                    'passing_score' => $quiz->passing_score,
+                    'time_limit' => $quiz->time_limit,
+                    'instructions' => $quiz->instructions,
+                    'questions' => $quiz->questions->map(fn ($question) => (object) [
+                        'question' => $question->question,
+                        'type' => $question->type ?? 'Multiple Choice',
+                        'points' => (int) $question->points,
+                        'options' => $question->options ?? [],
+                        'correct_answer' => $question->correct_answer,
+                    ])->values(),
+                ])->values(),
+                'lesson_activities' => $l->activities,
             ])->values(),
             'quiz' => $m->quiz ? (object) [
                 'title' => $m->quiz->title,
@@ -693,7 +746,11 @@ class AdminController extends Controller
     public function approveCourse(int $id, CourseModerationService $moderation)
     {
         $course = Course::findOrFail($id);
-        $moderation->approve($course, (int) Auth::id());
+        try {
+            $moderation->approve($course, (int) Auth::id());
+        } catch (\DomainException $exception) {
+            return back()->withErrors(['approval' => $exception->getMessage()]);
+        }
 
         return redirect()->route('admin.courses')
             ->with('success', '"'.$course->title.'" has been approved and is now published.');
@@ -789,25 +846,21 @@ class AdminController extends Controller
         $studentRole = User::ROLE_STUDENT;
         $period = $request->query('period', 'all');
         $activityMode = $request->query('activity', 'enrollments');
+        $period = in_array($period, ['all', 'year', 'month', 'week'], true) ? $period : 'all';
         $periodStart = match ($period) {
             'year' => now()->startOfYear(),
             'month' => now()->startOfMonth(),
             'week' => now()->startOfWeek(),
             default => null,
         };
-        $period = in_array($period, ['all', 'year', 'month', 'week'], true) ? $period : 'all';
         $activityMode = in_array($activityMode, ['enrollments', 'active', 'completions'], true) ? $activityMode : 'enrollments';
         $filters = [
             'category' => $request->query('category'),
-            'department' => $request->query('department'),
             'course' => $request->query('course'),
-            'faculty' => $request->query('faculty'),
         ];
         $applyCourseFilters = function ($query) use ($filters): void {
             $query->when($filters['category'], fn ($builder, $value) => $builder->where('courses.category', $value))
-                ->when($filters['department'], fn ($builder, $value) => $builder->where('courses.program', $value))
-                ->when($filters['course'], fn ($builder, $value) => $builder->where('courses.id', $value))
-                ->when($filters['faculty'], fn ($builder, $value) => $builder->where('courses.created_by', $value));
+                ->when($filters['course'], fn ($builder, $value) => $builder->where('courses.id', $value));
         };
         $enrollmentTable = DB::table('enrollments')->join('courses', 'courses.id', '=', 'enrollments.course_id');
         $applyEnrollmentFilters = function ($query) use ($applyCourseFilters, $periodStart): void {
@@ -817,39 +870,78 @@ class AdminController extends Controller
             }
         };
         $applyEnrollmentFilters($enrollmentTable);
+        $applyAnalyticsEventFilters = function ($query) use ($applyCourseFilters): void {
+            $query->where(function ($events) use ($applyCourseFilters) {
+                $events->where(function ($courseEvents) use ($applyCourseFilters) {
+                    $courseEvents->where('analytics_events.entity_type', 'course')->whereExists(function ($courses) use ($applyCourseFilters) {
+                        $courses->selectRaw('1')->from('courses')
+                            ->whereColumn('courses.id', 'analytics_events.entity_id');
+                        $applyCourseFilters($courses);
+                    });
+                })->orWhere(function ($lessonEvents) use ($applyCourseFilters) {
+                    $lessonEvents->where('analytics_events.entity_type', 'lesson')->whereExists(function ($lessons) use ($applyCourseFilters) {
+                        $lessons->selectRaw('1')->from('course_lessons')
+                            ->join('courses', 'courses.id', '=', 'course_lessons.course_id')
+                            ->whereColumn('course_lessons.id', 'analytics_events.entity_id');
+                        $applyCourseFilters($lessons);
+                    });
+                })->orWhere(function ($quizEvents) use ($applyCourseFilters) {
+                    $quizEvents->where('analytics_events.entity_type', 'quiz')->whereExists(function ($quizzes) use ($applyCourseFilters) {
+                        $quizzes->selectRaw('1')->from('quizzes')
+                            ->join('courses', 'courses.id', '=', 'quizzes.course_id')
+                            ->whereColumn('quizzes.id', 'analytics_events.entity_id');
+                        $applyCourseFilters($quizzes);
+                    });
+                });
+            });
+        };
         $quizScores = DB::table('quiz_attempts')
             ->join('quizzes', 'quizzes.id', '=', 'quiz_attempts.quiz_id')
             ->join('courses', 'courses.id', '=', 'quizzes.course_id')
             ->whereNotNull('quiz_attempts.score');
         $applyCourseFilters($quizScores);
         if ($periodStart) {
-            $quizScores->where('quiz_attempts.created_at', '>=', $periodStart);
+            $quizScores->whereRaw('COALESCE(quiz_attempts.submitted_at, quiz_attempts.created_at) >= ?', [$periodStart]);
         }
         $certificateQuery = DB::table('certificates')->join('courses', 'courses.id', '=', 'certificates.course_id');
         $applyCourseFilters($certificateQuery);
         if ($periodStart) {
             $certificateQuery->where('certificates.issued_at', '>=', $periodStart);
         }
+        $badgeQuery = DB::table('user_badges')->join('badges', 'badges.id', '=', 'user_badges.badge_id');
+        $badgeQuery->where('user_badges.status', 'active')
+            ->when($periodStart, fn ($query) => $query->where('user_badges.earned_at', '>=', $periodStart))
+            ->whereExists(function ($courses) use ($applyCourseFilters) {
+                $courses->selectRaw('1')->from('courses')
+                    ->whereColumn('courses.badge_id', 'badges.id');
+                $applyCourseFilters($courses);
+            });
 
         $stats = [
             'total_students' => User::where('role_id', $studentRole)
                 ->whereIn('id', (clone $enrollmentTable)->select('enrollments.user_id')->distinct())
                 ->count(),
-            'active_students' => (clone $enrollmentTable)
-                ->join('users', 'users.id', '=', 'enrollments.user_id')
-                ->where('users.role_id', $studentRole)
-                ->where('enrollments.updated_at', '>=', $periodStart ?: now()->subDays(30))
-                ->distinct('enrollments.user_id')
-                ->count('enrollments.user_id'),
+            'active_students' => (function () use ($studentRole, $periodStart, $applyAnalyticsEventFilters): int {
+                $activeEvents = DB::table('analytics_events')
+                    ->whereIn('analytics_events.user_id', User::query()->select('id')->where('role_id', $studentRole))
+                    ->where('analytics_events.occurred_at', '>=', $periodStart ?: now()->subDays(30));
+                $applyAnalyticsEventFilters($activeEvents);
+
+                return (int) $activeEvents->distinct()->count('analytics_events.user_id');
+            })(),
             'total_courses' => Course::query()->tap($applyCourseFilters)->count(),
-            'completions' => (clone $enrollmentTable)
-                ->where('completion_status', MicrocredentialCompletionService::STATUS_COMPLETED)
-                ->count(),
+            'completions' => (function () use ($applyCourseFilters, $periodStart): int {
+                $completedEnrollments = DB::table('enrollments')
+                    ->join('courses', 'courses.id', '=', 'enrollments.course_id')
+                    ->where('enrollments.completion_status', MicrocredentialCompletionService::STATUS_COMPLETED)
+                    ->when($periodStart, fn ($query) => $query->where('enrollments.completed_at', '>=', $periodStart));
+                $applyCourseFilters($completedEnrollments);
+
+                return $completedEnrollments->count();
+            })(),
             'credentials' => (clone $certificateQuery)->where('certificates.status', 'active')->count(),
-            'badges_issued' => DB::table('user_badges')->where('user_badges.status', 'active')->when($periodStart, fn ($query) => $query->where('user_badges.earned_at', '>=', $periodStart))->count(),
-            'faculty_total' => User::where('role_id', User::ROLE_FACULTY)->count(),
-            'course_score_avg' => round((float) $quizScores->avg('score'), 1),
-            'average_completion' => round((float) (clone $enrollmentTable)->where('enrollments.completion_status', MicrocredentialCompletionService::STATUS_COMPLETED)->avg('enrollments.progress_percent')),
+            'course_score_avg' => $quizScores->avg('score') !== null ? round((float) $quizScores->avg('score'), 1) : null,
+            'average_completion' => round((float) (clone $enrollmentTable)->avg('enrollments.progress_percent')),
         ];
 
         $coursePerformanceQuery = Course::query()
@@ -859,6 +951,7 @@ class AdminController extends Controller
                     ->join('quizzes', 'quizzes.id', '=', 'quiz_attempts.quiz_id')
                     ->select('quizzes.course_id', DB::raw('AVG(quiz_attempts.score) as average_score'))
                     ->whereNotNull('quiz_attempts.score')
+                    ->when($periodStart, fn ($query) => $query->whereRaw('COALESCE(quiz_attempts.submitted_at, quiz_attempts.created_at) >= ?', [$periodStart]))
                     ->groupBy('quizzes.course_id'),
                 'course_scores',
                 'course_scores.course_id',
@@ -866,16 +959,14 @@ class AdminController extends Controller
                 'courses.id'
             )
             ->when($filters['category'], fn ($query, $value) => $query->where('courses.category', $value))
-            ->when($filters['department'], fn ($query, $value) => $query->where('courses.program', $value))
             ->when($filters['course'], fn ($query, $value) => $query->where('courses.id', $value))
-            ->when($filters['faculty'], fn ($query, $value) => $query->where('courses.created_by', $value))
             ->when($periodStart, fn ($query) => $query->where('enrollments.enrolled_at', '>=', $periodStart))
             ->select(
                 'courses.id',
                 'courses.title',
                 DB::raw('COUNT(enrollments.id) as enrolled'),
                 DB::raw('COALESCE(AVG(enrollments.progress_percent), 0) as completion'),
-                DB::raw('COALESCE(course_scores.average_score, 0) as average_score')
+                'course_scores.average_score'
             )
             ->groupBy('courses.id', 'courses.title', 'course_scores.average_score')
             ->orderByDesc('enrolled')
@@ -886,56 +977,93 @@ class AdminController extends Controller
                 'title' => $course->title,
                 'enrolled' => (int) $course->enrolled,
                 'completion' => (int) round($course->completion),
-                'score' => (int) round($course->average_score),
+                'score' => $course->average_score !== null ? (int) round($course->average_score) : null,
             ]);
+        $lowProgressCourseCount = Course::query()
+            ->join('enrollments', 'courses.id', '=', 'enrollments.course_id')
+            ->whereNotNull('enrollments.id')
+            ->when($periodStart, fn ($query) => $query->where('enrollments.enrolled_at', '>=', $periodStart))
+            ->tap($applyCourseFilters)
+            ->groupBy('courses.id')
+            ->havingRaw('AVG(enrollments.progress_percent) < ?', [50])
+            ->get(['courses.id'])
+            ->count();
 
+        $progressRows = (clone $enrollmentTable)
+            ->select('enrollments.user_id', DB::raw('MAX(enrollments.progress_percent) as progress_percent'), DB::raw("MAX(CASE WHEN enrollments.completion_status = 'completed' THEN 1 ELSE 0 END) as completed"))
+            ->groupBy('enrollments.user_id')
+            ->get();
         $progressCounts = [
-            'completed' => (clone $enrollmentTable)
-                ->where('completion_status', MicrocredentialCompletionService::STATUS_COMPLETED)
-                ->count(),
-            'in_progress' => (clone $enrollmentTable)
-                ->where('completion_status', '!=', MicrocredentialCompletionService::STATUS_COMPLETED)
-                ->whereBetween('progress_percent', [1, 100])
-                ->count(),
-            'not_started' => (clone $enrollmentTable)
-                ->where('completion_status', '!=', MicrocredentialCompletionService::STATUS_COMPLETED)
-                ->where('progress_percent', 0)
-                ->count(),
+            'completed' => $progressRows->where('completed', 1)->count(),
+            'in_progress' => $progressRows->where('completed', 0)->where('progress_percent', '>', 0)->count(),
+            'not_started' => $progressRows->where('completed', 0)->where('progress_percent', 0)->count(),
         ];
         $progressTotal = max(1, array_sum($progressCounts));
         $progress = collect($progressCounts)->map(fn (int $count) => (int) round($count / $progressTotal * 100));
 
-        $activityScope = function ($query) use ($applyEnrollmentFilters, $activityMode): void {
+        $activityScope = function ($query) use ($applyAnalyticsEventFilters, $studentRole, $activityMode, $applyCourseFilters, $periodStart): void {
+            if ($activityMode === 'active') {
+                $query->whereIn('analytics_events.user_id', User::query()->select('id')->where('role_id', $studentRole));
+                $applyAnalyticsEventFilters($query);
+                if ($periodStart) {
+                    $query->where('analytics_events.occurred_at', '>=', $periodStart);
+                }
+
+                return;
+            }
+
             $query->join('courses', 'courses.id', '=', 'enrollments.course_id');
-            $applyEnrollmentFilters($query);
+            $applyCourseFilters($query);
             if ($activityMode === 'completions') {
                 $query->where('enrollments.completion_status', MicrocredentialCompletionService::STATUS_COMPLETED);
+            } elseif ($periodStart) {
+                $query->where('enrollments.enrolled_at', '>=', $periodStart);
             }
         };
-        $activity = $this->monthlySeries('enrollments', 'enrolled_at', $activityScope, $activityMode === 'active');
+        $activity = match ($activityMode) {
+            'active' => $this->monthlySeries('analytics_events', 'occurred_at', $activityScope, true),
+            'completions' => $this->monthlySeries('enrollments', 'completed_at', $activityScope),
+            default => $this->monthlySeries('enrollments', 'enrolled_at', $activityScope),
+        };
         $credentialActivity = $this->monthlySeries('certificates', 'issued_at', function ($query) use ($applyCourseFilters): void {
             $query->join('courses', 'courses.id', '=', 'certificates.course_id');
             $applyCourseFilters($query);
             $query->where('certificates.status', 'active');
         });
         $assessmentScores = (clone $quizScores)->pluck('score');
-        $assessmentCount = DB::table('assessments')->count() + $assessmentScores->count();
+        $assessmentCount = $assessmentScores->count();
+        $passedAttempts = (clone $quizScores)->where('quiz_attempts.passed', true)->count();
         $passRate = $assessmentScores->count() > 0
-            ? (int) round($assessmentScores->filter(fn ($score) => $score >= 70)->count() / $assessmentScores->count() * 100)
-            : 0;
+            ? (int) round($passedAttempts / $assessmentScores->count() * 100)
+            : null;
         $competencies = DB::table('competency_progresses')
             ->join('competency_units', 'competency_units.id', '=', 'competency_progresses.competency_unit_id')
             ->join('competency_categories', 'competency_categories.id', '=', 'competency_units.competency_category_id')
+            ->whereExists(function ($outcomes) use ($applyCourseFilters) {
+                $outcomes->selectRaw('1')->from('learning_outcomes')
+                    ->join('courses', 'courses.id', '=', 'learning_outcomes.course_id')
+                    ->whereColumn('learning_outcomes.competency_unit_id', 'competency_units.id');
+                $applyCourseFilters($outcomes);
+            })
             ->select('competency_categories.name', DB::raw('AVG(competency_progresses.mastery_score) as mastery'))
             ->groupBy('competency_categories.id', 'competency_categories.name')
             ->orderByDesc('mastery')
-            ->limit(4)
             ->get()
             ->map(fn ($competency) => (object) ['name' => $competency->name, 'mastery' => (int) round($competency->mastery)]);
+        $lowMasteryCompetencyCount = $competencies->filter(fn ($competency) => $competency->mastery < 40)->count();
+        $competencies = $competencies->take(4)->values();
+        $lowPassQuizCount = DB::table('quiz_attempts')
+            ->join('quizzes', 'quizzes.id', '=', 'quiz_attempts.quiz_id')
+            ->join('courses', 'courses.id', '=', 'quizzes.course_id')
+            ->whereNotNull('quiz_attempts.score')
+            ->when($periodStart, fn ($query) => $query->whereRaw('COALESCE(quiz_attempts.submitted_at, quiz_attempts.created_at) >= ?', [$periodStart]))
+            ->tap($applyCourseFilters)
+            ->groupBy('quizzes.id')
+            ->havingRaw('AVG(CASE WHEN quiz_attempts.passed = ? THEN 1.0 ELSE 0.0 END) < ?', [true, 0.6])
+            ->get(['quizzes.id'])
+            ->count();
         $courseOptionQuery = Course::query()
-            ->when($filters['category'], fn ($query, $value) => $query->where('category', $value))
-            ->when($filters['department'], fn ($query, $value) => $query->where('program', $value))
-            ->when($filters['faculty'], fn ($query, $value) => $query->where('created_by', $value));
+            ->when($filters['category'], fn ($query, $value) => $query->where('category', $value));
 
         return view('admin.analytics-report', [
             'stats' => $stats,
@@ -945,33 +1073,47 @@ class AdminController extends Controller
             'credentialActivity' => $credentialActivity,
             'assessment' => [
                 'total' => $assessmentCount,
-                'average' => (int) round((float) $assessmentScores->avg()),
+                'average' => $assessmentScores->count() ? (int) round((float) $assessmentScores->avg()) : null,
                 'pass_rate' => $passRate,
-                'highest' => (int) ($assessmentScores->max() ?? 0),
-                'lowest' => (int) ($assessmentScores->min() ?? 0),
+                'highest' => $assessmentScores->max() !== null ? (int) $assessmentScores->max() : null,
+                'lowest' => $assessmentScores->min() !== null ? (int) $assessmentScores->min() : null,
             ],
             'competencies' => $competencies,
             'categoryNames' => CourseCategory::activeNames(),
-            'departmentNames' => Course::whereNotNull('program')->where('program', '!=', '')->distinct()->orderBy('program')->pluck('program'),
             'courseOptions' => $courseOptionQuery->orderBy('title')->get(['id', 'title']),
-            'facultyOptions' => User::where('role_id', User::ROLE_FACULTY)->orderBy('last_name')->orderBy('first_name')->get(['id', 'first_name', 'last_name']),
             'filters' => $filters + ['period' => $period, 'activity' => $activityMode],
             'period' => $period,
             'activityMode' => $activityMode,
             'credentialMetrics' => [
                 'certificates' => (clone $certificateQuery)->where('certificates.status', 'active')->count(),
-                'badges' => DB::table('user_badges')->where('user_badges.status', 'active')->when($periodStart, fn ($query) => $query->where('user_badges.earned_at', '>=', $periodStart))->count(),
-                'verified' => (clone $certificateQuery)->whereNotNull('certificates.serial')->count(),
-                'pending' => DB::table('assessments')->where('status', 'pending')->count(),
+                'badges' => (clone $badgeQuery)->count(),
+                'verified' => (clone $certificateQuery)->where('certificates.status', 'active')->whereNotNull('certificates.serial')->count(),
+                'pending' => Course::query()->tap($applyCourseFilters)->where('approval_status', 'pending')->count(),
             ],
-            'totalCompetencies' => DB::table('competency_units')->count(),
+            'totalCompetencies' => DB::table('competency_units')->whereExists(function ($outcomes) use ($applyCourseFilters) {
+                $outcomes->selectRaw('1')->from('learning_outcomes')
+                    ->join('courses', 'courses.id', '=', 'learning_outcomes.course_id')
+                    ->whereColumn('learning_outcomes.competency_unit_id', 'competency_units.id');
+                $applyCourseFilters($outcomes);
+            })->count(),
             'attention' => [
-                $coursePerformance->filter(fn ($course) => $course->completion < 50)->count(),
-                $competencies->filter(fn ($competency) => $competency->mastery < 40)->count(),
+                $lowProgressCourseCount,
+                $lowMasteryCompetencyCount,
                 (clone $enrollmentTable)->where('enrollments.updated_at', '<', now()->subDays(14))->distinct('enrollments.user_id')->count('enrollments.user_id'),
-                DB::table('quiz_attempts')->where('score', '<', 60)->distinct('quiz_id')->count('quiz_id'),
+                $lowPassQuizCount,
             ],
         ]);
+    }
+
+    public function downloadAnalyticsReport(Request $request)
+    {
+        $data = $this->report($request)->getData();
+        $data['generatedAt'] = now();
+        $data['preparedBy'] = Auth::user();
+
+        return Pdf::loadView('admin.analytics-report-pdf', $data)
+            ->setPaper('a4', 'landscape')
+            ->download('Platform-Analytics-Report-'.now()->format('Y-m-d').'.pdf');
     }
 
     /**
@@ -1056,43 +1198,24 @@ class AdminController extends Controller
         $recognitions = AcademicCreditRecognition::with(['user', 'framework'])
             ->orderByDesc('updated_at')
             ->get();
+        $eligibleReports = UserStackingProgress::with(['user', 'framework'])
+            ->where('status', 'requirements_met')
+            ->orderByDesc('requirements_met_at')
+            ->get();
 
         return view('admin.academic-credit-recognition', [
             'user' => UserPresenter::admin(Auth::user()),
             'recognitions' => $recognitions,
+            'eligibleReports' => $eligibleReports,
         ]);
     }
 
-    public function recommendAcademicCreditRecognition(int $id)
+    public function creditEvidenceReport(int $userId, int $frameworkId, CreditEvidenceReportService $reports)
     {
-        $service = app(AcademicCreditRecognitionService::class);
-        $record = $service->recommend($id, Auth::id(), 'Recommended for academic credit.');
+        $student = User::query()->where('role_id', User::ROLE_STUDENT)->findOrFail($userId);
+        $framework = StackingFramework::query()->findOrFail($frameworkId);
 
-        return redirect()->route('admin.academic-credit-recognition')->with('success', 'Academic credit recognition recommended.');
-    }
-
-    public function endorseAcademicCreditRecognition(int $id)
-    {
-        $service = app(AcademicCreditRecognitionService::class);
-        $service->endorse($id, Auth::id(), 'Dean endorsed academic credit recognition.');
-
-        return redirect()->route('admin.academic-credit-recognition')->with('success', 'Academic credit recognition endorsed.');
-    }
-
-    public function recordAcademicCreditRecognition(int $id)
-    {
-        $service = app(AcademicCreditRecognitionService::class);
-        $service->recordRegistrar($id, Auth::id(), 'Recorded in registrar.');
-
-        return redirect()->route('admin.academic-credit-recognition')->with('success', 'Academic credit recognition recorded in registrar.');
-    }
-
-    public function denyAcademicCreditRecognition(int $id)
-    {
-        $service = app(AcademicCreditRecognitionService::class);
-        $service->deny($id, Auth::id(), 'Denied by institutional review.');
-
-        return redirect()->route('admin.academic-credit-recognition')->with('success', 'Academic credit recognition denied.');
+        return view('credit-evidence-report', $reports->build($student, $framework));
     }
 
     // PROGRAM CATEGORIES  (Admin › Management › Program Categories)
@@ -1496,6 +1619,7 @@ class AdminController extends Controller
 
         return back()->with('success', 'Certificate revoked.');
     }
+
     public function pathways()
     {
         return view('admin.pathways', [
@@ -1549,4 +1673,3 @@ class AdminController extends Controller
         return back()->with('success', 'Pathway deleted.');
     }
 }
-

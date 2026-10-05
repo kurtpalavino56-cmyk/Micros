@@ -467,7 +467,6 @@ main.admin-dashboard .page-heading,main.admin-dashboard .stat-val {
 }
 .layout:has(main.admin-dashboard){background:var(--dash-canvas);}
 main.admin-dashboard .page-heading{font-size:27px;font-weight:800;letter-spacing:-.04em;color:var(--dash-ink);line-height:1.2}
-main.admin-dashboard .page-eyebrow{margin-bottom:7px;color:#C9960C;font-size:10px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}
 main.admin-dashboard .page-sub{margin-top:7px;color:var(--dash-muted);font-size:14px}
 main.admin-dashboard .stats-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 main.admin-dashboard .stats-grid{gap:16px;margin:24px 0 0}
@@ -532,7 +531,6 @@ main.admin-dashboard .snapshot-metric span{margin-top:4px;font-size:10px;line-he
 
         <main class="main admin-dashboard">
 
-            <div class="page-eyebrow">ADMIN CONSOLE</div>
             <div class="page-heading">Welcome back, Admin</div>
             <div class="page-sub">Here's what's happening on your platform today.</div>
 

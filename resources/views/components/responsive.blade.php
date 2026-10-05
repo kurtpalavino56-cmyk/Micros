@@ -10,6 +10,55 @@
     menu button (injected by the script below — no markup changes needed).
 --}}
 <style>
+    /* Student page titles use the Enrolled Courses type scale across pages. */
+    .student-page-heading h1,
+    .student-page-heading h2 {
+        margin: 0 0 6px;
+        color: #13176b;
+        font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-size: 30px;
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+    }
+    .student-page-heading--inverse h1,
+    .student-page-heading--inverse h2 { color:#fff; }
+    .student-page-heading > p:not(.eyebrow),
+    .student-page-heading.page-header > p:not(.eyebrow),
+    .student-page-heading > div > p:not(.eyebrow) {
+        margin: 0 0 28px;
+        color: #6b7280;
+        font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-size: 15px;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+    .student-page-heading--inverse > p:not(.eyebrow),
+    .student-page-heading--inverse > div > p:not(.eyebrow) { color:rgba(255,255,255,.88); }
+
+    /* Faculty page titles match the dashboard's typography scale. */
+    .faculty-sidebar-layout .faculty-page-heading .faculty-page-title,
+    .page-shell .faculty-page-heading .faculty-page-title {
+        margin: 0 0 6px;
+        color: #0e1a3a;
+        font-family: "Plus Jakarta Sans", Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 27px;
+        font-weight: 800;
+        line-height: 1.2;
+        letter-spacing: -0.04em;
+    }
+    .faculty-sidebar-layout .faculty-page-heading--inverse .faculty-page-title { color:#fff; }
+    .faculty-sidebar-layout .faculty-page-heading .faculty-page-subtitle,
+    .page-shell .faculty-page-heading .faculty-page-subtitle {
+        margin: 0;
+        color: #64748b;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+    .faculty-sidebar-layout .faculty-page-heading--inverse .faculty-page-subtitle { color:rgba(255,255,255,.9); }
+
     /* ── Global safety (all sizes) ─────────────────────────────────── */
     img, video { max-width: 100%; height: auto; }
 
@@ -105,6 +154,8 @@
         box-shadow: 0 0 0 2px rgba(239, 68, 68, .18);
         pointer-events: none;
     }
+    .faculty-auth-topbar .notif-dot{background:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.18);}
+    .student-auth-topbar .notif-dot{background:#f4c430;box-shadow:0 0 0 2px rgba(244,196,48,.24);}
     /* The bell is a circle on every page — keep it that way everywhere. */
     a.notification-btn, a.icon-circle.notification-btn { border-radius: 50% !important; }
 
@@ -128,23 +179,16 @@
         /* Both layout families collapse to a single column */
         .layout { grid-template-columns: 1fr !important; height: auto !important; }
 
-        /* Hide the desktop sidebar — navigation moves into the pill.
-           Attribute selector + !important beats any per-page media query
-           that turns the sidebar into a horizontal row. The student and
-           faculty sidebars use their own class names (.student-sidebar /
-           .faculty-sidebar), so they must be listed explicitly — previously
-           they stayed visible as full-height columns between 980–1024px and
-           never fed the floating menu at all. */
-        aside.sidebar, aside[class~="sidebar"],
-        aside.student-sidebar, aside.faculty-sidebar { display: none !important; }
+        /* Admin navigation moves into the floating menu at this breakpoint.
+           Student and faculty sidebars stay visible as horizontal rows and
+           use their own topbar toggle buttons. */
+        aside.sidebar, aside[class~="sidebar"] { display: none !important; }
         .nav-toggle { display: flex; }
 
         /* Admin pages indent .main by the sidebar width — remove it */
         .main, main.main { margin-left: 0 !important; padding-left: 16px !important; padding-right: 16px !important; }
 
-        /* Courses / Dashboard live in the floating menu below this width, so
-           the header copies are redundant. They stay in the DOM (hidden) —
-           the menu clones its entries from them. Above 1024px they return. */
+        /* Hide admin header links because the floating menu contains them. */
         header.topbar .nav-pills,
         nav.topbar .nav-pills { display: none !important; }
 
@@ -468,6 +512,15 @@
         // Admin pages use aside.sidebar; student and faculty pages use their
         // own class names. All three feed the floating menu on small screens.
         var sidebar = document.querySelector('aside.sidebar, aside.student-sidebar, aside.faculty-sidebar');
+
+        // Student and faculty sidebars use their topbar hamburger on every
+        // page. Do not create a second floating menu for those sidebars.
+        if (sidebar && (
+            (sidebar.matches('aside.student-sidebar') && document.getElementById('sidebar-toggle')) ||
+            (sidebar.matches('aside.faculty-sidebar') && document.getElementById('faculty-sidebar-toggle'))
+        )) {
+            return;
+        }
 
         // Pages without a sidebar (Admin_Profile, Faculty_Students,
         // Student_Course_Enrollment, Explore_Courses, ...) previously got no

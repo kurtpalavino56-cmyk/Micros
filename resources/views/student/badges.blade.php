@@ -1,4 +1,4 @@
-﻿{{--
+{{--
     resources/views/my_badges.blade.php
 
     Expected data from the controller, e.g.:
@@ -46,34 +46,34 @@
     button{font-family:inherit;cursor:pointer;}
 
     /* Topbar */
-    .topbar{background:var(--navy);display:flex;align-items:center;justify-content:space-between;padding:14px 28px;gap:20px;}
-    .brand{display:flex;align-items:center;gap:14px;color:#fff;white-space:nowrap;}
-    .brand .logo{width:46px;height:46px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .brand .logo svg{width:30px;height:30px;}
-    .brand .logo img{width:100%;height:100%;object-fit:contain;border-radius:50%;padding:3px;}
-    .brand h1{font-size:24px;letter-spacing:1px;margin:0;font-weight:800;}
-    .nav-pills{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-items:center;}
-    .nav-pills a{background:transparent;color:#fff;font-weight:700;padding:10px 18px;border-radius:10px;font-size:15px;transition:color .15s ease, background-color .15s ease;}
-    .nav-pills a:hover{color:var(--gold);}
-    .nav-pills a.is-active{color:var(--gold);background:rgba(255,255,255,0.08);}
-    .icon-cluster{display:flex;align-items:center;gap:14px;}
-    .icon-circle{width:42px;height:42px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-    .icon-circle svg{width:22px;height:22px;color:var(--navy);}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /* Layout */
     .layout{display:grid;grid-template-columns:264px 1fr;min-height:calc(100vh - 74px);align-items:start;}
 
     /* Sidebar */
-    .sidebar{background:var(--navy);padding:26px 16px;display:flex;flex-direction:column;gap:6px;margin:24px 10px 24px 24px;border-radius:22px;box-shadow:0 16px 34px rgba(19,23,107,0.28);height:fit-content;position:sticky;top:20px;}
-    .side-link{display:flex;align-items:center;gap:14px;padding:14px;border-radius:14px;font-weight:700;font-size:16px;color:#fff;transition:color .15s ease;}
+
+
     /* hover: text + icon turn gold (non-active links) */
-    .side-link:not(.active):hover{color:var(--gold);}
-    .side-link:not(.active):hover .side-icon-box svg{color:var(--gold);}
-    .side-link svg{width:26px;height:26px;flex-shrink:0;}
-    .side-link.active{background:var(--cyan);color:var(--navy);}
-    .side-icon-box{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .side-icon-box svg{width:26px;height:26px;color:#fff;transition:color .15s ease;}
-    .side-link.active .side-icon-box svg{color:var(--navy);}
+
+
+
+
+
+
+
 
     /* Main */
     .main{padding:32px 36px 60px;}
@@ -122,7 +122,7 @@
 
     @media (max-width:980px){
         .layout{grid-template-columns:1fr;}
-        .sidebar{flex-direction:row;overflow-x:auto;position:static;margin:14px;border-radius:16px;}
+
         .stats{grid-template-columns:repeat(2,1fr);}
         .badge-grid{grid-template-columns:repeat(2,1fr);}
     }
@@ -140,7 +140,7 @@
     {{-- Main content --}}
     <main class="main">
 
-        <div class="page-head">
+        <div class="page-head student-page-heading">
             <h2>My Badge Collection</h2>
             <p>Badges earned through course completion</p>
         </div>
@@ -209,9 +209,6 @@
                                     <dt>Date received</dt>
                                     <dd>{{ $badge->earned_at?->format('F j, Y') ?? 'Date unavailable' }}</dd>
                                 </div>
-                                @if($badge->badge_level)
-                                    <div class="badge-detail"><dt>Badge level</dt><dd>{{ $badge->badge_level }}</dd></div>
-                                @endif
                                 @if($badge->pqf_level)
                                     <div class="badge-detail"><dt>PQF level</dt><dd>{{ $badge->pqf_level }}</dd></div>
                                 @endif
@@ -323,5 +320,4 @@
 </script>
 </body>
 </html>
-
 

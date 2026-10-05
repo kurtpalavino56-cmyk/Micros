@@ -321,7 +321,7 @@
         <div class="register-form-panel">
 
             <a href="{{ url('/') }}" class="register-back" title="Back to Home">
-                <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> 
+                <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>     
             </a>
 
             <h1 class="register-form-panel__heading">Let's get you started!</h1>

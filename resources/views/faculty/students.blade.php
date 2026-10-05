@@ -3,52 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Enrolled Students | Upskill</title>
+<title>Learner Progress &amp; Verification | Upskill</title>
 <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
-<link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
-    :root{--navy:#13176b;--gold:#dba617;--muted:#6b7280;--line:#e5e7eb;--green:#15803d;--shadow:0 10px 25px rgba(19,23,107,.08);}
+    :root{--navy:#13176b;--ink:#0e1a3a;--muted:#64748b;--line:#e5e7eb;--gold:#dba617;--green:#15803d;--shadow:0 8px 22px rgba(19,23,107,.06);}
     *{box-sizing:border-box;}
-    body{font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--navy);margin:0;background:#f8faff;}
-    a{text-decoration:none;color:inherit;} button{font-family:inherit;cursor:pointer;}
+    body{font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:var(--ink);margin:0;background:#f8faff;}
+    a{text-decoration:none;color:inherit;}button{font:inherit;cursor:pointer;}
     .main{padding:28px 32px 48px;min-width:0;}
     .page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:22px;}
-    .page-head h2{font-size:28px;margin:0 0 6px;color:var(--navy);}
-    .page-head p{margin:0;color:var(--muted);font-size:14px;}
-    .btn-outline{background:#fff;border:1.5px solid var(--navy);color:var(--navy);font-weight:800;padding:10px 20px;border-radius:12px;font-size:13px;}
-    .btn-outline:hover{background:var(--navy);color:#fff;}
-    .students-list{display:grid;gap:14px;max-width:1100px;}
-    .student-card{width:100%;text-align:left;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:var(--shadow);padding:18px 20px;display:flex;align-items:center;gap:16px;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;}
-    .student-card:hover{transform:translateY(-1px);box-shadow:0 14px 30px rgba(19,23,107,.12);border-color:#cbd3e8;}
-    .avatar{width:50px;height:50px;border-radius:50%;background:#eef1fb;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--navy);font-size:19px;overflow:hidden;background-size:cover;background-position:center;flex:0 0 50px;}
-    .student-main{min-width:0;flex:1;}
-    .student-name{font-size:16px;font-weight:800;color:var(--navy);margin:0 0 3px;}
-    .student-id{font-size:12.5px;color:var(--muted);margin:0;}
-    .student-summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:7px;font-size:12px;color:#5f6b85;}
-    .summary-pill{background:#eef2ff;color:#24346f;border-radius:999px;padding:4px 9px;font-weight:700;}
-    .summary-pill.done{background:#e8f7ef;color:var(--green);}
-    .view-student{color:var(--navy);font-weight:800;font-size:13px;white-space:nowrap;}
-    .view-student span{margin-left:4px;}
-    .empty-state{background:#fff;border:1px dashed var(--line);border-radius:16px;padding:38px;text-align:center;color:var(--muted);font-size:14px;}
-    .modal{position:fixed;inset:0;background:rgba(8,15,55,.48);display:none;align-items:center;justify-content:center;padding:20px;z-index:1200;}
-    .modal.is-open{display:flex;}
-    .modal-card{width:min(720px,100%);max-height:min(720px,90vh);overflow:auto;background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(8,15,55,.28);}
-    .modal-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:1;}
-    .modal-head h3{margin:0;font-size:20px;color:var(--navy);}
-    .modal-head p{margin:4px 0 0;color:var(--muted);font-size:12px;}
-    .modal-close{width:36px;height:36px;border:0;border-radius:10px;background:#f1f4fa;color:var(--navy);font-size:20px;line-height:1;}
-    .modal-body{padding:20px 22px 24px;}
-    .course-row{padding:15px 0;border-bottom:1px solid var(--line);}
-    .course-row:last-child{border-bottom:0;}
-    .course-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px;}
-    .course-title{font-weight:800;font-size:14px;color:var(--navy);min-width:0;}
-    .course-percent{font-weight:800;font-size:12px;color:var(--navy);white-space:nowrap;}
-    .track{height:8px;border-radius:999px;background:#e8ecf7;overflow:hidden;}
-    .fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--navy),#3b41c8);}
-    .fill.done{background:linear-gradient(90deg,var(--green),#34d399);}
-    .course-status{display:inline-block;margin-top:7px;background:#eef2ff;color:#24346f;font-size:11px;font-weight:800;padding:4px 9px;border-radius:999px;}
-    .course-status.done{background:#e8f7ef;color:var(--green);}
-    @media(max-width:700px){.main{padding:22px 16px 36px;}.student-card{padding:16px;}.view-student{font-size:0;}.view-student span{font-size:13px;}.modal{padding:12px;}}
+    main .page-head h2{font-family:'Plus Jakarta Sans',Inter,ui-sans-serif,system-ui,sans-serif;font-size:27px;font-weight:800;letter-spacing:-.04em;color:var(--ink);margin:0 0 6px;}
+    main .page-head p{font-size:14px;font-weight:400;color:var(--muted);margin:0;}
+    .btn-outline{display:inline-flex;align-items:center;justify-content:center;background:#fff;border:1px solid #cbd5e1;color:var(--navy);font-weight:700;padding:9px 15px;border-radius:8px;font-size:13px;white-space:nowrap;}
+    .btn-outline:hover{background:#f8fafc;border-color:#94a3b8;}
+    .course-list{display:grid;gap:12px;max-width:1180px;}
+    .course-row{display:flex;align-items:center;gap:18px;padding:17px 20px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);}
+    .course-copy{flex:1;min-width:0;}
+    .course-copy h3{font-family:'Plus Jakarta Sans',Inter,sans-serif;font-size:16px;line-height:1.35;font-weight:700;color:var(--ink);margin:0 0 7px;}
+    .course-meta{display:flex;align-items:center;gap:9px 18px;flex-wrap:wrap;color:var(--muted);font-size:13px;}
+    .course-meta strong{color:#334155;font-weight:600;}
+    .course-status{font-size:11px;font-weight:700;line-height:1;border-radius:999px;padding:6px 9px;background:#f1f5f9;color:#475569;}
+    .course-status.published{background:#dcfce7;color:#166534;}.course-status.pending{background:#fff7ed;color:#c2410c;}.course-status.denied{background:#fee2e2;color:#b91c1c;}
+    .review-count{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;background:#fff7ed;color:#c2410c;font-size:12px;font-weight:700;white-space:nowrap;}
+    .review-count.zero{background:#f1f5f9;color:#64748b;}
+    .manage-link{display:inline-flex;justify-content:center;align-items:center;min-width:92px;padding:9px 14px;border-radius:8px;background:var(--navy);border:1px solid var(--navy);color:#fff;font-size:13px;font-weight:700;white-space:nowrap;}
+    .manage-link:hover{background:#20278a;border-color:#20278a;}
+    .empty-state{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:38px;text-align:center;color:var(--muted);font-size:14px;}
+    @media(max-width:680px){.main{padding:22px 16px 36px;}.course-row{align-items:flex-start;gap:12px;flex-wrap:wrap;padding:15px;}.course-copy{flex-basis:calc(100% - 4px);}.course-row .manage-link{margin-left:auto;}.course-meta{gap:8px 12px;}}
 </style>
 </head>
 <body>
@@ -57,72 +41,38 @@
     @include('components.faculty-sidebar')
     <main class="main">
         @include('components.breadcrumbs', ['breadcrumbClass' => 'faculty-breadcrumbs', 'items' => [
-            ['label' => 'My Courses', 'url' => route('faculty.courses')],
-            ['label' => 'Enrolled Students'],
+            ['label' => 'Learner Progress & Verification'],
         ]])
-        <div class="page-head">
-            <div><h2>Enrolled Students</h2><p>View students enrolled in your courses and check their progress.</p></div>
+        <div class="page-head faculty-page-heading">
+            <div><h2 class="faculty-page-title">Learner Progress &amp; Verification</h2><p class="faculty-page-subtitle">Choose a course to review learner progress and verify completed requirements.</p></div>
             <a href="{{ route('faculty.courses') }}" class="btn-outline">My Courses</a>
         </div>
 
-        <div class="students-list">
-        @forelse ($students as $student)
-            @php
-                $courseCount = $student->courses->count();
-                $completedCount = $student->courses->where('completed', true)->count();
-                $modalId = 'student-details-' . $loop->index;
-            @endphp
-            <button type="button" class="student-card" data-student-modal="{{ $modalId }}" aria-haspopup="dialog">
-                <div class="avatar" @if($student->avatar_url) style="background-image:url('{{ $student->avatar_url }}')" @endif>
-                    @unless($student->avatar_url){{ strtoupper(substr($student->name ?? 'S', 0, 1)) }}@endunless
-                </div>
-                <div class="student-main">
-                    <p class="student-name">{{ $student->name }}</p>
-                    <p class="student-id">{{ $student->student_id ?: 'Student ID not provided' }}</p>
-                    <div class="student-summary">
-                        <span class="summary-pill">{{ $courseCount }} {{ $courseCount === 1 ? 'course' : 'courses' }}</span>
-                        @if($completedCount) <span class="summary-pill done">{{ $completedCount }} completed</span> @endif
+        <div class="course-list">
+        @forelse ($courses as $course)
+            <article class="course-row">
+                <div class="course-copy">
+                    <h3>{{ $course->title }}</h3>
+                    <div class="course-meta">
+                        <span><strong>{{ $course->students_count }}</strong> {{ Illuminate\Support\Str::plural('student', $course->students_count) }} enrolled</span>
+                        <span class="course-status {{ Illuminate\Support\Str::slug($course->status) }}">{{ $course->status }}</span>
+                        @if($course->requires_faculty_verification)
+                            <span class="review-count {{ $course->faculty_reviews_count === 0 ? 'zero' : '' }}">
+                                {{ $course->faculty_reviews_count > 0 ? 'Needs review · '.$course->faculty_reviews_count : 'No pending review' }}
+                            </span>
+                        @else
+                            <span class="review-count zero">Faculty verification not required</span>
+                        @endif
                     </div>
                 </div>
-                <span class="view-student">View courses <span>→</span></span>
-            </button>
+                <a class="manage-link" href="{{ route('faculty.students.course', $course->id) }}">Manage</a>
+            </article>
         @empty
-            <div class="empty-state">No students are enrolled in your courses yet.</div>
+            <div class="empty-state">You don’t have any courses yet.</div>
         @endforelse
         </div>
-
-        @foreach ($students as $student)
-            @php $modalId = 'student-details-' . $loop->index; @endphp
-            <div class="modal" id="{{ $modalId }}" role="dialog" aria-modal="true" aria-labelledby="{{ $modalId }}-title">
-                <div class="modal-card">
-                    <div class="modal-head">
-                        <div><h3 id="{{ $modalId }}-title">{{ $student->name }}</h3><p>{{ $student->student_id ?: 'Student ID not provided' }}</p></div>
-                        <button type="button" class="modal-close" data-close-student-modal aria-label="Close">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        @foreach ($student->courses as $course)
-                            <div class="course-row">
-                                <div class="course-top"><span class="course-title">{{ $course->title }}</span><span class="course-percent">{{ $course->percent }}%</span></div>
-                                <div class="track"><div class="fill {{ $course->completed ? 'done' : '' }}" style="width:{{ min(100, max(0, $course->percent)) }}%"></div></div>
-                                <span class="course-status {{ $course->completed ? 'done' : '' }}">{{ $course->completed ? 'Completed' : 'In progress' }}</span>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-        @endforeach
     </main>
 </div>
 @include('components.responsive')
-<script>
-(function(){
-    var openModal = function(id){ var m=document.getElementById(id); if(!m)return; m.classList.add('is-open'); document.body.style.overflow='hidden'; };
-    var closeAll = function(){ document.querySelectorAll('.modal.is-open').forEach(function(m){m.classList.remove('is-open');}); document.body.style.overflow=''; };
-    document.querySelectorAll('[data-student-modal]').forEach(function(btn){ btn.addEventListener('click',function(){openModal(btn.getAttribute('data-student-modal'));}); });
-    document.querySelectorAll('[data-close-student-modal]').forEach(function(btn){ btn.addEventListener('click',closeAll); });
-    document.querySelectorAll('.modal').forEach(function(m){ m.addEventListener('click',function(e){if(e.target===m)closeAll();}); });
-    document.addEventListener('keydown',function(e){if(e.key==='Escape')closeAll();});
-})();
-</script>
 </body>
 </html>

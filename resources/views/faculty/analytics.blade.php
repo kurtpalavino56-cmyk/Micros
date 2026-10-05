@@ -7,6 +7,9 @@
     {{-- Browser tab icon (favicon) --}}
     <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
     :root{
         --navy:#13176b;
@@ -25,39 +28,11 @@
     body{font-family:"Segoe UI", Roboto, Helvetica, Arial, sans-serif;color:var(--ink);margin:0;background:#fff;}
     a{text-decoration:none;color:inherit;}
     button{font-family:inherit;cursor:pointer;}
-
-    /* Topbar */
-    .topbar{background:var(--navy);display:flex;align-items:center;justify-content:space-between;padding:14px 28px;gap:20px;}
-    .brand{display:flex;align-items:center;gap:14px;color:#fff;white-space:nowrap;}
-    .brand .logo{width:46px;height:46px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .brand .logo img{width:100%;height:100%;object-fit:contain;border-radius:50%;padding:3px;}
-    .brand h1{font-size:24px;letter-spacing:1px;margin:0;font-weight:800;}
-    .nav-pills{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-items:center;}
-    .nav-pills a{background:transparent;color:#fff;font-weight:700;padding:10px 18px;border-radius:10px;font-size:15px;transition:color .15s ease, background-color .15s ease;}
-    .nav-pills a:hover{color:var(--gold);}
-    .nav-pills a.is-active{color:var(--gold);background:rgba(255,255,255,0.08);}
     .search-box{display:flex;align-items:center;gap:10px;background:#fff;border-radius:999px;padding:10px 18px;min-width:240px;color:var(--muted);}
     .search-box input{border:none;outline:none;font-size:15px;width:100%;color:var(--ink);background:transparent;}
-    .icon-cluster{display:flex;align-items:center;gap:14px;}
-    .icon-circle{width:42px;height:42px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-    .icon-circle svg{width:22px;height:22px;color:var(--navy);}
 
     /* Layout */
     .layout{display:grid;grid-template-columns:264px 1fr;min-height:calc(100vh - 74px);align-items:start;}
-
-    /* Sidebar */
-    .sidebar{background:var(--navy);padding:26px 16px;display:flex;flex-direction:column;gap:6px;margin:24px 10px 24px 24px;border-radius:22px;box-shadow:0 16px 34px rgba(19,23,107,0.28);height:fit-content;position:sticky;top:20px;}
-    .side-link{display:flex;align-items:center;gap:14px;padding:14px;border-radius:14px;font-weight:700;font-size:16px;color:#fff;transition:color .15s ease;}
-    .side-link svg{width:26px;height:26px;flex-shrink:0;}
-    .side-link.active{background:var(--cyan);color:var(--navy);}
-    .side-icon-box{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(255,255,255,0.14);}
-    .side-icon-box svg{color:#fff;width:22px;height:22px;transition:color .15s ease;}
-    .side-link.active .side-icon-box{background:var(--navy);}
-    .side-link.plain .side-icon-box{background:transparent;}
-    .side-link.plain .side-icon-box svg{color:#fff;width:26px;height:26px;}
-    /* hover: text + icon turn gold (non-active links) */
-    .side-link:not(.active):hover{color:var(--gold);}
-    .side-link:not(.active):hover .side-icon-box svg{color:var(--gold);}
     .side-divider{border:none;border-top:1px solid rgba(255,255,255,0.25);margin:18px 6px;}
 
     /* Main */
@@ -105,18 +80,24 @@
     .legend-item .l-num{font-size:18px;font-weight:800;color:var(--navy);line-height:1.2;}
     .legend-item .l-text{font-size:12px;color:var(--muted);font-weight:700;line-height:1.4;}
     .empty-state{border:1px dashed var(--line);border-radius:16px;padding:30px;text-align:center;color:var(--muted);font-size:14px;}
+    .course-outcomes-wrap{overflow-x:auto;}
+    .course-outcomes{width:100%;min-width:760px;border-collapse:collapse;font-size:13px;}
+    .course-outcomes th{padding:0 10px 11px;color:var(--muted);font-size:11px;letter-spacing:.04em;text-align:left;text-transform:uppercase;white-space:nowrap;}
+    .course-outcomes td{padding:12px 10px;border-top:1px solid var(--line);color:#344054;}
+    .course-outcomes td:first-child{font-weight:700;color:var(--navy);}
+    .course-outcomes th:not(:first-child),.course-outcomes td:not(:first-child){text-align:right;}
 
     @media (max-width:1180px){
         .charts-grid{grid-template-columns:1fr;}
     }
     @media (max-width:980px){
         .layout{grid-template-columns:1fr;}
-        .sidebar{flex-direction:row;overflow-x:auto;position:static;margin:14px;border-radius:16px;}
         .stat-cards{grid-template-columns:1fr;}
     }
 </style>
+@include('components.analytics-design')
 </head>
-<body>
+<body class="analytics-shell">
 
 @include('components.authenticated-topbar')
 
@@ -127,11 +108,12 @@
 
     {{-- Main content --}}
     <main class="main">
+        <div class="faculty-analytics-page">
 
-        <div class="page-head" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <div class="page-head faculty-page-heading" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
             <div>
-                <h2>Analytics</h2>
-                <p class="live-line">Last hour - <span class="count">{{ $onlineNow ?? 0 }}</span> learners online</p>
+                <h2 class="faculty-page-title">Analytics</h2>
+                <p class="live-line faculty-page-subtitle">Last 5 minutes · <span class="count">{{ $onlineNow ?? 0 }}</span> of your learners online</p>
             </div>
             <a href="{{ route('faculty.analytics.report') }}" class="download-report-btn" title="Download the full analytics report as a PDF">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
@@ -153,7 +135,7 @@
                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12z"/><path d="M8.2 13.9 7 23l5-3 5 3-1.2-9.1"/></svg>
                 </span>
                 <span class="num">{{ $stats['certificates'] ?? 0 }}</span>
-                <span class="label">Learners with Certificates</span>
+                <span class="label">Certificates Issued</span>
             </div>
             <div class="g-card cyan">
                 <span class="watermark">
@@ -180,9 +162,8 @@
             {{-- Total Academy Statistics â€” SVG area chart --}}
             <section class="panel">
                 <div class="panel-head">
-                    <span>Total Academy Statistics</span>
-                    {{-- âš  Not connected â€” timeline filter does nothing yet --}}
-                    <span class="range">Graph timeline: All time â–¾</span>
+                    <span>Enrolled Learner Growth</span>
+                    <span class="range">Last 12 months</span>
                 </div>
                 <div class="panel-body">
                     @php
@@ -258,8 +239,7 @@
             <section class="panel">
                 <div class="panel-head">
                     <span>Learner Success</span>
-                    {{-- âš  Not connected â€” timeline filter does nothing yet --}}
-                    <span class="range">All time â–¾</span>
+                    <span class="range">All time</span>
                 </div>
                 <div class="panel-body">
                     @php
@@ -319,12 +299,40 @@
 
         </div>
 
+        <section class="panel" style="margin-top:28px;">
+            <div class="panel-head">
+                <span>Course Outcomes</span>
+                <span class="range">Your courses</span>
+            </div>
+            <div class="panel-body course-outcomes-wrap">
+                <table class="course-outcomes">
+                    <thead><tr><th>Course</th><th>Enrolled</th><th>Completed</th><th>Completion</th><th>Avg. Quiz</th><th>Pass Rate</th><th>Reviews to Grade</th></tr></thead>
+                    <tbody>
+                        @forelse($courseAnalytics as $course)
+                            <tr>
+                                <td>{{ $course->title }}</td>
+                                <td>{{ $course->enrolled }}</td>
+                                <td>{{ $course->completed }}</td>
+                                <td>{{ $course->completion_rate === null ? '—' : $course->completion_rate . '%' }}</td>
+                                <td>{{ $course->average_score === null ? '—' : $course->average_score . '%' }}</td>
+                                <td>{{ $course->pass_rate === null ? '—' : $course->pass_rate . '%' }}</td>
+                                <td>{{ $course->pending_reviews }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="7" style="text-align:center;color:var(--muted);">Create a course to see its learner outcomes here.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        </div>
     </main>
 </div>
 
 <script>
     function refreshFacultyMonitoring() {
-        fetch('{{ route('monitoring.live') }}')
+        fetch('{{ route('faculty.analytics.live') }}')
             .then(response => response.json())
             .then(data => {
                 const active = document.getElementById('faculty-live-active-users');
@@ -342,7 +350,18 @@
                 items.forEach(item => {
                     const row = document.createElement('div');
                     row.className = 'legend-item';
-                    row.innerHTML = `<div class="legend-dot" style="background:${item.type === 'event' ? '#13176b' : '#dba617'}"></div><div><div class="l-num">${item.title}</div><div class="l-text">${item.detail} - ${item.time}</div></div>`;
+                    const marker = document.createElement('div');
+                    marker.className = 'legend-dot';
+                    marker.style.background = '#13176b';
+                    const content = document.createElement('div');
+                    const title = document.createElement('div');
+                    title.className = 'l-num';
+                    title.textContent = item.title;
+                    const detail = document.createElement('div');
+                    detail.className = 'l-text';
+                    detail.textContent = `${item.detail} - ${item.time}`;
+                    content.append(title, detail);
+                    row.append(marker, content);
                     container.appendChild(row);
                 });
             })
@@ -384,5 +403,3 @@
     @include('components.responsive')
 </body>
 </html>
-
-

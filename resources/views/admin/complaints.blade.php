@@ -1,6 +1,6 @@
 {{--
     resources/views/admin/Complaints.blade.php
-    Admin › Complaint Inbox — Help Center messages raised by students.
+    Admin › Complaint Inbox — Help Center messages from students, faculty, and visitors.
     Expects: $threads, $selected (Complaint|null), $unreadCount.
 --}}
 <!DOCTYPE html>
@@ -63,6 +63,7 @@
         border-radius:999px;letter-spacing:.4px;text-transform:uppercase;line-height:1.3;
         white-space:nowrap;}
     .origin.student{background:#e9ebfb;color:var(--navy);border:1px solid #c9cdf0;}
+    .origin.faculty{background:#e7f5f3;color:#12635e;border:1px solid #b9e2dc;}
     .origin.visitor{background:#fdf3d7;color:#a16207;border:1px solid #f0dc9a;}
     /* Attachment preview */
     .attach{margin-top:10px;}
@@ -145,7 +146,7 @@
 
 <div class="wrap">
     <h1 class="page-heading">Complaint Inbox</h1>
-    <p class="page-sub">Messages sent by students through the Help Center. Reply and they will see it in their inbox.</p>
+    <p class="page-sub">Message threads from students, faculty, and website visitors. Reply here to continue the conversation.</p>
 
     @if (session('success'))
         <div class="alert">{{ session('success') }}</div>
@@ -182,8 +183,8 @@
                     {{-- Badges on their own line, then the sender and time.
                          Mixing all four inline made them wrap mid-row. --}}
                     <div class="thread-badges">
-                        <span class="origin {{ $t->isFromVisitor() ? 'visitor' : 'student' }}">
-                            {{ $t->isFromVisitor() ? 'Visitor' : 'Student' }}
+                        <span class="origin {{ strtolower($t->senderRoleLabel()) }}">
+                            {{ $t->senderRoleLabel() }}
                         </span>
                         <span class="status {{ $t->status }}">{{ ucfirst($t->status) }}</span>
                         @if ($t->attachment_url)
@@ -208,8 +209,8 @@
                 <div class="detail-hd">
                     <h2>{{ $selected->subject }}</h2>
                     <div class="who">
-                        <span class="origin {{ $selected->isFromVisitor() ? 'visitor' : 'student' }}">
-                            {{ $selected->isFromVisitor() ? 'Website Visitor' : 'Student' }}
+                        <span class="origin {{ strtolower($selected->senderRoleLabel()) }}">
+                            {{ $selected->senderRoleLabel() }}
                         </span>
                         From {{ $selected->senderName() }}
                         @if ($selected->isFromVisitor())

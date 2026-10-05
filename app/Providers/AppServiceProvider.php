@@ -24,8 +24,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Every page shows a notification bell and (for students) an inbox
-        // envelope, so every view needs both unread counts.
+        // Authenticated pages show a notification bell and a student/faculty
+        // inbox envelope, so every view needs both unread counts.
         //
         // NOTE: these are cached on the REQUEST, not in a `static` inside the
         // closure. The closure is registered once at boot and reused, so a
@@ -46,28 +46,38 @@ class AppServiceProvider extends ServiceProvider
                         ->where('is_read', false)
                         ->count();
 
-                    if ($user->isFaculty()) {
-                        // Faculty inbox = announcements addressed to faculty.
-                        // Read state is a watermark, so anything posted after
-                        // announcements_read_at counts as unread.
-                        $watermark = $user->announcements_read_at;
-
-                        $counts['inbox'] = Announcement::where('is_published', true)
+                    if ($user->isStudent() || $user->isFaculty()) {
+                        $roleName = $user->roleName();
+                        $readAt = $user->notifications_read_at;
+                        $unreadAnnouncementCount = Announcement::where('is_published', true)
+                            ->orderByDesc('is_pinned')
+                            ->latest('published_at')
                             ->get()
-                            ->filter(fn (Announcement $a) => $a->visibleTo('faculty'))
-                            ->filter(function (Announcement $a) use ($watermark) {
-                                $postedAt = $a->published_at ?? $a->created_at;
+                            ->filter(function (Announcement $announcement) use ($roleName): bool {
+                                $audience = $announcement->audience;
 
-                                return $postedAt && (! $watermark || $watermark->lt($postedAt));
+                                return empty($audience)
+                                    || count($audience) >= 2
+                                    || in_array('public', $audience, true)
+                                    || in_array($roleName, $audience, true);
+                            })
+                            ->take(5)
+                            ->filter(function (Announcement $announcement) use ($readAt): bool {
+                                $postedAt = $announcement->published_at ?? $announcement->created_at;
+
+                                return ! $postedAt || ! $readAt || $readAt->lt($postedAt);
                             })
                             ->count();
-                    } elseif ($user->isStudent()) {
-                        // Student inbox = their own complaint threads.
-                        // Announcements live on the notifications page.
+
+                        $counts['notifications'] += $unreadAnnouncementCount;
+                    }
+
+                    if ($user->isFaculty() || $user->isStudent()) {
+                        // Inbox = the signed-in user's admin message threads.
                         $counts['inbox'] = Complaint::where('user_id', $user->id)
                             ->get()
                             ->filter
-                            ->unreadForStudent()
+                            ->unreadForSender()
                             ->count();
                     }
                 }

@@ -6,8 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * ComplaintReply — one message in a complaint thread, from either the
- * student who raised it or an administrator.
+ * ComplaintReply — one message in a support thread, from its sender or an administrator.
  */
 class ComplaintReply extends Model
 {
