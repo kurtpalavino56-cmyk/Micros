@@ -35,6 +35,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0" rel="stylesheet">
 <title>{{ $course->title ?? 'Course' }} | Upskill</title>
 <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
 <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
@@ -76,6 +77,7 @@
     .layout{display:grid;grid-template-columns:264px 1fr;min-height:calc(100vh - 74px);align-items:start;}
     .main{min-width:0;padding:0 0 60px;font-family:Inter,Arial,sans-serif;font-size:14px;line-height:1.55;color:var(--c-text);}
     .main button{font-family:inherit;}
+    .material-symbols-rounded{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;display:inline-block;line-height:1;text-transform:none;letter-spacing:normal;word-wrap:normal;white-space:nowrap;direction:ltr;font-feature-settings:"liga";-webkit-font-smoothing:antialiased;}
 
     .course-shell{
         display:grid;
@@ -89,7 +91,7 @@
     .course-content{grid-area:content;min-width:0;display:flex;flex-direction:column;gap:20px;}
 
     /* ── Hero ────────────────────────────────────────────────── */
-    .hero{background:var(--navy);border-radius:16px;padding:30px 32px 26px;color:#fff;box-shadow:0 10px 28px rgba(19,23,107,.14);min-width:0;}
+    .hero{background:#172f94;border-radius:16px;padding:30px 32px 26px;color:#fff;box-shadow:0 10px 28px rgba(19,23,107,.14);min-width:0;}
     .hero-tags{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
     .tag{padding:4px 12px;border-radius:6px;font-size:12px;font-weight:600;line-height:1.5;}
     .tag-cat{background:#e8edf7;color:var(--navy);}
@@ -104,10 +106,10 @@
 
     .hero-meta{display:flex;align-items:center;gap:8px 24px;flex-wrap:wrap;margin-top:24px;padding-top:18px;border-top:1px solid rgba(255,255,255,.18);font-size:14px;font-weight:500;color:rgba(255,255,255,.9);}
     .hero-meta span{display:inline-flex;align-items:center;gap:7px;}
-    .hero-meta svg{width:16px;height:16px;flex-shrink:0;opacity:.85;}
+    .hero-meta .material-symbols-rounded{width:18px;height:18px;font-size:18px;flex-shrink:0;opacity:.85;}
 
     /* ── Enroll card ─────────────────────────────────────────── */
-    .enroll-card{position:sticky;top:20px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:16px;box-shadow:0 8px 24px rgba(16,24,40,.08);overflow:hidden;}
+    .enroll-card{position:sticky;top:82px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:16px;box-shadow:0 8px 24px rgba(16,24,40,.08);overflow:hidden;}
     .enroll-thumb{aspect-ratio:16/9;background:var(--thumb);background-size:cover;background-position:center;}
     .enroll-body{padding:20px;}
     .progress-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;font-weight:600;color:var(--c-strong);}
@@ -136,7 +138,7 @@
 
     .enroll-perks{display:flex;flex-direction:column;gap:10px;padding-top:16px;border-top:1px solid var(--c-border);}
     .perk{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:500;color:var(--c-text);}
-    .perk svg{width:18px;height:18px;color:var(--gold-dark);flex-shrink:0;}
+    .perk .material-symbols-rounded{width:18px;height:18px;font-size:18px;color:var(--gold-dark);flex-shrink:0;}
 
     /* Prerequisites inside the card */
     .prereq-box{margin:0 0 16px;padding:14px;border:1px solid var(--c-border);border-radius:10px;background:var(--c-surface-alt);}
@@ -150,7 +152,7 @@
 
     /* ── Content cards ───────────────────────────────────────── */
     .info-panel{background:var(--c-surface);border:1px solid var(--c-border);border-radius:14px;box-shadow:0 1px 2px rgba(16,24,40,.04);overflow:hidden;}
-    .info-panel-head{padding:16px 22px;background:var(--c-surface-alt);border-bottom:1px solid var(--c-border);font-size:16px;font-weight:600;line-height:1.4;color:var(--c-strong);}
+    .info-panel-head{padding:16px 22px;background:#172f94;border-bottom:1px solid #172f94;font-size:16px;font-weight:600;line-height:1.4;color:#fff;}
     .info-panel-body{padding:20px 22px;}
     .empty-note{margin:0;font-size:14px;color:var(--c-muted);}
 
@@ -164,11 +166,12 @@
 
     .objectives-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;}
     .objectives-list li{display:flex;align-items:flex-start;gap:12px;font-size:14px;line-height:1.55;color:var(--c-text);}
-    .objectives-list li svg{width:18px;height:18px;margin-top:2px;color:var(--navy);flex-shrink:0;}
+    .objectives-list li .material-symbols-rounded{width:18px;height:18px;margin-top:2px;font-size:18px;color:var(--navy);flex-shrink:0;}
 
     .detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px 24px;margin:0;}
     .detail-grid>div{min-width:0;}
-    .detail-grid dt{margin:0 0 3px;font-size:12px;font-weight:600;color:var(--c-muted);}
+    .detail-grid dt{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:12px;font-weight:600;color:var(--c-muted);}
+    .detail-grid dt .material-symbols-rounded{font-size:24px;color:var(--navy);flex-shrink:0;}
     .detail-grid dd{margin:0;font-size:14px;line-height:1.55;color:var(--c-strong);overflow-wrap:anywhere;}
     .detail-grid .is-wide{grid-column:1/-1;}
 
@@ -204,7 +207,7 @@
     /* ── Back to top ─────────────────────────────────────────── */
     #back-to-top-btn{position:fixed;right:26px;bottom:26px;z-index:2000;width:44px;height:44px;border-radius:12px;border:none;background:var(--navy);color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 20px rgba(19,23,107,.28);transition:transform .15s ease,background .2s ease;}
     #back-to-top-btn:hover{background:var(--gold);transform:translateY(-2px);}
-    #back-to-top-btn svg{width:20px;height:20px;}
+    #back-to-top-btn .material-symbols-rounded{width:20px;height:20px;font-size:20px;}
 
     /* ── Responsive ──────────────────────────────────────────── */
     @media (max-width:1100px){
@@ -298,39 +301,25 @@
                 <div class="hero-meta">
                     @if($course->instructor)
                         <span>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="8" r="4"/>
-                                <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/>
-                            </svg>
+                            <span class="material-symbols-rounded" aria-hidden="true">person</span>
                             {{ $course->instructor }}
                         </span>
                     @endif
                     @if($course->learning_hours || $course->duration)
                         <span>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="9"/>
-                                <path d="M12 7v5l3 3"/>
-                            </svg>
+                            <span class="material-symbols-rounded" aria-hidden="true">schedule</span>
                             {{ $course->learning_hours ? $course->learning_hours.' '.Str::plural('hour', $course->learning_hours) : $course->duration }}
                         </span>
                     @endif
                     @if($modules->isNotEmpty())
                         <span>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="2" y="3" width="20" height="14" rx="2"/>
-                                <path d="M8 21h8M12 17v4"/>
-                            </svg>
+                            <span class="material-symbols-rounded" aria-hidden="true">menu_book</span>
                             {{ $modules->count() }} {{ Str::plural('module', $modules->count()) }}
                         </span>
                     @endif
                     @if($course->enrolled_count ?? false)
                         <span>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                            </svg>
+                            <span class="material-symbols-rounded" aria-hidden="true">groups</span>
                             {{ $course->enrolled_count }} enrolled
                         </span>
                     @endif
@@ -404,10 +393,7 @@
 
                     <div class="enroll-perks">
                         <div class="perk">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="8" r="5"/>
-                                <path d="M8 13l-2 8 6-3 6 3-2-8"/>
-                            </svg>
+                            <span class="material-symbols-rounded" aria-hidden="true">workspace_premium</span>
                             Earn a digital certificate
                         </div>
                     </div>
@@ -435,9 +421,7 @@
                             <ul class="objectives-list">
                                 @foreach($course->learning_outcomes as $objective)
                                     <li>
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                            <polyline points="20 6 9 17 4 12"/>
-                                        </svg>
+                                        <span class="material-symbols-rounded" aria-hidden="true">check</span>
                                         <span>{{ $objective }}</span>
                                     </li>
                                 @endforeach
@@ -454,13 +438,13 @@
                         <div class="info-panel-head">Micro-credential details</div>
                         <div class="info-panel-body">
                             <dl class="detail-grid">
-                                @if($course->pqf_level)<div><dt>PQF level</dt><dd>Level {{ $course->pqf_level }}</dd></div>@endif
-                                @if($course->delivery_mode)<div><dt>Delivery</dt><dd>{{ Str::headline($course->delivery_mode) }}</dd></div>@endif
-                                @if($course->target_learners)<div><dt>Intended learners</dt><dd>{{ $course->target_learners }}</dd></div>@endif
-                                @if($course->credit_bearing)<div><dt>Credit information</dt><dd>{{ $course->credit_equivalency ?: 'Proposed for institutional review' }}@if($course->equivalent_course) &middot; {{ $course->equivalent_course }}@endif</dd></div>@endif
-                                @if($course->badge_name)<div><dt>Completion badge</dt><dd>{{ $course->badge_name }}@if($course->badge_description) &middot; {{ $course->badge_description }}@endif</dd></div>@endif
-                                @if($course->assessment_strategy)<div class="is-wide"><dt>Assessment strategy</dt><dd>{{ $course->assessment_strategy }}</dd></div>@endif
-                                @if($course->grading_rubric)<div class="is-wide"><dt>Mastery criteria</dt><dd>{{ $course->grading_rubric }}</dd></div>@endif
+                                @if($course->pqf_level)<div><dt><span class="material-symbols-rounded" aria-hidden="true">school</span>PQF level</dt><dd>Level {{ $course->pqf_level }}</dd></div>@endif
+                                @if($course->delivery_mode)<div><dt><span class="material-symbols-rounded" aria-hidden="true">devices</span>Delivery</dt><dd>{{ Str::headline($course->delivery_mode) }}</dd></div>@endif
+                                @if($course->target_learners)<div><dt><span class="material-symbols-rounded" aria-hidden="true">groups</span>Intended learners</dt><dd>{{ $course->target_learners }}</dd></div>@endif
+                                @if($course->credit_bearing)<div><dt><span class="material-symbols-rounded" aria-hidden="true">account_balance</span>Credit information</dt><dd>{{ $course->credit_equivalency ?: 'Proposed for institutional review' }}@if($course->equivalent_course) &middot; {{ $course->equivalent_course }}@endif</dd></div>@endif
+                                @if($course->badge_name)<div><dt><span class="material-symbols-rounded" aria-hidden="true">workspace_premium</span>Completion badge</dt><dd>{{ $course->badge_name }}@if($course->badge_description) &middot; {{ $course->badge_description }}@endif</dd></div>@endif
+                                @if($course->assessment_strategy)<div class="is-wide"><dt><span class="material-symbols-rounded" aria-hidden="true">fact_check</span>Assessment strategy</dt><dd>{{ $course->assessment_strategy }}</dd></div>@endif
+                                @if($course->grading_rubric)<div class="is-wide"><dt><span class="material-symbols-rounded" aria-hidden="true">rule</span>Mastery criteria</dt><dd>{{ $course->grading_rubric }}</dd></div>@endif
                             </dl>
                         </div>
                     </section>
@@ -564,7 +548,7 @@
 {{-- Back to top (appears on long pages) --}}
 <button id="back-to-top-btn" type="button" title="Back to top" aria-label="Back to top"
         onclick="window.scrollTo({top:0,behavior:'smooth'});">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+    <span class="material-symbols-rounded" aria-hidden="true">arrow_upward</span>
 </button>
 
 <script>

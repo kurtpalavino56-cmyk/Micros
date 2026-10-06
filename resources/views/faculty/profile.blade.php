@@ -61,7 +61,7 @@
         --shadow: 0 10px 25px rgba(19,23,107,0.08);
     }
     *{box-sizing:border-box;}
-    body{font-family:"Segoe UI", Roboto, Helvetica, Arial, sans-serif;color:var(--ink);margin:0;background:#fff;}
+    body{font-family:Inter,"Segoe UI", Roboto, Helvetica, Arial, sans-serif;color:var(--ink);margin:0;background:#f7f8fc;}
     a{text-decoration:none;color:inherit;}
     button{font-family:inherit;cursor:pointer;}
     .search-box{display:flex;align-items:center;gap:10px;background:#fff;border-radius:999px;padding:10px 18px;min-width:240px;color:var(--muted);}
@@ -84,36 +84,38 @@
     .charts-grid > *,
     .profile-card > *{min-width:0;}
     .panel{min-width:0;}
-    .page-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:28px;}
-    .page-head h2{font-size:30px;margin:0 0 6px;color:var(--navy);}
-    .page-head p{margin:0;color:var(--muted);font-size:15px;font-weight:600;}
+    .page-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:22px;}
+    .page-head h2{font-size:30px;font-weight:700;margin:0 0 6px;color:var(--navy);letter-spacing:-.02em;}
+    .page-head p{margin:0;color:var(--muted);font-size:14px;font-weight:400;}
     .page-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-    .btn-edit-profile{background:#fff;border:1.5px solid var(--line);color:var(--navy);font-weight:800;padding:12px 28px;border-radius:12px;font-size:15px;box-shadow:var(--shadow);transition:border-color .2s;}
-    .btn-edit-profile:hover{border-color:var(--navy);}
+    .btn-edit-profile{background:#fff;border:1px solid #d0d5dd;color:var(--navy);font-weight:700;padding:10px 20px;border-radius:9px;font-size:14px;box-shadow:0 1px 2px rgba(16,24,40,.04);transition:border-color .2s,background .2s;}
+    .btn-edit-profile:hover{border-color:var(--gold-dark);background:#fffdf5;}
     .btn-logout{background:#fff1f2;border:1.5px solid #fecdd3;color:#b91c1c;font-weight:800;padding:12px 28px;border-radius:12px;font-size:15px;box-shadow:var(--shadow);}
     .btn-logout:hover{background:#fee2e2;border-color:#f43f5e;}
 
     /* Panels (same pattern as dashboard side panels) */
-    .panel{border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:28px;background:#fff;}
-    .panel-head{background:var(--gold);color:var(--navy);font-weight:800;font-size:20px;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
-    .panel-head .range{font-size:12px;font-weight:700;background:rgba(255,255,255,0.55);padding:6px 14px;border-radius:999px;}
+    .panel{border:1px solid #e4e7ec;border-radius:14px;box-shadow:0 1px 3px rgba(16,24,40,.06);overflow:hidden;margin-bottom:22px;background:#fff;}
+    .panel-head{background:#f6cb3b;color:var(--navy);font-weight:700;font-size:16px;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+    .panel-head .range{font-size:12px;font-weight:600;background:rgba(255,255,255,.58);padding:5px 12px;border-radius:999px;}
     .panel-head .head-ico{display:flex;align-items:center;gap:10px;}
     .panel-head .head-ico svg{width:22px;height:22px;}
-    .panel-body{padding:22px;}
+    .panel-body{padding:20px;}
 
     /* â”€â”€ â‘  Profile identity card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-    .profile-card{border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:24px;display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap;margin-bottom:28px;}
-    .avatar-ring{width:90px;height:90px;border-radius:50%;border:3px solid var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#fff;overflow:hidden;background-size:cover;background-position:center;}
+    .profile-card{border:1px solid #e4e7ec;border-radius:14px;box-shadow:0 1px 3px rgba(16,24,40,.06);padding:0;display:block;margin-bottom:22px;overflow:hidden;background:#fff;}
+    .profile-cover{height:104px;background:#f6cb3b;}
+    .profile-info{display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-top:-42px;padding:0 24px 24px;}
+    .avatar-ring{width:96px;height:96px;border-radius:50%;border:4px solid #fff;box-shadow:0 0 0 1px #e4e7ec,0 4px 12px rgba(16,24,40,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#f1f3fc;overflow:hidden;background-size:cover;background-position:center;}
     .avatar-ring svg{width:50px;height:50px;color:var(--navy);}
-    .identity{flex:1 1 auto;min-width:0;}
-    .identity h3{margin:0 0 12px;font-size:22px;color:var(--navy);display:flex;flex-wrap:wrap;align-items:center;gap:10px;line-height:1.25;}
-    .identity-grid{display:flex;flex-wrap:wrap;gap:14px 28px;color:var(--muted);font-size:14px;}
-    .id-item{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);min-width:0;overflow-wrap:anywhere;}
-    .id-item svg{width:18px;height:18px;color:var(--navy);flex-shrink:0;}
-    .role-pill{display:inline-block;background:var(--cyan);color:var(--navy);font-weight:800;font-size:12px;padding:5px 16px;border-radius:999px;white-space:nowrap;flex-shrink:0;}
+    .identity{flex:1 1 280px;min-width:0;padding-top:48px;}
+    .identity h3{margin:0 0 14px;font-size:22px;font-weight:700;color:#101828;display:flex;flex-wrap:wrap;align-items:center;gap:10px;line-height:1.3;letter-spacing:-.01em;}
+    .identity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 24px;color:#344054;font-size:14px;}
+    .id-item{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:#344054;min-width:0;overflow-wrap:anywhere;}
+    .id-item svg{width:17px;height:17px;margin-top:2px;color:var(--navy);flex-shrink:0;}
+    .role-pill{display:inline-block;background:#fff2bf;color:#735300;font-weight:700;font-size:12px;padding:5px 12px;border-radius:999px;white-space:nowrap;flex-shrink:0;}
 
     /* Two-column: About me | Settings */
-    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:0;}
+    .two-col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-bottom:0;}
 
     .about-row{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:10px 0;border-bottom:1px dashed var(--line);}
     .about-row:last-child{border-bottom:none;}
@@ -132,7 +134,7 @@
     .set-select{flex:1;min-width:150px;border:1.5px solid #c9ccdb;border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700;color:var(--ink);background:#fff;outline:none;font-family:inherit;}
 
     /* â”€â”€ â‘¡ Performance + Activity charts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-    .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:28px;}
+    .charts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-bottom:22px;}
 
     .chart{display:flex;align-items:flex-end;gap:14px;height:190px;padding-top:26px;}
     .chart .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:8px;min-width:0;}
@@ -330,7 +332,9 @@
         .search-box{min-width:0;flex:1;}
         .panel-head{font-size:17px;padding:12px 16px;}
         .panel-body{padding:18px;}
-        .profile-card{padding:20px;gap:18px;}
+        .profile-card{padding:0;gap:0;}
+        .profile-info{gap:16px;padding:0 18px 20px;}
+        .identity{padding-top:46px;}
 
         /* Charts breathe instead of squeezing bars to nothing */
         .chart{height:170px;gap:8px;}
@@ -366,6 +370,11 @@
         .main{padding:16px 12px 40px;}
         .panel-body{padding:16px;}
         .panel-head{font-size:16px;}
+        .profile-cover{height:86px;}
+        .profile-info{padding:0 16px 18px;}
+        .avatar-ring{width:80px;height:80px;}
+        .avatar-ring svg{width:44px;height:44px;}
+        .identity{flex-basis:100%;padding-top:0;}
         .about-row{gap:2px;}
         .about-value{text-align:left;}
         .set-label{min-width:0;}
@@ -417,15 +426,17 @@
 
         {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â• â‘  IDENTITY CARD â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
         <section class="profile-card">
-            <div class="avatar-ring"
-                 @if($user->avatar_url ?? null) style="background-image:url('{{ $user->avatar_url }}')" @endif>
-                @unless($user->avatar_url ?? null)
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>
-                @endunless
-            </div>
-            <div class="identity">
-                <h3>{{ $user->name ?? 'Faculty Member' }}<span class="role-pill">{{ $user->role ?? 'Faculty' }}</span></h3>
-                <div class="identity-grid">
+            <div class="profile-cover" aria-hidden="true"></div>
+            <div class="profile-info">
+                <div class="avatar-ring"
+                     @if($user->avatar_url ?? null) style="background-image:url('{{ $user->avatar_url }}')" @endif>
+                    @unless($user->avatar_url ?? null)
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>
+                    @endunless
+                </div>
+                <div class="identity">
+                    <h3>{{ $user->name ?? 'Faculty Member' }}<span class="role-pill">{{ $user->role ?? 'Faculty' }}</span></h3>
+                    <div class="identity-grid">
                     <span class="id-item">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                         {{ $user->phone ?? '-' }}
@@ -446,6 +457,7 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h12"/><path d="M6 13h8"/></svg>
                         {{ $user->user_code ?? '-' }}
                     </span>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1040,5 +1052,3 @@ openEditModal(@json($errors->has('current_password') || $errors->has('password')
     @include('components.responsive')
 </body>
 </html>
-
-

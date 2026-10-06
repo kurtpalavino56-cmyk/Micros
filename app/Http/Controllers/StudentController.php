@@ -1921,10 +1921,8 @@ class StudentController extends Controller
      *
      * Same access-layer guarantees as viewCertificate(): no issuance, no
      * new Certificate/UserBadge row, no enrollment/mastery/snapshot
-     * writes. The only side effect possible here is
-     * CertificateBuilder::ensureFileGenerated() writing the PDF file
-     * itself the first time it's requested — idempotent, from Step 5 —
-     * never regenerating a file that already exists.
+     * writes. The PDF is refreshed from the certificate's immutable
+     * snapshot data so downloads use the current certificate layout.
      */
     public function downloadCertificate(string $serial)
     {
@@ -1932,7 +1930,7 @@ class StudentController extends Controller
 
         abort_if($certificate->user_id !== Auth::id(), 403);
 
-        $certificate = CertificateBuilder::ensureFileGenerated($certificate);
+        $certificate = CertificateBuilder::ensureFileGenerated($certificate, refresh: true);
 
         $relativePath = 'certificates/'.$certificate->serial.'.pdf';
 

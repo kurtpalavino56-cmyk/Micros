@@ -129,10 +129,55 @@
         color:var(--navy);cursor:pointer;line-height:1;}
     .count-pill{background:#f4c430;color:#172554;border-radius:999px;font-size:11px;
         font-weight:800;padding:3px 9px;}
+    .inbox-page .wrap{width:100%;max-width:1380px;margin:24px auto;padding:0 28px 48px;}
+    .inbox-page .page-head{margin-bottom:20px;padding:22px 24px;background:#fff;
+        border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);}
+    .inbox-page .page-head h2{font-size:28px;letter-spacing:-.035em;color:#111a3c;}
+    .inbox-page .page-head p{max-width:780px;margin:0;color:#5f6b85;line-height:1.55;}
+    .inbox-page .page-head p a{font-weight:700;text-decoration:none!important;}
+    .inbox-page .page-head p a:hover{text-decoration:underline!important;}
+    .inbox-page .grid{grid-template-columns:minmax(260px,320px) minmax(0,1fr);gap:18px;}
+    .inbox-page .panel{border-radius:16px;box-shadow:0 8px 24px rgba(19,23,107,.06);overflow:hidden;}
+    .inbox-page .panel-hd{min-height:54px;padding:14px 18px;background:#f8faff;color:#111a3c;
+        border-bottom:1px solid #e8ebf2;font-size:14px;}
+    .inbox-page .thread{padding:15px 17px;border-left:3px solid transparent;transition:background .15s ease,border-color .15s ease;}
+    .inbox-page .thread:hover{background:#f7f9ff;border-left-color:#c5d0ee;}
+    .inbox-page .thread.active{background:#eef2ff;border-left-color:var(--navy);}
+    .inbox-page .thread-subject{font-size:13.5px;color:#172554;}
+    .inbox-page .thread-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+    .inbox-page .status{flex:0 0 auto;}
+    .inbox-page .msgs{min-height:250px;max-height:500px;padding:22px 24px;background:#fff;}
+    .inbox-page .detail-hd{padding:18px 24px;background:#f8faff;}
+    .inbox-page .detail-hd h3{font-size:18px;color:#111a3c;line-height:1.35;}
+    .inbox-page .reply-box{background:#fff;padding:16px 24px 20px;}
+    .inbox-page .reply-box textarea{min-height:82px;}
+    .inbox-page .btn-navy{border-radius:9px;padding:11px 20px;transition:background .15s ease,transform .15s ease;}
+    .inbox-page .btn-navy:hover{background:#20278a;transform:translateY(-1px);}
+    .inbox-page .new-card{margin-top:18px;}
+    .inbox-page .new-card>summary{list-style:none;cursor:pointer;user-select:none;}
+    .inbox-page .new-card>summary::-webkit-details-marker{display:none;}
+    .inbox-page .new-card>summary::after{content:"+";display:grid;place-items:center;
+        width:26px;height:26px;border-radius:50%;background:#e9edfb;color:var(--navy);font-size:19px;line-height:1;}
+    .inbox-page .new-card[open]>summary::after{content:"−";}
+    .inbox-page .new-message-body{padding:20px 22px;}
+    .inbox-page .empty{padding:36px 20px;line-height:1.55;}
+    @media(max-width:900px){.inbox-page .wrap{padding-right:20px;padding-left:20px;}}
+    @media(max-width:680px){
+        .inbox-page .wrap{margin:16px auto;padding:0 14px 32px;}
+        .inbox-page .page-head{padding:18px 17px;border-radius:14px;}
+        .inbox-page .page-head h2{font-size:24px;}
+        .inbox-page .grid{grid-template-columns:minmax(0,1fr);gap:14px;}
+        .inbox-page .msgs{min-height:180px;max-height:55vh;padding:17px 15px;}
+        .inbox-page .detail-hd,.inbox-page .reply-box{padding-right:16px;padding-left:16px;}
+        .inbox-page .new-message-body{padding:17px 16px;}
+        .inbox-page .file-picker{align-items:stretch;}
+        .inbox-page .file-type-select{width:100%;}
+        .inbox-page .file-row{flex-basis:100%;}
+    }
     @media(max-width:900px){.grid{grid-template-columns:1fr;}}
 </style>
 </head>
-<body>
+<body class="inbox-page {{ $isFacultyInbox ? 'faculty-inbox-page' : 'student-inbox-page' }}">
 @if ($isFacultyInbox)
     @include('components.authenticated-topbar')
 @else
@@ -149,8 +194,7 @@
         <div class="wrap">
     <div class="page-head {{ $isFacultyInbox ? 'faculty-page-heading' : 'student-page-heading' }}">
         <h2>{{ $isFacultyInbox ? 'Inbox' : 'My Inbox' }}</h2>
-        <p>Private message threads with administrators appear here. Announcements are separate and appear on your
-           <a href="{{ route('notifications.index') }}" style="color:var(--navy);text-decoration:underline;">notifications page</a>.</p>
+        <p>Private message threads with administrators appear here.</p>
     </div>
 
     @if (session('success'))
@@ -164,17 +208,18 @@
 
     <div class="grid">
         {{-- â”€â”€ Threads â”€â”€ --}}
-        <div class="panel">
+        <nav class="panel" aria-label="Your message threads">
             <div class="panel-hd">
                 <span>My Messages</span>
                 @if (($unreadCount ?? 0) > 0)<span class="count-pill">{{ $unreadCount }}</span>@endif
             </div>
             @forelse ($threads as $t)
                 <a class="thread {{ $selected && $selected->id === $t->id ? 'active' : '' }}"
+                   @if($selected && $selected->id === $t->id) aria-current="page" @endif
                    href="{{ route($inboxIndexRoute, ['thread' => $t->id]) }}">
                     <div class="thread-top">
                         <span class="thread-subject">{{ $t->subject }}</span>
-                        @if ($t->unreadForStudent())<span class="dot"></span>@endif
+                        @if ($t->unreadForStudent())<span class="dot" role="img" aria-label="Unread message" title="Unread message"></span>@endif
                     </div>
                     <div class="thread-meta">
                         {{ $t->lastActivityAt()?->diffForHumans() }}
@@ -184,7 +229,7 @@
             @empty
                 <div class="empty">You haven't sent any messages yet.</div>
             @endforelse
-        </div>
+        </nav>
 
         {{-- â”€â”€ Conversation â”€â”€ --}}
         <div class="panel">
@@ -245,9 +290,9 @@
     </div>
 
     {{-- â”€â”€ New complaint â”€â”€ --}}
-    <div class="panel new-card">
-        <div class="panel-hd"><span>Send a New Message</span></div>
-        <div style="padding:22px 24px;">
+    <details class="panel new-card">
+        <summary class="panel-hd"><span>Send a New Message</span></summary>
+        <div class="new-message-body">
             <form method="POST" action="{{ route($newMessageRoute) }}" enctype="multipart/form-data">
                 @csrf
                 <div class="field">
@@ -283,7 +328,7 @@
                 <button type="submit" class="btn-navy">Send</button>
             </form>
         </div>
-    </div>
+    </details>
 </div>
 
 {{-- Full-size attachment viewer --}}
@@ -291,8 +336,6 @@
     <button type="button" class="lb-close" onclick="closeLightbox(event, true)" aria-label="Close">&times;</button>
     <img id="lightbox-img" src="" alt="Attachment">
 </div>
-
-        </div>
     </main>
 </div>
 

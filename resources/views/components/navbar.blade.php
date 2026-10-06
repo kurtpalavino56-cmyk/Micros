@@ -4,7 +4,7 @@
         {{-- Brand --}}
         <a href="{{ url('/') }}" class="navbar__brand">
             <span class="navbar__brand-logo"><img src="{{ asset('images/PSU-Logo.png') }}" alt="PSU Logo"></span>
-            <span class="navbar__brand-name">UPSKILL</span>
+            <span class="navbar__brand-name"><span>UP</span><span class="navbar__brand-skill">SKILL</span></span>
         </a>
 
         {{-- Desktop Nav Links --}}
@@ -30,12 +30,14 @@
 <style>
 /* ── Navbar ── */
 .navbar {
-    background: linear-gradient(115deg, #001B33  0%, #001289 35%, #1235c7 58%, #2457e8 100%);
+    --gold: #f6cb3b;
+    --gold-light: #f6cb3b;
+    background: #07143f;
     position: sticky;
     top: 0;
     z-index: 1000;
     border-bottom: 1px solid rgba(255,255,255,.10);
-    box-shadow: 0 8px 24px rgba(0,18,137,.28);
+    box-shadow: 0 8px 24px rgba(7,20,63,.28);
     backdrop-filter: blur(14px);
 }
 
@@ -81,6 +83,7 @@
     color: var(--white);
     letter-spacing: 0.04em;
 }
+.navbar__brand-skill { color: var(--gold-light); }
 
 /* Links */
 .navbar__mobile-panel {
@@ -94,8 +97,9 @@
 .navbar__links {
     display: flex;
     list-style: none;
-    gap: 0.15rem;
+    gap: clamp(0.6rem, 1.6vw, 1.6rem);
     margin: 0 auto;
+    padding: 0;
     justify-content: center;
     flex: 1 1 auto;
 }
@@ -165,6 +169,7 @@
 
 /* ── Responsive ── */
 @media (max-width: 960px) {
+    .navbar__links { gap: 0.4rem; }
     .navbar__link { font-size: 0.82rem; padding: 0.4rem 0.6rem; }
 }
 

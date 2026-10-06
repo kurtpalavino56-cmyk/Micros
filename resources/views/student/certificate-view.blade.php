@@ -30,7 +30,6 @@
 </head>
 <body>
 <div class="bar">
-    <a href="{{ route('certificates.index') }}">&larr; My Certificates</a>
     <div class="actions">
         <a class="btn btn-outline" href="{{ route('certificates.index') }}">Back</a>
         <a class="btn btn-gold" href="{{ route('certificates.download', $cert['serial']) }}">Download PDF</a>

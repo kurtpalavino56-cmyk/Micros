@@ -5,6 +5,8 @@ namespace App\Support;
 use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * CertificateBuilder — assembles everything the certificate view needs.
@@ -207,40 +209,48 @@ class CertificateBuilder
      * own snapshots plus the few non-snapshot display fields above —
      * never anything else from the live course.
      */
-    public static function renderPdf(Certificate $certificate): string
+    public static function renderPdf(Certificate $certificate, bool $includeRemoteQr = true): string
     {
-        return \Barryvdh\DomPDF\Facade\Pdf::loadView('certificates.pdf', [
-            'cert' => self::pdfData($certificate),
-        ])->setPaper('a4', 'landscape')->output();
+        $data = self::pdfData($certificate);
+
+        if (! $includeRemoteQr) {
+            $data['qr_url'] = null;
+        }
+
+        return Pdf::loadView('certificates.pdf', ['cert' => $data])
+            ->setPaper('a4', 'landscape')
+            ->setOption([
+                'isRemoteEnabled' => $includeRemoteQr,
+                'allowedRemoteHosts' => $includeRemoteQr ? ['api.qrserver.com'] : [],
+            ])
+            ->output();
     }
 
     /**
-     * Idempotent: if a generated file already exists on disk for this
-     * certificate, does nothing and returns it unchanged. Otherwise
-     * renders and stores exactly one PDF, then sets `file_path` — the
-     * ONLY field this method ever writes. It never touches
+     * Idempotent by default: if a generated file already exists on disk
+     * for this certificate, it does nothing unless a refresh is requested.
+     * It sets `file_path` when generating a PDF and never touches
      * microcredential_title_snapshot, learning_outcomes_snapshot,
      * competencies_snapshot, pqf_level_snapshot,
      * credit_equivalency_snapshot, or learning_hours_snapshot; those are
-     * read-only inputs here, exactly as captured at issuance in Step 4.
-     *
-     * Re-evaluating an already-issued certificate (e.g. evaluate() being
-     * called again) is therefore safe to call this repeatedly: it will
-     * never regenerate or duplicate the file once one exists.
+     * read-only inputs here, exactly as captured at issuance.
+     * Re-evaluating an already-issued certificate is safe to call
+     * repeatedly; the default behavior reuses an existing generated file.
      */
-    public static function ensureFileGenerated(Certificate $certificate): Certificate
+    public static function ensureFileGenerated(Certificate $certificate, bool $refresh = false): Certificate
     {
         $relativePath = 'certificates/'.$certificate->serial.'.pdf';
 
         if (
             $certificate->file_path
-            && \Illuminate\Support\Facades\Storage::disk('public')->exists($relativePath)
+            && ! $refresh
+            && Storage::disk('public')->exists($relativePath)
         ) {
             return $certificate;
         }
 
-        $pdf = self::renderPdf($certificate);
-        \Illuminate\Support\Facades\Storage::disk('public')->put($relativePath, $pdf);
+        $pdf = self::renderPdf($certificate, includeRemoteQr: $refresh);
+        Storage::disk('public')->put($relativePath, $pdf);
 
         $certificate->file_path = 'storage/'.$relativePath;
         $certificate->save();

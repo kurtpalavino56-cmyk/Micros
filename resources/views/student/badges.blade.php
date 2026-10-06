@@ -5,12 +5,6 @@
 
     return view('student.badges', [
         'user'  => $user,                  // Auth::user() - needs ->name
-        'stats' => [
-            'active_courses' => $activeCoursesCount,
-            'completed'      => $completedCount,
-            'badges_earned'  => $badgesEarnedCount,
-            'certificates'   => $certificatesCount,
-        ],
         'badges' => $recentlyEarnedBadges,  // collection, most recent first
     ]);
 
@@ -80,19 +74,6 @@
     .page-head h2{font-size:30px;margin:0 0 6px;color:var(--navy);}
     .page-head p{margin:0 0 28px;color:var(--muted);font-size:15px;}
 
-    /* Stats (shared with dashboard) */
-    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;margin-bottom:40px;}
-    /* Gradient stat cards (same design as course Analytics) */
-    .stat-card{position:relative;border-radius:18px;box-shadow:var(--shadow);padding:30px 22px;text-align:center;color:#fff;overflow:hidden;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-    .stat-card.c-navy{background:linear-gradient(135deg,var(--navy) 0%,#2a30b0 100%);}
-    .stat-card.c-gold{background:linear-gradient(135deg,var(--gold-dark) 0%,#f0c14b 100%);}
-    .stat-card.c-cyan{background:linear-gradient(135deg,#2fb3ab 0%,var(--cyan) 100%);}
-    .stat-card.c-deep{background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 100%);}
-    .stat-top{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;position:relative;z-index:1;}
-    .stat-top svg{width:42px;height:42px;color:#fff;}
-    .stat-top .num{font-size:38px;font-weight:800;color:#fff;line-height:1;}
-    .stat-card .label{font-weight:800;font-size:17px;color:#fff;position:relative;z-index:1;}
-
     /* Recently Earned */
     .section-head{font-size:24px;margin:0 0 18px;color:var(--navy);}
     .badge-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:24px;}
@@ -123,7 +104,6 @@
     @media (max-width:980px){
         .layout{grid-template-columns:1fr;}
 
-        .stats{grid-template-columns:repeat(2,1fr);}
         .badge-grid{grid-template-columns:repeat(2,1fr);}
     }
 </style>
@@ -144,38 +124,6 @@
             <h2>My Badge Collection</h2>
             <p>Badges earned through course completion</p>
         </div>
-
-        {{-- Stat cards --}}
-        <section class="stats">
-            <div class="stat-card c-navy">
-                <div class="stat-top">
-                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h12v20l-6-4-6 4V2z"/></svg>
-                    <span class="num">{{ $stats['active_courses'] ?? 0 }}</span>
-                </div>
-                <div class="label">Active Courses</div>
-            </div>
-            <div class="stat-card c-gold">
-                <div class="stat-top">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
-                    <span class="num">{{ $stats['completed'] ?? 0 }}</span>
-                </div>
-                <div class="label">Completed</div>
-            </div>
-            <div class="stat-card c-cyan">
-                <div class="stat-top">
-                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    <span class="num">{{ $stats['badges_earned'] ?? 0 }}</span>
-                </div>
-                <div class="label">Badges Earned</div>
-            </div>
-            <div class="stat-card c-deep">
-                <div class="stat-top">
-                    <svg viewBox="0 0 24 24" fill="none"><path d="M12 2l3 6 7 1-5 5 1.5 7L12 17l-6.5 4L7 14 2 9l7-1 3-6z" fill="#fff"/><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    <span class="num">{{ $stats['certificates'] ?? 0 }}</span>
-                </div>
-                <div class="label">Certificates</div>
-            </div>
-        </section>
 
         {{-- Recently Earned --}}
         <h3 class="section-head">Recently Earned</h3>
@@ -320,4 +268,3 @@
 </script>
 </body>
 </html>
-

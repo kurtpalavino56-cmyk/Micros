@@ -1,3 +1,4 @@
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0" rel="stylesheet">
 <style>
     :root{--faculty-topbar-height:66px;}
 html,body{scrollbar-width:none;-ms-overflow-style:none;}
@@ -8,15 +9,16 @@ html,body{scrollbar-width:none;-ms-overflow-style:none;}
     .faculty-sidebar .side-link{display:flex;align-items:center;flex:0 0 56px;gap:15px;padding:10px 14px;border-radius:13px;color:#061a45;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;line-height:1.25;text-decoration:none;white-space:nowrap;overflow:hidden;transition:background-color .2s ease,color .2s ease,transform .15s ease;}
     .faculty-sidebar .side-link:not(.active):hover{background:#fffbe6;color:#061a45;}
     .faculty-sidebar .side-link:not(.active):active{transform:scale(.98);}
-    .faculty-sidebar .side-link.active{position:relative;margin-left:-10px;padding:7px 14px 7px 24px;background:transparent;color:#071550;font-weight:600;box-shadow:none;}
-    .faculty-sidebar .side-link.active::before{position:absolute;z-index:0;top:5px;right:0;bottom:5px;left:0;border-left:3px solid #f4c430;border-radius:0 9px 9px 0;background:#fff1b8;content:"";}
-    .faculty-sidebar .side-link.active>*{position:relative;z-index:1;}
+    .faculty-sidebar .side-link.active{position:relative;margin-left:-10px;padding:7px 14px 7px 24px;border-radius:0 13px 13px 0;background:transparent;color:#071550;font-weight:600;box-shadow:none;overflow:visible;}
+    .faculty-sidebar .side-link.active::before{position:absolute;z-index:0;top:5px;right:0;bottom:5px;left:0;border-radius:0 9px 9px 0;background:#fff1b8;box-shadow:0 0 24px 6px rgba(244,196,48,.12);content:"";}
+    .faculty-sidebar .side-link.active::after{position:absolute;z-index:1;top:5px;bottom:5px;left:0;width:5px;border-radius:0 5px 5px 0;background:#c4930f;content:"";}
+    .faculty-sidebar .side-link.active>*{position:relative;z-index:2;}
     .faculty-sidebar .side-link.active:hover{background:transparent;color:#071550;}
     .faculty-sidebar .side-icon-box{width:30px;height:30px;flex:0 0 30px;display:flex;align-items:center;justify-content:center;background:transparent !important;border:0;border-radius:0;}
-    .faculty-sidebar .side-icon-box svg{width:24px;height:24px;stroke-width:1.9;transition:color .2s ease,transform .2s ease;}
-    .faculty-sidebar .side-link:not(.active) .side-icon-box svg{color:#061a45;}
-    .faculty-sidebar .side-link:not(.active):hover .side-icon-box svg{color:#061a45;}
-    .faculty-sidebar .side-link.active .side-icon-box svg{color:#061a45;}
+    .faculty-sidebar .side-icon-box .material-symbols-rounded{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;width:24px;height:24px;font-size:24px;line-height:1;font-feature-settings:"liga";-webkit-font-smoothing:antialiased;transition:color .2s ease,transform .2s ease;}
+    .faculty-sidebar .side-link:not(.active) .side-icon-box .material-symbols-rounded{color:#061a45;}
+    .faculty-sidebar .side-link:not(.active):hover .side-icon-box .material-symbols-rounded{color:#061a45;}
+    .faculty-sidebar .side-link.active .side-icon-box .material-symbols-rounded{color:#061a45;}
     .faculty-sidebar .side-label{flex:0 0 auto;overflow:hidden;opacity:1;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;line-height:1.25;transition:opacity .18s ease,width .25s ease;}
     .faculty-sidebar .sidebar-section-label{flex:0 0 auto;margin:12px 14px 3px;color:#56627a;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:10px;font-weight:800;letter-spacing:.09em;line-height:1.3;text-transform:uppercase;white-space:nowrap;}
     .faculty-sidebar .side-divider{width:100%;border:0;border-top:1px solid rgba(9,37,95,.22);margin:10px 0;}
@@ -31,8 +33,8 @@ html,body{scrollbar-width:none;-ms-overflow-style:none;}
         .layout.faculty-sidebar-layout .faculty-sidebar{flex-direction:row;align-items:center;overflow-x:auto;position:static;height:auto;padding:10px 14px;border-right:0;border-bottom:1px solid var(--line);}
         .faculty-sidebar-layout.sidebar-collapsed .faculty-sidebar{display:none;}
         .faculty-sidebar .side-link{flex:0 0 auto;min-height:48px;}
-        .faculty-sidebar .side-link.active{min-height:42px;margin-left:0;padding:6px 14px;border-radius:9px;}
-        .faculty-sidebar .side-link.active::before{border-left:3px solid #f4c430;border-radius:9px;}
+        .faculty-sidebar .side-link.active{min-height:42px;margin-left:0;padding:6px 14px;border-radius:0 9px 9px 0;}
+        .faculty-sidebar .side-link.active::before{border-radius:0 9px 9px 0;}
         .faculty-sidebar .side-divider{width:1px;height:30px;border-top:0;border-left:1px solid rgba(9,37,95,.22);margin:0 4px;}
         .faculty-sidebar .sidebar-section-label{display:none;}
         .faculty-sidebar .side-label,.faculty-sidebar-layout.sidebar-collapsed .side-label{width:auto;opacity:1;}
@@ -44,33 +46,33 @@ html,body{scrollbar-width:none;-ms-overflow-style:none;}
 <aside class="faculty-sidebar" id="faculty-sidebar">
     <span class="sidebar-section-label">Overview</span>
     <a href="{{ route('faculty.dashboard') }}" class="side-link {{ request()->routeIs('faculty.dashboard') ? 'active' : '' }}">
-        <span class="side-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></span>
+        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">dashboard</span></span>
         <span class="side-label">Dashboard</span>
     </a>
     <span class="sidebar-section-label">Courses</span>
     <a href="{{ route('faculty.courses') }}" class="side-link {{ request()->routeIs('faculty.courses') ? 'active' : '' }}">
-        <span class="side-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6.2C9.8 4.7 7 4 3.5 4v14c3.5 0 6.3.7 8.5 2.2 2.2-1.5 5-2.2 8.5-2.2V4c-3.5 0-6.3.7-8.5 2.2Z"/><path d="M12 6.5v13.2M6.5 8h2.8M15 8h2.8M6.5 11h2.8M15 11h2.8"/></svg></span>
+        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">menu_book</span></span>
         <span class="side-label">My Courses</span>
     </a>
     <a href="{{ route('faculty.create') }}" class="side-link {{ request()->routeIs('faculty.create') ? 'active' : '' }}">
-        <span class="side-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 3.5H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10Z"/><path d="M13 3.5V10h7M12 13v5M9.5 15.5h5"/></svg></span>
+        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">post_add</span></span>
         <span class="side-label">Create Courses</span>
     </a>
     <span class="sidebar-section-label">People</span>
     <a href="{{ route('faculty.inbox') }}" class="side-link {{ request()->routeIs('faculty.inbox*') ? 'active' : '' }}">
-        <span class="side-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v13H4z"/><path d="M4 14h4l1.5 2h5L16 14h4"/><path d="M8 9.5h8"/></svg></span><span class="side-label">Inbox</span>
+        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">inbox</span></span><span class="side-label">Inbox</span>
     </a>
     <a href="{{ route('faculty.students') }}" class="side-link {{ request()->routeIs('faculty.students*') ? 'active' : '' }}">
-        <span class="side-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 5.5a3 3 0 0 1 0 5.8M16.5 14.5a5 5 0 0 1 4 4.8"/></svg></span><span class="side-label">Learner Progress</span>
+        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">groups</span></span><span class="side-label">Learner Progress</span>
     </a>
     <span class="sidebar-section-label">Insights</span>
     <a href="{{ route('faculty.analytics') }}" class="side-link {{ request()->routeIs('faculty.analytics') ? 'active' : '' }}">
-        <span class="side-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5h16M4.5 19V5"/><path d="m7 15 4-4 3 2 5-7"/><circle cx="7" cy="15" r="1"/><circle cx="11" cy="11" r="1"/><circle cx="14" cy="13" r="1"/><circle cx="19" cy="6" r="1"/></svg></span>
+        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">monitoring</span></span>
         <span class="side-label">Analytics</span>
     </a>
     <span class="sidebar-section-label">Account</span>
     <a href="{{ route('faculty.profile') }}" class="side-link {{ request()->routeIs('faculty.profile') ? 'active' : '' }}">
-        <span class="side-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/><circle cx="12" cy="12" r="9.2"/></svg></span>
+        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">account_circle</span></span>
         <span class="side-label">Profile</span>
     </a>
 </aside>

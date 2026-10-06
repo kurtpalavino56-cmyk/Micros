@@ -7,16 +7,19 @@
     .public-course{padding:2rem 0 4rem;background:#f5f7fb;min-height:70vh;color:#344054}
     .public-course__hero{background:#13176b;color:#fff;border-radius:16px;padding:2rem;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(220px,.6fr);gap:1.5rem;align-items:center;overflow:hidden}
     .public-course__eyebrow{color:#f7d889;font-size:.76rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin:0 0 .7rem}
-    .public-course h1{font-size:clamp(2rem,4vw,3.1rem);line-height:1.08;margin:0 0 .7rem;color:#fff}
+    .public-course__hero h1{font-size:clamp(2rem,4vw,3.1rem);line-height:1.08;margin:0 0 .7rem;color:#fff}
     .public-course__sub{font-size:1.05rem;color:rgba(255,255,255,.8);margin:0 0 1rem;max-width:680px}
     .public-course__desc{font-size:.95rem;line-height:1.6;color:rgba(255,255,255,.82);max-width:720px;margin:.4rem 0 0}
     .public-course__full-description{color:#40516e;font-size:.95rem;line-height:1.7}
     .public-course__full-description > :first-child{margin-top:0}
     .public-course__full-description > :last-child{margin-bottom:0}
     .public-course__full-description h2{margin:1.5rem 0 .65rem;color:#08245f;font-size:1.55rem;line-height:1.3}
+    .public-course__full-description h1{margin:0 0 .65rem;color:#08245f;font-size:1.55rem;line-height:1.3}
     .public-course__full-description h3{margin:1.25rem 0 .55rem;color:#123b78;font-size:1.28rem;line-height:1.35}
     .public-course__full-description h4{margin:1rem 0 .45rem;color:#214b84;font-size:1.08rem;line-height:1.4}
     .public-course__full-description p{margin:0 0 1rem}
+    .public-course__full-description figure.image{max-width:100%;margin:1rem 0}
+    .public-course__full-description figure.image img{display:block;width:auto;max-width:100%;height:auto}
     .public-course__full-description ul,.public-course__full-description ol{margin:.6rem 0 1rem;padding-left:1.6rem}
     .public-course__full-description li{margin:.3rem 0}
     .public-course__full-description a{color:#1c5ca8;text-decoration:underline}
@@ -26,10 +29,12 @@
     .public-course__button--secondary{background:transparent;border:1px solid rgba(255,255,255,.55);color:#fff}
     .public-course__grid{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:1rem;margin-top:1rem;align-items:start}
     .public-course__main{display:grid;gap:1rem;min-width:0}
-    .public-course__panel{background:#fff;border:1px solid #e2e7ef;border-radius:12px;padding:1.15rem 1.25rem}
-    .public-course__panel h2{margin:0 0 .85rem;color:#13176b;font-size:1.1rem}
+    .public-course__panel{background:#fff;border:1px solid #e2e7ef;border-radius:12px;padding:0 1.25rem 1.15rem;overflow:hidden}
+    .public-course__panel h2{margin:0 -1.25rem .85rem;padding:.8rem 1.25rem;background:#13176b;color:#fff;font-size:1.1rem}
     .public-course__panel h3{margin:.2rem 0 .45rem;color:#182230;font-size:.98rem;line-height:1.4}
-    .public-course__outcome-list{margin:0;padding-left:1.2rem;display:grid;gap:.45rem;line-height:1.55}
+    .public-course__outcome-list{margin:0;padding:0;display:grid;gap:.55rem;line-height:1.55;list-style:none}
+    .public-course__outcome-list li{display:grid;grid-template-columns:1.35rem minmax(0,1fr);align-items:start;gap:.55rem}
+    .public-course__outcome-list li::before{content:"✓";display:grid;place-items:center;width:1.3rem;height:1.3rem;margin-top:.1rem;border-radius:50%;background:#e4f5f2;color:#16877f;font-size:.82rem;font-weight:800;line-height:1}
     .public-course__module{padding:.75rem 0;border-top:1px solid #edf0f4}
     .public-course__module:first-of-type{border-top:0;padding-top:0}
     .public-course__module-description{margin:.15rem 0 .5rem;color:#667085;font-size:.88rem;line-height:1.55}
@@ -41,7 +46,7 @@
     .public-course__meta-row strong{color:#14254b;text-align:right}
     .public-course__note{margin-top:1rem;padding:.9rem 1rem;border-radius:12px;background:#fff5d8;color:#765b10;font-size:.85rem;line-height:1.5}
     @media(max-width:860px){.public-course__grid{grid-template-columns:1fr}.public-course__hero{grid-template-columns:minmax(0,1fr) minmax(180px,.6fr)}}
-    @media(max-width:640px){.public-course__hero{grid-template-columns:1fr;padding:1.25rem}.public-course__thumb{min-height:160px;grid-row:1}.public-course{padding:1rem 0 2.5rem}.public-course__panel{padding:1rem}}
+    @media(max-width:640px){.public-course__hero{grid-template-columns:1fr;padding:1.25rem}.public-course__thumb{min-height:160px;grid-row:1}.public-course{padding:1rem 0 2.5rem}.public-course__panel{padding:0 1rem 1rem}.public-course__panel h2{margin-right:-1rem;margin-left:-1rem;padding:.75rem 1rem}}
 </style>
 @endpush
 

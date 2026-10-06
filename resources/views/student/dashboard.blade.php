@@ -14,7 +14,6 @@
             'certificates'   => $certificatesCount,
         ],
         'courses'  => $enrolledCourses,     // collection of Course models
-        'progress' => $progressItems,       // collection for the "Progress" side panel
         'badges'   => $earnedBadges,        // collection for the "Badges" side panel
     ]);
 
@@ -90,6 +89,7 @@
 
     .course-card{border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:18px;display:flex;align-items:center;gap:18px;margin-bottom:20px;}
     .thumb{width:78px;height:78px;border-radius:12px;background:var(--thumb);flex-shrink:0;background-size:cover;background-position:center;}
+    .thumb img{display:block;width:100%;height:100%;border-radius:inherit;object-fit:cover;}
     .course-info{flex:1;min-width:0;}
     .course-info h4{margin:0 0 4px;font-size:17px;color:var(--navy);}
     .course-info .cat{font-size:13px;color:var(--muted);margin-bottom:8px;}
@@ -316,10 +316,10 @@
     .progress-track { height: 7px; background: #e8eef7; }
     .progress-fill { background: linear-gradient(90deg, var(--pm-blue), #6ea6e8); }
     .pct { color: var(--pm-muted); margin-top: 5px; font-size: 10px; }
-    .btn-start { background: var(--pm-blue); border: 1px solid var(--pm-blue); color: #fff; border-radius: 999px; padding: 8px 13px; font-size: 11px; font-weight: 800; }
-    .btn-start:hover { background: var(--pm-navy); border-color: var(--pm-navy); color: #fff; }
+    .btn-start{background:#6ea6e8;border:1px solid #6ea6e8;color:#0B1B45;border-radius:999px;padding:8px 13px;font-size:11px;font-weight:800;}
+    .btn-start:hover{background:#F4C430;border-color:#F4C430;color:#0B1B45;}
     .btn-start.btn-completed { background: #168457; border-color: #168457; color: #fff; }
-    .btn-start.btn-completed:hover { background: #106443; border-color: #106443; }
+    .btn-start.btn-completed:hover{background:#106443;border-color:#106443;color:#fff;}
 
     .panel { margin-bottom: 14px; min-height: 0; overflow: hidden; border: 1px solid var(--pm-line); border-radius: 14px; background: var(--pm-surface); box-shadow: var(--pm-shadow); }
     .panel-head { padding: 14px 16px; background: #fff; color: var(--pm-navy); border-bottom: 1px solid var(--pm-line); font-size: 15px; }
@@ -356,7 +356,7 @@ main.student-dashboard {
 .layout:has(main.student-dashboard){background:var(--dash-canvas);}
 main.student-dashboard h1,main.student-dashboard h2,main.student-dashboard h3,main.student-dashboard h4,
 main.student-dashboard .num,main.student-dashboard .meta-num{font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif}
-main.student-dashboard .hero{position:relative;isolation:isolate;overflow:hidden;border-radius:22px;background-image:linear-gradient(90deg,rgba(11,27,69,.98) 20%,rgba(11,27,69,.9) 45%,rgba(36, 71, 212, 0.88) 100%);background-size:cover;background-position:center;box-shadow:0 14px 35px rgba(11,27,69,.14);color:#fff}
+main.student-dashboard .hero{position:relative;isolation:isolate;overflow:hidden;border-radius:22px;background-image:radial-gradient(ellipse 34% 190% at 8% 0%,rgba(37,83,220,.58) 0%,rgba(37,83,220,.3) 44%,transparent 82%),radial-gradient(ellipse 40% 210% at 42% 120%,rgba(30,65,190,.68) 0%,rgba(30,65,190,.32) 48%,transparent 84%),radial-gradient(ellipse 34% 180% at 76% -35%,rgba(56,76,205,.62) 0%,rgba(56,76,205,.28) 48%,transparent 84%),radial-gradient(ellipse 32% 190% at 105% 100%,rgba(25,76,190,.6) 0%,rgba(25,76,190,.28) 50%,transparent 86%),radial-gradient(ellipse 55% 150% at 54% 48%,rgba(25,42,132,.5) 0%,transparent 88%),linear-gradient(112deg,#07143f 0%,#101f70 52%,#081742 100%);background-size:cover;background-position:center;box-shadow:0 14px 35px rgba(11,27,69,.14);color:#fff}
 main.student-dashboard .hero-copy{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
 main.student-dashboard .hero-copy .eyebrow,
 main.student-dashboard .hero-copy h2,
@@ -397,12 +397,13 @@ main.student-dashboard .thumb{width:58px;height:58px;border-radius:12px;backgrou
 main.student-dashboard .course-info h4{font-size:13px;font-weight:700;color:var(--dash-ink)}
 main.student-dashboard .course-info .cat{font-size:11px;color:var(--dash-muted)}
 main.student-dashboard .progress-track{height:7px;background:#EDF1F8}
-main.student-dashboard .progress-fill{background:linear-gradient(90deg,var(--dash-royal),#5975E8)}
+main.student-dashboard .course-card .progress-fill.progress-in-progress{background:#F4C430!important}
+main.student-dashboard .course-card .progress-fill.progress-completed{background:#27A879!important}
 main.student-dashboard .pct{font-size:11px;color:var(--dash-muted)}
-main.student-dashboard .btn-start{border:0;border-radius:999px;background:var(--dash-navy);padding:9px 15px;color:#fff;font-size:11px;font-weight:700}
-main.student-dashboard .btn-start{border:0;border-radius:999px;background:var(--dash-navy);padding:9px 15px;color:#fff;font-size:11px;font-weight:700;transition:transform .18s ease,background-color .18s ease}
-main.student-dashboard .btn-start:hover{transform:translateY(-1px);background:#2447D4}
-main.student-dashboard .btn-start.btn-completed{background:#EAF7F0;color:#168253}
+main.student-dashboard .btn-start{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:999px;background:#6ea6e8;padding:9px 15px;color:#0B1B45;font-size:11px;font-weight:700;transition:transform .18s ease,background-color .18s ease}
+main.student-dashboard .btn-start:hover{transform:translateY(-1px);background:#F4C430;color:#0B1B45}
+main.student-dashboard .btn-start.btn-completed{background:#168457;color:#fff}
+main.student-dashboard .btn-start.btn-completed:hover{background:#106443;color:#fff}
 main.student-dashboard .courses-area-title{color:var(--dash-muted);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
 main.student-dashboard .panel{overflow:hidden;margin-bottom:17px;min-height:0}
 main.student-dashboard .panel-head{padding:14px 17px;border-bottom:1px solid #EEF1F6;background:#fff;color:var(--dash-ink);font-size:13px;font-weight:700}
@@ -415,6 +416,42 @@ main.student-dashboard .prog-bar-fill.prog-bar-done{background:#27A879}
 main.student-dashboard .empty-state{border-color:var(--dash-line);border-radius:15px;background:#fff;color:var(--dash-muted)}
 @media(max-width:980px){main.student-dashboard .content-grid{grid-template-columns:1fr}}
 @media(max-width:640px){main.student-dashboard{padding:20px 14px 40px}main.student-dashboard .stats{gap:9px;margin:16px 0 22px}main.student-dashboard .stat-card{min-height:142px;padding:14px 11px}main.student-dashboard .stat-top svg{width:32px;height:32px;margin-bottom:12px}main.student-dashboard .stat-top .num{font-size:25px}main.student-dashboard .course-card{flex-direction:row;align-items:center}main.student-dashboard .thumb{width:52px;height:52px}}
+main.student-dashboard{
+  --dash-type-meta:13px;
+  --dash-type-category:13px;
+  --dash-type-body:16px;
+  --dash-type-heading:26px;
+  --dash-type-subheading:20px;
+  --dash-type-display:42px;
+}
+main.student-dashboard .hero h2{font-size:var(--dash-type-display);line-height:1.2}
+main.student-dashboard .hero-copy>p:not(.eyebrow){font-size:var(--dash-type-body);line-height:1.618}
+main.student-dashboard .hero .eyebrow,
+main.student-dashboard .hero-meta span,
+main.student-dashboard .hero-action,
+main.student-dashboard .pct,
+main.student-dashboard .courses-area-title,
+main.student-dashboard .prog-item-sub{font-size:var(--dash-type-meta)}
+main.student-dashboard .course-info .cat{font-size:11px;text-transform:none;letter-spacing:normal}
+main.student-dashboard .stat-top .num{font-size:var(--dash-type-display)}
+main.student-dashboard .stat-card .label,
+main.student-dashboard .panel-body,
+main.student-dashboard .prog-item-title,
+main.student-dashboard .prog-item-pct,
+main.student-dashboard .empty-state{font-size:var(--dash-type-body)}
+main.student-dashboard .course-info h4{font-size:14px}
+main.student-dashboard .pct{font-size:12px}
+main.student-dashboard .btn-start{font-size:13px;color:#fff}
+main.student-dashboard .btn-start:hover{color:#0B1B45}
+main.student-dashboard .courses-head h3{font-size:var(--dash-type-heading)}
+main.student-dashboard .panel-head{font-size:var(--dash-type-subheading)}
+main.student-dashboard .courses-head .enroll-more{font-size:var(--dash-type-meta)}
+main.student-dashboard .panel-body,
+main.student-dashboard .empty-state{line-height:1.618}
+@media(max-width:640px){
+  main.student-dashboard .hero h2{font-size:32px}
+  main.student-dashboard .stat-top .num{font-size:var(--dash-type-heading)}
+}
 </style>
 </head>
 <body>
@@ -425,11 +462,17 @@ main.student-dashboard .empty-state{border-color:var(--dash-line);border-radius:
     @include('components.student-sidebar')
 
     <main class="main student-dashboard">
-        @php $featuredCourse = $inProgressCourses->first() ?? $completedCourses->first(); @endphp
+        @php
+            $featuredCourse = $inProgressCourses->first() ?? $completedCourses->first();
+            $greetingHour = now('Asia/Manila')->hour;
+            $timeGreeting = $greetingHour < 12
+                ? 'Good morning'
+                : ($greetingHour < 17 ? 'Good afternoon' : 'Good evening');
+        @endphp
         <section class="hero">
             <div class="hero-copy student-page-heading student-page-heading--inverse">
                 <p class="eyebrow">Continue your learning</p>
-                <h2>Hello, {{ $user->name ?? 'Student' }} !</h2>
+                <h2>{{ $timeGreeting }}, {{ $user->name ?? 'Student' }}!</h2>
                 <p>Build in-demand skills, earn microcredentials, and take the next step in your Penn State journey.</p>
                 <div class="hero-meta"><span>Student ID: {{ $user->student_id ?? '—' }}</span></div>
             </div>
@@ -455,11 +498,11 @@ main.student-dashboard .empty-state{border-color:var(--dash-line);border-radius:
                     <div class="empty-state">You haven't enrolled in any courses yet.<br><a href="{{ route('courses.browse') }}" class="enroll-more">Browse courses to get started</a></div>
                 @else
                     @forelse ($inProgressCourses as $course)
-                    <div class="course-card"><div class="thumb" @if($course->thumbnail_url) style="background-image:url('{{ $course->thumbnail_url }}')" @endif></div><div class="course-info"><h4>{{ $course->title }}</h4>@if($course->category)<div class="cat">{{ $course->category }}</div>@endif<div class="progress-track"><div class="progress-fill" style="width:{{ $course->progress_percent ?? 0 }}%"></div></div><div class="pct">{{ $course->progress_percent ?? 0 }}% complete</div></div><a href="{{ route('courses.show', $course->id) }}"><button class="btn-start" type="button">{{ ($course->progress_percent ?? 0) > 0 ? 'Continue' : 'Start' }}</button></a></div>
+                    <div class="course-card"><div class="thumb">@if($course->thumbnail_url)<img src="{{ $course->thumbnail_url }}" alt="{{ $course->title }} course thumbnail" loading="lazy" onerror="this.remove()">@endif</div><div class="course-info"><h4>{{ $course->title }}</h4>@if($course->category)<div class="cat">{{ $course->category }}</div>@endif<div class="progress-track"><div class="progress-fill progress-in-progress" style="width:{{ $course->progress_percent ?? 0 }}%"></div></div><div class="pct">{{ $course->progress_percent ?? 0 }}% complete</div></div><a class="btn-start" href="{{ route('courses.show', $course->id) }}">{{ ($course->progress_percent ?? 0) > 0 ? 'Continue' : 'Start' }}</a></div>
                     @empty <div class="empty-state empty-state-slim">Nothing in progress right now.</div> @endforelse
                     @if($completedCourses->isNotEmpty())<h4 class="courses-area-title">Completed courses</h4>@endif
                     @foreach ($completedCourses as $course)
-                    <div class="course-card"><div class="thumb" @if($course->thumbnail_url) style="background-image:url('{{ $course->thumbnail_url }}')" @endif></div><div class="course-info"><h4>{{ $course->title }}</h4>@if($course->category)<div class="cat">{{ $course->category }}</div>@endif<div class="progress-track"><div class="progress-fill" style="width:100%"></div></div><div class="pct">Completed</div></div><a href="{{ route('courses.show', $course->id) }}"><button class="btn-start btn-completed" type="button">Review</button></a></div>
+                    <div class="course-card"><div class="thumb">@if($course->thumbnail_url)<img src="{{ $course->thumbnail_url }}" alt="{{ $course->title }} course thumbnail" loading="lazy" onerror="this.remove()">@endif</div><div class="course-info"><h4>{{ $course->title }}</h4>@if($course->category)<div class="cat">{{ $course->category }}</div>@endif<div class="progress-track"><div class="progress-fill progress-completed" style="width:100%"></div></div><div class="pct">Completed</div></div><a class="btn-start btn-completed" href="{{ route('courses.show', $course->id) }}">View</a></div>
                     @endforeach
                 @endif
             </section>
@@ -468,7 +511,6 @@ main.student-dashboard .empty-state{border-color:var(--dash-line);border-radius:
                 @if($featuredCourse)
                 <div class="featured-course"><small>Featured course</small><h4>{{ \Illuminate\Support\Str::limit($featuredCourse->title, 46) }}</h4><p>Keep building practical skills and move closer to your next microcredential.</p><a href="{{ route('courses.show', $featuredCourse->id) }}">Continue course <span class="dashboard-chevron">&rsaquo;</span></a></div>
                 @endif
-                <div class="panel"><div class="panel-head"><span>Learning progress</span><a href="{{ route('analytics.index') }}">View analytics <span class="dashboard-chevron">&rsaquo;</span></a></div><div class="panel-body">@forelse ($progress ?? [] as $item)<div class="prog-item"><div class="prog-item-head"><span class="prog-item-title">{{ \Illuminate\Support\Str::limit($item->title, 26) }}</span><span class="prog-item-pct">{{ $item->progress_percent }}%</span></div><div class="prog-bar"><div class="prog-bar-fill{{ $item->is_completed ? ' prog-bar-done' : '' }}" style="width: {{ $item->progress_percent }}%;"></div></div><div class="prog-item-sub">@if ($item->is_completed) Completed @elseif ($item->progress_percent > 0) In progress · {{ $item->completed_lessons }} lesson{{ $item->completed_lessons === 1 ? '' : 's' }} done @else Not started yet @endif</div></div>@empty<p>No progress activity yet. Enroll in a course to start tracking your progress.</p>@endforelse</div></div>
                 @if(($stackingFrameworks ?? collect())->isNotEmpty())
                     <div class="panel"><div class="panel-head"><span>Stacking progress</span><a href="{{ route('stacking.progress') }}">View all <span class="dashboard-chevron">&rsaquo;</span></a></div><div class="panel-body">
                         @foreach($stackingFrameworks->take(2) as $stacking)
@@ -936,5 +978,3 @@ main.student-dashboard .empty-state{border-color:var(--dash-line);border-radius:
     @include('components.responsive')
 </body>
 </html>
-
-

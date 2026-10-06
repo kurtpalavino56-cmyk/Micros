@@ -320,7 +320,6 @@
     </div></div>
     <div class="sb-section open"><div class="sb-section-hd"><div class="sb-hd-left"><span class="sb-section-label">Communication</span></div></div><div class="sb-items">
         <a href="{{ route('admin.announcements') }}" class="sb-item {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}"><span class="sb-item-text">Announcements</span></a>
-        <a href="{{ route('admin.complaints') }}" class="sb-item {{ request()->routeIs('admin.complaints*') ? 'active' : '' }}"><span class="sb-item-text">Complaint Inbox</span></a>
     </div></div>
 </aside>
 <script>

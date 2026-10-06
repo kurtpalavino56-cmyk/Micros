@@ -1,3 +1,4 @@
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0" rel="stylesheet">
 <style>
     /* ================================
        SIDEBAR LAYOUT
@@ -115,10 +116,12 @@
         position: relative;
         margin-left: -10px;
         padding: 7px 14px 7px 24px;
+        border-radius: 0 13px 13px 0;
         background: transparent;
         color: #071550;
         font-weight: 600;
         box-shadow: none;
+        overflow: visible;
     }
 
     .student-sidebar .side-link.active::before {
@@ -128,15 +131,27 @@
         right: 0;
         bottom: 5px;
         left: 0;
-        border-left: 3px solid #2447d4;
         border-radius: 0 9px 9px 0;
         background: #dbeafe;
+        box-shadow: 0 0 24px 6px rgba(36, 71, 212, .12);
+        content: "";
+    }
+
+    .student-sidebar .side-link.active::after {
+        position: absolute;
+        z-index: 1;
+        top: 5px;
+        bottom: 5px;
+        left: 0;
+        width: 5px;
+        border-radius: 0 5px 5px 0;
+        background: #2447d4;
         content: "";
     }
 
     .student-sidebar .side-link.active > * {
         position: relative;
-        z-index: 1;
+        z-index: 2;
     }
 
     .student-sidebar .side-link.active:hover {
@@ -164,18 +179,23 @@
         border-radius: 0;
     }
 
-    .student-sidebar .side-icon-box svg {
+    .student-sidebar .side-icon-box .material-symbols-rounded {
+        font-family: "Material Symbols Rounded";
+        font-weight: normal;
+        font-style: normal;
         width: 24px;
         height: 24px;
-
-        stroke-width: 1.9;
+        font-size: 24px;
+        line-height: 1;
+        font-feature-settings: "liga";
+        -webkit-font-smoothing: antialiased;
 
         transition:
             color .2s ease,
             transform .2s ease;
     }
 
-    .student-sidebar .side-link:not(.active):hover .side-icon-box svg {
+    .student-sidebar .side-link:not(.active):hover .side-icon-box .material-symbols-rounded {
         color: #2447d4;
     }
 
@@ -184,7 +204,7 @@
 
     .student-sidebar
     .side-link:not(.active)
-    .side-icon-box svg {
+    .side-icon-box .material-symbols-rounded {
         color: #061a45;
     }
 
@@ -193,7 +213,7 @@
 
     .student-sidebar
     .side-link.active
-    .side-icon-box svg {
+    .side-icon-box .material-symbols-rounded {
         color: #071550;
     }
 
@@ -338,12 +358,11 @@
             min-height: 42px;
             margin-left: 0;
             padding: 6px 14px;
-            border-radius: 9px;
+            border-radius: 0 9px 9px 0;
         }
 
         .student-sidebar .side-link.active::before {
-            border-left: 3px solid #2447d4;
-            border-radius: 9px;
+            border-radius: 0 9px 9px 0;
         }
 
         .student-sidebar .side-label,
@@ -375,38 +394,38 @@
 <aside class="student-sidebar" id="student-sidebar">
     <span class="sidebar-section-label">Overview</span>
     <a href="{{ route('dashboard') }}" class="side-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-        <span class="side-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></span>
+        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">dashboard</span></span>
         <span class="side-label">Dashboard</span>
     </a>
     <span class="sidebar-section-label">Learning</span>
     <a href="{{ route('courses.browse') }}" class="side-link {{ request()->routeIs('courses.browse') ? 'active' : '' }}">
-        <span class="side-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6.2C9.8 4.7 7 4 3.5 4v14c3.5 0 6.3.7 8.5 2.2 2.2-1.5 5-2.2 8.5-2.2V4c-3.5 0-6.3.7-8.5 2.2Z"/><path d="M12 6.5v13.2M6.5 8h2.8M15 8h2.8M6.5 11h2.8M15 11h2.8"/></svg></span>
+        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">explore</span></span>
         <span class="side-label">Browse Courses</span>
     </a>
     <a href="{{ route('courses.enrolled') }}" class="side-link {{ request()->routeIs('courses.enrolled') ? 'active' : '' }}">
-        <span class="side-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 3.5H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10Z"/><path d="M13 3.5V10h7M8 14h3M8 17h3M14.5 15.5l1.5 1.5 3-3"/></svg></span>
+        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">menu_book</span></span>
         <span class="side-label">Enrolled Courses</span>
     </a>
     <span class="sidebar-section-label">Achievements</span>
     <a href="{{ route('badges.index') }}" class="side-link {{ request()->routeIs('badges.*') ? 'active' : '' }}">
-        <span class="side-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="5.2"/><path d="m8.5 13-1.2 7.5 4.7-2.6 4.7 2.6-1.2-7.5M10 8.5l1.3 1.3L14 7"/></svg></span>
+        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">workspace_premium</span></span>
         <span class="side-label">My Badges</span>
     </a>
     <a href="{{ route('certificates.index') }}" class="side-link {{ request()->routeIs('certificates.*') ? 'active' : '' }}">
-        <span class="side-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h12v11H6z"/><path d="M9 7h6M9 10h4M9 14.5v6l3-1.7 3 1.7v-6"/><path d="m15.5 7.5.8.8 1.5-1.6"/></svg></span>
+        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">verified</span></span>
         <span class="side-label">Certificates</span>
     </a>
     <span class="sidebar-section-label">Progress</span>
     <a href="{{ route('pathways.index') }}" class="side-link {{ request()->routeIs('pathways.*') ? 'active' : '' }}">
-        <span class="side-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="12" r="2"/><path d="M7 5h3a4 4 0 0 1 4 4v1a2 2 0 0 0 2 2h1M7 19h3a4 4 0 0 0 4-4v-1a2 2 0 0 1 2-2h1"/></svg></span>
+        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">conversion_path</span></span>
         <span class="side-label">My Pathways</span>
     </a>
     <a href="{{ route('stacking.progress') }}" class="side-link {{ request()->routeIs('stacking.*') ? 'active' : '' }}">
-        <span class="side-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5h16M4.5 19V5"/><path d="M8 16v-3M12 16V9M16 16V6"/><path d="M7 9.5 11 7l4 1 4-4"/></svg></span>
+        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">stacked_bar_chart</span></span>
         <span class="side-label">Stacking Progress</span>
     </a>
     <a href="{{ route('analytics.index') }}" class="side-link {{ request()->routeIs('analytics.*') ? 'active' : '' }}">
-        <span class="side-icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5h16M4.5 19V5"/><path d="m7 15 4-4 3 2 5-7"/><circle cx="7" cy="15" r="1"/><circle cx="11" cy="11" r="1"/><circle cx="14" cy="13" r="1"/><circle cx="19" cy="6" r="1"/></svg></span>
+        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">monitoring</span></span>
         <span class="side-label">Analytics</span>
     </a>
 </aside>

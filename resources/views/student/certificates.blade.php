@@ -34,7 +34,6 @@
     /* Main content */
     .main {
         padding: 34px 38px 64px;
-        max-width: 1180px;
     }
 
     .page-head {
@@ -55,29 +54,45 @@
     }
 
     /* Certificate list */
-    .certificate-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .certificate-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 24px;
-        min-height: 88px;
-        padding: 18px 20px;
+    .certificate-table-wrap {
+        overflow-x: auto;
         background: var(--surface);
         border: 1px solid var(--line);
         border-radius: 8px;
         box-shadow: var(--shadow);
     }
-
-    .certificate-info {
-        min-width: 0;
-        flex: 1;
+    .certificate-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        table-layout: fixed;
     }
+    .certificate-table th:first-child,
+    .certificate-table td:first-child { width: 60%; }
+    .certificate-table th:nth-child(2),
+    .certificate-table td:nth-child(2) {
+        width: 20%;
+        text-align: center;
+    }
+    .certificate-table th:last-child,
+    .certificate-table td:last-child { width: 20%; }
+    .certificate-table td:last-child { text-align: center; }
+    .certificate-table th:last-child { text-align: center; }
+    .certificate-table th {
+        padding: 14px 22px;
+        background: #172f94;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 750;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+    .certificate-table td {
+        padding: 18px 22px;
+        border-top: 1px solid var(--line);
+        vertical-align: middle;
+    }
+    .certificate-table tbody tr:first-child td { border-top: 0; }
     .certificate-course {
         margin: 0;
         color: var(--navy);
@@ -86,19 +101,10 @@
         font-weight: 750;
         overflow-wrap: anywhere;
     }
-    .certificate-date {
-        margin: 5px 0 0;
-        color: var(--muted);
-        font-size: 13px;
-    }
-    .certificate-date strong {
-        color: #4d566d;
-        font-weight: 700;
-    }
-
     .certificate-actions {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 9px;
         flex-shrink: 0;
     }
@@ -124,15 +130,18 @@
         background: var(--navy);
     }
     .certificate-btn.view:hover {
-        background: var(--navy-deep);
-        border-color: var(--navy-deep);
+        background: var(--gold);
+        border-color: var(--gold);
+        color: var(--navy);
     }
     .certificate-btn.download {
         color: var(--navy);
         background: #fff;
     }
     .certificate-btn.download:hover {
-        background: #f3f5fa;
+        background: var(--gold);
+        border-color: var(--gold);
+        color: var(--navy);
     }
 
     .empty-state {
@@ -157,16 +166,65 @@
     @media (max-width: 760px) {
         .main { padding: 26px 20px 50px; }
         .page-head h2 { font-size: 26px; }
-        .certificate-row {
-            align-items: flex-start;
-            flex-direction: column;
+        .certificate-table thead {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        .certificate-table,
+        .certificate-table tbody,
+        .certificate-table tr,
+        .certificate-table td {
+            display: block;
+        }
+        .certificate-table tr { padding: 8px 0; }
+        .certificate-table th:first-child,
+        .certificate-table td:first-child,
+        .certificate-table th:nth-child(2),
+        .certificate-table td:nth-child(2),
+        .certificate-table th:last-child,
+        .certificate-table td:last-child {
+            width: auto;
+            text-align: left;
+        }
+        .certificate-table th:nth-child(2),
+        .certificate-table td:nth-child(2) {
+            text-align: left;
+        }
+        .certificate-table th:last-child { text-align: left; }
+        .certificate-table td {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             gap: 16px;
+            padding: 9px 14px;
+            border-top: 0;
+        }
+        .certificate-table td::before {
+            content: attr(data-label);
+            flex: 0 0 100px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .certificate-table td:first-child::before { content: "Course"; }
+        .certificate-table td:nth-child(2)::before { content: "Date received"; }
+        .certificate-table td:last-child::before { content: "Actions"; }
+        .certificate-course { font-size: 15px; }
+        .certificate-btn {
+            min-width: 0;
+            height: 34px;
+            padding: 0 12px;
         }
         .certificate-actions {
-            width: 100%;
-        }
-        .certificate-btn {
-            flex: 1;
+            justify-content: flex-start;
+            flex-wrap: wrap;
         }
     }
 </style>
@@ -185,23 +243,33 @@
         </header>
 
         @if ($certificates->count())
-            <section class="certificate-list" aria-label="Earned certificates">
-                @foreach ($certificates as $certificate)
-                    <article class="certificate-row">
-                        <div class="certificate-info">
-                            <h3 class="certificate-course">{{ $certificate->course_name }}</h3>
-                            <p class="certificate-date">
-                                <strong>Date received:</strong> {{ $certificate->issued_date }}
-                            </p>
-                        </div>
-
-                        <div class="certificate-actions">
-                            <a href="{{ $certificate->view_url }}" class="certificate-btn view">View</a>
-                            <a href="{{ $certificate->download_url }}" class="certificate-btn download">Download</a>
-                        </div>
-                    </article>
-                @endforeach
-            </section>
+            <div class="certificate-table-wrap">
+                <table class="certificate-table" aria-label="Earned certificates">
+                    <thead>
+                        <tr>
+                            <th scope="col">Course</th>
+                            <th scope="col">Date received</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($certificates as $certificate)
+                            <tr>
+                                <td data-label="Course">
+                                    <h3 class="certificate-course">{{ $certificate->course_name }}</h3>
+                                </td>
+                                <td data-label="Date received">{{ $certificate->issued_date }}</td>
+                                <td data-label="Actions">
+                                    <div class="certificate-actions">
+                                        <a href="{{ $certificate->view_url }}" class="certificate-btn view">View</a>
+                                        <a href="{{ $certificate->download_url }}" class="certificate-btn download">Download</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         @else
             <div class="empty-state">
                 <strong>No certificates yet</strong>

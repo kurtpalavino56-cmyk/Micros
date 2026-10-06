@@ -17,28 +17,29 @@
         'inbox.index',
     );
     $profileRoute = $isAdmin ? 'admin.profile' : ($isFaculty ? 'faculty.profile' : 'profile.show');
-    $inboxRoute = $isFaculty ? 'faculty.inbox' : 'inbox.index';
+    $inboxRoute = $isAdmin ? 'admin.complaints' : ($isFaculty ? 'faculty.inbox' : 'inbox.index');
 @endphp
 
-<header class="auth-topbar {{ $isFaculty ? 'faculty-auth-topbar' : '' }} {{ $isStudent ? 'student-auth-topbar' : '' }}">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0" rel="stylesheet">
+<header class="auth-topbar {{ $isFaculty ? 'faculty-auth-topbar' : '' }} {{ $isStudent ? 'student-auth-topbar' : '' }} {{ $isAdmin ? 'admin-auth-topbar' : '' }}">
     <div class="auth-topbar-brand">
         @if ($isFaculty)
             <button class="faculty-sidebar-toggle" id="faculty-sidebar-toggle" type="button" aria-label="Collapse sidebar" aria-expanded="true" title="Collapse sidebar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                <span class="material-symbols-rounded" aria-hidden="true">menu</span>
             </button>
         @elseif ($hasStudentSidebar)
             <button class="student-sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Collapse sidebar" aria-expanded="true" title="Collapse sidebar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                <span class="material-symbols-rounded" aria-hidden="true">menu</span>
             </button>
         @endif
         <span class="auth-topbar-logo"><img src="{{ asset('images/PSU-Logo.png') }}" alt="PSU Logo"></span>
-        <strong>@if ($isFaculty)<span class="faculty-brand-up">UP</span><span>SKILL</span>@elseif ($isStudent)<span>UP</span><span class="student-brand-skill">SKILL</span>@else UPSKILL @endif</strong>
+        <strong>@if ($isFaculty)<span class="faculty-brand-up">UP</span><span>SKILL</span>@elseif ($isStudent)<span>UP</span><span class="student-brand-skill">SKILL</span>@elseif ($isAdmin)<span>UP</span><span class="admin-brand-skill">SKILL</span>@else UPSKILL @endif</strong>
     </div>
 
     <div class="auth-topbar-actions">
         <div class="auth-notifications" id="auth-notifications">
         <button type="button" class="auth-topbar-icon" id="auth-notifications-trigger" title="Notifications" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            <span class="material-symbols-rounded" aria-hidden="true">notifications</span>
             @if (($unreadNotificationCount ?? 0) > 0)
                 <span class="auth-topbar-badge">{{ $unreadNotificationCount }}</span>
             @endif
@@ -49,24 +50,22 @@
             <a class="auth-notifications-all" href="{{ route('notifications.index') }}">View all notifications</a>
         </div>
         </div>
-        @unless($isAdmin)
-        <a href="{{ route($inboxRoute) }}" class="auth-topbar-icon auth-topbar-inbox" title="Inbox" aria-label="Inbox">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4z"/><path d="m4 7 8 6 8-6"/></svg>
-            @if (($unreadInboxCount ?? 0) > 0)
+        <a href="{{ route($inboxRoute) }}" class="auth-topbar-icon auth-topbar-inbox {{ request()->routeIs('admin.complaints*', 'faculty.inbox', 'inbox.index') ? 'is-active' : '' }}" title="Inbox" aria-label="Inbox">
+            <span class="material-symbols-rounded" aria-hidden="true">mail</span>
+            @if (!$isAdmin && ($unreadInboxCount ?? 0) > 0)
                 <span class="auth-topbar-badge">{{ $unreadInboxCount }}</span>
             @endif
         </a>
-        @endunless
 
         <div class="auth-profile" id="auth-profile-menu">
             <button type="button" class="auth-profile-trigger" id="auth-profile-trigger" aria-haspopup="true" aria-expanded="false" title="Account menu">
                 <span class="auth-profile-avatar" @if($user->avatar_url ?? null) style="background-image:url('{{ $user->avatar_url }}');" @endif>
                     @unless($user->avatar_url ?? null)
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>
+                        <span class="material-symbols-rounded" aria-hidden="true">account_circle</span>
                     @endunless
                 </span>
                 <span class="auth-profile-name">{{ $user->name ?? 'Account' }}</span>
-                <svg class="auth-profile-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                <span class="auth-profile-chevron material-symbols-rounded" aria-hidden="true">expand_more</span>
             </button>
             <div class="auth-profile-dropdown" id="auth-profile-dropdown" role="menu" hidden>
                 <div class="auth-profile-summary">
@@ -85,23 +84,27 @@
 
 <style>
     .auth-topbar,.auth-topbar *{box-sizing:border-box;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-style:normal;}
+    .auth-topbar .material-symbols-rounded{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;display:inline-block;line-height:1;text-transform:none;letter-spacing:normal;white-space:nowrap;direction:ltr;font-feature-settings:"liga";-webkit-font-smoothing:antialiased;}
     .auth-topbar{--navy:#0d1b6e;--gold:#dba617;--gold-light:#ffd84a;background:linear-gradient(115deg, #001B33 0%,#071550 0%,#0d1b6e 58%,#102b83 100%);display:flex;align-items:center;justify-content:space-between;padding:12px 28px;gap:20px;position:sticky;top:0;z-index:1000;border-bottom:1px solid rgba(255,255,255,.1);box-shadow:0 8px 24px rgba(7,21,80,.2);}
+    .auth-topbar.admin-auth-topbar{--navy:#111;--gold:#dba617;--gold-light:#ffd84a;background:#000;border-bottom:1px solid #242424;box-shadow:0 8px 24px rgba(0,0,0,.24);}
+    .admin-auth-topbar .admin-brand-skill{color:#ffd84a;}
+    .admin-auth-topbar .auth-topbar-inbox.is-active{color:var(--gold-light);background:rgba(255,255,255,.12);}
     .auth-topbar.faculty-auth-topbar{--navy:#061a45;--gold:#9a7000;--gold-light:#fff;background:#f4c430;border-bottom:1px solid #ddb51d;box-shadow:0 6px 18px rgba(92,67,0,.16);}
     .auth-topbar.student-auth-topbar{background:radial-gradient(ellipse 34% 190% at 8% 0%,rgba(37,83,220,.58) 0%,rgba(37,83,220,.3) 44%,transparent 82%),radial-gradient(ellipse 40% 210% at 42% 120%,rgba(30,65,190,.68) 0%,rgba(30,65,190,.32) 48%,transparent 84%),radial-gradient(ellipse 34% 180% at 76% -35%,rgba(56,76,205,.62) 0%,rgba(56,76,205,.28) 48%,transparent 84%),radial-gradient(ellipse 32% 190% at 105% 100%,rgba(25,76,190,.6) 0%,rgba(25,76,190,.28) 50%,transparent 86%),radial-gradient(ellipse 55% 150% at 54% 48%,rgba(25,42,132,.5) 0%,transparent 88%),linear-gradient(112deg,#07143f 0%,#101f70 52%,#081742 100%);}
     .faculty-auth-topbar .auth-topbar-brand,.faculty-auth-topbar .auth-profile-trigger{color:#0B1B45;}
     .faculty-auth-topbar .auth-topbar-icon,.faculty-auth-topbar .auth-profile-name{color:#0d1b6e;}
     .faculty-auth-topbar .auth-topbar-brand strong{color:#0B1B45;}
     .faculty-auth-topbar .faculty-brand-up{color:#fff;}
-    .faculty-auth-topbar .auth-topbar-brand strong span:last-child{color:#0d1b6e;}
+    .faculty-auth-topbar .auth-topbar-brand strong span:last-child{color:#000;}
     .faculty-auth-topbar .auth-topbar-icon:hover{color:#0d1b6e;background:rgba(11,27,69,.1);}
     .faculty-auth-topbar .auth-topbar-badge{background:#ef4444;color:#fff;box-shadow:0 0 0 2px #f4c430;}
     .faculty-auth-topbar .auth-notifications-item.is-unread{border-left-color:#ef4444;}
     .faculty-auth-topbar .faculty-sidebar-toggle{position:relative;left:-10px;margin-right:10px;display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;padding:0;border:0;border-radius:10px;background:transparent;color:#0B1B45;cursor:pointer;transition:background-color .15s ease;}
     .faculty-auth-topbar .faculty-sidebar-toggle:hover{background:rgba(11,27,69,.12);}
-    .faculty-auth-topbar .faculty-sidebar-toggle svg{width:20px;height:20px;}
+    .faculty-auth-topbar .faculty-sidebar-toggle .material-symbols-rounded{font-size:20px;}
     .student-auth-topbar .student-sidebar-toggle{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;padding:0;border:0;border-radius:10px;background:transparent;color:#fff;cursor:pointer;transition:background-color .15s ease;}
     .student-auth-topbar .student-sidebar-toggle:hover{background:rgba(255,255,255,.12);}
-    .student-auth-topbar .student-sidebar-toggle svg{width:20px;height:20px;}
+    .student-auth-topbar .student-sidebar-toggle .material-symbols-rounded{font-size:20px;}
     .student-auth-topbar .student-sidebar-toggle{position:relative;left:-10px;margin-right:10px;}
     .student-auth-topbar .auth-topbar-brand strong .student-brand-skill{color:#F4C430;}
     .student-auth-topbar .auth-topbar-badge{background:#f4c430;color:#061a45;box-shadow:0 0 0 2px #0d1b6e;}
@@ -114,7 +117,7 @@
     .auth-topbar-nav a{color:rgba(255,255,255,.86);font-size:14px;font-weight:700;line-height:1.25;padding:9px 16px;border-radius:10px;transition:color .18s ease,background .18s ease;}
     .auth-topbar-nav a:hover,.auth-topbar-nav a.is-active{color:var(--gold-light);background:rgba(255,255,255,.1);}
     .auth-topbar-actions{display:flex;align-items:center;gap:16px;flex:0 0 auto;}
-    .auth-topbar-icon{width:38px;height:38px;flex:0 0 38px;border:0;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;color:#fff;position:relative;background:transparent;padding:0;transition:color .15s ease;}
+    .auth-topbar-icon{width:38px;height:38px;flex:0 0 38px;border:0;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;color:#fff;position:relative;background:transparent;padding:0;text-decoration:none;transition:color .15s ease;}
     .auth-topbar-icon:hover{background:transparent;}
     .auth-topbar-icon:hover{color:#FFD501;}
     .auth-notifications{position:relative;}
@@ -127,14 +130,14 @@
     .auth-notifications-item strong{display:block;font-size:12px;}.auth-notifications-item p{margin:3px 0 0;color:#5f6b85;font-size:11px;line-height:1.4;}.auth-notifications-item time{display:block;margin-top:4px;color:#9aa3b5;font-size:10px;}.auth-notifications-item.is-unread{border-left:3px solid var(--gold);padding-left:13px;}
     .auth-notifications-status{padding:18px 16px;margin:0;color:#6b7280;font-size:12px;text-align:center;}
     .auth-notifications-all{display:block;padding:11px 16px;background:#f7f9ff;color:var(--navy);font-size:12px;font-weight:800;text-align:center;}
-    .auth-topbar-icon svg{width:22px;height:22px;}
+    .auth-topbar-icon .material-symbols-rounded{font-size:22px;}
     .auth-topbar-badge{position:absolute;top:-9px;right:-10px;background:#ef4444;color:#fff;border-radius:999px;font-size:10px;font-weight:800;padding:2px 5px;line-height:1.3;box-shadow:0 0 0 2px var(--navy);}
     .auth-profile{position:relative;}
     .auth-profile-trigger{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;color:#fff;padding:0;cursor:pointer;}
     .auth-profile-avatar{width:38px;height:38px;border-radius:50%;background:#fff center/cover no-repeat;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-    .auth-profile-avatar svg{width:21px;height:21px;color:var(--navy);}
+    .auth-profile-avatar .material-symbols-rounded{font-size:21px;color:var(--navy);}
     .auth-profile-name{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:700;line-height:1.25;}
-    .auth-profile-chevron{width:15px;height:15px;transition:transform .15s ease;}
+    .auth-profile-chevron{font-size:18px;transition:transform .15s ease;}
     .auth-profile.is-open .auth-profile-chevron{transform:rotate(180deg);}
     .auth-profile-dropdown{position:absolute;right:0;top:calc(100% + 12px);width:220px;background:#fff;color:var(--navy);border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 16px 35px rgba(12,15,77,.22);padding:8px;}
     .auth-profile-dropdown[hidden]{display:none;}
