@@ -80,13 +80,15 @@
             @php
                 $user = $enrollment->user;
                 $needsReview = $course->requires_faculty_verification
-                    && $enrollment->faculty_verification_status === 'pending'
+                    && in_array($enrollment->faculty_verification_status, ['pending', 'not_required'], true)
                     && $enrollment->completion_status === \App\Services\MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION;
-                $institutionalStatus = \App\Support\CompletionStatusPresenter::institutionalLabel(
-                    $enrollment->completion_status,
-                    $enrollment->faculty_verification_status,
-                    $enrollment->academic_unit_confirmation_status,
-                );
+                $institutionalStatus = $needsReview
+                    ? 'Awaiting Faculty Verification'
+                    : \App\Support\CompletionStatusPresenter::institutionalLabel(
+                        $enrollment->completion_status,
+                        $enrollment->faculty_verification_status,
+                        $enrollment->academic_unit_confirmation_status,
+                    );
             @endphp
             <article class="student-row">
                 <div class="avatar" @if($user?->avatar_url) style="background-image:url('{{ $user->avatar_url }}')" @endif>@unless($user?->avatar_url){{ strtoupper(substr($user->name ?? 'S', 0, 1)) }}@endunless</div>

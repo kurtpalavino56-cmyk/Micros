@@ -112,7 +112,7 @@ class FacultyController extends Controller
             ->withCount([
                 'enrollments',
                 'enrollments as faculty_reviews_count' => fn ($query) => $query
-                    ->where('faculty_verification_status', 'pending')
+                    ->whereIn('faculty_verification_status', ['pending', 'not_required'])
                     ->where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION),
             ])
             ->latest()
@@ -149,10 +149,10 @@ class FacultyController extends Controller
                     return $query->whereRaw('1 = 0');
                 }
 
-                return $query->where('faculty_verification_status', 'pending')
+                return $query->whereIn('faculty_verification_status', ['pending', 'not_required'])
                     ->where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION);
             })
-            ->orderByRaw("CASE WHEN faculty_verification_status = 'pending' AND completion_status = ? THEN 0 ELSE 1 END", [MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION])
+            ->orderByRaw("CASE WHEN faculty_verification_status IN ('pending', 'not_required') AND completion_status = ? THEN 0 ELSE 1 END", [MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION])
             ->orderBy('id')
             ->paginate(20)
             ->withQueryString();
@@ -160,7 +160,7 @@ class FacultyController extends Controller
         $needsReviewCount = $course->requires_faculty_verification
             ? Enrollment::query()
                 ->where('course_id', $course->id)
-                ->where('faculty_verification_status', 'pending')
+                ->whereIn('faculty_verification_status', ['pending', 'not_required'])
                 ->where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
                 ->count()
             : 0;

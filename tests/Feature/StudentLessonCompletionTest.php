@@ -96,3 +96,66 @@ test('lesson completion requires enrollment and a preceding lesson start', funct
         ->exists())->toBeTrue();
 });
 
+test('reopening the course restores lessons from server-verified completions, not a stale progress snapshot', function () {
+    [$student, $course, $completedLesson] = lessonTrackingFixture();
+    $module = $completedLesson->module;
+    $nextLesson = CourseLesson::create([
+        'course_id' => $course->id,
+        'module_id' => $module->id,
+        'title' => 'Lesson Two',
+        'type' => 'Text',
+        'order' => 2,
+        'content' => 'Next lesson content',
+    ]);
+    $enrollment = Enrollment::create([
+        'user_id' => $student->id,
+        'course_id' => $course->id,
+        'enrolled_at' => now(),
+        'progress_percent' => 0,
+        'progress_state' => ['completed_lessons' => [], 'module_scores' => []],
+    ]);
+
+    DB::table('lesson_completions')->insert([
+        'user_id' => $student->id,
+        'lesson_id' => $completedLesson->id,
+        'completed_at' => now(),
+        'server_verified_at' => now(),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $response = $this->actingAs($student)
+        ->get(route('courses.learn', $course->id))
+        ->assertOk()
+        ->assertSee('course-completion-dialog');
+
+    expect($response->viewData('saved_progress')['completed_lessons'])
+        ->toBe([(string) $completedLesson->id])
+        ->and($response->viewData('saved_progress')['completed_lessons'])
+        ->not->toContain((string) $nextLesson->id)
+        ->and($enrollment->fresh()->progress_state['completed_lessons'])
+        ->toBe([(string) $completedLesson->id]);
+});
+
+test('the next lesson remains locked until the preceding lesson is server-verified', function () {
+    [$student, $course, $firstLesson] = lessonTrackingFixture();
+    $secondLesson = CourseLesson::create([
+        'course_id' => $course->id,
+        'module_id' => $firstLesson->module_id,
+        'title' => 'Lesson Two',
+        'type' => 'Text',
+        'order' => 2,
+        'content' => 'Next lesson content',
+    ]);
+    Enrollment::create([
+        'user_id' => $student->id,
+        'course_id' => $course->id,
+        'enrolled_at' => now(),
+        'progress_percent' => 0,
+        'progress_state' => [],
+    ]);
+
+    $this->actingAs($student)
+        ->postJson(route('courses.lessons.start', [$course->id, $secondLesson->id]))
+        ->assertForbidden();
+});

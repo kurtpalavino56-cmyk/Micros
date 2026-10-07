@@ -49,6 +49,17 @@
     .nav-progress-breakdown{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px;color:rgba(255,255,255,.8);font-size:10px;line-height:1.35;}
     .nav-progress-breakdown span{display:block;white-space:nowrap;}
     .nav-progress-breakdown strong{display:block;color:#fff;font-size:11px;font-weight:700;}
+    .course-completion-dialog{width:min(92vw,520px);border:0;border-radius:22px;padding:0;color:var(--navy);box-shadow:0 24px 80px rgba(15,23,42,.3);}
+    .course-completion-dialog::backdrop{background:rgba(15,23,42,.68);backdrop-filter:blur(3px);}
+    .course-completion-content{padding:36px;text-align:center;}
+    .course-completion-icon{width:68px;height:68px;display:grid;place-items:center;margin:0 auto 18px;border-radius:50%;background:#ecfdf3;color:#15803d;font-size:34px;font-weight:800;}
+    .course-completion-content h2{margin:0 0 10px;font-size:25px;line-height:1.25;}
+    .course-completion-content p{margin:0;color:#526078;font-size:15px;line-height:1.65;}
+    .course-completion-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:12px;margin-top:26px;}
+    .course-completion-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 20px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:800;}
+    .course-completion-primary{background:var(--navy);color:#fff;}
+    .course-completion-secondary{border:1px solid #cbd5e1;color:var(--navy);background:#fff;}
+    @media(max-width:600px){.course-completion-content{padding:28px 22px;}.course-completion-actions{flex-direction:column;}.course-completion-actions a{width:100%;}}
 
     .modules-scroll{flex:1;overflow-y:auto;}
     .modules-scroll::-webkit-scrollbar{width:4px;}
@@ -1043,6 +1054,18 @@
     </main>
 </div>
 
+<dialog class="course-completion-dialog" id="course-completion-dialog" aria-labelledby="course-completion-title">
+    <div class="course-completion-content">
+        <div class="course-completion-icon" aria-hidden="true">✓</div>
+        <h2 id="course-completion-title">Course learning complete!</h2>
+        <p id="course-completion-message" role="status"></p>
+        <div class="course-completion-actions">
+            <a class="course-completion-primary" href="{{ route('courses.enrolled') }}">Return to My Courses</a>
+            <a class="course-completion-secondary" href="{{ route('courses.browse') }}">Browse Courses</a>
+        </div>
+    </div>
+</dialog>
+
 <script>
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    QUIZ DATA â€” one per module, 3 questions each
@@ -1162,6 +1185,7 @@ function saveProgress(immediate) {
                 updateProgress();
             }
             if (data.progress_breakdown) updateProgressBreakdown(data.progress_breakdown);
+            if (_serverProgressPercent >= 100) reportCourseCompletion();
 
             if (_pendingQuizSubmit && data.quiz_submissions) {
                 var pending = data.quiz_submissions[String(_pendingQuizSubmit.modIdx)];
@@ -1257,7 +1281,6 @@ function restoreProgress(saved) {
                 doneBtn.textContent = 'VIEW';
                 doneBtn.title = 'View your quiz results';
             }
-            unlockModule(i + 1);
         } else if (doneBtn) {
             // Failed attempt â€” read-only review; retake is gated by the cooldown
             doneBtn.classList.remove('locked');
@@ -1267,12 +1290,31 @@ function restoreProgress(saved) {
         }
     });
 
-    // Lesson-driven states last, so "Completed" labels win
-    Object.keys(QUIZ_DATA).forEach(function (k) {
-        var i = parseInt(k, 10);
+    // Restore access in order from verified lessons and passed module quizzes.
+    // A score alone must not unlock later modules if current lesson requirements
+    // are incomplete, and modules without quizzes still unlock sequentially.
+    const moduleGroups = Array.from(document.querySelectorAll('.module-group'));
+    for (let i = 0; i < moduleGroups.length; i += 1) {
+        const lessons = Array.from(moduleGroups[i].querySelectorAll('.lesson-item'));
+        const allLessonsDone = lessons.every(function (lesson) {
+            return lesson.classList.contains('lesson-correct');
+        });
+
         checkQuizUnlock(i);
         checkModuleComplete(i);
-    });
+        if (!allLessonsDone) break;
+
+        const quiz = QUIZ_DATA[i];
+        if (quiz && quiz.questions && quiz.questions.length > 0) {
+            const score = _moduleScores[i];
+            const scorePercent = score === undefined
+                ? 0
+                : Math.round((Number(score) / quiz.questions.length) * 100);
+            if (scorePercent < Number(quiz.passingScore || 75)) break;
+        }
+
+        unlockModule(i + 1);
+    }
 
     // Reconcile browser cooldowns with the server's list. Entries the server
     // still reports are refreshed; everything else is cleared, which is how a
@@ -1296,8 +1338,31 @@ function restoreProgress(saved) {
    Fires once, the moment the course reaches 100%. The Admin
    "Recent Badges" panel picks the new badge up within 15 seconds. */
 var _completionReported = false;
+var _completionDialogShown = false;
+function showCourseCompletionDialog(data, confirmationError) {
+    if (_completionDialogShown) return;
+
+    var dialog = document.getElementById('course-completion-dialog');
+    var title = document.getElementById('course-completion-title');
+    var message = document.getElementById('course-completion-message');
+    if (!dialog || !title || !message) return;
+
+    title.textContent = data && data.completed
+        ? 'Course complete!'
+        : (data && data.pending_review ? 'Course learning complete!' : 'Learning progress complete');
+    message.textContent = confirmationError
+        ? 'Your learning progress reached 100%, but we could not confirm the remaining course requirements. Please reload the course or contact your instructor.'
+        : (data && data.message
+            ? data.message
+            : (data && data.completed
+                ? 'Congratulations! Your course completion has been officially approved.'
+                : 'Your learning progress reached 100%. Any remaining mastery or institutional review must be completed before credentials are released.'));
+    _completionDialogShown = true;
+    dialog.showModal();
+}
+
 function reportCourseCompletion() {
-    if (_completionReported) return;
+    if (_completionReported || _serverProgressPercent < 100) return;
     _completionReported = true;
     fetch('{{ route('courses.complete', $course->id) }}', {
         method: 'POST',
@@ -1307,21 +1372,23 @@ function reportCourseCompletion() {
             'Content-Type': 'application/json'
         },
         body: '{}'
-    }).then(function(r){ return r.json(); })
-      .then(function(data){
-          if (data && data.badge_awarded) {
-              try { console.log('Badge earned: ' + data.badge_awarded); } catch (e) {}
-          }
-          if (data && data.message) {
-              var completionStatus = document.getElementById('quiz-score-result');
-              if (completionStatus) {
-                  completionStatus.textContent = data.message;
-                  completionStatus.className = 'quiz-score-result';
-                  completionStatus.style.display = 'block';
-              }
-          }
+    }).then(function(response) {
+        return response.json().then(function(data) {
+            return { ok: response.ok && !!data && !!data.ok, data: data };
+        });
+    }).then(function(result) {
+        var data = result.data;
+        if (result.ok && data.badge_awarded) {
+            try { console.log('Badge earned: ' + data.badge_awarded); } catch (e) {}
+        }
+
+        showCourseCompletionDialog(data, false);
       })
-      .catch(function(){ _completionReported = false; });
+      .catch(function(error) {
+          console.error('Could not confirm course completion.', error);
+          _completionReported = false;
+          showCourseCompletionDialog(null, true);
+      });
 }
 
 /* The server owns overall progress across lessons, required activities, and passed quizzes. */
@@ -1329,6 +1396,7 @@ function updateProgress() {
     const pct = Math.max(0, Math.min(100, Number(_serverProgressPercent) || 0));
     document.getElementById('nav-fill').style.width = pct + '%';
     document.getElementById('nav-pct').textContent  = pct + '%';
+    if (pct >= 100) reportCourseCompletion();
 }
 
 function updateProgressBreakdown(breakdown) {
@@ -1737,6 +1805,9 @@ async function submitInlineAssessment(form, timeExpired) {
             checkQuizUnlock(_curModIdx);
             checkModuleComplete(_curModIdx);
         }
+        if (result.lesson_completed && Number(result.progress_breakdown && result.progress_breakdown.percent) >= 100) {
+            reportCourseCompletion();
+        }
     } catch (submitError) {
         error.textContent = submitError.message || 'Could not submit this assessment.';
         error.hidden = false;
@@ -1792,6 +1863,9 @@ function continueLesson() {
                 lessonEl.classList.remove('lesson-wrong', 'active');
                 checkQuizUnlock(_curModIdx);
                 checkModuleComplete(_curModIdx);
+                if (Number(result.progress_breakdown && result.progress_breakdown.percent) >= 100) {
+                    reportCourseCompletion();
+                }
                 advanceAfterLesson();
                 return;
             }
@@ -2232,7 +2306,7 @@ function applyServerQuizSubmission(modIdx, submission) {
     scoreEl.className = 'quiz-score-result ' + (pass ? 'pass' : 'fail');
     scoreEl.style.display = 'block';
 
-    const moduleCount = Object.keys(QUIZ_DATA).length;
+    const moduleCount = document.querySelectorAll('.module-group').length;
     const hasNextMod = modIdx < moduleCount - 1;
 
     if (pass) {

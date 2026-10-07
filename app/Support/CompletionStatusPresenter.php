@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Services\MicrocredentialCompletionService;
+
 /**
  * Presentation-only helper (Phase 3 FIX 2). Does NOT change
  * `enrollments.completion_status` or the completion state machine in any
@@ -28,6 +30,13 @@ class CompletionStatusPresenter
         // Rule 4 — officially completed.
         if ($completionStatus === 'completed' && $academicUnitConfirmationStatus === 'confirmed') {
             return 'Completed';
+        }
+
+        // Institutional gate fields can be pending before all learning
+        // requirements are met. Do not present those enrollments as ready
+        // for review until the authoritative completion state reaches it.
+        if ($completionStatus !== MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION) {
+            return ucfirst(str_replace('_', ' ', $completionStatus));
         }
 
         // Rule 1 — both gates still pending.

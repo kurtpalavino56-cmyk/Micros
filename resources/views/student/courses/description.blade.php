@@ -132,7 +132,7 @@
     .btn-complete{background:#fff;color:var(--c-good);border-color:#a6dfc0;}
     .btn-complete:hover{background:var(--c-good-bg);}
     .btn-complete:disabled{background:var(--c-surface-alt);border-color:var(--c-border);color:#98a2b3;cursor:not-allowed;}
-    .btn-enroll:focus-visible,.btn-continue:focus-visible,.btn-complete:focus-visible,.btn-quiz:focus-visible{outline:none;box-shadow:0 0 0 3px var(--c-focus);}
+    .btn-enroll:focus-visible,.btn-continue:focus-visible,.btn-complete:focus-visible{outline:none;box-shadow:0 0 0 3px var(--c-focus);}
     .completion-state{display:flex;align-items:center;justify-content:center;margin-bottom:18px;padding:12px;border-radius:10px;background:var(--c-good-bg);color:var(--c-good);font-size:14px;font-weight:600;text-align:center;}
     .completion-help{display:block;margin:0;color:var(--c-muted);font-size:12px;line-height:1.5;text-align:center;}
 
@@ -192,9 +192,6 @@
     .quiz-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 22px;background:var(--c-surface-alt);border-top:1px solid var(--c-border);}
     .quiz-title{margin:0 0 2px;font-size:15px;font-weight:600;color:var(--c-strong);}
     .quiz-sub{margin:0;font-size:13px;color:var(--c-muted);}
-    .btn-quiz{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:9px 22px;border:1px solid var(--c-accent);border-radius:8px;background:var(--c-accent);color:#fff;font-size:14px;font-weight:600;transition:background .15s;}
-    .btn-quiz:hover{background:var(--c-accent-hover);}
-    .btn-quiz:disabled{opacity:.5;cursor:not-allowed;}
 
     /* ── Instructor ──────────────────────────────────────────── */
     .instructor-wrap{display:flex;align-items:center;gap:14px;}
@@ -229,7 +226,6 @@
         .module-item{padding:14px 16px 8px;}
         .course-module-lessons{padding:0 16px 12px 16px;}
         .quiz-row{flex-direction:column;align-items:stretch;padding:16px;}
-        .btn-quiz{width:100%;}
     }
     @media (prefers-reduced-motion:reduce){
         *{transition:none!important;}
@@ -492,11 +488,6 @@
                                         @endif
                                     </p>
                                 </div>
-                                @if($is_enrolled ?? false)
-                                    <a class="btn-quiz" href="{{ route('quiz.show', $quiz->id) }}">Take quiz</a>
-                                @else
-                                    <button class="btn-quiz" type="button" disabled>Take quiz</button>
-                                @endif
                             </div>
                         @endif
                     </section>

@@ -740,11 +740,20 @@ class StudentController extends Controller
             $enrollment->enrolled_at
         );
         $livePercent = $progressBreakdown['percent'];
-        $liveLessons = $this->resolveCompletedLessons(
-            $course,
-            array_values($state['completed_lessons'] ?? []),
-            $enrollment
-        );
+        $lessonIds = $course->modules
+            ->flatMap(fn ($module) => $module->lessons)
+            ->pluck('id')
+            ->unique()
+            ->values();
+        $liveLessons = $lessonIds->isEmpty()
+            ? []
+            : DB::table('lesson_completions')
+                ->where('user_id', $auth->id)
+                ->whereIn('lesson_id', $lessonIds)
+                ->whereNotNull('server_verified_at')
+                ->pluck('lesson_id')
+                ->map(fn ($lessonId) => (string) $lessonId)
+                ->all();
 
         $stateChanged = $liveLessons !== array_values($state['completed_lessons'] ?? []);
 
@@ -1720,9 +1729,9 @@ class StudentController extends Controller
     // ── Course completion -> badge award ────────────────────────────────
 
     /**
-     * Called via fetch() from the course player the moment a student
-     * finishes the last module quiz. Marks the enrollment complete and
-     * awards the badge linked to the course (courses.badge_id).
+     * Called via fetch() from the course player when all learning
+     * requirements are complete. Marks the enrollment complete and awards
+     * eligible credentials only after the required institutional gates pass.
      *
      * The Admin "Recent Badges" panel counts rows in user_badges, so it
      * climbs in real time as soon as a student earns a badge. Awards are
