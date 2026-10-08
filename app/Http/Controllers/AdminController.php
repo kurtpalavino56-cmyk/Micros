@@ -8,6 +8,7 @@ use App\Actions\Announcements\UpdateAnnouncement;
 use App\Mail\ComplaintReplyMail;
 use App\Models\AcademicCreditRecognition;
 use App\Models\Announcement;
+use App\Models\AuditLog;
 use App\Models\Certificate;
 use App\Models\Complaint;
 use App\Models\ComplaintReply;
@@ -30,6 +31,7 @@ use App\Support\CertificateBuilder;
 use App\Support\CompletionStatusPresenter;
 use App\Support\UserPresenter;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -47,6 +49,115 @@ use Illuminate\Validation\ValidationException;
  */
 class AdminController extends Controller
 {
+    /** Display administrator actions for the selected date range. */
+    public function auditLogs(Request $request)
+    {
+        $validated = $request->validate([
+            'start_date' => ['nullable', 'date_format:Y-m-d'],
+            'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'],
+            'actor_role' => ['nullable', 'in:all,admin,faculty,student'],
+            'action' => ['nullable', 'string', 'max:120'],
+        ]);
+        $filters = [
+            'start_date' => $validated['start_date'] ?? now()->subDays(29)->toDateString(),
+            'end_date' => $validated['end_date'] ?? now()->toDateString(),
+            'actor_role' => $validated['actor_role'] ?? 'all',
+            'action' => $validated['action'] ?? 'all',
+        ];
+        $query = $this->auditLogQuery($filters);
+        $totalLogs = (clone $query)->count();
+        $actions = AuditLog::query()
+            ->whereDate('created_at', '>=', $filters['start_date'])
+            ->whereDate('created_at', '<=', $filters['end_date'])
+            ->when($filters['actor_role'] !== 'all', function (Builder $builder) use ($filters): void {
+                $roles = $filters['actor_role'] === 'admin' ? ['admin', 'Administrator'] : [$filters['actor_role']];
+                $builder->whereIn('actor_role', $roles);
+            })
+            ->distinct()
+            ->orderBy('event')
+            ->pluck('event');
+
+        return view('admin.audit-logs', [
+            'user' => UserPresenter::admin(Auth::user()),
+            'logs' => $query->paginate(25)->withQueryString(),
+            'totalLogs' => $totalLogs,
+            'actions' => $actions,
+            'startDate' => $filters['start_date'],
+            'endDate' => $filters['end_date'],
+            'actorRole' => $filters['actor_role'],
+            'selectedAction' => $filters['action'],
+        ]);
+    }
+
+    /** Download the filtered system activity range as a CSV report. */
+    public function downloadAuditLogs(Request $request)
+    {
+        $validated = $request->validate([
+            'start_date' => ['nullable', 'date_format:Y-m-d'],
+            'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'],
+            'actor_role' => ['nullable', 'in:all,admin,faculty,student'],
+            'action' => ['nullable', 'string', 'max:120'],
+        ]);
+        $filters = [
+            'start_date' => $validated['start_date'] ?? now()->subDays(29)->toDateString(),
+            'end_date' => $validated['end_date'] ?? now()->toDateString(),
+            'actor_role' => $validated['actor_role'] ?? 'all',
+            'action' => $validated['action'] ?? 'all',
+        ];
+        $logs = $this->auditLogQuery($filters)->reorder()->orderBy('created_at')->orderBy('id');
+        $filename = 'admin-audit-log-'.$filters['start_date'].'-to-'.$filters['end_date'].'.csv';
+
+        return response()->streamDownload(function () use ($logs): void {
+            $output = fopen('php://output', 'w');
+            if ($output === false) {
+                return;
+            }
+
+            fwrite($output, "\xEF\xBB\xBF");
+            fputcsv($output, ['Timestamp', 'User', 'Role', 'Action', 'Target', 'Old and New Values', 'Details', 'Method', 'Route', 'IP Address', 'User Agent']);
+
+            foreach ($logs->cursor() as $log) {
+                fputcsv($output, [
+                    $log->created_at?->format('Y-m-d H:i:s'),
+                    $this->safeCsvValue($log->actor_name),
+                    $this->safeCsvValue($log->actor_role),
+                    $this->safeCsvValue($log->event),
+                    $this->safeCsvValue($log->target_label),
+                    $this->safeCsvValue($log->changes === null ? null : json_encode($log->changes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)),
+                    $this->safeCsvValue($log->description),
+                    $this->safeCsvValue($log->method),
+                    $this->safeCsvValue($log->route),
+                    $this->safeCsvValue($log->ip_address),
+                    $this->safeCsvValue($log->user_agent),
+                ]);
+            }
+
+            fclose($output);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /** @param array{start_date: string, end_date: string, actor_role?: string, action?: string} $filters */
+    private function auditLogQuery(array $filters): Builder
+    {
+        return AuditLog::query()
+            ->whereDate('created_at', '>=', $filters['start_date'])
+            ->whereDate('created_at', '<=', $filters['end_date'])
+            ->when(($filters['actor_role'] ?? 'all') !== 'all', function (Builder $builder) use ($filters): void {
+                $roles = $filters['actor_role'] === 'admin' ? ['admin', 'Administrator'] : [$filters['actor_role']];
+                $builder->whereIn('actor_role', $roles);
+            })
+            ->when(($filters['action'] ?? 'all') !== 'all', fn (Builder $builder) => $builder->where('event', $filters['action']))
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+    }
+
+    private function safeCsvValue(?string $value): string
+    {
+        $value = (string) $value;
+
+        return preg_match('/^[\s]*[=+\-@]/u', $value) === 1 ? "'".$value : $value;
+    }
+
     // ── Dashboard ─────────────────────────────────────────────────────────
 
     public function dashboard()

@@ -981,8 +981,10 @@
                                 <a class="hero-course-link" href="{{ route('explore') }}">Browse all courses <span aria-hidden="true">→</span></a>
                             </div>
                         @endforelse
-                        @if(count($heroCourses) >= 3)
-                            <button class="hero__side-hit hero__side-hit--prev" type="button" aria-label="Show previous featured course"></button>
+                        @if(count($heroCourses) >= 2)
+                            @if(count($heroCourses) >= 3)
+                                <button class="hero__side-hit hero__side-hit--prev" type="button" aria-label="Show previous featured course"></button>
+                            @endif
                             <button class="hero__side-hit hero__side-hit--next" type="button" aria-label="Show next featured course"></button>
                         @endif
                     </div>
@@ -1229,7 +1231,9 @@
                 const position = (slideIndex - current + slides.length) % slides.length;
                 const hasSideCards = slides.length >= 2;
                 const isNext = hasSideCards && position === 1;
-                const isPrevious = hasSideCards && position === slides.length - 1;
+                // With two cards, the same rear card is both previous and next.
+                // Keep it on the right so its click target has one clear position.
+                const isPrevious = slides.length > 2 && position === slides.length - 1;
                 slide.classList.toggle('is-active', isActive);
                 slide.classList.toggle('is-prev', isPrevious);
                 slide.classList.toggle('is-next', isNext);

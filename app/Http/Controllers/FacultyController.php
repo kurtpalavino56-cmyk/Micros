@@ -56,9 +56,34 @@ class FacultyController extends Controller
             ->withCount(['modules', 'enrollments'])
             ->latest()
             ->get();
+        $courseIds = $courses->modelKeys();
+        $ownedCourseIds = $courseIds ?: [0];
+
+        $toGradeByCourse = DB::table('lesson_activity_submissions')
+            ->join('lesson_activities', 'lesson_activities.id', '=', 'lesson_activity_submissions.lesson_activity_id')
+            ->join('course_lessons', 'course_lessons.id', '=', 'lesson_activities.lesson_id')
+            ->whereIn('course_lessons.course_id', $ownedCourseIds)
+            ->where('lesson_activities.is_active', true)
+            ->where('lesson_activities.activity_type', 'assignment')
+            ->where('lesson_activity_submissions.status', 'submitted')
+            ->groupBy('course_lessons.course_id')
+            ->selectRaw('course_lessons.course_id, COUNT(*) as submission_count')
+            ->pluck('submission_count', 'course_id');
+
+        $verificationCourseIds = $courses
+            ->filter(fn (Course $course) => $course->requires_faculty_verification)
+            ->modelKeys() ?: [0];
+        $awaitingVerificationByCourse = Enrollment::query()
+            ->whereIn('course_id', $verificationCourseIds)
+            ->whereIn('faculty_verification_status', ['pending', 'not_required'])
+            ->where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
+            ->groupBy('course_id')
+            ->selectRaw('course_id, COUNT(*) as enrollment_count')
+            ->pluck('enrollment_count', 'course_id');
+
         $monthStarts = collect(range(5, 0))
             ->map(fn ($offset) => now()->subMonths($offset)->startOfMonth());
-        $enrollmentDates = Enrollment::whereIn('course_id', $courses->pluck('id'))
+        $enrollmentDates = Enrollment::whereIn('course_id', $ownedCourseIds)
             ->where('enrolled_at', '>=', $monthStarts->first())
             ->pluck('enrolled_at');
         $monthlyCounts = $monthStarts->map(function (Carbon $month) use ($enrollmentDates) {
@@ -82,23 +107,100 @@ class FacultyController extends Controller
 
         $stats = [
             'total_courses' => $courses->count(),
-            'published' => $courses->filter(fn (Course $c) => $c->statusLabel() === 'Published')->count(),
-            'total_students' => Enrollment::whereIn('course_id', $courses->pluck('id'))->distinct()->count('user_id'),
-            'enrollments' => Enrollment::whereIn('course_id', $courses->pluck('id'))->count(),
+            'published' => $courses->filter(fn (Course $course) => $course->statusLabel() === 'Published' && $course->is_published)->count(),
+            'total_students' => Enrollment::whereIn('course_id', $ownedCourseIds)->distinct()->count('user_id'),
+            'to_grade' => (int) $toGradeByCourse->sum(),
+            'awaiting_verification' => (int) $awaitingVerificationByCourse->sum(),
         ];
+
+        $mappedCourses = $courses->map(function (Course $course) use ($toGradeByCourse, $awaitingVerificationByCourse) {
+            $status = match (true) {
+                $course->approval_status === 'denied' => 'Returned',
+                $course->approval_status === 'pending' => 'Pending approval',
+                $course->statusLabel() === 'Published' && $course->is_published => 'Published',
+                default => 'Draft',
+            };
+
+            return (object) [
+                'id' => $course->id,
+                'title' => $course->title,
+                'status' => $status,
+                'status_class' => match ($status) {
+                    'Published' => 'published',
+                    'Pending approval' => 'pending',
+                    'Returned' => 'returned',
+                    default => 'draft',
+                },
+                'approval_status' => $course->approval_status,
+                'denial_feedback' => $course->denial_feedback,
+                'requires_faculty_verification' => (bool) $course->requires_faculty_verification,
+                'to_grade' => (int) ($toGradeByCourse[$course->id] ?? 0),
+                'awaiting_verification' => (int) ($awaitingVerificationByCourse[$course->id] ?? 0),
+                'students_count' => (int) $course->enrollments_count,
+                'modules_count' => (int) $course->modules_count,
+                'thumbnail_url' => $course->thumbnail_url,
+            ];
+        })->values();
+
+        $attentionItems = collect();
+        foreach ($mappedCourses as $course) {
+            if ($course->status === 'Returned') {
+                $attentionItems->push((object) [
+                    'priority' => 0,
+                    'course_title' => $course->title,
+                    'label' => $course->denial_feedback
+                        ? 'Returned course — review the feedback'
+                        : 'Returned course — review and update the course',
+                    'feedback' => $course->denial_feedback,
+                    'url' => route('faculty.courses.manage', $course->id),
+                ]);
+            } elseif ($course->status === 'Draft') {
+                $attentionItems->push((object) [
+                    'priority' => 1,
+                    'course_title' => $course->title,
+                    'label' => 'Draft course — continue setup',
+                    'feedback' => null,
+                    'url' => route('faculty.courses.manage', $course->id),
+                ]);
+            }
+
+            if ($course->to_grade > 0) {
+                $attentionItems->push((object) [
+                    'priority' => 2,
+                    'course_title' => $course->title,
+                    'label' => $course->to_grade.' assignment'.($course->to_grade === 1 ? '' : 's').' to grade',
+                    'feedback' => null,
+                    'url' => route('faculty.activities.reviews', $course->id),
+                ]);
+            }
+
+            if ($course->awaiting_verification > 0) {
+                $attentionItems->push((object) [
+                    'priority' => 3,
+                    'course_title' => $course->title,
+                    'label' => $course->awaiting_verification.' learner'.($course->awaiting_verification === 1 ? '' : 's').' awaiting verification',
+                    'feedback' => null,
+                    'url' => route('faculty.students.course', ['id' => $course->id, 'filter' => 'needs_review']),
+                ]);
+            }
+
+            if ($course->approval_status === 'pending') {
+                $attentionItems->push((object) [
+                    'priority' => 4,
+                    'course_title' => $course->title,
+                    'label' => 'Pending admin approval',
+                    'feedback' => null,
+                    'url' => route('faculty.courses.manage', $course->id),
+                ]);
+            }
+        }
 
         return view('faculty.dashboard', [
             'user' => UserPresenter::faculty($auth),
             'stats' => $stats,
             'monthlyEnrollments' => $monthlyEnrollments,
-            'courses' => $courses->map(fn (Course $c) => (object) [
-                'id' => $c->id,
-                'title' => $c->title,
-                'status' => $c->statusLabel(),
-                'students_count' => (int) $c->enrollments_count,
-                'modules_count' => (int) $c->modules_count,
-                'thumbnail_url' => $c->thumbnail_url,
-            ])->values(),
+            'courses' => $mappedCourses,
+            'attentionItems' => $attentionItems->sortBy('priority')->values(),
         ]);
     }
 
@@ -206,7 +308,12 @@ class FacultyController extends Controller
         // Weekly activity — analytics events on this faculty member's
         // courses, bucketed per weekday.
         $weekStart = now()->startOfWeek();
+        $learnerIds = Enrollment::query()
+            ->whereIn('course_id', $courseIds)
+            ->select('user_id')
+            ->distinct();
         $dowCounts = DB::table('analytics_events')
+            ->whereIn('user_id', $learnerIds)
             ->where('occurred_at', '>=', $weekStart)
             ->pluck('occurred_at')
             ->map(fn ($ts) => (int) Carbon::parse($ts)->dayOfWeek) // 0=Sun … 6=Sat
@@ -311,10 +418,33 @@ class FacultyController extends Controller
 
     // ── Analytics ─────────────────────────────────────────────────────────
 
-    public function analytics()
+    public function analytics(Request $request)
     {
         $auth = Auth::user();
-        $courseIds = Course::where('created_by', $auth->id)->pluck('id')->all() ?: [0];
+        $facultyCourses = Course::query()
+            ->where('created_by', $auth->id)
+            ->orderBy('title')
+            ->get(['id', 'title']);
+        $selectedCourseId = null;
+        $requestedCourseId = $request->query('course_id');
+        if ($requestedCourseId !== null && $requestedCourseId !== '') {
+            abort_unless(
+                is_scalar($requestedCourseId)
+                    && filter_var($requestedCourseId, FILTER_VALIDATE_INT) !== false
+                    && (int) $requestedCourseId > 0,
+                404
+            );
+
+            $selectedCourseId = (int) $requestedCourseId;
+            abort_unless(
+                $facultyCourses->contains(fn (Course $course) => $course->id === $selectedCourseId),
+                404
+            );
+        }
+
+        $courseIds = $selectedCourseId !== null
+            ? [$selectedCourseId]
+            : ($facultyCourses->modelKeys() ?: [0]);
         $enrollBase = Enrollment::whereIn('course_id', $courseIds);
         $learnerIds = (clone $enrollBase)->select('user_id')->distinct();
         // Cumulative learner growth, one point per month for the last year.
@@ -370,19 +500,25 @@ class FacultyController extends Controller
                     ->whereColumn('quizzes.course_id', 'courses.id')
                     ->whereNotNull('quiz_attempts.score')
                     ->selectRaw('COUNT(*)'),
-                'passed_attempts_count' => DB::table('quiz_attempts')
+                'attempted_learners_count' => DB::table('quiz_attempts')
                     ->join('quizzes', 'quizzes.id', '=', 'quiz_attempts.quiz_id')
                     ->whereColumn('quizzes.course_id', 'courses.id')
-                    ->whereNotNull('quiz_attempts.score')
+                    ->selectRaw('COUNT(DISTINCT quiz_attempts.user_id)'),
+                'passed_learners_count' => DB::table('quiz_attempts')
+                    ->join('quizzes', 'quizzes.id', '=', 'quiz_attempts.quiz_id')
+                    ->whereColumn('quizzes.course_id', 'courses.id')
                     ->where('quiz_attempts.passed', true)
-                    ->selectRaw('COUNT(*)'),
+                    ->selectRaw('COUNT(DISTINCT quiz_attempts.user_id)'),
                 'pending_reviews_count' => DB::table('lesson_activity_submissions')
                     ->join('lesson_activities', 'lesson_activities.id', '=', 'lesson_activity_submissions.lesson_activity_id')
                     ->join('course_lessons', 'course_lessons.id', '=', 'lesson_activities.lesson_id')
                     ->whereColumn('course_lessons.course_id', 'courses.id')
+                    ->where('lesson_activities.is_active', true)
+                    ->where('lesson_activities.activity_type', 'assignment')
                     ->where('lesson_activity_submissions.status', 'submitted')
                     ->selectRaw('COUNT(*)'),
             ])
+            ->whereIn('id', $courseIds)
             ->orderBy('title')
             ->get()
             ->map(fn (Course $course) => (object) [
@@ -394,8 +530,8 @@ class FacultyController extends Controller
                     : null,
                 'average_score' => $course->average_quiz_score !== null ? (int) round((float) $course->average_quiz_score) : null,
                 'scored_attempts' => (int) $course->scored_attempts_count,
-                'pass_rate' => $course->scored_attempts_count > 0
-                    ? (int) round($course->passed_attempts_count / $course->scored_attempts_count * 100)
+                'pass_rate' => $course->attempted_learners_count > 0
+                    ? (int) round($course->passed_learners_count / $course->attempted_learners_count * 100)
                     : null,
                 'pending_reviews' => (int) $course->pending_reviews_count,
             ]);
@@ -415,12 +551,29 @@ class FacultyController extends Controller
             'academyStats' => $academyStats,
             'learnerSuccess' => $learnerSuccess,
             'courseAnalytics' => $courseAnalytics,
+            'facultyCourses' => $facultyCourses,
+            'selectedCourseId' => $selectedCourseId,
         ]);
     }
 
-    public function analyticsLive()
+    public function analyticsLive(Request $request)
     {
-        $courseIds = Course::query()->where('created_by', Auth::id())->pluck('id')->all();
+        $ownedCourses = Course::query()->where('created_by', Auth::id());
+        $requestedCourseId = $request->query('course_id');
+        if ($requestedCourseId !== null && $requestedCourseId !== '') {
+            abort_unless(
+                is_scalar($requestedCourseId)
+                    && filter_var($requestedCourseId, FILTER_VALIDATE_INT) !== false
+                    && (int) $requestedCourseId > 0,
+                404
+            );
+
+            $courseIds = [(int) $requestedCourseId];
+            abort_unless($ownedCourses->whereKey($courseIds[0])->exists(), 404);
+        } else {
+            $courseIds = $ownedCourses->pluck('id')->all();
+        }
+
         $learnerIds = Enrollment::query()->whereIn('course_id', $courseIds)->select('user_id')->distinct();
         $events = DB::table('analytics_events')->whereIn('user_id', $learnerIds)
             ->where(function ($query) use ($courseIds) {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Course;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -25,13 +26,13 @@ class FacultyAnalyticsReportController extends Controller
     /**
      * GET /Faculty-analytics/report  (name: faculty.analytics.report)
      */
-    public function download()
+    public function download(Request $request)
     {
         // Run the same action that renders the on-screen Analytics page and
         // harvest the data it passed to the Blade view ($onlineNow, $stats,
         // $academyStats, $learnerSuccess, ...). Passing request() is harmless
         // whether the method declares a Request parameter or not.
-        $page = app(FacultyController::class)->analytics(request());
+        $page = app(FacultyController::class)->analytics($request);
 
         // If the action ever redirects (e.g. incomplete profile), follow it
         // instead of rendering a report.
@@ -43,7 +44,12 @@ class FacultyAnalyticsReportController extends Controller
 
         $data['generatedAt'] = now();
         $data['preparedBy'] = auth()->user();
-        $data['recentActivity'] = $this->recentActivity((int) auth()->id());
+        $courseIds = Course::query()
+            ->where('created_by', auth()->id())
+            ->when($request->query('course_id'), fn ($query, $courseId) => $query->whereKey((int) $courseId))
+            ->pluck('id')
+            ->all();
+        $data['recentActivity'] = $this->recentActivity($courseIds);
 
         $pdf = Pdf::loadView('faculty.analytics-report-pdf', $data)
             ->setPaper('a4', 'portrait');
@@ -55,10 +61,8 @@ class FacultyAnalyticsReportController extends Controller
      * Snapshot of the Live Monitoring Feed for the report: the most recent
      * analytics events, resolved to readable titles and learner names.
      */
-    private function recentActivity(int $facultyId, int $limit = 15): array
+    private function recentActivity(array $courseIds, int $limit = 15): array
     {
-        $courseIds = Course::query()->where('created_by', $facultyId)->pluck('id')->all();
-
         return DB::table('analytics_events')
             ->leftJoin('users', 'users.id', '=', 'analytics_events.user_id')
             ->where(function ($query) use ($courseIds) {

@@ -78,9 +78,9 @@
     .page-head h2{font-size:26px;margin:0 0 4px;color:var(--navy);}
     .page-head p{margin:0;color:var(--muted);font-size:13px;font-weight:600;}
     .btn-outline{background:#fff;border:1.5px solid #c9ccdb;color:#9aa0b4;font-weight:600;padding:12px 28px;border-radius:999px;font-size:15px;}
-    .page-head .btn-outline{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#e5b82e;border:1px solid #c99812;border-radius:8px;color:#17202a;font-weight:700;box-shadow:0 3px 8px rgba(146,104,0,.18);text-decoration:none;transition:background .15s ease,box-shadow .15s ease,transform .15s ease;}
+    .page-head .btn-outline{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff2bf;border:1px solid #ead477;border-radius:8px;color:#17202a;font-weight:700;box-shadow:0 3px 8px rgba(146,104,0,.12);text-decoration:none;transition:background .15s ease,box-shadow .15s ease,transform .15s ease;}
     .page-head .btn-outline svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;}
-    .page-head .btn-outline:hover{background:#f0c642;border-color:#bd8d0c;box-shadow:0 0 0 3px rgba(229,184,46,.2),0 0 18px rgba(229,184,46,.55);transform:translateY(-1px);}
+    .page-head .btn-outline:hover{background:#ffeb99;border-color:#d9bb47;box-shadow:0 0 0 3px rgba(229,184,46,.16),0 0 14px rgba(229,184,46,.3);transform:translateY(-1px);}
 
     .course-card{border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:22px 24px;display:flex;align-items:center;gap:22px;margin-bottom:24px;}
     .thumb{width:88px;height:88px;border-radius:12px;background:var(--thumb);flex-shrink:0;background-size:cover;background-position:center;}
@@ -493,7 +493,7 @@
     .summative-content{display:flex;align-items:center;justify-content:space-between;gap:10px;}
     .summative-content .quiz-none{margin:0 auto 0 0;}
     .summative-assessment .quiz-edit-frame{margin-top:10px;}
-    .course-banner{background:var(--navy);border-color:var(--navy);color:#fff;}
+    .course-banner{background:#172f94;border-color:#172f94;color:#fff;}
     .banner-info .kicker{color:#f3cc54;}
     .banner-info .faculty-page-title{color:#fff!important;}
     .banner-meta,.banner-meta.faculty-page-subtitle{color:#fff!important;}
@@ -600,8 +600,7 @@
             <div class="banner-actions">
                 <div class="row">
                     <span class="course-status-badge status-{{ Illuminate\Support\Str::slug($course->status ?? 'Draft') }}" aria-label="Course status: {{ $course->status ?? 'Draft' }}"><span class="course-status-indicator" aria-hidden="true"></span>{{ $course->status ?? 'Draft' }}</span>
-                    <a href="{{ route('faculty.activities.reviews', $course->id) }}" class="btn-pill">Activity Reviews @if(($pendingActivityReviews ?? 0) > 0)<span class="pending-count">{{ $pendingActivityReviews }}</span>@endif</a>
-                    <a href="{{ route('faculty.courses.edit', $course->id) }}" class="btn-pill">Edit Course</a>
+                    <a href="{{ route('faculty.courses.edit', $course->id) }}" class="btn-pill">Edit Course Details</a>
                 </div>
             </div>
         </section>
@@ -766,6 +765,45 @@
                             </div>
 
                             <div class="lesson-collapsible-content" id="lesson-content-{{ $lesson->id }}">
+                            {{-- Inline lesson editor stays with the lesson content,
+                                 before its activities and assessments. --}}
+                            @if($lesson->id ?? null)
+                                <form class="lesson-form lesson-edit-form" id="lesson-edit-{{ $lesson->id }}"
+                                      style="display:{{ session('open_lesson_edit') == $lesson->id ? 'flex' : 'none' }};"
+                                      method="POST"
+                                      action="{{ route('faculty.lesson.update', [$course->id, $module->idx, $lesson->id]) }}">
+                                    @csrf
+
+                                    <div class="row2">
+                                        <input class="input-outline" type="text" name="lesson_title"
+                                               placeholder="Lesson title *"
+                                               value="{{ old('lesson_title', $lesson->title) }}" required>
+                                    </div>
+
+                                    @include('components.rich-text-editor', [
+                                        'name' => 'lesson_content',
+                                        'id' => 'lesson-content-edit-'.$lesson->id,
+                                        'value' => old('lesson_content', $lesson->content),
+                                        'placeholder' => 'Write the lesson content...'
+                                    ])
+
+                                    @if ($errors->has('lesson_content') && (int) session('open_lesson_edit') === (int) $lesson->id)
+                                        <div style="background:#fdecea;border:1px solid #f2b8b5;color:#a93226;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;">
+                                            {{ $errors->first('lesson_content') }}
+                                        </div>
+                                    @endif
+
+                                    <div class="actions">
+                                        <input class="input-outline" type="number" name="duration"
+                                               placeholder="Duration ( Min )" min="0"
+                                               value="{{ old('duration', $lesson->duration_raw ?: '') }}">
+                                        <button class="btn-save-lesson" type="submit">Save Lesson</button>
+                                        <button class="btn-cancel-outline" type="button"
+                                                onclick="toggleLessonEdit({{ $lesson->id }})">Cancel</button>
+                                    </div>
+                                </form>
+                            @endif
+
                             <section class="activity-panel" aria-label="Lesson activities">
                                 <div class="activity-head">
                                     <strong>Activities</strong>
@@ -832,44 +870,6 @@
                                 </form>
                             </section>
 
-                            {{-- â”€â”€ Inline lesson editor â€” same layout as the
-                                 Add Lesson form above â”€â”€ --}}
-                            @if($lesson->id ?? null)
-                                <form class="lesson-form lesson-edit-form" id="lesson-edit-{{ $lesson->id }}"
-                                      style="display:{{ session('open_lesson_edit') == $lesson->id ? 'flex' : 'none' }};"
-                                      method="POST"
-                                      action="{{ route('faculty.lesson.update', [$course->id, $module->idx, $lesson->id]) }}">
-                                    @csrf
-
-                                    <div class="row2">
-                                        <input class="input-outline" type="text" name="lesson_title"
-                                               placeholder="Lesson title *"
-                                               value="{{ old('lesson_title', $lesson->title) }}" required>
-                                    </div>
-
-                                    @include('components.rich-text-editor', [
-                                        'name' => 'lesson_content',
-                                        'id' => 'lesson-content-edit-'.$lesson->id,
-                                        'value' => old('lesson_content', $lesson->content),
-                                        'placeholder' => 'Write the lesson content...'
-                                    ])
-
-                                    @if ($errors->has('lesson_content') && (int) session('open_lesson_edit') === (int) $lesson->id)
-                                        <div style="background:#fdecea;border:1px solid #f2b8b5;color:#a93226;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;">
-                                            {{ $errors->first('lesson_content') }}
-                                        </div>
-                                    @endif
-
-                                    <div class="actions">
-                                        <input class="input-outline" type="number" name="duration"
-                                               placeholder="Duration ( Min )" min="0"
-                                               value="{{ old('duration', $lesson->duration_raw ?: '') }}">
-                                        <button class="btn-save-lesson" type="submit">Save Lesson</button>
-                                        <button class="btn-cancel-outline" type="button"
-                                                onclick="toggleLessonEdit({{ $lesson->id }})">Cancel</button>
-                                    </div>
-                                </form>
-                            @endif
                             </div>{{-- /lesson-collapsible-content --}}
 
                             </div>{{-- /lesson-sort-item --}}
@@ -976,7 +976,7 @@
         {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â• QUIZ BUILDER MODE â€” "Add Quiz : <module>" â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 
         {{-- âœ… Back to the Managing Course screen --}}
-        <a class="back-link" href="{{ route('faculty.courses.manage', $course->id ?? 1) }}">â€¹ Back to Modules</a>
+        <a class="back-link" href="{{ route('faculty.courses.manage', $course->id ?? 1) }}">&larr; Back to Modules</a>
         <div class="faculty-page-heading"><h2 class="quiz-head faculty-page-title">{{ ($quiz ?? null) ? 'Edit' : 'Add' }} Quiz : {{ $moduleTitle }}</h2></div>
         <x-flash-toast :message="session('success')" />
 
@@ -1028,7 +1028,7 @@
             @if ($isNewQuiz)
             <div class="quiz-card" id="create-quiz-intro" style="text-align:center;">
                 <p style="margin:0 0 16px;color:var(--muted);font-size:14px;">
-                    Set the quiz details above â€” especially <strong>No. of Items</strong> â€” then click
+                    Set the quiz details above &mdash; especially <strong>No. of Items</strong> &mdash; then click
                     <strong>Create Quiz</strong>. One question container will be created per item.
                 </p>
                 <button class="btn-save-lesson" type="button" onclick="createQuizQuestions()">Create Quiz</button>
@@ -1129,7 +1129,7 @@
                 <p class="faculty-page-subtitle">{{ $courses->count() }} Total {{ $courses->count() == 1 ? 'course' : 'courses' }} created</p>
             </div>
             {{-- âœ… Connected â€” goes to Faculty â€º Create Courses only --}}
-            <a href="{{ route('faculty.create') }}" class="btn-outline" aria-label="Create a course"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Create Courses</span></a>
+            <a href="{{ route('faculty.create') }}" class="btn-outline" aria-label="Create a new course"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Create New Course</span></a>
         </div>
 
         @forelse ($courses as $course)
@@ -1160,6 +1160,7 @@
                     </div>
                 </div>
                 <div class="card-actions">
+                    <a href="{{ route('faculty.activities.reviews', $course->id ?? 1) }}" class="btn-action">Activity Reviews</a>
                     {{-- ✅ Manage → Managing Course screen for THIS course (same blade, manage mode) --}}
                     <a href="{{ route('faculty.courses.manage', $course->id ?? 1) }}" class="btn-action primary">Manage</a>
                 </div>

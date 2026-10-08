@@ -62,7 +62,7 @@
             <button type="button" class="auth-profile-trigger" id="auth-profile-trigger" aria-haspopup="true" aria-expanded="false" title="Account menu">
                 <span class="auth-profile-avatar" @if($user->avatar_url ?? null) style="background-image:url('{{ $user->avatar_url }}');" @endif>
                     @unless($user->avatar_url ?? null)
-                        <span class="material-symbols-rounded" aria-hidden="true">account_circle</span>
+                        <span class="auth-profile-initials" aria-hidden="true">{{ collect(preg_split('/\s+/', trim((string) ($user->name ?? 'Account')), -1, PREG_SPLIT_NO_EMPTY))->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode('') }}</span>
                     @endunless
                 </span>
                 <span class="auth-profile-copy">
@@ -90,20 +90,22 @@
     .auth-topbar,.auth-topbar *{box-sizing:border-box;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-style:normal;}
     .auth-topbar .material-symbols-rounded{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;display:inline-block;line-height:1;text-transform:none;letter-spacing:normal;white-space:nowrap;direction:ltr;font-feature-settings:"liga";-webkit-font-smoothing:antialiased;}
     .auth-topbar{--navy:#0d1b6e;--gold:#dba617;--gold-light:#ffd84a;background:linear-gradient(115deg, #001B33 0%,#071550 0%,#0d1b6e 58%,#102b83 100%);display:flex;align-items:center;justify-content:space-between;padding:12px 28px;gap:20px;position:sticky;top:0;z-index:1000;border-bottom:1px solid rgba(255,255,255,.1);box-shadow:0 8px 24px rgba(7,21,80,.2);}
-    .auth-topbar.admin-auth-topbar{--navy:#111;--gold:#dba617;--gold-light:#ffd84a;background:#000;border-bottom:1px solid #242424;box-shadow:0 8px 24px rgba(0,0,0,.24);}
-    .admin-auth-topbar .admin-brand-skill{color:#ffd84a;}
+    .auth-topbar.admin-auth-topbar{--navy:#111111;--gold:#f9c21b;--gold-light:#f9c21b;background:#111111;border-bottom:1px solid #262626;box-shadow:0 8px 24px rgba(0,0,0,.18);}
+    .admin-auth-topbar .auth-topbar-brand strong>span:first-child{color:#f9c21b;}
+    .admin-auth-topbar .admin-brand-skill{color:#fff;}
     .admin-auth-topbar .auth-topbar-inbox.is-active{color:var(--gold-light);background:rgba(255,255,255,.12);}
     .auth-topbar.faculty-auth-topbar{--navy:#061a45;--gold:#9a7000;--gold-light:#fff;background:#f4c430;border-bottom:1px solid #ddb51d;box-shadow:0 6px 18px rgba(92,67,0,.16);}
     .auth-topbar.student-auth-topbar{background:radial-gradient(ellipse 34% 190% at 8% 0%,rgba(37,83,220,.58) 0%,rgba(37,83,220,.3) 44%,transparent 82%),radial-gradient(ellipse 40% 210% at 42% 120%,rgba(30,65,190,.68) 0%,rgba(30,65,190,.32) 48%,transparent 84%),radial-gradient(ellipse 34% 180% at 76% -35%,rgba(56,76,205,.62) 0%,rgba(56,76,205,.28) 48%,transparent 84%),radial-gradient(ellipse 32% 190% at 105% 100%,rgba(25,76,190,.6) 0%,rgba(25,76,190,.28) 50%,transparent 86%),radial-gradient(ellipse 55% 150% at 54% 48%,rgba(25,42,132,.5) 0%,transparent 88%),linear-gradient(112deg,#07143f 0%,#101f70 52%,#081742 100%);}
-    .faculty-auth-topbar .auth-topbar-brand,.faculty-auth-topbar .auth-profile-trigger{color:#0B1B45;}
-    .faculty-auth-topbar .auth-topbar-icon,.faculty-auth-topbar .auth-profile-name{color:#0d1b6e;}
-    .faculty-auth-topbar .auth-topbar-brand strong{color:#0B1B45;}
-    .faculty-auth-topbar .faculty-brand-up{color:#fff;}
-    .faculty-auth-topbar .auth-topbar-brand strong span:last-child{color:#000;}
-    .faculty-auth-topbar .auth-topbar-icon:hover{color:#0d1b6e;background:rgba(11,27,69,.1);}
+    .faculty-auth-topbar .auth-topbar-brand{color:#fff;}
+    .faculty-auth-topbar .auth-profile-trigger{color:#fff;}
+    .faculty-auth-topbar .auth-topbar-icon,.faculty-auth-topbar .auth-profile-name{color:#fff;}
+    .faculty-auth-topbar .auth-topbar-brand strong{color:#fff;}
+    .faculty-auth-topbar .faculty-brand-up{color:#000;}
+    .faculty-auth-topbar .auth-topbar-brand strong span:last-child{color:#fff;}
+    .faculty-auth-topbar .auth-topbar-icon:hover{color:#fff;background:rgba(11,27,69,.12);}
     .faculty-auth-topbar .auth-topbar-badge{background:#ef4444;color:#fff;box-shadow:0 0 0 2px #f4c430;}
     .faculty-auth-topbar .auth-notifications-item.is-unread{border-left-color:#ef4444;}
-    .faculty-auth-topbar .faculty-sidebar-toggle{position:relative;left:-10px;margin-right:10px;display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;padding:0;border:0;border-radius:10px;background:transparent;color:#0B1B45;cursor:pointer;transition:background-color .15s ease;}
+    .faculty-auth-topbar .faculty-sidebar-toggle{position:relative;left:-10px;margin-right:10px;display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;padding:0;border:0;border-radius:10px;background:transparent;color:#fff;cursor:pointer;transition:background-color .15s ease;}
     .faculty-auth-topbar .faculty-sidebar-toggle:hover{background:rgba(11,27,69,.12);}
     .faculty-auth-topbar .faculty-sidebar-toggle .material-symbols-rounded{font-size:20px;}
     .student-auth-topbar .student-sidebar-toggle{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;padding:0;border:0;border-radius:10px;background:transparent;color:#fff;cursor:pointer;transition:background-color .15s ease;}
@@ -142,6 +144,7 @@
     .auth-profile-trigger{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;color:#fff;padding:0;cursor:pointer;}
     .auth-profile-avatar{width:38px;height:38px;border-radius:50%;background:#fff center/cover no-repeat;display:flex;align-items:center;justify-content:center;overflow:hidden;}
     .auth-profile-avatar .material-symbols-rounded{font-size:21px;color:var(--navy);}
+    .auth-profile-initials{color:var(--navy);font-size:14px;font-weight:500;line-height:1;letter-spacing:.02em;}
     .auth-profile-copy{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;min-width:0;}
     .auth-profile-name{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:700;line-height:1.25;}
     .auth-profile-role{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;font-weight:500;line-height:1.2;opacity:.78;}

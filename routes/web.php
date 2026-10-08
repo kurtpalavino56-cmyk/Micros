@@ -9,6 +9,7 @@ use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\StudentController;
 use App\Http\Middleware\PreventBackHistory;
+use App\Http\Middleware\RecordAuditActions;
 use App\Http\Middleware\RoleBasedAccess;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\View;
@@ -146,8 +147,10 @@ Route::get('/monitoring/live', [PageController::class, 'monitoringLive'])
 // ADMIN ROUTES
 // ══════════════════════════════════════════════════════════════════════════
 
-Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':admin'])->group(function () {
+Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':admin', RecordAuditActions::class])->group(function () {
     Route::get('/Admin-dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+    Route::get('/Admin-audit-logs', [AdminController::class, 'auditLogs'])->name('admin.audit-logs');
+    Route::get('/Admin-audit-logs/download', [AdminController::class, 'downloadAuditLogs'])->name('admin.audit-logs.download');
 
     Route::get('/Admin-certificates', [AdminController::class, 'certificates'])->name('admin.certificates');
     Route::post('/Admin-certificates/{id}/revoke', [AdminController::class, 'revokeCertificate'])
@@ -245,7 +248,7 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':admin'])-
 // STUDENT ROUTES
 // ══════════════════════════════════════════════════════════════════════════
 
-Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':student'])->group(function () {
+Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':student', RecordAuditActions::class])->group(function () {
     Route::get('/courses', [StudentController::class, 'coursesIndexRedirect'])->name('courses.index');
 
     Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
@@ -305,7 +308,7 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':student']
 // FACULTY ROUTES
 // ══════════════════════════════════════════════════════════════════════════
 
-Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty'])->group(function () {
+Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty', RecordAuditActions::class])->group(function () {
     Route::get('/Faculty-dashboard', [FacultyController::class, 'dashboard'])->name('faculty.dashboard');
 
     Route::get('/Faculty-profile', [FacultyController::class, 'profile'])->name('faculty.profile');

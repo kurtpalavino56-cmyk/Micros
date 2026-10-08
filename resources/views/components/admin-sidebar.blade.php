@@ -17,11 +17,68 @@
         --admin-sidebar-width: 238px;
         --admin-topbar-height: 66px;
         --admin-border: #e5e7eb;
-        --admin-navy: #0d1b6e;
-        --admin-text: #142653;
-        --admin-muted: #68758c;
-        --admin-hover: #f3f6fb;
+        --admin-navy: #123b7a;
+        --admin-text: #111111;
+        --admin-muted: #6b7280;
+        --admin-hover: #f7f8fa;
         --admin-font: 'Inter', sans-serif;
+
+        /* Shared aliases used by page-level admin styles. */
+        --navy: #123b7a;
+        --navy-light: #123b7a;
+        --navy-pale: #f7f8fa;
+        --title: #123b7a;
+        --blue: #123b7a;
+        --blue-light: #f7f8fa;
+        --blue-soft: #f7f8fa;
+        --soft: #f7f8fa;
+        --navy-deep: #111111;
+        --ink: #111111;
+        --text: #111111;
+        --text-main: #111111;
+        --text-sub: #6b7280;
+        --muted: #6b7280;
+        --line: #e5e7eb;
+        --border: #e5e7eb;
+        --border-light: #e5e7eb;
+        --gold: #f9c21b;
+        --yellow: #f9c21b;
+        --yellow-dark: #f9c21b;
+        --yellow-text: #111111;
+        --yellow-soft: #f7f8fa;
+        --gold-dark: #123b7a;
+        --bg: #f7f8fa;
+        --surface: #f7f8fa;
+        --white: #ffffff;
+        --cyan: #f9c21b;
+        --thumb: #f7f8fa;
+        --framework-navy: #123b7a;
+        --framework-blue: #123b7a;
+        --framework-gold: #f9c21b;
+        --framework-text: #111111;
+        --framework-muted: #6b7280;
+        --framework-border: #e5e7eb;
+        --framework-surface: #f7f8fa;
+        --dash-navy: #111111;
+        --dash-navy-deep: #111111;
+        --dash-royal: #123b7a;
+        --dash-gold: #f9c21b;
+        --dash-gold-soft: #f7f8fa;
+        --dash-canvas: #f7f8fa;
+        --dash-ink: #111111;
+        --dash-muted: #6b7280;
+        --dash-line: #e5e7eb;
+    }
+
+    body:has(aside.shared-admin-sidebar) {
+        background: #f7f8fa !important;
+        color: #111111 !important;
+    }
+
+    body:has(aside.shared-admin-sidebar) .layout,
+    body:has(aside.shared-admin-sidebar) main.main {
+        background-color: #f7f8fa;
+        color: #111111;
     }
 
     /* =========================================================
@@ -40,7 +97,7 @@
         margin: 0 !important;
         padding: 18px 12px 24px !important;
 
-        background: #fff !important;
+        background: #ffffff !important;
         border: 0 !important;
         border-right: 1px solid #e5e7eb !important;
         border-radius: 0 !important;
@@ -174,8 +231,8 @@
     aside.shared-admin-sidebar .sb-item.active:focus {
         position: relative !important;
 
-        background: #ffd864 !important;
-        color: #071550 !important;
+        background: #f1f2f4 !important;
+        color: #123b7a !important;
         font-weight: 600 !important;
 
         border-radius: 0 !important;
@@ -189,18 +246,15 @@
         border-radius: 0 8px 8px 0 !important;
     }
 
-    /* Yellow highlight at the left edge */
+    /* Yellow highlight accent at the left edge. */
     aside.shared-admin-sidebar .sb-item.active::before {
         content: "" !important;
-
         position: absolute !important;
         left: 0 !important;
         top: 0 !important;
         bottom: 0 !important;
-
         width: 4px !important;
-
-        background: #f4c430 !important;
+        background: #f9c21b !important;
         border-radius: 0 3px 3px 0 !important;
     }
 
@@ -317,6 +371,7 @@
     </div></div>
     <div class="sb-section open"><div class="sb-section-hd"><div class="sb-hd-left"><span class="sb-section-label">Analytics</span></div></div><div class="sb-items">
         <a href="{{ route('admin.report') }}" class="sb-item {{ request()->routeIs('admin.report') ? 'active' : '' }}"><span class="sb-item-text">Report</span></a>
+        <a href="{{ route('admin.audit-logs') }}" class="sb-item {{ request()->routeIs('admin.audit-logs*') ? 'active' : '' }}"><span class="sb-item-text">Audit Logs</span></a>
     </div></div>
     <div class="sb-section open"><div class="sb-section-hd"><div class="sb-hd-left"><span class="sb-section-label">Communication</span></div></div><div class="sb-items">
         <a href="{{ route('admin.announcements') }}" class="sb-item {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}"><span class="sb-item-text">Announcements</span></a>

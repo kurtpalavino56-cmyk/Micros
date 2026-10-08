@@ -2,27 +2,27 @@
     resources/views/faculty/dashboard.blade.php
 
     Faculty Dashboard â€” single self-contained Blade view (no layout file).
-    âš  STANDALONE: the ONLY connection on this page is the sidebar
-      "My Courses" link â†’ route('faculty.courses'). Every other button /
-      link is intentionally non-functioning (href="#" or plain
-      <button type="button">) until the real routes are wired up.
 
     Expected data from the route, e.g.:
 
     return view('faculty.dashboard', [
-        'user'  => $user,                  // needs ->name (avatar optional)
+        'user' => $user,
         'stats' => [
-            'total_courses'  => 5,
-            'published'      => 3,
+            'total_courses' => 5,
+            'published' => 3,
             'total_students' => 5,
-            'enrollments'    => 7,
+            'to_grade' => 2,
+            'awaiting_verification' => 1,
         ],
-        'courses' => $facultyCourses,      // collection of the faculty's courses
+        'monthlyEnrollments' => $monthlyEnrollments,
+        'courses' => $facultyCourses,
+        'attentionItems' => $attentionItems,
     ]);
 
     Each $course is expected to expose:
-        ->title, ->status ('Published' | 'Draft'), ->students_count,
-        ->modules_count, ->thumbnail_url
+        ->id, ->title, ->status, ->status_class, ->approval_status,
+        ->denial_feedback, ->to_grade, ->awaiting_verification,
+        ->students_count, ->modules_count, ->thumbnail_url
 --}}
 <!DOCTYPE html>
 <html lang="en">
@@ -104,9 +104,6 @@
     .panel{border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:24px;min-height:200px;}
     .panel-head{background:var(--gold);color:var(--navy);font-weight:800;font-size:22px;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;}
     .panel-body{padding:18px 22px;color:var(--muted);font-size:14px;}
-    .quick-actions{display:flex;gap:14px;flex-wrap:wrap;}
-    .btn-quick{background:#fff;border:1.5px solid var(--navy);color:var(--navy);font-weight:700;padding:10px 22px;border-radius:999px;font-size:14px;}
-
     @media (max-width:980px){
         .layout{grid-template-columns:1fr;}
         .stats{grid-template-columns:repeat(2,1fr);}
@@ -131,7 +128,6 @@
 
         /* Stat tiles stay 2x2 on phones â€” see components/responsive.blade.php */
         .stats{grid-template-columns:repeat(2,1fr);}
-        .quick-actions .btn-quick{flex:1 1 auto;}
     }
 </style>
 <style>
@@ -176,11 +172,11 @@ main.faculty-dashboard .status-pill.published{background:rgba(36,71,212,.09);col
 main.faculty-dashboard .status-pill.draft{background:var(--dash-gold-soft);color:#9A7100}
 main.faculty-dashboard .meta-item{font-size:10px;color:var(--dash-muted)}
 main.faculty-dashboard .meta-item .meta-num{font-size:12px;color:var(--dash-ink)}
-main.faculty-dashboard .btn-manage,main.faculty-dashboard .btn-quick{border:1px solid var(--dash-line);border-radius:999px;padding:9px 14px;background:#fff;color:var(--dash-navy);font-size:11px;font-weight:700}
+main.faculty-dashboard .btn-manage{border:1px solid var(--dash-line);border-radius:999px;padding:9px 14px;background:#fff;color:var(--dash-navy);font-size:11px;font-weight:700}
 main.faculty-dashboard .btn-manage{border-color:var(--dash-navy);background:var(--dash-navy);color:#fff}
 main.faculty-dashboard .card-actions a:first-child .btn-manage{border-color:#0B1B45;background:#0B1B45;color:#fff}
 main.faculty-dashboard .card-actions a:nth-child(2) .btn-manage{border-color:transparent;background:#EEF2FF;color:#2447D4}
-main.faculty-dashboard .btn-manage,main.faculty-dashboard .btn-quick,main.faculty-dashboard .btn-outline{transition:transform .18s ease,background-color .18s ease,color .18s ease,box-shadow .18s ease}
+main.faculty-dashboard .btn-manage,main.faculty-dashboard .btn-outline{transition:transform .18s ease,background-color .18s ease,color .18s ease,box-shadow .18s ease}
 main.faculty-dashboard .card-actions a:first-child .btn-manage:hover{background:#1A2F6E;transform:translateY(-1px)}
 main.faculty-dashboard .card-actions a:nth-child(2) .btn-manage:hover{background:#2447D4;color:#fff;transform:translateY(-1px)}
 main.faculty-dashboard .btn-outline:hover{background:#FFD84D;transform:translateY(-2px);box-shadow:0 10px 24px rgba(244,196,48,.35)}
@@ -201,10 +197,18 @@ main.faculty-dashboard .enrollment-bars.is-empty span:nth-child(4){height:70%}
 main.faculty-dashboard .enrollment-bars.is-empty span:nth-child(5){height:45%}
 main.faculty-dashboard .enrollment-bars.is-empty span:nth-child(6){height:60%}
 main.faculty-dashboard .enrollment-empty-note{display:flex;align-items:center;min-height:54px;margin-top:17px;padding:12px 14px;border-radius:13px;background:rgba(255,245,209,.72);color:rgba(11,27,69,.8);font-size:11px;line-height:1.55}
-main.faculty-dashboard .quick-actions{gap:8px}
-main.faculty-dashboard .quick-actions{display:flex;flex-direction:column;gap:4px}
-main.faculty-dashboard .btn-quick{display:block;width:100%;border-color:transparent;border-radius:12px;background:transparent;padding:12px 13px;text-align:left;color:var(--dash-ink)}
-main.faculty-dashboard .btn-quick:hover{background:var(--dash-canvas);border-color:transparent}
+main.faculty-dashboard .attention-list{display:flex;flex-direction:column;gap:9px}
+main.faculty-dashboard .attention-item{display:flex;flex-direction:column;gap:5px;padding:11px 12px;border:1px solid var(--dash-line);border-radius:12px;background:#fff;color:var(--dash-ink);text-decoration:none}
+main.faculty-dashboard .attention-item:hover{border-color:var(--dash-royal);background:var(--dash-canvas)}
+main.faculty-dashboard .attention-course{font-size:11px;font-weight:700;color:var(--dash-ink)}
+main.faculty-dashboard .attention-label{font-size:11px;color:var(--dash-muted);line-height:1.4}
+main.faculty-dashboard .attention-feedback{font-size:10px;color:var(--dash-muted);line-height:1.45}
+main.faculty-dashboard .attention-empty{padding:14px;border-radius:12px;background:var(--dash-canvas);color:var(--dash-muted);font-size:12px}
+main.faculty-dashboard .status-pill.pending{background:#DBEAFE;color:#1E40AF}
+main.faculty-dashboard .status-pill.returned{background:#FEE2E2;color:#991B1B}
+main.faculty-dashboard .status-pill.draft{background:var(--dash-gold-soft);color:#713F12}
+main.faculty-dashboard .to-grade-badge{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:999px;background:#DBEAFE;color:#1E40AF;font-size:10px;font-weight:700;text-decoration:none}
+main.faculty-dashboard .to-grade-badge:hover{background:#BFDBFE}
 @media(max-width:980px){main.faculty-dashboard .content-grid{grid-template-columns:1fr}}
 @media(max-width:640px){main.faculty-dashboard{padding:24px 16px 40px}main.faculty-dashboard .stats{gap:10px;margin-bottom:22px}main.faculty-dashboard .stat-card{min-height:142px;padding:14px 12px}main.faculty-dashboard .stat-top svg{width:32px;height:32px;margin-bottom:12px}main.faculty-dashboard .stat-top .num{font-size:25px}main.faculty-dashboard .course-card{padding:13px}}
 </style>
@@ -215,7 +219,7 @@ main.faculty-dashboard .btn-quick:hover{background:var(--dash-canvas);border-col
 
 <div class="layout faculty-sidebar-layout">
 
-    {{-- Sidebar â€” âš  all links are placeholders (href="#"), not wired to routes --}}
+    {{-- Faculty navigation --}}
     @include('components.faculty-sidebar')
 
     {{-- Main content --}}
@@ -235,17 +239,17 @@ main.faculty-dashboard .btn-quick:hover{background:var(--dash-canvas);border-col
         <section class="stats">
             <div class="stat-card c-navy">
                 <div class="stat-top">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5V22l-6-4-6 4z"/></svg>
-                    <span class="num">{{ $stats['total_courses'] ?? 0 }}</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4H5a2 2 0 0 0-2 2v14h18V6a2 2 0 0 0-2-2h-3"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="m8 13 2.5 2.5L16 10"/></svg>
+                    <span class="num">{{ $stats['to_grade'] ?? 0 }}</span>
                 </div>
-                <div class="label">Total Courses</div>
+                <div class="label">To grade</div>
             </div>
             <div class="stat-card c-gold">
                 <div class="stat-top">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg>
-                    <span class="num">{{ $stats['published'] ?? 0 }}</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/><path d="m9 12 2 2 4-4"/></svg>
+                    <span class="num">{{ $stats['awaiting_verification'] ?? 0 }}</span>
                 </div>
-                <div class="label">Published</div>
+                <div class="label">Awaiting verification</div>
             </div>
             <div class="stat-card c-cyan">
                 <div class="stat-top">
@@ -256,10 +260,10 @@ main.faculty-dashboard .btn-quick:hover{background:var(--dash-canvas);border-col
             </div>
             <div class="stat-card c-deep">
                 <div class="stat-top">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2 14.7 5l3.2-.2.8 3.1 2.5 2-1.4 2.9 1 3-2.8 1.7-.9 3-3.2-.4L11.5 22l-2.4-2.2-3.2.1-.5-3.1-2.3-2.2 1.5-2.8-.7-3 2.9-1.4 1.2-2.9 3.1.7z"/><path d="m9 12 2 2 4-4"/></svg>
-                    <span class="num">{{ $stats['enrollments'] ?? 0 }}</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h8"/></svg>
+                    <span class="num">{{ $stats['published'] ?? 0 }} of {{ $stats['total_courses'] ?? 0 }}</span>
                 </div>
-                <div class="label">Enrollments</div>
+                <div class="label">Courses published</div>
             </div>
         </section>
 
@@ -277,9 +281,14 @@ main.faculty-dashboard .btn-quick:hover{background:var(--dash-canvas);border-col
                         <div class="course-info">
                             <h4>{{ $course->title }}</h4>
                             <div class="course-meta">
-                                <span class="status-pill {{ strtolower($course->status ?? 'draft') === 'published' ? 'published' : 'draft' }}">
-                                    {{ $course->status ?? 'Draft' }}
+                                <span class="status-pill {{ $course->status_class }}">
+                                    {{ $course->status }}
                                 </span>
+                                @if ($course->to_grade > 0)
+                                    <a class="to-grade-badge" href="{{ route('faculty.activities.reviews', $course->id) }}">
+                                        {{ $course->to_grade }} to grade
+                                    </a>
+                                @endif
                                 <span class="meta-item">
                                     <span class="meta-num">{{ $course->students_count ?? 0 }}</span>
                                     Students
@@ -311,6 +320,29 @@ main.faculty-dashboard .btn-quick:hover{background:var(--dash-canvas);border-col
             <aside class="side-col">
                 <div class="panel">
                     <div class="panel-head">
+                        <span>Needs attention</span>
+                    </div>
+                    <div class="panel-body">
+                        @if ($attentionItems->isNotEmpty())
+                            <div class="attention-list">
+                                @foreach ($attentionItems as $item)
+                                    <a class="attention-item" href="{{ $item->url }}">
+                                        <span class="attention-course">{{ $item->course_title }}</span>
+                                        <span class="attention-label">{{ $item->label }}</span>
+                                        @if ($item->feedback)
+                                            <span class="attention-feedback">{{ \Illuminate\Support\Str::limit($item->feedback, 120) }}</span>
+                                        @endif
+                                    </a>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="attention-empty">You're all caught up.</div>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-head">
                         <span>Monthly Enrollments</span>
                     </div>
                     <div class="panel-body">
@@ -331,19 +363,6 @@ main.faculty-dashboard .btn-quick:hover{background:var(--dash-canvas);border-col
                             </div>
                             <div class="enrollment-empty-note">No enrollment data yet. Trends will appear once students join.</div>
                         @endif
-                    </div>
-                </div>
-
-                <div class="panel" style="min-height:auto;">
-                    <div class="panel-head">
-                        <span>Quick Actions</span>
-                    </div>
-                    <div class="panel-body">
-                        <div class="quick-actions">
-                            <a class="btn-quick" href="{{ route('faculty.students') }}">View Students</a>
-                            <a class="btn-quick" href="{{ route('faculty.courses') }}">View Courses</a>
-                            <a class="btn-quick" href="{{ route('faculty.create') }}">Create a Course</a>
-                        </div>
                     </div>
                 </div>
             </aside>
@@ -380,6 +399,3 @@ main.faculty-dashboard .btn-quick:hover{background:var(--dash-canvas);border-col
     @include('components.responsive')
 </body>
 </html>
-
-
-
