@@ -64,7 +64,7 @@
             <a class="action" href="{{ route('faculty.courses.manage', $course->id) }}">Manage Course</a>
         </div>
 
-        @if(session('success'))<div class="flash" role="status">{{ session('success') }}</div>@endif
+        <x-flash-toast :message="session('success')" />
 
         @if($filter === 'needs_review' && $needsReviewCount > 0)
             <div class="review-summary"><strong>{{ $needsReviewCount }}</strong> {{ Illuminate\Support\Str::plural('learner', $needsReviewCount) }} completed the course requirements and {{ $needsReviewCount === 1 ? 'is' : 'are' }} waiting for your verification.</div>

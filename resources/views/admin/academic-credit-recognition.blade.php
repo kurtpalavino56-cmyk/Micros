@@ -44,7 +44,7 @@
                     <p>Historical requests are retained for reference. UpSkill now prepares evidence reports; academic credit decisions and registrar recording must be completed through institutional processes outside this platform.</p>
                 </header>
 
-                @if(session('success'))<div class="notice ok">{{ session('success') }}</div>@endif
+                <x-flash-toast :message="session('success')" />
                 @if($errors->any())<div class="notice err">{{ $errors->first() }}</div>@endif
 
                 <h2>Students ready for an evidence report</h2>

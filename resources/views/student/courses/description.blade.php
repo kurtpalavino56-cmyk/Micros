@@ -156,12 +156,12 @@
     .info-panel-body{padding:20px 22px;}
     .empty-note{margin:0;font-size:14px;color:var(--c-muted);}
 
-    .course-overview__body{max-width:80ch;color:var(--c-text);font-size:15px;line-height:1.7;overflow-wrap:anywhere;}
+    .course-overview__body{width:100%;color:var(--c-text);font-size:15px;line-height:1.7;overflow-wrap:anywhere;}
     .course-overview__body>:first-child{margin-top:0;}
     .course-overview__body>:last-child{margin-bottom:0;}
     .course-overview__body h2,.course-overview__body h3,.course-overview__body h4{color:var(--c-strong);line-height:1.35;margin:1.4em 0 .5em;}
     .course-overview__body ul,.course-overview__body ol{padding-left:22px;}
-    .course-overview__body img{max-width:100%;height:auto;border-radius:8px;}
+    .course-overview__body img{display:block;width:100%;max-width:100%;height:auto;border-radius:8px;}
     .course-overview__body table{display:block;max-width:100%;overflow-x:auto;}
 
     .objectives-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;}

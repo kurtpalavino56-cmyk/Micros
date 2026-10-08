@@ -5,47 +5,27 @@
     $cert comes from CertificateBuilder::pdfData() — snapshot data only,
     the same data the PDF and public verification use.
 --}}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{ $cert['certificate_title'] ?: $cert['course_title'] }} — Certificate | Upskill</title>
-<link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
-<style>
-    :root{ --navy:#13176b; --gold:#dba617; }
-    *{box-sizing:border-box;}
-    body{font-family:"Segoe UI", Roboto, Helvetica, Arial, sans-serif;margin:0;background:#f4f6fb;color:#13176b;}
-    .bar{background:var(--navy);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;}
-    .bar a{color:#fff;text-decoration:none;font-weight:700;}
-    .bar .actions{display:flex;gap:10px;}
-    .btn{display:inline-block;padding:10px 18px;border-radius:10px;font-weight:700;text-decoration:none;}
-    .btn-gold{background:var(--gold);color:#13176b;}
-    .btn-outline{border:1px solid rgba(255,255,255,.5);color:#fff;}
-    .wrap{max-width:1080px;margin:32px auto;padding:0 20px;}
-    .status-pill{display:inline-block;margin-bottom:14px;padding:4px 14px;border-radius:999px;font-size:12px;font-weight:700;}
-    .status-active{background:#e5f7ec;color:#0f7a3d;}
-    .status-revoked{background:#fdeaea;color:#a11d1d;}
-</style>
-</head>
-<body>
+<x-layout :title="($cert['certificate_title'] ?: $cert['course_title']) . ' — Certificate | Upskill'" shell="student" page="certificate-view">
 <div class="bar">
-    <div class="actions">
-        <a class="btn btn-outline" href="{{ route('certificates.index') }}">Back</a>
-        <a class="btn btn-gold" href="{{ route('certificates.download', $cert['serial']) }}">Download PDF</a>
+    <div class="actions certificate-toolbar">
+        @include('components.breadcrumbs', ['items' => [
+            ['label' => 'My Certificates', 'url' => route('certificates.index')],
+            ['label' => $cert['course_title'] ?: 'Certificate'],
+        ]])
+        <a class="btn btn-gold ui-button ui-button--primary" href="{{ route('certificates.download', $cert['serial']) }}">Download PDF</a>
     </div>
 </div>
 <div class="wrap">
-    <span class="status-pill {{ ($cert['status'] ?? 'active') === 'revoked' ? 'status-revoked' : 'status-active' }}">
+    <span class="status-pill ui-badge {{ ($cert['status'] ?? 'active') === 'revoked' ? 'ui-badge--danger status-revoked' : 'ui-badge--success status-active' }}">
         {{ ($cert['status'] ?? 'active') === 'revoked' ? 'Revoked' : 'Active' }}
     </span>
 
     @include('components.certificate', ['cert' => $cert])
 
     @if (!empty($cert['learning_outcomes']))
-    <div style="margin-top:24px;background:#fff;border-radius:16px;padding:20px 26px;">
-        <h3 style="margin:0 0 8px;font-size:15px;color:#13176b;">Learning Outcomes Achieved</h3>
-        <ul style="margin:0;padding-left:18px;font-size:14px;color:#22304f;">
+    <div class="certificate-view-detail ui-card-surface certificate-view-detail--outcomes">
+        <h3 class="ui-section-title">Learning Outcomes Achieved</h3>
+        <ul>
             @foreach ($cert['learning_outcomes'] as $lo)
                 <li>@if(!empty($lo['code'])){{ $lo['code'] }}: @endif{{ $lo['description'] ?? '' }}</li>
             @endforeach
@@ -54,9 +34,9 @@
     @endif
 
     @if (!empty($cert['competencies']))
-    <div style="margin-top:16px;background:#fff;border-radius:16px;padding:20px 26px;">
-        <h3 style="margin:0 0 8px;font-size:15px;color:#13176b;">Competencies Achieved</h3>
-        <ul style="margin:0;padding-left:18px;font-size:14px;color:#22304f;">
+    <div class="certificate-view-detail ui-card-surface certificate-view-detail--competencies">
+        <h3 class="ui-section-title">Competencies Achieved</h3>
+        <ul>
             @foreach ($cert['competencies'] as $unit)
                 <li>{{ $unit['title'] ?? '' }}</li>
             @endforeach
@@ -65,7 +45,4 @@
     @endif
 </div>
 
-    {{-- Shared responsiveness layer (drawer nav + grid stacking) --}}
-    @include('components.responsive')
-</body>
-</html>
+</x-layout>

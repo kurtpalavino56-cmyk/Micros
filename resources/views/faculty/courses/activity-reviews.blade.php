@@ -89,9 +89,7 @@
                     <a class="back-manage" href="{{ route('faculty.courses.manage', $course->id) }}">Back to Manage Course</a>
                 </header>
 
-                @if(session('success'))
-                    <div class="review-alert" role="status">{{ session('success') }}</div>
-                @endif
+                <x-flash-toast :message="session('success')" />
                 @if($errors->any())
                     <div class="review-alert error" role="alert">{{ $errors->first() }}</div>
                 @endif

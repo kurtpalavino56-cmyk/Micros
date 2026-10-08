@@ -124,9 +124,7 @@
                     </div>
                 </header>
 
-                @if(session('success'))
-                    <div class="notice notice-success">{{ session('success') }}</div>
-                @endif
+                <x-flash-toast :message="session('success')" />
                 @if($errors->any())
                     <div class="notice notice-error">{{ $errors->first() }}</div>
                 @endif

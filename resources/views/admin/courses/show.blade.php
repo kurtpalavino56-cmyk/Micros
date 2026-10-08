@@ -350,9 +350,7 @@
             <svg class="ico"><use href="#i-left"/></svg> Back to courses and badges
         </a>
 
-        @if (session('success'))
-            <div class="alert-success">{{ session('success') }}</div>
-        @endif
+        <x-flash-toast :message="session('success')" />
         @error('approval')
             <div class="alert-error" role="alert">{{ $message }}</div>
         @enderror

@@ -403,11 +403,7 @@
             </span>
         </div>
 
-        @if (session('success'))
-            <div class="alert alert-ok">
-                {{ session('success') }}
-            </div>
-        @endif
+        <x-flash-toast :message="session('success')" />
 
         @if ($errors->any())
             <div class="alert alert-err">

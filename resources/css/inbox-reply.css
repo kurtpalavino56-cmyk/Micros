@@ -1,0 +1,40 @@
+.inbox-reply-compose {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+}
+
+.inbox-reply-compose textarea {
+    min-width: 0;
+    min-height: 82px;
+    margin: 0;
+}
+
+.inbox-reply-compose .reply-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    align-self: stretch;
+    margin: 0;
+}
+
+.inbox-reply-compose button {
+    min-height: 44px;
+    white-space: nowrap;
+}
+
+.inbox-reply-compose .mail-note {
+    grid-column: 1 / -1;
+    margin-top: 0;
+}
+
+@media (max-width: 600px) {
+    .inbox-reply-compose {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .inbox-reply-compose .reply-actions {
+        justify-content: flex-end;
+    }
+}

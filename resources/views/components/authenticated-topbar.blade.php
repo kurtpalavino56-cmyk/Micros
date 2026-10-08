@@ -10,6 +10,7 @@
         'courses.enrolled',
         'badges.index',
         'certificates.index',
+        'certificates.view',
         'profile.show',
         'pathways.index',
         'stacking.progress',
@@ -64,7 +65,10 @@
                         <span class="material-symbols-rounded" aria-hidden="true">account_circle</span>
                     @endunless
                 </span>
-                <span class="auth-profile-name">{{ $user->name ?? 'Account' }}</span>
+                <span class="auth-profile-copy">
+                    <span class="auth-profile-name">{{ $user->name ?? 'Account' }}</span>
+                    <span class="auth-profile-role">{{ $isAdmin ? 'Administrator' : ($isFaculty ? 'Faculty' : 'Student') }}</span>
+                </span>
                 <span class="auth-profile-chevron material-symbols-rounded" aria-hidden="true">expand_more</span>
             </button>
             <div class="auth-profile-dropdown" id="auth-profile-dropdown" role="menu" hidden>
@@ -130,13 +134,17 @@
     .auth-notifications-item strong{display:block;font-size:12px;}.auth-notifications-item p{margin:3px 0 0;color:#5f6b85;font-size:11px;line-height:1.4;}.auth-notifications-item time{display:block;margin-top:4px;color:#9aa3b5;font-size:10px;}.auth-notifications-item.is-unread{border-left:3px solid var(--gold);padding-left:13px;}
     .auth-notifications-status{padding:18px 16px;margin:0;color:#6b7280;font-size:12px;text-align:center;}
     .auth-notifications-all{display:block;padding:11px 16px;background:#f7f9ff;color:var(--navy);font-size:12px;font-weight:800;text-align:center;}
-    .auth-topbar-icon .material-symbols-rounded{font-size:22px;}
-    .auth-topbar-badge{position:absolute;top:-9px;right:-10px;background:#ef4444;color:#fff;border-radius:999px;font-size:10px;font-weight:800;padding:2px 5px;line-height:1.3;box-shadow:0 0 0 2px var(--navy);}
-    .auth-profile{position:relative;}
+    .auth-topbar-icon .material-symbols-rounded{font-size:24px;}
+    .auth-topbar-badge{position:absolute;top:0;right:1px;background:#ef4444;color:#fff;border-radius:999px;font-size:10px;font-weight:800;padding:2px 5px;line-height:1.3;box-shadow:0 0 0 2px var(--navy);}
+    .auth-profile{position:relative;margin-left:2px;padding-left:16px;}
+    .auth-profile::before{position:absolute;top:50%;left:0;width:1px;height:30px;background:rgba(255,255,255,.3);content:"";transform:translateY(-50%);}
+    .faculty-auth-topbar .auth-profile::before{background:rgba(11,27,69,.28);}
     .auth-profile-trigger{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;color:#fff;padding:0;cursor:pointer;}
     .auth-profile-avatar{width:38px;height:38px;border-radius:50%;background:#fff center/cover no-repeat;display:flex;align-items:center;justify-content:center;overflow:hidden;}
     .auth-profile-avatar .material-symbols-rounded{font-size:21px;color:var(--navy);}
+    .auth-profile-copy{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;min-width:0;}
     .auth-profile-name{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:700;line-height:1.25;}
+    .auth-profile-role{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;font-weight:500;line-height:1.2;opacity:.78;}
     .auth-profile-chevron{font-size:18px;transition:transform .15s ease;}
     .auth-profile.is-open .auth-profile-chevron{transform:rotate(180deg);}
     .auth-profile-dropdown{position:absolute;right:0;top:calc(100% + 12px);width:220px;background:#fff;color:var(--navy);border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 16px 35px rgba(12,15,77,.22);padding:8px;}
@@ -159,6 +167,7 @@
         .auth-topbar-nav{display:none;}
         .auth-topbar-actions{margin-left:auto;gap:12px;}
         .auth-profile-name{max-width:100px;}
+        .auth-profile-role{max-width:100px;}
         .auth-notifications-panel{position:fixed;top:64px;right:12px;left:12px;width:auto;}
     }
 </style>
@@ -229,11 +238,46 @@
 </script>
 
 <style id="upskill-ui-tokens">
-:root{--up-primary:#0d1b6e;--up-primary-hover:#1232d4;--up-secondary:#eef2ff;--up-secondary-text:#24346f;--up-accent:#dba617;--up-success:#159a68;--up-progress:#1232d4;--up-border:#dbe2ee;}
-.btn-save,.btn-primary,.btn-navy,.btn-action.btn-primary{background:var(--up-primary)!important;color:#fff!important;border-color:var(--up-primary)!important}
-.btn-save:hover,.btn-primary:hover,.btn-navy:hover,.btn-action.btn-primary:hover{background:var(--up-primary-hover)!important;border-color:var(--up-primary-hover)!important}
-.btn-secondary,.btn-outline-navy,.btn-action.btn-secondary{background:var(--up-secondary)!important;color:var(--up-secondary-text)!important;border-color:var(--up-border)!important}
-.btn-cancel{background:#fff!important;color:var(--up-secondary-text)!important;border:1px solid var(--up-border)!important}
-.progress-fill,.bar-fill,.chart-line,.nav-progress-fill,.fill{background:var(--up-progress)!important;stroke:var(--up-progress)!important}
-.progress-track,.bar-track,.track{background:#e8edf6!important}
+:root {
+    --up-primary: var(--ui-brand-blue);
+    --up-primary-hover: var(--ui-brand-blue-hover);
+    --up-secondary: var(--ui-brand-blue-soft);
+    --up-secondary-text: var(--ui-brand-blue);
+    --up-accent: var(--ui-accent-yellow);
+    --up-success: var(--ui-success);
+    --up-progress: var(--ui-brand-blue);
+    --up-border: var(--ui-border);
+}
+
+:where(.btn-save, .btn-primary, .btn-navy, .btn-action.btn-primary) {
+    background: var(--up-primary);
+    color: var(--ui-on-brand);
+    border-color: var(--up-primary);
+}
+
+:where(.btn-save:hover, .btn-primary:hover, .btn-navy:hover, .btn-action.btn-primary:hover) {
+    background: var(--up-primary-hover);
+    border-color: var(--up-primary-hover);
+}
+
+:where(.btn-secondary, .btn-outline-navy, .btn-action.btn-secondary) {
+    background: var(--up-secondary);
+    color: var(--up-secondary-text);
+    border-color: var(--up-border);
+}
+
+:where(.btn-cancel) {
+    background: var(--ui-surface);
+    color: var(--up-secondary-text);
+    border: 1px solid var(--up-border);
+}
+
+:where(.progress-fill, .bar-fill, .chart-line, .nav-progress-fill, .fill) {
+    background: var(--up-progress);
+    stroke: var(--up-progress);
+}
+
+:where(.progress-track, .bar-track, .track) {
+    background: var(--ui-progress-track);
+}
 </style>

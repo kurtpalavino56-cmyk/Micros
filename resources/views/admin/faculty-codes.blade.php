@@ -161,9 +161,7 @@
         </form>
     </div>
 
-    @if (session('success'))
-        <div class="alert-success">{{ session('success') }}</div>
-    @endif
+    <x-flash-toast :message="session('success')" />
 
     @php
         $availableCount = $codes->where('is_used', false)->count();

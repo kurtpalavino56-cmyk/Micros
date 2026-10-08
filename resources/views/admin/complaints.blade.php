@@ -12,6 +12,7 @@
     {{-- Browser tab icon (favicon) --}}
     <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
+    @vite('resources/css/inbox-reply.css')
 <style>
     :root{--navy:#13176b;--gold:#dba617;--muted:#6b7280;--line:#e5e7eb;--green:#15803d;
           --red:#ef4444;--shadow:0 10px 25px rgba(19,23,107,.08);--topbar-h:60px;}
@@ -134,9 +135,7 @@
     <h1 class="page-heading">Inbox</h1>
     <p class="page-sub">Message threads from students, faculty, and website visitors. Reply here to continue the conversation.</p>
 
-    @if (session('success'))
-        <div class="alert">{{ session('success') }}</div>
-    @endif
+    <x-flash-toast :message="session('success')" />
 
     {{-- Delivery failed: the reply is safely stored, but nothing was sent. --}}
     @error('mail')
@@ -271,7 +270,7 @@
                 </div>
 
                 <div class="reply-box">
-                    <form method="POST" action="{{ route('admin.complaints.reply', $selected->id) }}">
+                    <form class="inbox-reply-compose" method="POST" action="{{ route('admin.complaints.reply', $selected->id) }}">
                         @csrf
                         <textarea name="body"
                             placeholder="{{ $selected->isFromVisitor() ? 'Write your reply — it will be emailed to them…' : 'Write your reply to the student…' }}"

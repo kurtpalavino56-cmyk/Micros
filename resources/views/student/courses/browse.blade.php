@@ -227,7 +227,6 @@
                                 </span>
                             @endif
                         </div>
-                        <div class="browse-card__cta">View course details</div>
                     </div>
                 </a>
             @empty

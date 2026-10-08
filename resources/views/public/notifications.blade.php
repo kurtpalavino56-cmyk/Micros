@@ -31,9 +31,7 @@
     @include('components.authenticated-topbar', ['user' => $user])
 
     <main class="page">
-        @if (session('success'))
-            <div class="pill" style="display:block;background:#ecfdf3;border-color:#a7f3d0;color:#065f46;margin-bottom:16px;">{{ session('success') }}</div>
-        @endif
+        <x-flash-toast :message="session('success')" />
 
         @php
             $all = collect($notifications);

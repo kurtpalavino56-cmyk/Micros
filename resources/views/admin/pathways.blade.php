@@ -85,7 +85,7 @@
             <div class="page-head">
                 <div><h1>Learning pathways</h1><p class="lead">Group published courses into guided journeys for students.</p></div>
             </div>
-            @if(session('success'))<div class="alert success" role="status">{{ session('success') }}</div>@endif
+            <x-flash-toast :message="session('success')" />
             @if($errors->any())<div class="alert error" role="alert">{{ $errors->first() }}</div>@endif
 
             <form method="POST" action="{{ route('admin.pathways.store') }}" class="panel create-panel">
@@ -327,5 +327,4 @@
 @include('components.responsive')
 </body>
 </html>
-
 

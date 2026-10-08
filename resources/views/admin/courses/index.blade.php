@@ -186,9 +186,7 @@
             <button type="button" class="tab" data-filter="denied">Denied<span class="n">{{ $count('denied') }}</span></button>
         </div>
 
-        @if (session('success'))
-            <div class="alert-success">{{ session('success') }}</div>
-        @endif
+        <x-flash-toast :message="session('success')" />
 
         @if ($courses->isEmpty())
             <div class="empty-state">No courses yet. Courses created by faculty will appear here for review.</div>

@@ -1,9 +1,18 @@
-@extends('layouts.app')
-
-@section('title', 'Credential Verification | UpSkill')
+<x-layout title="Credential Verification | UpSkill" shell="public" page="verification">
 
 @push('styles')
 <style>
+    .page-verification {
+        --navy: var(--ui-brand-blue);
+        --navy-dark: var(--ui-brand-dark);
+        --gold: var(--ui-accent-yellow);
+        --gold-light: var(--ui-accent-yellow);
+        --white: #fff;
+        --text-muted: var(--ui-text-muted);
+        --font-body: var(--font-sans);
+        --transition: 0.22s cubic-bezier(.2,.8,.2,1);
+    }
+
     .credential-lookup-page {
         display: flex;
         flex-direction: column;
@@ -370,8 +379,7 @@
 </style>
 @endpush
 
-@section('content')
-<main class="credential-lookup-page">
+<div class="credential-lookup-page">
     <section class="students-hero">
         <div class="credential-lookup" aria-labelledby="credential-lookup-title">
         <h1 id="credential-lookup-title">Verification</h1>
@@ -399,7 +407,7 @@
         </div>
     </section>
 
-</main>
+</div>
 @if ($credential)
     <div class="certfloat-overlay" id="credentialCertificateModal" role="presentation">
         <section class="certfloat" role="dialog" aria-modal="true" aria-labelledby="credentialCertificateTitle" tabindex="-1">
@@ -430,8 +438,6 @@
         </section>
     </div>
 @endif
-@endsection
-
 @push('scripts')
 <script>
     (function () {
@@ -626,3 +632,5 @@
     })();
 </script>
 @endpush
+
+</x-layout>

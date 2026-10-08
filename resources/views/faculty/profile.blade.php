@@ -293,25 +293,6 @@
     .btn-save:hover{background:var(--navy-deep);}
     .btn-save svg{width:16px;height:16px;}
 
-    /* ===== SUCCESS TOAST ===== */
-    .toast{
-        position:fixed;bottom:28px;right:28px;z-index:2000;
-        background:var(--navy);color:#fff;
-        display:flex;align-items:center;gap:12px;
-        padding:14px 20px;border-radius:14px;
-        box-shadow:0 8px 30px rgba(19,23,107,.25);
-        font-size:14px;font-weight:700;
-        transform:translateY(80px);opacity:0;
-        transition:transform .4s cubic-bezier(.16,1,.3,1),opacity .4s ease;
-        pointer-events:none;
-    }
-    .toast.show{transform:translateY(0);opacity:1;pointer-events:auto;}
-    .toast svg{width:20px;height:20px;flex-shrink:0;color:#4ade80;}
-    .toast-close{
-        background:none;border:none;color:#fff;opacity:.7;
-        font-size:18px;cursor:pointer;padding:0 0 0 8px;line-height:1;
-    }
-
     @media (max-width:1180px){
         .two-col{grid-template-columns:1fr;}
         .charts-grid{grid-template-columns:1fr;}
@@ -391,13 +372,7 @@
 <body>
 
 {{-- ===== SUCCESS TOAST ===== --}}
-@if (session('success'))
-<div class="toast" id="successToast">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-    {{ session('success') }}
-    <button class="toast-close" onclick="document.getElementById('successToast').classList.remove('show')">&times;</button>
-</div>
-@endif
+<x-flash-toast :message="session('success')" />
 
 @include('components.authenticated-topbar')
 
@@ -1014,15 +989,6 @@ document.addEventListener('keydown', e => {
 openEditModal(@json($errors->has('current_password') || $errors->has('password') || $errors->has('email') ? 'settings' : 'personal'));
 @endif
 
-/* ====== Success Toast ====== */
-(function () {
-    const toast = document.getElementById('successToast');
-    if (!toast) return;
-    // Show on next frame so CSS transition fires
-    requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('show')));
-    // Auto-dismiss after 4 seconds
-    setTimeout(() => toast.classList.remove('show'), 4000);
-})();
 </script>
 
 

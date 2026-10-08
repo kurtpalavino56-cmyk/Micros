@@ -47,9 +47,7 @@
                     <p>Review issued credentials and revoke a certificate when necessary. Revocation is recorded with the acting administrator and reason.</p>
                 </header>
 
-                @if(session('success'))
-                    <div class="notice success" role="status">{{ session('success') }}</div>
-                @endif
+                <x-flash-toast :message="session('success')" />
                 @if($errors->any())
                     <div class="notice error" role="alert">{{ $errors->first() }}</div>
                 @endif
@@ -107,4 +105,3 @@
     @include('components.responsive')
 </body>
 </html>
-

@@ -479,6 +479,7 @@ class FacultyController extends Controller
             ->map(fn (Course $c) => (object) [
                 'id' => $c->id,
                 'title' => $c->title,
+                'short_description' => $c->short_description,
                 'description' => $c->description,
                 'status' => $c->statusLabel(),
                 'level' => $c->level,

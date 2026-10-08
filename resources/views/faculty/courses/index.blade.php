@@ -606,9 +606,7 @@
             </div>
         </section>
 
-        @if(session('success'))
-            <div class="manage-flash" role="status">{{ session('success') }}</div>
-        @endif
+        <x-flash-toast :message="session('success')" />
         @if($errors->has('submission'))
             <div class="manage-flash error" role="alert">{{ $errors->first('submission') }}</div>
         @endif
@@ -980,7 +978,7 @@
         {{-- âœ… Back to the Managing Course screen --}}
         <a class="back-link" href="{{ route('faculty.courses.manage', $course->id ?? 1) }}">â€¹ Back to Modules</a>
         <div class="faculty-page-heading"><h2 class="quiz-head faculty-page-title">{{ ($quiz ?? null) ? 'Edit' : 'Add' }} Quiz : {{ $moduleTitle }}</h2></div>
-        @if(session('success'))<div class="quiz-card" role="status" style="padding:10px 14px;background:#ecfdf3;color:#166534;">{{ session('success') }}</div>@endif
+        <x-flash-toast :message="session('success')" />
 
         {{-- âœ… Real form â€” Save Quiz stores everything (session for now) and
              returns to the Managing Course screen with the quiz in the module --}}
@@ -1139,11 +1137,9 @@
                 <div class="thumb" @if($course->thumbnail_url ?? null) style="background-image:url('{{ $course->thumbnail_url }}')" @endif></div>
                 <div class="course-info">
                     <h3>{{ $course->title }}</h3>
-                    @php
-                        $descPreview = \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags((string) ($course->description ?? ''))))), 130);
-                    @endphp
-                    @if($descPreview !== '')
-                        <div class="desc">{{ $descPreview }}</div>
+                    @php($shortDescription = trim((string) ($course->short_description ?? '')))
+                    @if($shortDescription !== '')
+                        <div class="desc">{{ $shortDescription }}</div>
                     @endif
                     <div class="course-meta">
                         <span class="status-chip status-{{ Illuminate\Support\Str::slug($course->status ?? 'Draft') }}">

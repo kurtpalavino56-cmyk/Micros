@@ -11,128 +11,24 @@
     Each $badge is expected to expose:
         ->name, ->description, ->icon_url, ->earned_at (a Carbon instance, for ->diffForHumans())
 --}}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Badges | Upskill</title>
-    {{-- Browser tab icon (favicon) --}}
-    <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
-<style>
-    :root{
-        --navy:#13176b;
-        --navy-deep:#0c0f4d;
-        --gold:#dba617;
-        --gold-dark:#c4930f;
-        --cyan:#7fe9e3;
-        --badge-bg:#f7ecc4;
-        --thumb:#d8e3f8;
-        --ink:#13176b;
-        --muted:#6b7280;
-        --line:#e5e7eb;
-        --shadow: 0 10px 25px rgba(19,23,107,0.08);
-    }
-    *{box-sizing:border-box;}
-    body{font-family:"Segoe UI", Roboto, Helvetica, Arial, sans-serif;color:var(--ink);margin:0;background:#fff;}
-    a{text-decoration:none;color:inherit;}
-    button{font-family:inherit;cursor:pointer;}
-
-    /* Topbar */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /* Layout */
-    .layout{display:grid;grid-template-columns:264px 1fr;min-height:calc(100vh - 74px);align-items:start;}
-
-    /* Sidebar */
-
-
-    /* hover: text + icon turn gold (non-active links) */
-
-
-
-
-
-
-
-
-    /* Main */
-    .main{padding:32px 36px 60px;}
-    .page-head h2{font-size:30px;margin:0 0 6px;color:var(--navy);}
-    .page-head p{margin:0 0 28px;color:var(--muted);font-size:15px;}
-
-    /* Recently Earned */
-    .section-head{font-size:24px;margin:0 0 18px;color:var(--navy);}
-    .badge-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:24px;}
-    .badge-card{display:block;width:100%;min-height:340px;padding:0;border:0;border-radius:20px;background:transparent;color:inherit;text-align:inherit;perspective:1200px;cursor:pointer;}
-    .badge-card:focus-visible{outline:3px solid #2fb3ab;outline-offset:4px;border-radius:22px;}
-    .badge-card__inner{position:relative;display:block;min-height:340px;height:100%;transform-style:preserve-3d;transition:transform .65s cubic-bezier(.2,.75,.25,1);}
-    .badge-card.is-flipped .badge-card__inner{transform:rotateY(180deg);}
-    .badge-face{position:absolute;inset:0;display:block;min-height:340px;padding:20px;border-radius:20px;box-shadow:var(--shadow);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:auto;}
-    .badge-front{background:var(--badge-bg);text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-    .badge-back{background:#fff;border:1px solid #e7eaf2;transform:rotateY(180deg);text-align:left;}
-    .badge-time{position:absolute;top:16px;right:18px;font-size:12px;color:var(--muted);}
-    .badge-icon{width:90px;height:90px;border-radius:16px;background:var(--thumb);margin:28px auto 18px;background-size:cover;background-position:center;display:grid;place-items:center;overflow:hidden;}
-    .badge-icon img{width:100%;height:100%;object-fit:cover;}
-    .badge-title{display:block;margin:0 0 10px;color:var(--navy);font-size:18px;font-weight:800;line-height:1.3;}
-    .badge-card .desc{display:block;color:var(--muted);font-size:13px;margin:0 0 18px;line-height:1.45;}
-    .badge-earned-pill{display:inline-block;background:var(--gold);color:var(--navy);font-weight:800;font-size:13px;padding:8px 22px;border-radius:999px;}
-    .badge-detail-title{display:block;font-size:18px;font-weight:800;color:var(--navy);margin:0 0 12px;padding-right:28px;}
-    .badge-details{display:grid;gap:9px;margin:0;}
-    .badge-detail{display:block;border-bottom:1px solid #edf0f5;padding-bottom:8px;}
-    .badge-detail dt{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin-bottom:3px;}
-    .badge-detail dd{font-size:13px;color:#202642;margin:0;line-height:1.45;overflow-wrap:anywhere;}
-    .badge-detail ul{margin:4px 0 0;padding-left:18px;}
-    .badge-status{display:inline-block;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:800;background:#ecfdf3;color:#067647;}
-    .badge-status.is-revoked{background:#fff1f2;color:#b42318;}
-    .badge-flip-hint{display:block;font-size:12px;color:var(--muted);margin:14px 0 0;}
-    .empty-state{border:1px dashed var(--line);border-radius:16px;padding:40px;text-align:center;color:var(--muted);grid-column:1/-1;}
-
-    @media (max-width:980px){
-        .layout{grid-template-columns:1fr;}
-
-        .badge-grid{grid-template-columns:repeat(2,1fr);}
-    }
-</style>
-</head>
-<body>
-
-@include('components.student-navigation')
-
-<div class="layout student-sidebar-layout">
-
-    {{-- Sidebar --}}
-    @include('components.student-sidebar')
-
-    {{-- Main content --}}
-    <main class="main">
-
-        <div class="page-head student-page-heading">
-            <h2>My Badge Collection</h2>
-            <p>Badges earned through course completion</p>
+<x-layout title="My Badges | Upskill" shell="student" page="badges">
+        <div class="page-head page-header ui-page-header student-page-heading">
+            <div class="ui-page-header__content">
+                <h2 class="ui-page-title">My Badge Collection</h2>
+                <p class="ui-page-subtitle">Badges earned through course completion</p>
+            </div>
         </div>
 
         {{-- Recently Earned --}}
-        <h3 class="section-head">Recently Earned</h3>
+        <header class="ui-card-header badge-section-header">
+            <h3 class="ui-section-title">Recently Earned</h3>
+        </header>
         <div class="badge-grid">
             @forelse ($badges as $badge)
                 <div class="badge-card" role="button" tabindex="0" aria-expanded="false"
                         aria-label="Show details for {{ $badge->name }}">
                     <span class="badge-card__inner">
-                        <span class="badge-face badge-front" data-badge-face="front">
+                        <span class="badge-face badge-front ui-card-surface" data-badge-face="front">
                             <span class="badge-time">{{ $badge->earned_at?->diffForHumans() ?? '' }}</span>
                             <span class="badge-icon">
                                 @if($badge->icon_url)
@@ -147,10 +43,10 @@
                             @if($badge->description)
                                 <span class="desc">{{ $badge->description }}</span>
                             @endif
-                            <span class="badge-earned-pill">{{ strtolower($badge->status ?? 'active') === 'revoked' ? 'Revoked' : 'Earned' }}</span>
+                            <span class="badge-earned-pill ui-badge ui-badge--accent">{{ strtolower($badge->status ?? 'active') === 'revoked' ? 'Revoked' : 'Earned' }}</span>
                             <span class="badge-flip-hint">Click or press Enter to view details</span>
                         </span>
-                        <span class="badge-face badge-back" data-badge-face="back" aria-hidden="true">
+                        <span class="badge-face badge-back ui-card-surface" data-badge-face="back" aria-hidden="true">
                             <span class="badge-detail-title">{{ $badge->name }}</span>
                             <dl class="badge-details">
                                 <div class="badge-detail">
@@ -194,7 +90,7 @@
                                 @endif
                                 <div class="badge-detail">
                                     <dt>Status</dt>
-                                    <dd><span class="badge-status {{ strtolower($badge->status ?? 'active') === 'revoked' ? 'is-revoked' : '' }}">{{ ucfirst($badge->status ?? 'active') }}</span></dd>
+                                    <dd><span class="badge-status ui-badge {{ strtolower($badge->status ?? 'active') === 'revoked' ? 'ui-badge--danger is-revoked' : 'ui-badge--success' }}">{{ ucfirst($badge->status ?? 'active') }}</span></dd>
                                 </div>
                                 @if($badge->revoked_at)
                                     <div class="badge-detail"><dt>Revoked on</dt><dd>{{ $badge->revoked_at->format('F j, Y') }}</dd></div>
@@ -208,26 +104,18 @@
                     </span>
                 </div>
             @empty
-                <div class="empty-state">
+                <div class="empty-state ui-empty-state">
                     No badges earned yet. Complete a course to start collecting them.
                 </div>
             @endforelse
         </div>
-
-    </main>
-</div>
-
 
 {{-- â”€â”€ Back to top (appears on long pages) â”€â”€ --}}
 <button id="back-to-top-btn" type="button" title="Back to top" aria-label="Back to top"
         onclick="window.scrollTo({top:0,behavior:'smooth'});">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
 </button>
-<style>
-    #back-to-top-btn{position:fixed;right:26px;bottom:26px;z-index:2000;width:48px;height:48px;border-radius:50%;border:none;background:#13176b;color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 22px rgba(19,23,107,.35);transition:transform .15s ease,background .2s ease;}
-    #back-to-top-btn:hover{background:#dba617;transform:translateY(-3px);}
-    #back-to-top-btn svg{width:22px;height:22px;}
-</style>
+
 <script>
     (function () {
         var btn = document.getElementById('back-to-top-btn');
@@ -239,9 +127,6 @@
         toggleBackToTop();
     })();
 </script>
-
-    {{-- Shared responsiveness layer (drawer nav + grid stacking) --}}
-    @include('components.responsive')
 
 <script>
     document.querySelectorAll('.badge-card').forEach(function (card) {
@@ -266,5 +151,4 @@
         });
     });
 </script>
-</body>
-</html>
+</x-layout>

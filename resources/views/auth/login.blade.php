@@ -348,9 +348,7 @@
             <p class="login-form-panel__sub">Sign in to continue your learning journey</p>
 
             {{-- Confirmation after a successful password reset. --}}
-            @if (session('status'))
-                <div class="alert-ok">{{ session('status') }}</div>
-            @endif
+            <x-flash-toast :message="session('status')" />
 
             @if ($errors->any())
                 <div class="alert-error">
