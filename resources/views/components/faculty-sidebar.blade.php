@@ -59,9 +59,6 @@ html,body{scrollbar-width:none;-ms-overflow-style:none;}
         <span class="side-label">Create Courses</span>
     </a>
     <span class="sidebar-section-label">People</span>
-    <a href="{{ route('faculty.inbox') }}" class="side-link {{ request()->routeIs('faculty.inbox*') ? 'active' : '' }}">
-        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">inbox</span></span><span class="side-label">Inbox</span>
-    </a>
     <a href="{{ route('faculty.students') }}" class="side-link {{ request()->routeIs('faculty.students*') ? 'active' : '' }}">
         <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">groups</span></span><span class="side-label">Learner Progress</span>
     </a>

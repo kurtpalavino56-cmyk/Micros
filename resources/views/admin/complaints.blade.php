@@ -12,6 +12,7 @@
     {{-- Browser tab icon (favicon) --}}
     <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
+    @vite('resources/css/inbox-reply.css')
 <style>
     :root{--navy:#13176b;--gold:#dba617;--muted:#6b7280;--line:#e5e7eb;--green:#15803d;
           --red:#ef4444;--shadow:0 10px 25px rgba(19,23,107,.08);--topbar-h:60px;}
@@ -112,7 +113,8 @@
     .thread[hidden]{display:none;}
     .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
     .inbox-page .page-heading{font-size:1.75rem;letter-spacing:-.035em;color:#111a3c;}
-    .inbox-page .page-sub{margin-bottom:22px;line-height:1.55;}
+    .inbox-page .page-sub{margin-bottom:0;line-height:1.55;}
+    .inbox-page .grid{margin-top:22px;}
     .inbox-page .detail-hd{background:#f8faff;}
     .inbox-page .detail-hd h2{font-size:18px;line-height:1.35;color:#111a3c;}
     .inbox-page .btn-navy{border-radius:9px;transition:background .15s ease,transform .15s ease;}
@@ -134,9 +136,7 @@
     <h1 class="page-heading">Inbox</h1>
     <p class="page-sub">Message threads from students, faculty, and website visitors. Reply here to continue the conversation.</p>
 
-    @if (session('success'))
-        <div class="alert">{{ session('success') }}</div>
-    @endif
+    <x-flash-toast :message="session('success')" />
 
     {{-- Delivery failed: the reply is safely stored, but nothing was sent. --}}
     @error('mail')
@@ -145,13 +145,13 @@
 
     <div class="grid">
         {{-- ── Thread list ── --}}
-        <nav class="panel" aria-label="Complaint threads">
+        <nav class="panel" aria-label="Message threads">
             <div class="panel-hd">
-                <span>Complaints</span>
+                <span>Messages</span>
                 @if ($unreadCount > 0)<span class="count-pill">{{ $unreadCount }} new</span>@endif
             </div>
-            <div class="thread-filters" role="search" aria-label="Filter complaint threads">
-                <label for="thread-search" class="sr-only">Search complaints</label>
+            <div class="thread-filters" role="search" aria-label="Filter message threads">
+                <label for="thread-search" class="sr-only">Search messages</label>
                 <input class="thread-search" id="thread-search" type="search" placeholder="Search subject or sender…" autocomplete="off">
                 <div class="thread-filter-row">
                     <label for="thread-status" class="sr-only">Filter by status</label>
@@ -204,9 +204,9 @@
                     </div>
                 </a>
             @empty
-                <div class="empty">No complaints yet.</div>
+                <div class="empty">No messages yet.</div>
             @endforelse
-            <div class="thread-filter-empty" id="thread-filter-empty">No complaints match these filters.</div>
+            <div class="thread-filter-empty" id="thread-filter-empty">No messages match these filters.</div>
         </nav>
 
         {{-- ── Selected thread ── --}}
@@ -271,7 +271,7 @@
                 </div>
 
                 <div class="reply-box">
-                    <form method="POST" action="{{ route('admin.complaints.reply', $selected->id) }}">
+                    <form class="inbox-reply-compose" method="POST" action="{{ route('admin.complaints.reply', $selected->id) }}">
                         @csrf
                         <textarea name="body"
                             placeholder="{{ $selected->isFromVisitor() ? 'Write your reply — it will be emailed to them…' : 'Write your reply to the student…' }}"
@@ -289,12 +289,12 @@
                           style="margin-top:10px;">
                         @csrf
                         <button type="submit" class="btn-ghost">
-                            {{ $selected->status === 'resolved' ? 'Reopen complaint' : 'Mark as resolved' }}
+                            {{ $selected->status === 'resolved' ? 'Reopen conversation' : 'Mark as resolved' }}
                         </button>
                     </form>
                 </div>
             @else
-                <div class="empty">Select a complaint on the left to read and reply.</div>
+                <div class="empty">Select a message on the left to read and reply.</div>
             @endif
         </div>
     </div>

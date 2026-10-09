@@ -14,7 +14,13 @@ class CourseModule extends Model
         'title',
         'description',
         'order',
+        'is_final',
     ];
+
+    protected function casts(): array
+    {
+        return ['is_final' => 'boolean'];
+    }
 
     public function course(): BelongsTo
     {

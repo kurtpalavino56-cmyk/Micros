@@ -16,7 +16,7 @@
     <section class="quiz-card">
         <p>{{ $quiz->course->title }}</p>
         <h1>{{ $quiz->title }}</h1>
-        @if($quiz->instructions)<p>{{ $quiz->instructions }}</p>@endif
+        @if($quiz->instructions)<div class="quiz-instructions up-ckeditor-wrapper"><div class="ck-content">{!! \App\Support\RichTextSanitizer::sanitize($quiz->instructions) !!}</div></div>@endif
         <p>{{ $quiz->questions->count() }} questions · pass {{ $quiz->passing_score }}% · {{ $status['allowed'] === 0 ? 'unlimited' : max(0, $status['allowed'] - $status['used']).' attempt(s) remaining' }}</p>
         @if(($time_limit_seconds ?? 0) > 0 && ! $status['exhausted'] && ! $status['unlock'])
             <p class="quiz-notice quiz-timer" id="quiz-timer" role="timer" aria-live="polite"></p>

@@ -515,10 +515,25 @@ main.admin-dashboard .snapshot-metric{min-width:0;padding:12px;border-radius:12p
 main.admin-dashboard .snapshot-metric strong,main.admin-dashboard .snapshot-metric span{display:block}
 main.admin-dashboard .snapshot-metric strong{font:700 17px 'Plus Jakarta Sans',sans-serif;color:var(--dash-ink)}
 main.admin-dashboard .snapshot-metric span{margin-top:4px;font-size:10px;line-height:1.3;color:var(--dash-muted)}
+main.admin-dashboard .quick-modules{margin-top:28px}
+main.admin-dashboard .quick-modules-heading{margin-bottom:14px}
+main.admin-dashboard .quick-modules-heading h2{margin:0;color:var(--dash-ink);font-size:19px;font-weight:800;letter-spacing:-.02em}
+main.admin-dashboard .quick-modules-heading p{margin:5px 0 0;color:var(--dash-muted);font-size:12px;line-height:1.45}
+main.admin-dashboard .quick-modules-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+main.admin-dashboard .quick-module-card{display:flex;min-width:0;min-height:210px;flex-direction:column;align-items:flex-start;padding:18px;border:1px solid var(--dash-line);border-radius:16px;background:#fff;box-shadow:0 5px 18px rgba(11,27,69,.045);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+main.admin-dashboard .quick-module-card:hover{transform:translateY(-2px);border-color:#d2d9e8;box-shadow:0 10px 22px rgba(11,27,69,.08)}
+main.admin-dashboard .quick-module-card h3{margin:0;color:var(--dash-ink);font-size:15px;font-weight:700}
+main.admin-dashboard .quick-module-card p{margin:8px 0 12px;color:var(--dash-muted);font-size:12px;line-height:1.5}
+main.admin-dashboard .quick-module-info{margin-top:auto;color:#52617a;font-size:11px;font-weight:700}
+main.admin-dashboard .quick-module-link{display:inline-flex;align-items:center;justify-content:center;min-height:34px;margin-top:13px;padding:7px 11px;border:1px solid #dce3f1;border-radius:8px;background:#f8faff;color:var(--dash-royal);font-size:11px;font-weight:700;text-decoration:none;transition:background .18s ease,border-color .18s ease}
+main.admin-dashboard .quick-module-link:hover{border-color:#bfcbed;background:#eef2ff}
+main.admin-dashboard .quick-module-link:focus-visible{outline:3px solid rgba(36,71,212,.3);outline-offset:2px}
 @media(max-width:900px){main.admin-dashboard .two-col.monitor-grid,main.admin-dashboard .two-col.active-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:900px){main.admin-dashboard .two-col.monitor-grid,main.admin-dashboard .two-col.active-grid{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}}
 @media(max-width:680px){main.admin-dashboard{padding:24px 16px 40px}main.admin-dashboard .two-col,main.admin-dashboard .two-col.monitor-grid,main.admin-dashboard .two-col.active-grid{grid-template-columns:1fr}main.admin-dashboard .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}main.admin-dashboard .stat-card{min-height:108px;padding:17px}}
 @media(max-width:860px){main.admin-dashboard .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){main.admin-dashboard .quick-modules-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){main.admin-dashboard .quick-modules-grid{grid-template-columns:1fr}main.admin-dashboard .quick-module-card{min-height:185px}}
 </style>
 </head>
 
@@ -556,6 +571,23 @@ main.admin-dashboard .snapshot-metric span{margin-top:4px;font-size:10px;line-he
                     <div class="stat-lbl">Badges Today</div>
                 </div>
             </div>
+
+            <section class="quick-modules" aria-labelledby="quick-modules-title">
+                <header class="quick-modules-heading">
+                    <h2 id="quick-modules-title">Quick access</h2>
+                    <p>Common administration tasks, with current counts to help you decide where to go next.</p>
+                </header>
+                <div class="quick-modules-grid">
+                    @foreach($quickModules as $module)
+                        <article class="quick-module-card">
+                            <h3>{{ $module['title'] }}</h3>
+                            <p>{{ $module['description'] }}</p>
+                            <div class="quick-module-info">{{ $module['info'] }}</div>
+                            <a class="quick-module-link" href="{{ route($module['route']) }}">{{ $module['button'] }}</a>
+                        </article>
+                    @endforeach
+                </div>
+            </section>
 
             {{-- LIVE MONITORING + PLATFORM SNAPSHOT --}}
             <div class="two-col monitor-grid" style="margin-bottom: 18px;">

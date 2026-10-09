@@ -4,11 +4,24 @@
 
 @push('styles')
 <style>
+    :root {
+        --landing-royal-blue: #0927d8;
+        --landing-navy: #07143f;
+        --landing-gold: #f6cb3b;
+        --landing-white: #fff;
+        --navy: var(--landing-navy);
+        --navy-dark: var(--landing-navy);
+        --gold: var(--landing-gold);
+        --gold-light: var(--landing-gold);
+        --gold-bg: var(--landing-gold);
+        --white: var(--landing-white);
+    }
+
     .hero {
         position: relative;
         overflow: visible;
-        background: #1235c7;
-        color: #fff;
+        background: url("{{ asset('Images/Legacy_bldg.jpg') }}") right center / cover no-repeat;
+        color: var(--landing-navy);
         padding: 5.5rem 0 4.5rem;
     }
 
@@ -23,16 +36,14 @@
     .hero::before {
         inset: 0;
         border-radius: 0;
-        background: linear-gradient(90deg, rgba(18, 53, 199, 0.18), rgba(18, 53, 199, 0.04)), url('{{ asset('Images/legacy-building.jpg') }}') center / cover no-repeat;
-        -webkit-mask-image: linear-gradient(90deg, transparent 0%, transparent 28%, rgba(0, 0, 0, 0.55) 52%, #000 78%);
-        mask-image: linear-gradient(90deg, transparent 0%, transparent 28%, rgba(0, 0, 0, 0.55) 52%, #000 78%);
+        background: linear-gradient(90deg, #fff 0%, rgba(255,255,255,.96) 30%, rgba(255,255,255,.76) 54%, rgba(255,255,255,.14) 100%);
         z-index: 0;
     }
 
     .hero::after {
         width: 460px;
         height: 460px;
-        background: radial-gradient(circle, rgba(127, 233, 227, 0.14) 0%, rgba(127, 233, 227, 0) 62%);
+        background: radial-gradient(circle, rgba(9,39,216,.08) 0%, rgba(9,39,216,0) 62%);
         bottom: -120px;
         left: -120px;
     }
@@ -41,9 +52,14 @@
         position: relative;
         z-index: 50;
         display: grid;
-        grid-template-columns: 1.1fr 0.9fr;
+        grid-template-columns: 1fr 1fr;
         align-items: center;
         gap: 2.5rem;
+    }
+
+    .container.hero__inner {
+        width: min(94%, 1320px);
+        max-width: 1320px;
     }
 
     .hero__eyebrow {
@@ -51,7 +67,7 @@
         align-items: left;
         gap: 0.5rem;
         /* background: var(--gold); */
-        color: var(--gold);
+        color: var(--landing-royal-blue);
         border-radius: 999px;
         padding: 0.58rem 1.2rem;
         font-size: 1rem;
@@ -66,18 +82,21 @@
         font-size: clamp(3rem, 6vw, 5.2rem);
         line-height: 0.94;
         letter-spacing: -0.05em;
-        color: #fff;
+        color: var(--landing-navy);
         margin: 0 0 1rem;
     }
 
     .hero__title span {
-        color: #FFD501;
+        color: var(--landing-gold);
     }
+
+    .hero__title .hero__brand-up { color: var(--landing-royal-blue); }
+    .hero__title .hero__brand-skill { color: var(--landing-gold); }
 
     .hero__subtitle {
         max-width: 620px;
         font-size: 1.12rem;
-        color: rgba(255,255,255,0.78);
+        color: rgba(7,20,63,.78);
         margin-bottom: 2rem;
     }
 
@@ -103,19 +122,18 @@
     }
 
     .hero__stat {
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(9,39,216,.05);
+        border: 1px solid rgba(9,39,216,.16);
         border-radius: 18px;
         padding: 1.1rem 0.8rem;
-        backdrop-filter: blur(10px);
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+        box-shadow: 0 8px 20px rgba(7,20,63,.08);
     }
 
     .hero__stat-num {
         font-family: var(--font-display);
         font-size: clamp(1.6rem, 3vw, 2.2rem);
         font-weight: 800;
-        color: #fff;
+        color: var(--landing-royal-blue);
         line-height: 1;
     }
 
@@ -124,172 +142,247 @@
         font-size: 0.68rem;
         text-transform: uppercase;
         letter-spacing: 0.1em;
-        color: rgba(255,255,255,0.7);
+        color: rgba(7,20,63,.72);
     }
 
     .hero__panel {
         position: relative;
+        width: 100%;
+        max-width: 700px;
         justify-self: end;
-        transform: translateX(1.5rem);
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.12);
-        border-radius: 28px;
-        padding: 1.25rem;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 30px 80px rgba(5, 14, 46, 0.32);
+        transform: translateX(2rem);
+        border-radius: 24px;
     }
 
     .hero__panel-shell {
-        background: linear-gradient(180deg, rgba(10,31,110, 0.82), rgba(11,20,73,0.92));
-        border: 1px solid rgba(255,255,255, 0.08);
-        border-radius: 22px;
-        overflow: hidden;
-    }
-
-    .hero__panel-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1rem 1rem 0.8rem;
-        border-bottom: 1px solid rgba(255,255,255,0.08);
-        background: rgba(12,20,60,0.8);
-    }
-
-    .hero__panel-title {
-        font-size: 0.72rem;
-        color: rgba(255,255,255,0.7);
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-    }
-
-    .hero__panel-dot {
-        display: inline-flex;
-        gap: 0.38rem;
-    }
-
-    .hero__panel-dot span {
-        width: 9px;
-        height: 9px;
-        border-radius: 50%;
-        display: block;
-        background: rgba(255,255,255,0.42);
+        overflow: visible;
     }
 
     .hero__panel-body {
-        padding: 0;
         position: relative;
     }
 
     .hero__carousel {
         position: relative;
-        overflow: hidden;
+        overflow: visible;
         aspect-ratio: 4 / 3;
-        min-height: 330px;
-        background: #08164f;
+        min-height: 410px;
+        border-radius: 24px;
+        perspective: 1300px;
+        transform-style: preserve-3d;
     }
 
     .hero__slide {
         position: absolute;
-        inset: 0;
+        top: 9px;
+        bottom: 9px;
+        left: 50%;
+        width: min(60%, 420px);
+        display: grid;
+        grid-template-rows: minmax(150px, 42%) minmax(0, 1fr);
+        overflow: hidden;
+        border: 1px solid #e3e9f3;
+        border-radius: 22px;
+        background: #fff;
+        box-shadow: 0 18px 45px rgba(7,20,63,.16);
         opacity: 0;
         visibility: hidden;
-        transition: opacity 0.55s ease, visibility 0.55s ease;
+        pointer-events: none;
+        transform: translateX(-50%) scale(.78);
+        transform-origin: center;
+        transition: opacity .4s ease, transform .5s cubic-bezier(.2,.75,.25,1), visibility .4s ease;
     }
 
-    .hero__slide.active {
+    .hero__slide.is-active {
+        z-index: 3;
         opacity: 1;
         visibility: visible;
+        pointer-events: auto;
+        transform: translateX(-50%) translateZ(30px) scale(1);
     }
 
-    .hero__slide img {
-        width: 100%;
-        height: 100%;
-        display: block;
-        object-fit: cover;
+    .hero__slide.is-prev,
+    .hero__slide.is-next {
+        z-index: 2;
+        opacity: .82;
+        visibility: visible;
+        pointer-events: auto;
+        cursor: pointer;
     }
 
-    .hero__slide::after {
-        content: "";
+    .hero__slide.is-prev {
+        left: 14px;
+        transform: translateZ(-34px) rotateY(11deg) rotateZ(-4deg) scale(.88);
+        transform-origin: left center;
+    }
+
+    .hero__slide.is-next {
+        right: 14px;
+        left: auto;
+        transform: translateZ(-34px) rotateY(-11deg) rotateZ(4deg) scale(.88);
+        transform-origin: right center;
+    }
+
+    .hero__side-hit {
         position: absolute;
-        inset: 35% 0 0;
-        background: linear-gradient(180deg, transparent, rgba(4, 12, 45, 0.88));
+        z-index: 4;
+        top: 9px;
+        bottom: 9px;
+        width: 20%;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
     }
 
-    .hero__slide-caption {
-        position: absolute;
-        z-index: 1;
-        right: 1.2rem;
-        bottom: 1.1rem;
-        left: 1.2rem;
-        color: #fff;
+    .hero__side-hit:focus-visible {
+        outline: 2px solid var(--landing-royal-blue);
+        outline-offset: -8px;
+        border-radius: 18px;
     }
 
-    .hero__slide-caption small {
-        display: block;
-        margin-bottom: 0.25rem;
-        color: var(--gold-light);
-        font-size: 0.68rem;
+    .hero__side-hit--prev { left: 0; }
+    .hero__side-hit--next { right: 0; }
+
+    .hero-course-visual {
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        padding: 1.35rem 1.5rem;
+        background: linear-gradient(135deg, #0927d8, #07143f);
+        background-position: center;
+        background-size: cover;
+    }
+
+    .hero-course-content {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        padding: 1.2rem 1.5rem 1.35rem;
+    }
+
+    .hero-course-tags {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: .65rem;
+        margin-bottom: .75rem;
+        color: var(--landing-royal-blue);
+        font-size: .72rem;
         font-weight: 700;
-        letter-spacing: 0.12em;
+        letter-spacing: .04em;
         text-transform: uppercase;
     }
 
-    .hero__slide-caption strong {
-        font-size: 1.2rem;
+    .hero-course-tags span + span {
+        color: var(--landing-navy);
     }
 
-    .hero__carousel-control {
-        position: absolute;
-        z-index: 2;
-        top: 50%;
-        width: auto;
-        height: auto;
-        padding: 0.2rem;
-        border: 0;
-        background: transparent;
-        color: #fff;
-        cursor: pointer;
-        font-size: 2.4rem;
-        line-height: 1;
-        opacity: 0;
-        transform: translateY(-50%);
-        transition: color var(--transition), opacity var(--transition);
+    .hero-course-title {
+        margin: 0 0 .5rem;
+        color: var(--landing-navy);
+        font: 700 clamp(1.3rem, 2vw, 1.65rem)/1.2 var(--font-display);
+        letter-spacing: -.025em;
     }
 
-    .hero__carousel:hover .hero__carousel-control,
-    .hero__carousel-control:focus-visible {
-        opacity: 1;
+    .hero-course-title a {
+        color: inherit;
+        text-decoration: none;
     }
 
-    .hero__carousel-control:hover {
-        color: var(--gold);
+    .hero-course-title a:hover {
+        color: var(--landing-royal-blue);
     }
 
-    .hero__carousel-control--prev { left: 0.9rem; }
-    .hero__carousel-control--next { right: 0.9rem; }
+    .hero-course-description {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        margin: 0;
+        color: rgba(7,20,63,.72);
+        font-size: .9rem;
+        line-height: 1.55;
+    }
+
+    .hero-course-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: auto;
+        padding-top: 1rem;
+    }
+
+    .hero-course-meta {
+        overflow: hidden;
+        color: #63718d;
+        font-size: .78rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .hero-course-link {
+        display: inline-flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: .4rem;
+        color: var(--landing-royal-blue);
+        font-size: .86rem;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .hero-course-link:hover {
+        color: var(--landing-navy);
+    }
 
     .hero__carousel-dots {
-        position: absolute;
-        z-index: 2;
-        right: 1.2rem;
-        bottom: 1.25rem;
         display: flex;
-        gap: 0.4rem;
+        justify-content: center;
+        gap: .45rem;
+        padding: .9rem 1rem 0;
     }
 
     .hero__carousel-dot {
-        width: 0.48rem;
-        height: 0.48rem;
+        width: .48rem;
+        height: .48rem;
         padding: 0;
         border: 0;
         border-radius: 50%;
-        background: rgba(255,255,255,0.55);
+        background: rgba(7,20,63,.22);
         cursor: pointer;
     }
 
     .hero__carousel-dot.active {
-        background: var(--gold);
-        box-shadow: 0 0 0 3px rgba(245,197,24,0.22);
+        background: var(--landing-royal-blue);
+        box-shadow: 0 0 0 3px rgba(9,39,216,.12);
+    }
+
+    .hero-course-empty {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 2rem;
+        border: 1px solid #e3e9f3;
+        border-radius: 22px;
+        background: #fff;
+        box-shadow: 0 18px 45px rgba(7,20,63,.12);
+    }
+
+    .hero-course-empty p {
+        max-width: 26rem;
+        margin: 0 0 1rem;
+        color: #63718d;
+        line-height: 1.6;
+    }
+
+    .hero-course-empty a {
+        color: var(--landing-royal-blue);
+        font-weight: 800;
+        text-decoration: none;
     }
 
     .trust-bar {
@@ -322,13 +415,18 @@
 
     .featured {
         position: relative;
-        background: #f4f7ff;
+        background: rgba(9,39,216,.04);
         padding: 5rem 0 4rem;
     }
 
     .featured > .container {
         position: relative;
         z-index: 50;
+    }
+
+    .featured .courses-grid {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 360px));
+        justify-content: center;
     }
 
     .hero-divider {
@@ -404,6 +502,11 @@
         flex-direction: column;
     }
 
+    .featured .course-card {
+        width: 100%;
+        max-width: 360px;
+    }
+
     .course-card:hover {
         transform: translateY(-6px);
         box-shadow: 0 24px 48px rgba(10,31,110,0.12);
@@ -413,7 +516,7 @@
         display: block;
         width: 100%;
         height: 200px;
-        background: linear-gradient(135deg, #f5c518, #f7d25e);
+        background: var(--landing-gold);
         overflow: hidden;
     }
 
@@ -450,13 +553,13 @@
     }
 
     .tag-gold {
-        background: rgba(245,197,24,0.16);
-        color: #8a6900;
+        background: transparent;
+        color: var(--landing-navy);
     }
 
     .tag-teal {
-        background: rgba(127,233,227,0.18);
-        color: #065b63;
+        background: transparent;
+        color: var(--landing-royal-blue);
     }
 
     .course-card__title {
@@ -492,7 +595,7 @@
     }
 
     .course-card__rating {
-        color: #c58d00;
+        color: var(--landing-gold);
         font-weight: 700;
     }
 
@@ -539,7 +642,7 @@
         width: 52px;
         height: 52px;
         border-radius: 14px;
-        background: rgba(10,31,110,0.08);
+        background: rgba(9,39,216,.08);
         color: var(--navy);
         display: grid;
         place-items: center;
@@ -603,7 +706,7 @@
     .step-card__num {
         width: 62px;
         height: 62px;
-        border: 2px solid rgba(255,255,255,0.34);
+        border: 2px solid var(--landing-gold);
         border-radius: 50%;
         display: grid;
         place-items: center;
@@ -639,14 +742,24 @@
     }
 
     .ann-card {
+        position: relative;
         display: flex;
         gap: 1rem;
         border: 1px solid #edf1f7;
-        border-left: 5px solid var(--navy);
+        border-left: 0;
         background: #f9fbff;
         border-radius: 0 18px 18px 0;
         padding: 1.2rem 1.3rem;
         transition: transform var(--transition), box-shadow var(--transition);
+    }
+
+    .ann-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 5px;
+        background: var(--announcement-accent, var(--navy));
+        border-radius: 0 6px 6px 0;
     }
 
     .ann-card:hover {
@@ -654,9 +767,9 @@
         box-shadow: 0 16px 30px rgba(10,31,110,0.06);
     }
 
-    .ann-card--event { border-left-color: var(--gold); }
-    .ann-card--urgent { border-left-color: #cc3b3b; }
-    .ann-card--general { border-left-color: #2e8b6d; }
+    .ann-card--event { --announcement-accent: var(--gold); }
+    .ann-card--urgent { --announcement-accent: #cc3b3b; }
+    .ann-card--general { --announcement-accent: var(--landing-royal-blue); }
 
     .ann-card__body {
         flex: 1;
@@ -683,9 +796,9 @@
         color: var(--navy);
     }
 
-    .ann-card--event .ann-card__type { background: rgba(245,197,24,0.14); color: #8a6900; }
+    .ann-card--event .ann-card__type { background: rgba(246,203,59,.2); color: var(--landing-navy); }
     .ann-card--urgent .ann-card__type { background: rgba(204,59,59,0.1); color: #8a1f1f; }
-    .ann-card--general .ann-card__type { background: rgba(46,139,109,0.12); color: #165a42; }
+    .ann-card--general .ann-card__type { background: rgba(9,39,216,.1); color: var(--landing-royal-blue); }
 
     .ann-card__date {
         color: var(--text-muted);
@@ -722,7 +835,7 @@
     }
 
     .latest {
-        background: linear-gradient(180deg, #f5c518 0%, #f2b400 100%);
+        background: var(--landing-white);
         padding: 5rem 0;
     }
 
@@ -739,14 +852,14 @@
         position: relative;
         padding: 5rem 0;
         text-align: center;
-        background: var(--gold-bg) url('{{ asset('images/PSU_Front_Building.jpg') }}') center/cover no-repeat;
+        background: var(--landing-gold) url('{{ asset('images/PSU_Front_Building.jpg') }}') center/cover no-repeat;
     }
 
     .cta-banner::before {
         content: "";
         position: absolute;
         inset: 0;
-        background: linear-gradient(135deg, rgba(245,194,0,0.9), rgba(212,148,10,0.88));
+        background: linear-gradient(135deg, rgba(246,203,59,.92), rgba(246,203,59,.82));
     }
 
     .cta-banner > .container {
@@ -774,7 +887,7 @@
         }
 
         .hero__panel {
-            justify-self: stretch;
+            justify-self: center;
             transform: none;
         }
     }
@@ -782,6 +895,10 @@
     @media (max-width: 768px) {
         .hero__stats {
             grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .hero__panel {
+            max-width: 620px;
         }
 
         .trust-bar__wrap {
@@ -800,16 +917,20 @@
 @endpush
 
 @section('content')
+@php
+    $featuredCourses = $featuredCourses ?? [];
+    $heroCourses = $featuredCourses;
+@endphp
 <section class="hero">
     <div class="container hero__inner">
         <div>
             <div class="hero__eyebrow">The Official Platform for PSU Microcredential</div>
-            <h1 class="hero__title">Learn smarter. <span>UpSkill</span> faster.</h1>
+            <h1 class="hero__title">Learn smarter. <span><span class="hero__brand-up">UP</span><span class="hero__brand-skill">Skill</span></span> faster.</h1>
             <p class="hero__subtitle">Explore practical microcredentials designed for students, people, and professionals who want to build real-world skills at PSU.</p>
 
             <div class="hero__actions">
                 <a href="{{ url('/register') }}" class="btn btn-gold hero__cta">Get Started</a>
-                <a href="#announcements" class="btn hero__cta" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff;" onclick="smoothScrollTo('announcements', event)">Announcements</a>
+                <a href="#announcements" class="btn hero__cta" style="background: rgba(9,39,216,.05); border: 1px solid rgba(9,39,216,.2); color: var(--landing-navy);" onclick="smoothScrollTo('announcements', event)">Announcements</a>
             </div>
 
             <div class="hero__stats">
@@ -832,56 +953,48 @@
             </div>
         </div>
 
-        <div class="hero__panel" aria-label="Featured PSU images">
+        <div class="hero__panel" aria-label="Course highlights">
             <div class="hero__panel-shell">
                 <div class="hero__panel-body">
-                    <div class="hero__carousel" data-carousel>
-                        <div class="hero__slide active">
-                            <img src="{{ asset('Images/legacy-building.jpg') }}" alt="Historic PSU campus building">
-                            <div class="hero__slide-caption">
-                                <small>PSU campus</small>
-                                <strong>Rooted in a tradition of learning</strong>
+                    <div class="hero__carousel" data-carousel role="region" aria-label="Course highlights" aria-roledescription="carousel">
+                        @forelse ($heroCourses as $course)
+                            <a class="hero__slide {{ $loop->first ? 'is-active' : '' }}" href="{{ $course['slug'] ?? route('explore') }}" aria-label="View course: {{ $course['title'] ?? 'Explore our courses' }}" aria-hidden="{{ $loop->first ? 'false' : 'true' }}">
+                                <div class="hero-course-visual" @if(!empty($course['image'])) style="background-image: url('{{ $course['image'] }}')" @endif></div>
+                                <div class="hero-course-content">
+                                    <div class="hero-course-tags">
+                                        <span>{{ $course['category'] ?? 'Microcredential' }}</span>
+                                        @if(!empty($course['level']))<span>{{ $course['level'] }}</span>@endif
+                                    </div>
+                                    <h2 class="hero-course-title">{{ $course['title'] ?? 'Explore our courses' }}</h2>
+                                    <p class="hero-course-description">{{ $course['description'] ?? 'Build practical skills with flexible microcredentials from PSU.' }}</p>
+                                    <div class="hero-course-footer">
+                                        <span class="hero-course-meta">{{ $course['professor'] ?? 'PSU Faculty' }}@if(!empty($course['hours'])) · {{ $course['hours'] }} {{ (int) $course['hours'] === 1 ? 'hour' : 'hours' }}@endif</span>
+                                        <span class="hero-course-link">View course <span aria-hidden="true">→</span></span>
+                                    </div>
+                                </div>
+                            </a>
+                        @empty
+                            <div class="hero-course-empty">
+                                <div class="hero-course-tags"><span>PSU Microcredentials</span></div>
+                                <h2 class="hero-course-title">Find your next skill</h2>
+                                <p>Explore practical courses designed to help you build skills for what comes next.</p>
+                                <a class="hero-course-link" href="{{ route('explore') }}">Browse all courses <span aria-hidden="true">→</span></a>
                             </div>
-                        </div>
-                        <div class="hero__slide">
-                            <img src="{{ asset('Images/Green_field_PSU.jpg') }}" alt="Green field at PSU">
-                            <div class="hero__slide-caption">
-                                <small>Learn at PSU</small>
-                                <strong>Make space for your next skill</strong>
-                            </div>
-                        </div>
-                        <div class="hero__slide">
-                            <img src="{{ asset('Images/Level-Up-Your-Skills.jpg') }}" alt="Level up your skills">
-                            <div class="hero__slide-caption">
-                                <small>Build confidence</small>
-                                <strong>Level up your skills</strong>
-                            </div>
-                        </div>
-                        <div class="hero__slide">
-                            <img src="{{ asset('Images/Learn-at-your-own-pace.jpg') }}" alt="Learn at your own pace">
-                            <div class="hero__slide-caption">
-                                <small>Flexible learning</small>
-                                <strong>Learn at your own pace</strong>
-                            </div>
-                        </div>
-                        <div class="hero__slide">
-                            <img src="{{ asset('Images/Earn-Credentials.jpg') }}" alt="Earn credentials through learning">
-                            <div class="hero__slide-caption">
-                                <small>Show what you know</small>
-                                <strong>Earn credentials that matter</strong>
-                            </div>
-                        </div>
-
-                        <button class="hero__carousel-control hero__carousel-control--prev" type="button" aria-label="Previous image">&lsaquo;</button>
-                        <button class="hero__carousel-control hero__carousel-control--next" type="button" aria-label="Next image">&rsaquo;</button>
-                        <div class="hero__carousel-dots" aria-label="Choose carousel image">
-                            <button class="hero__carousel-dot active" type="button" aria-label="Show image 1" aria-current="true"></button>
-                            <button class="hero__carousel-dot" type="button" aria-label="Show image 2"></button>
-                            <button class="hero__carousel-dot" type="button" aria-label="Show image 3"></button>
-                            <button class="hero__carousel-dot" type="button" aria-label="Show image 4"></button>
-                            <button class="hero__carousel-dot" type="button" aria-label="Show image 5"></button>
-                        </div>
+                        @endforelse
+                        @if(count($heroCourses) >= 2)
+                            @if(count($heroCourses) >= 3)
+                                <button class="hero__side-hit hero__side-hit--prev" type="button" aria-label="Show previous featured course"></button>
+                            @endif
+                            <button class="hero__side-hit hero__side-hit--next" type="button" aria-label="Show next featured course"></button>
+                        @endif
                     </div>
+                    @if(count($heroCourses) > 1)
+                        <div class="hero__carousel-dots" role="group" aria-label="Choose a featured course">
+                            @foreach($heroCourses as $course)
+                                <button class="hero__carousel-dot {{ $loop->first ? 'active' : '' }}" type="button" aria-label="Show course {{ $loop->iteration }}" aria-current="{{ $loop->first ? 'true' : 'false' }}"></button>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -890,7 +1003,6 @@
 
 <div class="hero-divider" aria-hidden="true"></div>
 
-@php $featuredCourses = $featuredCourses ?? []; @endphp
 <section class="featured" id="featured">
     <div class="container">
         <div class="section-header">
@@ -941,7 +1053,7 @@
     </div>
 </section>
 
-<section class="how-it-works">
+<section class="how-it-works" id="how-it-works">
     <div class="container">
         <h2 class="section-title">How it works</h2>
         <div class="steps-grid">
@@ -983,7 +1095,7 @@
                         <div class="ann-card__title">{{ $ann['title'] }}</div>
                         <p class="ann-card__desc">
                             <span class="preview-text">{{ $ann['desc'] }}</span>
-                            <span class="full-text" hidden>{{ $ann['full_body'] }}</span>
+                            <div class="full-text ck-content" hidden>{!! $ann['full_body'] !!}</div>
                         </p>
                         @if ($ann['has_more'])
                             <button class="ann-card__more" type="button" aria-expanded="false">More</button>
@@ -1107,15 +1219,30 @@
         if (!carousel) return;
 
         const slides = carousel.querySelectorAll('.hero__slide');
-        const dots = carousel.querySelectorAll('.hero__carousel-dot');
-        const previous = carousel.querySelector('.hero__carousel-control--prev');
-        const next = carousel.querySelector('.hero__carousel-control--next');
+        const dots = carousel.parentElement.querySelectorAll('.hero__carousel-dot');
+        const previous = carousel.querySelector('.hero__side-hit--prev');
+        const next = carousel.querySelector('.hero__side-hit--next');
         let current = 0;
-        let timer;
 
         function showSlide(index) {
             current = (index + slides.length) % slides.length;
-            slides.forEach((slide, slideIndex) => slide.classList.toggle('active', slideIndex === current));
+            slides.forEach((slide, slideIndex) => {
+                const isActive = slideIndex === current;
+                const position = (slideIndex - current + slides.length) % slides.length;
+                const hasSideCards = slides.length >= 2;
+                const isNext = hasSideCards && position === 1;
+                // With two cards, the same rear card is both previous and next.
+                // Keep it on the right so its click target has one clear position.
+                const isPrevious = slides.length > 2 && position === slides.length - 1;
+                slide.classList.toggle('is-active', isActive);
+                slide.classList.toggle('is-prev', isPrevious);
+                slide.classList.toggle('is-next', isNext);
+                slide.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+                slide.tabIndex = isActive ? 0 : -1;
+                slide.querySelectorAll('a, button, [tabindex]').forEach((element) => {
+                    element.tabIndex = isActive ? 0 : -1;
+                });
+            });
             dots.forEach((dot, dotIndex) => {
                 const isActive = dotIndex === current;
                 dot.classList.toggle('active', isActive);
@@ -1123,30 +1250,23 @@
             });
         }
 
-        function startAutoplay() {
-            clearInterval(timer);
-            timer = setInterval(() => showSlide(current + 1), 5000);
-        }
-
-        previous.addEventListener('click', () => {
-            showSlide(current - 1);
-            startAutoplay();
-        });
-
-        next.addEventListener('click', () => {
-            showSlide(current + 1);
-            startAutoplay();
-        });
-
-        dots.forEach((dot, index) => dot.addEventListener('click', () => {
-            showSlide(index);
-            startAutoplay();
-        }));
-
-        carousel.addEventListener('mouseenter', () => clearInterval(timer));
-        carousel.addEventListener('mouseleave', startAutoplay);
+        if (slides.length === 0) return;
         showSlide(0);
-        startAutoplay();
+        if (slides.length < 2) return;
+
+        carousel.addEventListener('click', (event) => {
+            const selectedSlide = event.target.closest('.hero__slide');
+            if (!selectedSlide) return;
+
+            const selectedIndex = Array.from(slides).indexOf(selectedSlide);
+            if (selectedIndex < 0 || selectedIndex === current) return;
+
+            event.preventDefault();
+            showSlide(selectedIndex);
+        }, true);
+        previous?.addEventListener('click', () => showSlide(current - 1));
+        next?.addEventListener('click', () => showSlide(current + 1));
+        dots.forEach((dot, index) => dot.addEventListener('click', () => showSlide(index)));
     })();
 </script>
 @endpush
@@ -1186,14 +1306,14 @@
 @keyframes certrise{from{transform:translateY(24px) scale(.96);opacity:0}to{transform:none;opacity:1}}
 .certfloat__close{position:absolute;top:12px;right:14px;background:transparent;border:none;
     font-size:26px;line-height:1;color:#9ca3af;cursor:pointer;}
-.certfloat__close:hover{color:#13176b;}
+.certfloat__close:hover{color:var(--landing-royal-blue);}
 .certfloat__verified{display:inline-flex;align-items:center;gap:7px;background:#ecfdf3;
     border:1px solid #a7f3d0;color:#065f46;border-radius:999px;padding:6px 14px;
     font-size:12.5px;font-weight:800;margin-bottom:16px;}
 .certfloat__verified svg{width:14px;height:14px;}
-.certfloat__btn{width:100%;margin-top:18px;background:#0a1f6e;color:#fff;border:none;
+.certfloat__btn{width:100%;margin-top:18px;background:var(--landing-navy);color:var(--landing-white);border:none;
     border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;}
-.certfloat__btn:hover{background:#071550;}
+.certfloat__btn:hover{background:var(--landing-royal-blue);}
 @media(max-width:520px){
     .certfloat{padding:14px;}
 }

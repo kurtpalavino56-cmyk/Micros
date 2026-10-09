@@ -12,6 +12,8 @@
     {{-- Browser tab icon (favicon) --}}
     <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    @vite(['resources/js/app.js'])
 <style>
     :root{--navy:#13176b;--gold:#dba617;--muted:#6b7280;--line:#e5e7eb;--green:#15803d;
           --shadow:0 10px 25px rgba(19,23,107,.08);--topbar-h:60px;}
@@ -42,6 +44,9 @@
     input[type=text],textarea{width:100%;border:1.5px solid #c9ccdb;border-radius:10px;
         padding:11px 13px;font-size:14px;font-family:inherit;color:var(--navy);background:#fff;}
     textarea{min-height:110px;resize:vertical;}
+    .announcement-editor .ck-editor__main>.ck-editor__editable{min-height:150px;padding:12px 14px;color:var(--navy);font-family:inherit;font-size:14px;line-height:1.6;}
+    .announcement-editor .ck.ck-toolbar{border-color:#c9ccdb;background:#f7f9ff;}
+    .announcement-editor .ck.ck-editor__main>.ck-editor__editable{border-color:#c9ccdb;}
     input[type=text]:focus,textarea:focus{outline:none;border-color:var(--navy);}
     .field{margin-bottom:16px;}
     /* "Who Can See Your Announcement" — audience checkboxes */
@@ -70,7 +75,9 @@
     .ann:last-child{margin-bottom:0;}
     .ann-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;}
     .ann-title{font-size:16px;font-weight:800;margin:0 0 6px;}
-    .ann-body{color:#4b5563;font-size:14px;line-height:1.55;margin:0 0 10px;white-space:pre-wrap;}
+    .ann-body{color:#4b5563;font-size:14px;line-height:1.55;margin:0 0 10px;overflow-wrap:anywhere;}
+    .ann-body p{margin:0 0 8px;}
+    .ann-body p:last-child{margin-bottom:0;}
     .ann-meta{color:var(--muted);font-size:12px;}
     .pill{display:inline-block;background:#eef1fb;color:var(--navy);font-size:11.5px;
         font-weight:800;padding:4px 11px;border-radius:999px;margin-right:6px;}
@@ -138,9 +145,7 @@
         Home
     </a>
 
-    @if (session('success'))
-        <div class="alert alert-ok">{{ session('success') }}</div>
-    @endif
+    <x-flash-toast :message="session('success')" />
     @if ($errors->any())
         <div class="alert alert-err">
             @foreach ($errors->all() as $error)<div>{{ $error }}</div>@endforeach
@@ -159,7 +164,9 @@
             </div>
             <div class="field">
                 <label for="body">Description</label>
-                <textarea id="body" name="body" placeholder="What do you want to announce?" required>{{ old('body') }}</textarea>
+                <div class="announcement-editor">
+                    <x-rich-text-editor id="announcement-body" name="body" :value="old('body')" placeholder="What do you want to announce?" preset="announcement" />
+                </div>
             </div>
             <div class="field">
                 <div class="audience-row">
@@ -187,7 +194,7 @@
                 <div class="ann-head">
                     <div style="min-width:0;">
                         <h3 class="ann-title">{{ $a->title }}</h3>
-                        <p class="ann-body">{{ $a->body }}</p>
+                        <div class="ann-body ck-content">{!! \App\Support\RichTextSanitizer::sanitize($a->body) !!}</div>
                         <div>
                             @foreach ($a->audience as $role)
                                 <span class="pill {{ $role }}">{{ ucfirst($role) }}</span>
@@ -230,7 +237,9 @@
                     </div>
                     <div class="field">
                         <label>Description</label>
-                        <textarea name="body" required>{{ $a->body }}</textarea>
+                        <div class="announcement-editor">
+                            <x-rich-text-editor :id="'announcement-body-'.$a->id" name="body" :value="$a->body" placeholder="What do you want to announce?" preset="announcement" />
+                        </div>
                     </div>
                     <div class="field">
                         <div class="audience-row">

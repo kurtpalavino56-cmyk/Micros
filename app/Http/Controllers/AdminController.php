@@ -8,6 +8,7 @@ use App\Actions\Announcements\UpdateAnnouncement;
 use App\Mail\ComplaintReplyMail;
 use App\Models\AcademicCreditRecognition;
 use App\Models\Announcement;
+use App\Models\AuditLog;
 use App\Models\Certificate;
 use App\Models\Complaint;
 use App\Models\ComplaintReply;
@@ -15,10 +16,14 @@ use App\Models\Course;
 use App\Models\CourseCategory;
 use App\Models\Enrollment;
 use App\Models\FacultyCode;
+use App\Models\LessonActivitySubmission;
 use App\Models\Pathway;
+use App\Models\Quiz;
+use App\Models\QuizAttempt;
 use App\Models\StackingFramework;
 use App\Models\StackingFrameworkRequirement;
 use App\Models\User;
+use App\Models\UserBadge;
 use App\Models\UserStackingProgress;
 use App\Services\AdminUserManagementService;
 use App\Services\CourseModerationService;
@@ -26,10 +31,14 @@ use App\Services\CourseReadinessService;
 use App\Services\CreditEvidenceReportService;
 use App\Services\MicrocredentialCompletionService;
 use App\Services\UserCodeService;
+use App\Services\UserNotificationService;
 use App\Support\CertificateBuilder;
 use App\Support\CompletionStatusPresenter;
+use App\Support\RichTextSanitizer;
 use App\Support\UserPresenter;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -40,6 +49,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * AdminController — the whole Admin_* surface (dashboard, profile, user
@@ -47,6 +57,120 @@ use Illuminate\Validation\ValidationException;
  */
 class AdminController extends Controller
 {
+    /** Display administrator actions for the selected date range. */
+    public function auditLogs(Request $request)
+    {
+        $validated = $request->validate([
+            'start_date' => ['nullable', 'date_format:Y-m-d'],
+            'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'],
+            'actor_role' => ['nullable', 'in:all,admin,faculty,student'],
+            'action' => ['nullable', 'string', 'max:120'],
+        ]);
+        $filters = [
+            'start_date' => $validated['start_date'] ?? now()->subDays(29)->toDateString(),
+            'end_date' => $validated['end_date'] ?? now()->toDateString(),
+            'actor_role' => $validated['actor_role'] ?? 'all',
+            'action' => $validated['action'] ?? 'all',
+        ];
+        $query = $this->auditLogQuery($filters);
+        $totalLogs = (clone $query)->count();
+        $actions = AuditLog::query()
+            ->whereDate('created_at', '>=', $filters['start_date'])
+            ->whereDate('created_at', '<=', $filters['end_date'])
+            ->when($filters['actor_role'] !== 'all', function (Builder $builder) use ($filters): void {
+                $roles = $filters['actor_role'] === 'admin' ? ['admin', 'Administrator'] : [$filters['actor_role']];
+                $builder->whereIn('actor_role', $roles);
+            })
+            ->distinct()
+            ->orderBy('event')
+            ->pluck('event');
+
+        return view('admin.audit-logs', [
+            'user' => UserPresenter::admin(Auth::user()),
+            'logs' => $query->paginate(25)->withQueryString(),
+            'totalLogs' => $totalLogs,
+            'actions' => $actions,
+            'startDate' => $filters['start_date'],
+            'endDate' => $filters['end_date'],
+            'actorRole' => $filters['actor_role'],
+            'selectedAction' => $filters['action'],
+        ]);
+    }
+
+    /** Download the filtered system activity range as a CSV report. */
+    public function downloadAuditLogs(Request $request)
+    {
+        $validated = $request->validate([
+            'start_date' => ['nullable', 'date_format:Y-m-d'],
+            'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'],
+            'actor_role' => ['nullable', 'in:all,admin,faculty,student'],
+            'action' => ['nullable', 'string', 'max:120'],
+        ]);
+        $filters = [
+            'start_date' => $validated['start_date'] ?? now()->subDays(29)->toDateString(),
+            'end_date' => $validated['end_date'] ?? now()->toDateString(),
+            'actor_role' => $validated['actor_role'] ?? 'all',
+            'action' => $validated['action'] ?? 'all',
+        ];
+        $logs = $this->auditLogQuery($filters)->reorder()->orderBy('created_at')->orderBy('id');
+        $filename = 'admin-audit-log-'.$filters['start_date'].'-to-'.$filters['end_date'].'.csv';
+
+        return response()->streamDownload(function () use ($logs): void {
+            $output = fopen('php://output', 'w');
+            if ($output === false) {
+                return;
+            }
+
+            fwrite($output, "\xEF\xBB\xBF");
+            fputcsv($output, ['Timestamp', 'User', 'Role', 'Action', 'Target', 'Old and New Values', 'Details', 'Method', 'Route', 'IP Address', 'User Agent']);
+
+            foreach ($logs->cursor() as $log) {
+                $details = (string) $log->description;
+                if (Str::startsWith($details, $log->event.' via '.$log->method.' ')) {
+                    $details = '';
+                }
+
+                fputcsv($output, [
+                    $log->created_at?->format('Y-m-d H:i:s'),
+                    $this->safeCsvValue($log->actor_name),
+                    $this->safeCsvValue($log->actor_role),
+                    $this->safeCsvValue($log->event),
+                    $this->safeCsvValue($log->target_label),
+                    $this->safeCsvValue($log->changes === null ? null : json_encode($log->changes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)),
+                    $this->safeCsvValue($details),
+                    $this->safeCsvValue($log->method),
+                    $this->safeCsvValue($log->route),
+                    $this->safeCsvValue($log->ip_address),
+                    $this->safeCsvValue($log->user_agent),
+                ]);
+            }
+
+            fclose($output);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /** @param array{start_date: string, end_date: string, actor_role?: string, action?: string} $filters */
+    private function auditLogQuery(array $filters): Builder
+    {
+        return AuditLog::query()
+            ->whereDate('created_at', '>=', $filters['start_date'])
+            ->whereDate('created_at', '<=', $filters['end_date'])
+            ->when(($filters['actor_role'] ?? 'all') !== 'all', function (Builder $builder) use ($filters): void {
+                $roles = $filters['actor_role'] === 'admin' ? ['admin', 'Administrator'] : [$filters['actor_role']];
+                $builder->whereIn('actor_role', $roles);
+            })
+            ->when(($filters['action'] ?? 'all') !== 'all', fn (Builder $builder) => $builder->where('event', $filters['action']))
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+    }
+
+    private function safeCsvValue(?string $value): string
+    {
+        $value = (string) $value;
+
+        return preg_match('/^[\s]*[=+\-@]/u', $value) === 1 ? "'".$value : $value;
+    }
+
     // ── Dashboard ─────────────────────────────────────────────────────────
 
     public function dashboard()
@@ -56,6 +180,52 @@ class AdminController extends Controller
             'badges_issued' => DB::table('user_badges')->count(),
             'course_score_avg' => round((float) Course::avg('passing_score'), 1),
             'students_enrolled' => DB::table('enrollments')->count(),
+        ];
+
+        $quickModules = [
+            [
+                'title' => 'Courses & Badges',
+                'description' => 'Review course submissions, manage publishing, and maintain badges.',
+                'info' => Course::where('approval_status', 'pending')->count().' courses awaiting review',
+                'route' => 'admin.courses',
+                'button' => 'Go to Courses & Badges',
+            ],
+            [
+                'title' => 'Enrollment Reviews',
+                'description' => 'Review completed learner work and confirm credential eligibility.',
+                'info' => Enrollment::where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
+                    ->where('academic_unit_confirmation_status', 'pending')->count().' learners awaiting verification',
+                'route' => 'admin.enrollments',
+                'button' => 'Go to Enrollment Reviews',
+            ],
+            [
+                'title' => 'User Management',
+                'description' => 'Manage student, faculty, and administrator accounts and access.',
+                'info' => User::count().' user accounts',
+                'route' => 'admin.usermanagement',
+                'button' => 'Go to User Management',
+            ],
+            [
+                'title' => 'Certificates',
+                'description' => 'Review issued certificates and inspect revocation records.',
+                'info' => Certificate::where('status', 'active')->count().' active certificates',
+                'route' => 'admin.certificates',
+                'button' => 'Go to Certificates',
+            ],
+            [
+                'title' => 'Announcements',
+                'description' => 'Create and manage updates shared with the learning community.',
+                'info' => Announcement::count().' announcements',
+                'route' => 'admin.announcements',
+                'button' => 'Go to Announcements',
+            ],
+            [
+                'title' => 'Audit Logs',
+                'description' => 'Review platform activity and download reports for a date range.',
+                'info' => AuditLog::whereDate('created_at', today())->count().' events recorded today',
+                'route' => 'admin.audit-logs',
+                'button' => 'Go to Audit Logs',
+            ],
         ];
 
         [$enrollmentByCourse, $completionRate] = $this->courseCharts();
@@ -103,6 +273,7 @@ class AdminController extends Controller
             'recentBadges' => $recentBadges,
             'enrollmentByCourse' => $enrollmentByCourse,
             'completionRate' => $completionRate,
+            'quickModules' => $quickModules,
         ]);
     }
 
@@ -318,12 +489,13 @@ class AdminController extends Controller
     {
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'body' => ['required', 'string', 'max:5000'],
+            'body' => ['required', 'string', 'max:20000'],
             'audience' => ['required', 'array', 'min:1'],
             'audience.*' => ['in:student,faculty,public'],
         ], [
             'audience.required' => 'Choose who can see this announcement.',
         ]);
+        $data['body'] = RichTextSanitizer::sanitize($data['body']);
         if (in_array('public', $data['audience'], true)) {
             $data['audience'] = ['public'];
         }
@@ -338,10 +510,11 @@ class AdminController extends Controller
     {
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'body' => ['required', 'string', 'max:5000'],
+            'body' => ['required', 'string', 'max:20000'],
             'audience' => ['required', 'array', 'min:1'],
             'audience.*' => ['in:student,faculty,public'],
         ]);
+        $data['body'] = RichTextSanitizer::sanitize($data['body']);
         if (in_array('public', $data['audience'], true)) {
             $data['audience'] = ['public'];
         }
@@ -458,7 +631,7 @@ class AdminController extends Controller
         $complaint->status = $complaint->status === 'resolved' ? 'open' : 'resolved';
         $complaint->save();
 
-        return back()->with('success', 'Complaint marked as '.$complaint->status.'.');
+        return back()->with('success', 'Message thread marked as '.$complaint->status.'.');
     }
 
     // ── Faculty Codes ─────────────────────────────────────────────────────
@@ -469,20 +642,23 @@ class AdminController extends Controller
      */
     public function facultyCodes()
     {
+        $totalCodes = FacultyCode::count();
+        $usedCount = FacultyCode::whereNotNull('used_by')->count();
+        $availableCount = $totalCodes - $usedCount;
         $codes = FacultyCode::with('usedBy')
             ->latest()
-            ->get()
-            ->map(fn (FacultyCode $c) => (object) [
-                'id' => $c->id,
-                'code' => $c->code,
-                'is_used' => $c->isUsed(),
-                'used_by_name' => $c->usedBy?->name,
-                'used_at' => $c->used_at,
-                'created_at' => $c->created_at,
-            ])
-            ->values();
+            ->paginate(20)
+            ->withQueryString();
+        $codes->getCollection()->transform(fn (FacultyCode $c) => (object) [
+            'id' => $c->id,
+            'code' => $c->code,
+            'is_used' => $c->isUsed(),
+            'used_by_name' => $c->usedBy?->name,
+            'used_at' => $c->used_at,
+            'created_at' => $c->created_at,
+        ]);
 
-        return view('admin.faculty-codes', compact('codes'));
+        return view('admin.faculty-codes', compact('codes', 'totalCodes', 'usedCount', 'availableCount'));
     }
 
     /**
@@ -535,6 +711,7 @@ class AdminController extends Controller
             ->map(fn (Course $c) => (object) [
                 'id' => $c->id,
                 'title' => $c->title,
+                'thumbnail_url' => $c->thumbnail_url,
                 'students' => (int) $c->enrollments_count,
                 'faculty' => 1,
                 'badge' => $c->badge->name ?? '—',
@@ -665,40 +842,187 @@ class AdminController extends Controller
             ] : null,
         ])->values();
 
-        // Per-enrollment institutional completion review (Phase 3, Step 11).
-        // Additive to the existing aggregate stats above — $course's
-        // 'students'/'percent' fields are unchanged.
-        $enrollments = Enrollment::with(['user', 'facultyVerifier', 'academicUnitConfirmer'])
-            ->where('course_id', $c->id)
-            ->latest('enrolled_at')
-            ->get()
-            ->map(fn (Enrollment $e) => (object) [
-                'id' => $e->id,
-                'student_name' => $e->user->name ?? 'Student',
-                'completion_status' => $e->completion_status,
-                'faculty_verification_status' => $e->faculty_verification_status,
-                'academic_unit_confirmation_status' => $e->academic_unit_confirmation_status,
-                'completed_at' => $e->completed_at,
-                'faculty_verified_by' => $e->facultyVerifier->name ?? null,
-                'academic_unit_confirmed_by' => $e->academicUnitConfirmer->name ?? null,
-                // Confirm/Reject only makes sense once mastery has been
-                // reached and the enrollment is genuinely awaiting this
-                // institutional step — mirrors evaluate()'s own gate
-                // rather than introducing a new rule in the view.
-                // Mirrors the server-side rule in MicrocredentialCompletionService:
-                // a decision is only accepted once the enrollment is awaiting
-                // institutional sign-off, so don't offer the buttons earlier.
-                'academic_confirmation_actionable' => $e->academic_unit_confirmation_status === 'pending'
-                    && $e->completion_status === MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION,
-                'institutional_label' => CompletionStatusPresenter::institutionalLabel(
-                    $e->completion_status,
-                    $e->faculty_verification_status,
-                    $e->academic_unit_confirmation_status,
-                ),
-            ])
-            ->values();
+        return view('admin.courses.show', compact('course', 'modules'));
+    }
 
-        return view('admin.courses.show', compact('course', 'modules', 'enrollments'));
+    /** Show the enrollment review queue separately from course content review. */
+    public function courseEnrollmentReviews(int $id, Request $request): View
+    {
+        $courseModel = Course::findOrFail($id);
+        $course = (object) [
+            'id' => $courseModel->id,
+            'title' => $courseModel->title,
+            'category' => $courseModel->category,
+            'level' => $courseModel->level,
+        ];
+
+        return $this->enrollmentReviewPage($course, $courseModel->id, $request);
+    }
+
+    /** Show the full enrollment review queue from the admin sidebar. */
+    public function enrollmentReviews(Request $request): View
+    {
+        return $this->enrollmentReviewPage(null, null, $request);
+    }
+
+    /** Show the learning record and submitted work for one enrollment. */
+    public function showEnrollmentReview(Enrollment $enrollment): View
+    {
+        $enrollment->load(['user', 'course.modules.lessons.activities']);
+        $course = $enrollment->course;
+        abort_if(! $course, 404);
+
+        $institutionalLabel = CompletionStatusPresenter::institutionalLabel(
+            $enrollment->completion_status,
+            $enrollment->faculty_verification_status,
+            $enrollment->academic_unit_confirmation_status,
+        );
+        $enrollment->setAttribute('institutional_label', $institutionalLabel);
+        $enrollment->setAttribute('review_status', match (true) {
+            $institutionalLabel === 'Rejected' => 'denied',
+            $institutionalLabel === 'Completed' => 'approved',
+            $enrollment->academic_unit_confirmation_status === 'pending'
+                && $enrollment->completion_status === MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION => 'pending',
+            default => 'other',
+        });
+
+        $modules = $course->modules;
+        $lessonIds = $modules->flatMap(fn ($module) => $module->lessons->pluck('id'))->values();
+        $lessonCompletions = DB::table('lesson_completions')
+            ->where('user_id', $enrollment->user_id)
+            ->whereIn('lesson_id', $lessonIds)
+            ->get()
+            ->keyBy('lesson_id');
+        $activitySubmissions = LessonActivitySubmission::with('reviewer')
+            ->where('user_id', $enrollment->user_id)
+            ->whereHas('activity.lesson', fn ($query) => $query->where('course_id', $course->id))
+            ->latest('submitted_at')
+            ->get()
+            ->groupBy('lesson_activity_id');
+        $quizzes = Quiz::where('course_id', $course->id)->get();
+        $quizAttempts = QuizAttempt::with(['quiz', 'answers.question'])
+            ->where('user_id', $enrollment->user_id)
+            ->whereIn('quiz_id', $quizzes->pluck('id'))
+            ->latest('submitted_at')
+            ->get()
+            ->groupBy('quiz_id');
+        $lessonQuizzes = $quizzes->whereNotNull('lesson_id')->groupBy('lesson_id');
+        $moduleQuizzes = $quizzes->whereNotNull('module_id')->keyBy('module_id');
+        $activityCount = $modules->sum(fn ($module) => $module->lessons->sum(fn ($lesson) => $lesson->activities->count()));
+        $completedActivities = $activitySubmissions->keys()->count();
+        $passedQuizzes = $quizAttempts->flatten(1)->where('passed', true)->pluck('quiz_id')->unique()->count();
+
+        return view('admin.enrollments.show', [
+            'enrollment' => $enrollment,
+            'course' => $course,
+            'student' => $enrollment->user,
+            'modules' => $modules,
+            'lessonCompletions' => $lessonCompletions,
+            'activitySubmissions' => $activitySubmissions,
+            'quizzes' => $quizzes,
+            'lessonQuizzes' => $lessonQuizzes,
+            'moduleQuizzes' => $moduleQuizzes,
+            'quizAttempts' => $quizAttempts,
+            'completedLessons' => $lessonCompletions->count(),
+            'totalLessons' => $lessonIds->count(),
+            'completedActivities' => $completedActivities,
+            'totalActivities' => $activityCount,
+            'passedQuizzes' => $passedQuizzes,
+            'totalQuizzes' => $quizzes->count(),
+        ]);
+    }
+
+    public function downloadEnrollmentSubmission(LessonActivitySubmission $submission): StreamedResponse
+    {
+        $submission->load('activity.lesson.course');
+        abort_unless($submission->activity?->lesson?->course, 404);
+        abort_unless($submission->submission_path && Storage::disk('local')->exists($submission->submission_path), 404);
+
+        return Storage::disk('local')->download($submission->submission_path, basename($submission->submission_path));
+    }
+
+    private function enrollmentReviewPage(?object $course, ?int $courseId, ?Request $request = null): View
+    {
+        $filter = $request?->query('filter', 'all') ?? 'all';
+        if (! in_array($filter, ['all', 'pending', 'approved', 'denied'], true)) {
+            $filter = 'all';
+        }
+
+        $courses = collect();
+        $selectedCourseId = $courseId;
+        if ($courseId === null) {
+            $validated = $request?->validate([
+                'course_id' => ['nullable', 'integer', 'exists:courses,id'],
+            ]) ?? [];
+            $selectedCourseId = isset($validated['course_id']) ? (int) $validated['course_id'] : null;
+            $courses = Course::query()->orderBy('title')->get(['id', 'title']);
+        }
+
+        $baseQuery = $this->enrollmentReviewQuery($selectedCourseId);
+        $statusCounts = [
+            'all' => (clone $baseQuery)->count(),
+            'pending' => $this->filterEnrollmentReviewQuery(clone $baseQuery, 'pending')->count(),
+            'approved' => $this->filterEnrollmentReviewQuery(clone $baseQuery, 'approved')->count(),
+            'denied' => $this->filterEnrollmentReviewQuery(clone $baseQuery, 'denied')->count(),
+        ];
+        $enrollments = $this->filterEnrollmentReviewQuery($baseQuery, $filter)
+            ->latest('enrolled_at')
+            ->paginate(20)
+            ->withQueryString();
+        $enrollments->getCollection()->transform(fn (Enrollment $enrollment): object => $this->presentEnrollmentReview($enrollment));
+        $pendingConfirmations = $statusCounts['pending'];
+
+        return view('admin.courses.enrollments', compact('course', 'courses', 'selectedCourseId', 'enrollments', 'pendingConfirmations', 'statusCounts', 'filter'));
+    }
+
+    private function enrollmentReviewQuery(?int $courseId = null): Builder
+    {
+        return Enrollment::with(['user', 'facultyVerifier', 'academicUnitConfirmer', 'course'])
+            ->when($courseId !== null, fn (Builder $query) => $query->where('course_id', $courseId));
+    }
+
+    private function filterEnrollmentReviewQuery(Builder $query, string $filter): Builder
+    {
+        return match ($filter) {
+            'pending' => $query
+                ->where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
+                ->where('academic_unit_confirmation_status', 'pending'),
+            'approved' => $query
+                ->where('completion_status', MicrocredentialCompletionService::STATUS_COMPLETED)
+                ->where('academic_unit_confirmation_status', 'confirmed'),
+            'denied' => $query->where(function (Builder $query): void {
+                $query->where('completion_status', MicrocredentialCompletionService::STATUS_REJECTED)
+                    ->orWhere('faculty_verification_status', 'rejected')
+                    ->orWhere('academic_unit_confirmation_status', 'rejected');
+            }),
+            default => $query,
+        };
+    }
+
+    private function presentEnrollmentReview(Enrollment $enrollment): object
+    {
+        $institutionalLabel = CompletionStatusPresenter::institutionalLabel(
+            $enrollment->completion_status,
+            $enrollment->faculty_verification_status,
+            $enrollment->academic_unit_confirmation_status,
+        );
+        $actionable = $enrollment->academic_unit_confirmation_status === 'pending'
+            && $enrollment->completion_status === MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION;
+
+        return (object) [
+            'id' => $enrollment->id,
+            'course_id' => $enrollment->course_id,
+            'course_title' => $enrollment->course->title ?? 'Course',
+            'student_name' => $enrollment->user->name ?? 'Student',
+            'completion_status' => $enrollment->completion_status,
+            'faculty_verification_status' => $enrollment->faculty_verification_status,
+            'academic_unit_confirmation_status' => $enrollment->academic_unit_confirmation_status,
+            'completed_at' => $enrollment->completed_at,
+            'faculty_verified_by' => $enrollment->facultyVerifier->name ?? null,
+            'academic_unit_confirmed_by' => $enrollment->academicUnitConfirmer->name ?? null,
+            'academic_confirmation_actionable' => $actionable,
+            'institutional_label' => $institutionalLabel,
+        ];
     }
 
     /**
@@ -717,21 +1041,51 @@ class AdminController extends Controller
      * the one currently being viewed, even if a stale/tampered form is
      * submitted.
      */
-    public function academicConfirmEnrollment(Request $request, int $id, Enrollment $enrollment, MicrocredentialCompletionService $completionService)
-    {
+    public function academicConfirmEnrollment(
+        Request $request,
+        int $id,
+        Enrollment $enrollment,
+        MicrocredentialCompletionService $completionService,
+        UserNotificationService $userNotifications,
+    ) {
         abort_if($enrollment->course_id !== $id, 404);
 
         $data = $request->validate([
             'decision' => 'required|string|in:confirmed,rejected',
         ]);
+        $alreadyRecorded = $enrollment->academic_unit_confirmation_status === $data['decision'];
 
         try {
-            $completionService->recordAcademicUnitConfirmation($enrollment, Auth::id(), $data['decision']);
+            $updatedEnrollment = $completionService->recordAcademicUnitConfirmation($enrollment, Auth::id(), $data['decision']);
         } catch (\DomainException $e) {
             // The enrollment is not awaiting institutional sign-off (not
             // yet at mastery, or already completed/rejected/revoked).
             // Enforced by the service; the Blade button is only a courtesy.
             abort(422, $e->getMessage());
+        }
+
+        if (! $alreadyRecorded) {
+            $courseTitle = $updatedEnrollment->course?->title ?? 'your course';
+            $decisionMessage = $data['decision'] === 'confirmed'
+                ? 'Institutional confirmation is complete for "'.$courseTitle.'".'
+                : 'Institutional confirmation was not approved for "'.$courseTitle.'". Contact your institution for more information.';
+
+            $userNotifications->createForUser(
+                $enrollment->user_id,
+                'Institutional review update',
+                $decisionMessage,
+                'enrollment',
+                'enrollment',
+                $enrollment->id,
+            );
+            $userNotifications->createForUser(
+                $updatedEnrollment->course?->created_by,
+                'Institutional review completed',
+                'Institutional confirmation was '.$data['decision'].' for a learner in "'.$courseTitle.'".',
+                'enrollment',
+                'enrollment',
+                $enrollment->id,
+            );
         }
 
         return back()->with('success', $data['decision'] === 'confirmed'
@@ -1224,16 +1578,19 @@ class AdminController extends Controller
     /** List every category with the number of courses using it. */
     public function programCategories()
     {
-        $categories = CourseCategory::orderBy('sort_order')->orderBy('name')->get()
-            ->map(function (CourseCategory $c) {
-                $c->courses_using = $c->courseCount();
+        $categories = CourseCategory::orderBy('sort_order')->orderBy('name')
+            ->paginate(20)
+            ->withQueryString();
+        $categories->getCollection()->transform(function (CourseCategory $c) {
+            $c->courses_using = $c->courseCount();
 
-                return $c;
-            });
+            return $c;
+        });
 
         return view('admin.program-categories', [
             'user' => UserPresenter::admin(Auth::user()),
             'categories' => $categories,
+            'totalCategories' => $categories->total(),
         ]);
     }
 
@@ -1336,15 +1693,16 @@ class AdminController extends Controller
                 'status' => 'draft',
                 'approving_academic_unit' => $data['approving_academic_unit'] ?? null,
                 'target_recognition' => $data['target_recognition'] ?? null,
+                'recognition_target_type' => $data['recognition_target_type'],
                 'completion_mode' => $data['completion_mode'],
                 'required_count' => $this->resolveRequiredCount($data['completion_mode'], $requirements, $data['required_count'] ?? null),
                 'cumulative_outcomes' => $this->normalizeCumulativeOutcomes($data['cumulative_outcomes'] ?? null),
-                'equivalent_course' => $data['equivalent_course'] ?? null,
-                'equivalent_units' => $data['equivalent_units'] ?? null,
+                'equivalent_course' => $data['recognition_target_type'] === 'course_equivalency' ? ($data['equivalent_course'] ?? null) : null,
+                'equivalent_units' => $data['recognition_target_type'] === 'course_equivalency' ? ($data['equivalent_units'] ?? null) : null,
                 'sequence_required' => $data['sequence_required'] ?? false,
                 'credit_recognition_conditions' => $data['credit_recognition_conditions'] ?? null,
                 'pqf_level' => $data['pqf_level'] ?? null,
-                'credit_equivalency' => $data['credit_equivalency'] ?? null,
+                'credit_equivalency' => $data['recognition_target_type'] === 'course_equivalency' ? ($data['credit_equivalency'] ?? null) : null,
                 'is_active' => false,
             ]);
 
@@ -1382,15 +1740,16 @@ class AdminController extends Controller
                 'approved_at' => null,
                 'approving_academic_unit' => $data['approving_academic_unit'] ?? null,
                 'target_recognition' => $data['target_recognition'] ?? null,
+                'recognition_target_type' => $data['recognition_target_type'],
                 'completion_mode' => $data['completion_mode'],
                 'required_count' => $this->resolveRequiredCount($data['completion_mode'], $requirements, $data['required_count'] ?? null),
                 'cumulative_outcomes' => $this->normalizeCumulativeOutcomes($data['cumulative_outcomes'] ?? null),
-                'equivalent_course' => $data['equivalent_course'] ?? null,
-                'equivalent_units' => $data['equivalent_units'] ?? null,
+                'equivalent_course' => $data['recognition_target_type'] === 'course_equivalency' ? ($data['equivalent_course'] ?? null) : null,
+                'equivalent_units' => $data['recognition_target_type'] === 'course_equivalency' ? ($data['equivalent_units'] ?? null) : null,
                 'sequence_required' => $data['sequence_required'] ?? false,
                 'credit_recognition_conditions' => $data['credit_recognition_conditions'] ?? null,
                 'pqf_level' => $data['pqf_level'] ?? null,
-                'credit_equivalency' => $data['credit_equivalency'] ?? null,
+                'credit_equivalency' => $data['recognition_target_type'] === 'course_equivalency' ? ($data['credit_equivalency'] ?? null) : null,
                 'is_active' => false,
             ]);
 
@@ -1447,6 +1806,7 @@ class AdminController extends Controller
             'pqf_level' => ['nullable', 'regex:/^[1-8]$/'],
             'cumulative_outcomes' => ['nullable', 'string', 'max:4000'],
             'target_recognition' => ['nullable', 'string', 'max:255'],
+            'recognition_target_type' => ['required', 'in:course_equivalency,certificate,specialization,degree_requirement,other_institutional_recognition'],
             'equivalent_course' => ['nullable', 'string', 'max:255'],
             'equivalent_units' => ['nullable', 'numeric', 'min:0'],
             'credit_equivalency' => ['nullable', 'string', 'max:1000'],
@@ -1577,23 +1937,65 @@ class AdminController extends Controller
             });
     }
 
-    public function certificates()
+    public function certificates(Request $request)
     {
+        $credentialType = $request->query('type', 'certificates');
+        abort_unless(in_array($credentialType, ['certificates', 'badges'], true), 404);
+
+        $search = trim((string) $request->query('search', ''));
+        $status = $request->query('status', 'all');
+        abort_unless(in_array($status, ['all', 'active', 'revoked'], true), 404);
+
+        $credentialsQuery = $credentialType === 'badges'
+            ? UserBadge::query()->with(['user', 'badge', 'revoker'])
+            : Certificate::query()->with(['user', 'course', 'revoker']);
+
+        $credentialsQuery
+            ->when($status !== 'all', fn ($query) => $query->where('status', $status))
+            ->when($search !== '', function ($query) use ($credentialType, $search): void {
+                $query->where(function ($query) use ($credentialType, $search): void {
+                    $query->whereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%'));
+
+                    if ($credentialType === 'badges') {
+                        $query->orWhere('credential_uid', 'like', '%'.$search.'%')
+                            ->orWhereHas('badge', fn ($badgeQuery) => $badgeQuery->where('name', 'like', '%'.$search.'%'));
+
+                        return;
+                    }
+
+                    $query->orWhere('serial', 'like', '%'.$search.'%')
+                        ->orWhere('title', 'like', '%'.$search.'%')
+                        ->orWhere('microcredential_title_snapshot', 'like', '%'.$search.'%')
+                        ->orWhereHas('course', fn ($courseQuery) => $courseQuery->where('title', 'like', '%'.$search.'%'));
+                });
+            });
+
+        $credentials = $credentialsQuery
+            ->when($credentialType === 'badges', fn ($query) => $query->orderByDesc('earned_at'), fn ($query) => $query->orderByDesc('issued_at'))
+            ->orderByDesc('id')
+            ->paginate(20)
+            ->withQueryString();
+
         return view('admin.certificates', [
             'user' => UserPresenter::admin(Auth::user()),
-            'certificates' => Certificate::with(['user', 'course', 'revoker'])
-                ->orderByDesc('issued_at')
-                ->orderByDesc('id')
-                ->paginate(20),
+            'credentialType' => $credentialType,
+            'credentials' => $credentials,
+            'search' => $search,
+            'status' => $status,
         ]);
     }
 
-    public function revokeCertificate(Request $request, int $id)
+    public function revokeCertificate(Request $request, int $id, UserNotificationService $userNotifications)
     {
+        $request->merge([
+            'revocation_reason' => trim((string) $request->input('revocation_reason', '')),
+        ]);
+
         $data = $request->validate([
             'revocation_reason' => ['required', 'string', 'min:5', 'max:1000'],
         ]);
 
+        $certificate = Certificate::findOrFail($id);
         $pdfPath = DB::transaction(function () use ($id, $data): string {
             $certificate = Certificate::query()->whereKey($id)->lockForUpdate()->firstOrFail();
 
@@ -1616,15 +2018,61 @@ class AdminController extends Controller
             return $pdfPath;
         });
         Storage::disk('public')->delete($pdfPath);
+        $userNotifications->createForUser(
+            $certificate->user_id,
+            'Certificate revoked',
+            'Your certificate for "'.($certificate->microcredential_title_snapshot ?: $certificate->title ?: 'a course').'" has been revoked. Contact your institution for more information.',
+            'certificate',
+            'certificate',
+            $certificate->id,
+        );
 
         return back()->with('success', 'Certificate revoked.');
+    }
+
+    public function revokeBadge(Request $request, int $id, UserNotificationService $userNotifications)
+    {
+        $request->merge([
+            'revocation_reason' => trim((string) $request->input('revocation_reason', '')),
+        ]);
+
+        $data = $request->validate([
+            'revocation_reason' => ['required', 'string', 'min:5', 'max:1000'],
+        ]);
+
+        DB::transaction(function () use ($id, $data): void {
+            $badge = UserBadge::query()->whereKey($id)->lockForUpdate()->firstOrFail();
+
+            if ($badge->status === 'revoked') {
+                throw ValidationException::withMessages([
+                    'credential' => 'This badge has already been revoked.',
+                ]);
+            }
+
+            $badge->status = 'revoked';
+            $badge->revoked_at = now();
+            $badge->revoked_by = Auth::id();
+            $badge->revocation_reason = trim($data['revocation_reason']);
+            $badge->save();
+        });
+        $badge = UserBadge::with('badge')->findOrFail($id);
+        $userNotifications->createForUser(
+            $badge->user_id,
+            'Badge revoked',
+            'Your "'.($badge->badge?->name ?? 'badge').'" badge has been revoked. Contact your institution for more information.',
+            'badge',
+            'badge',
+            $badge->id,
+        );
+
+        return back()->with('success', 'Badge revoked.');
     }
 
     public function pathways()
     {
         return view('admin.pathways', [
             'user' => UserPresenter::admin(Auth::user()),
-            'pathways' => Pathway::with('courses')->orderBy('name')->get(),
+            'pathways' => Pathway::with('courses')->orderBy('name')->paginate(20)->withQueryString(),
             'courses' => Course::where('is_published', true)->orderBy('title')->get(),
         ]);
     }

@@ -49,11 +49,58 @@
         .step-title { margin:0; color:#111a31; font:800 clamp(30px,5vw,46px)/1.06 'Poppins',sans-serif; letter-spacing:-.045em; }
         .step-subtitle { margin:9px 0 21px; color:#75819a; font-size:15px; }
         .illustration {
-            min-height:176px; margin:0 0 21px; display:flex; flex-direction:column;
-            align-items:center; justify-content:center; gap:11px; border:1px solid #e9edf4;
-            border-radius:29px; background:linear-gradient(115deg,#fffbe6,#fff 62%,#f4f6fc);
-            box-shadow:0 2px 2px rgba(21,36,65,.08); color:#25375b; font-size:13px; font-weight:600;
+            position:relative; isolation:isolate; min-height:300px; margin:0 0 21px;
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            gap:11px; border:0; border-radius:0; background:transparent; box-shadow:none;
+            color:#25375b; font-size:13px; font-weight:600;
         }
+        .illustration::before {
+            position:absolute; z-index:-1; top:50%; left:50%; width:min(78%, 430px); height:250px;
+            border-radius:61% 39% 43% 57% / 46% 38% 62% 54%;
+            background:linear-gradient(135deg,#fff0a6 0%,#fff7d5 52%,#e7ecff 100%);
+            content:""; transform:translate(-50%,-50%) rotate(-6deg);
+        }
+        .step-panel[data-step="1"] .illustration::before {
+            border-radius:31% 69% 48% 52% / 61% 32% 68% 39%;
+            background:linear-gradient(135deg,#fff0a6 0%,#fff7d5 52%,#e7ecff 100%);
+            transform:translate(-50%,-50%) rotate(13deg);
+        }
+        .step-panel[data-step="2"] .illustration::before {
+            border-radius:72% 28% 61% 39% / 35% 66% 34% 65%;
+            background:linear-gradient(135deg,#fff0a6 0%,#fff7d5 52%,#e7ecff 100%);
+            transform:translate(-50%,-50%) rotate(-14deg);
+        }
+        .step-panel[data-step="3"] .illustration::before {
+            border-radius:43% 57% 29% 71% / 72% 41% 59% 28%;
+            background:linear-gradient(135deg,#fff0a6 0%,#fff7d5 52%,#e7ecff 100%);
+            transform:translate(-50%,-50%) rotate(19deg);
+        }
+        .step-panel[data-step="4"] .illustration::before {
+            border-radius:26% 74% 40% 60% / 49% 72% 28% 51%;
+            background:linear-gradient(135deg,#fff0a6 0%,#fff7d5 52%,#e7ecff 100%);
+            transform:translate(-50%,-50%) rotate(-19deg);
+        }
+        .step-panel[data-step="5"] .illustration::before {
+            border-radius:64% 36% 73% 27% / 31% 58% 42% 69%;
+            background:linear-gradient(135deg,#fff0a6 0%,#fff7d5 52%,#e7ecff 100%);
+            transform:translate(-50%,-50%) rotate(23deg);
+        }
+        .step-panel[data-step="6"] .illustration::before {
+            border-radius:35% 65% 24% 76% / 63% 27% 73% 37%;
+            background:linear-gradient(135deg,#fff0a6 0%,#fff7d5 52%,#e7ecff 100%);
+            transform:translate(-50%,-50%) rotate(-24deg);
+        }
+        .step-panel[data-step="7"] .illustration::before {
+            border-radius:78% 22% 55% 45% / 43% 73% 27% 57%;
+            background:linear-gradient(135deg,#fff0a6 0%,#fff7d5 52%,#e7ecff 100%);
+            transform:translate(-50%,-50%) rotate(9deg);
+        }
+        .step-panel[data-step="8"] .illustration::before {
+            border-radius:22% 78% 67% 33% / 76% 39% 61% 24%;
+            background:linear-gradient(135deg,#fff0a6 0%,#fff7d5 52%,#e7ecff 100%);
+            transform:translate(-50%,-50%) rotate(-8deg);
+        }
+        .illustration img { position:relative; display:block; width:min(calc(100% - 24px), 420px); height:280px; object-fit:contain; }
         .sparkle { display:grid; width:56px; height:56px; place-items:center; border-radius:50%; background:#fff3b5; color:#122dc4; }
         .sparkle svg { width:25px; height:25px; }
         .step-panel { min-height:250px; }
@@ -116,7 +163,9 @@
         @media (max-width:620px) {
             .onboard-brand { top:19px; left:18px; }
             .wizard-wrap { width:min(100% - 30px, 674px); padding-top:72px; }
-            .illustration { min-height:143px; border-radius:23px; }
+            .illustration { min-height:260px; }
+            .illustration::before { width:88%; height:210px; }
+            .illustration img { height:240px; }
             .step-title { font-size:34px; }
             .step-subtitle { font-size:14px; }
             .step-panel { min-height:260px; }
@@ -156,7 +205,7 @@
             <section class="step-panel" data-step="0">
                 <h1 class="step-title">When were you born?</h1>
                 <p class="step-subtitle">This helps us personalize your learning experience.</p>
-                <div class="illustration" aria-hidden="true"><span class="sparkle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5 14.4 9.6 21.5 12l-7.1 2.4L12 21.5l-2.4-7.1L2.5 12l7.1-2.4z"/></svg></span><span>One step at a time</span></div>
+                <div class="illustration"><img src="{{ asset('Images/Date of birth.png') }}" alt="Date of birth"></div>
                 <div>
                     <label class="field-label" for="date_of_birth">Date of birth</label>
                     <input class="field-control" id="date_of_birth" type="date" name="date_of_birth" value="{{ old('date_of_birth') }}" max="{{ now()->toDateString() }}" data-required>
@@ -166,7 +215,7 @@
             <section class="step-panel" data-step="1" hidden>
                 <h1 class="step-title">How do you describe your gender?</h1>
                 <p class="step-subtitle">Choose the option you’re most comfortable sharing.</p>
-                <div class="illustration" aria-hidden="true"><span class="sparkle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5 14.4 9.6 21.5 12l-7.1 2.4L12 21.5l-2.4-7.1L2.5 12l7.1-2.4z"/></svg></span><span>Your profile, your choice</span></div>
+                <div class="illustration"><img src="{{ asset('Images/Gender.png') }}" alt="Gender"></div>
                 <div>
                     <label class="field-label" for="gender">Gender</label>
                     <select class="field-control" id="gender" name="gender" data-required>
@@ -181,7 +230,7 @@
             <section class="step-panel" data-step="2" hidden>
                 <h1 class="step-title">Where did you study?</h1>
                 <p class="step-subtitle">Choose your school or university.</p>
-                <div class="illustration" aria-hidden="true"><span class="sparkle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5 14.4 9.6 21.5 12l-7.1 2.4L12 21.5l-2.4-7.1L2.5 12l7.1-2.4z"/></svg></span><span>Your education background</span></div>
+                <div class="illustration"><img src="{{ asset('Images/School or university.png') }}" alt="School or university"></div>
                 <div>
                     <label class="field-label" for="school">School or university</label>
                     <select class="field-control" id="school" name="school" data-required>
@@ -201,7 +250,7 @@
             <section class="step-panel" data-step="3" hidden>
                 <h1 class="step-title">Your education</h1>
                 <p class="step-subtitle">This helps us tailor the right starting point.</p>
-                <div class="illustration" aria-hidden="true"><span class="sparkle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5 14.4 9.6 21.5 12l-7.1 2.4L12 21.5l-2.4-7.1L2.5 12l7.1-2.4z"/></svg></span><span>Choose your current level</span></div>
+                <div class="illustration"><img src="{{ asset('Images/Highest education level.png') }}" alt="Highest education level"></div>
                 <div>
                     <label class="field-label" for="education">Highest level of education</label>
                     <select class="field-control" id="education" name="education" data-required>
@@ -216,7 +265,7 @@
             <section class="step-panel" data-step="4" hidden>
                 <h1 class="step-title">Where are you based?</h1>
                 <p class="step-subtitle">Share the address you want associated with your profile.</p>
-                <div class="illustration" aria-hidden="true"><span class="sparkle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5 14.4 9.6 21.5 12l-7.1 2.4L12 21.5l-7.1 2.4z"/></svg></span><span>Your profile details</span></div>
+                <div class="illustration"><img src="{{ asset('Images/Address.png') }}" alt="Address"></div>
                 <div>
                     <label class="field-label" for="address">Address</label>
                     <textarea class="field-control" id="address" name="address" rows="3" maxlength="500" data-required>{{ old('address') }}</textarea>
@@ -226,7 +275,7 @@
             <section class="step-panel" data-step="5" hidden>
                 <h1 class="step-title">What do you want to learn?</h1>
                 <p class="step-subtitle">Choose every skill area that sparks your curiosity.</p>
-                <div class="illustration" aria-hidden="true"><span class="sparkle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5 14.4 9.6 21.5 12l-7.1 2.4L12 21.5l-7.1 2.4z"/></svg></span><span>Explore your interests</span></div>
+                <div class="illustration"><img src="{{ asset('Images/Skills you want to learn.png') }}" alt="Skills you want to learn"></div>
                 <div class="skills-grid" data-skill-pager>
                     @foreach (($skill_options ?? []) as $skill)
                         <label class="skill-option" data-skill-option>
@@ -242,7 +291,7 @@
             <section class="step-panel" data-step="6" hidden>
                 <h1 class="step-title">What skills do you already have?</h1>
                 <p class="step-subtitle">Choose every skill you have some experience with.</p>
-                <div class="illustration" aria-hidden="true"><span class="sparkle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5 14.4 9.6 21.5 12l-7.1 2.4L12 21.5l-7.1 2.4z"/></svg></span><span>Recognize what you already know</span></div>
+                <div class="illustration"><img src="{{ asset('Images/Skills you already have.png') }}" alt="Skills you already have"></div>
                 <div class="skills-grid" data-skill-pager>
                     @foreach (($skill_options ?? []) as $skill)
                         <label class="skill-option" data-skill-option>
@@ -258,7 +307,7 @@
             <section class="step-panel" data-step="7" hidden>
                 <h1 class="step-title">What do you want to become?</h1>
                 <p class="step-subtitle">Tell us about the career goal you’re working toward.</p>
-                <div class="illustration" aria-hidden="true"><span class="sparkle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5 14.4 9.6 21.5 12l-7.1 2.4L12 21.5l-7.1 2.4z"/></svg></span><span>Picture your next milestone</span></div>
+                <div class="illustration"><img src="{{ asset('Images/Career goal.png') }}" alt="Career goal"></div>
                 <div>
                     <label class="field-label" for="career_goal">Career goal</label>
                     <input class="field-control" id="career_goal" name="career_goal" type="text" maxlength="255" placeholder="e.g. Software Engineer" value="{{ old('career_goal') }}" data-required>
@@ -268,7 +317,7 @@
             <section class="step-panel" data-step="8" hidden>
                 <h1 class="step-title">Anything else you’d like us to know?</h1>
                 <p class="step-subtitle">This is optional. You can update it later in your profile.</p>
-                <div class="illustration" aria-hidden="true"><span class="sparkle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5 14.4 9.6 21.5 12l-7.1 2.4L12 21.5l-7.1 2.4z"/></svg></span><span>A little context goes a long way</span></div>
+                <div class="illustration"><img src="{{ asset('Images/About you.png') }}" alt="About you"></div>
                 <div>
                     <label class="field-label" for="bio">About you <span style="font-weight:400;color:#8290a7">(optional)</span></label>
                     <textarea class="field-control" id="bio" name="bio" rows="4" maxlength="2000" placeholder="Share what success looks like for you.">{{ old('bio') }}</textarea>
@@ -361,6 +410,11 @@
 
             form.querySelectorAll('[data-skill-pager]').forEach(grid => {
                 const options = Array.from(grid.querySelectorAll('[data-skill-option]'));
+                for (let index = options.length - 1; index > 0; index--) {
+                    const randomIndex = Math.floor(Math.random() * (index + 1));
+                    [options[index], options[randomIndex]] = [options[randomIndex], options[index]];
+                }
+                grid.append(...options);
                 const moreButton = grid.parentElement.querySelector('[data-more-skills]');
                 const countText = grid.parentElement.querySelector('[data-skill-count]');
                 const selectedIndex = options.reduce((last, option, index) =>

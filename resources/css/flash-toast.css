@@ -1,0 +1,85 @@
+.flash-toast-region {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 15000;
+    width: min(420px, calc(100vw - 32px));
+    pointer-events: none;
+}
+
+.flash-toast {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 15px 16px;
+    border: 1px solid #374151;
+    border-radius: 10px;
+    background: #1f2937;
+    box-shadow: 0 14px 36px rgb(15 23 42 / 30%);
+    color: #fff;
+    font: 600 14px/1.5 Inter, system-ui, sans-serif;
+    pointer-events: auto;
+    animation: flash-toast-enter 180ms ease-out both;
+}
+
+.flash-toast.is-leaving {
+    animation: flash-toast-leave 180ms ease-in both;
+}
+
+.flash-toast__message {
+    flex: 1;
+    min-width: 0;
+}
+
+.flash-toast__dismiss {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    place-items: center;
+    margin: -5px -5px 0 0;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: #fff;
+    cursor: pointer;
+}
+
+.flash-toast__dismiss:hover {
+    background: #374151;
+    color: #fff;
+}
+
+.flash-toast__dismiss:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+.flash-toast__dismiss svg {
+    width: 16px;
+    height: 16px;
+}
+
+@keyframes flash-toast-enter {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes flash-toast-leave {
+    to { opacity: 0; transform: translateY(8px); }
+}
+
+@media (max-width: 600px) {
+    .flash-toast-region {
+        right: 12px;
+        bottom: 12px;
+        width: calc(100vw - 24px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .flash-toast,
+    .flash-toast.is-leaving {
+        animation-duration: 1ms;
+    }
+}

@@ -50,7 +50,7 @@
             <a href="{{ route('faculty.courses') }}" class="btn-outline">My Courses</a>
         </div>
 
-        @if($courses->isNotEmpty())
+        @if($courses->total())
             <div class="course-table-wrap">
                 <table class="course-table" aria-label="Courses and learner verification status">
                     <thead>
@@ -83,6 +83,7 @@
                     </tbody>
                 </table>
             </div>
+            @include('components.pagination', ['paginator' => $courses])
         @else
             <div class="empty-state">You don’t have any courses yet.</div>
         @endif

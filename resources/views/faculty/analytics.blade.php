@@ -50,7 +50,10 @@
     .download-report-btn svg{width:18px;height:18px;flex-shrink:0;}
 
     /* Gradient stat cards */
-    .stat-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-bottom:32px;}
+    .stat-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px;margin-bottom:32px;}
+    .course-filter{display:flex;align-items:center;gap:9px;margin-top:12px;}
+    .course-filter label{color:var(--muted);font-size:12px;font-weight:700;}
+    .course-filter select{min-height:38px;max-width:min(100%,360px);padding:8px 34px 8px 11px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font:600 12px Inter,"Segoe UI",sans-serif;}
     .g-card{position:relative;border-radius:18px;box-shadow:var(--shadow);padding:30px 26px;color:#fff;overflow:hidden;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
     .g-card.navy{background:linear-gradient(135deg,var(--navy) 0%,#2a30b0 100%);}
     .g-card.gold{background:linear-gradient(135deg,var(--gold-dark) 0%,#f0c14b 100%);}
@@ -92,6 +95,9 @@
     }
     @media (max-width:980px){
         .layout{grid-template-columns:1fr;}
+        .stat-cards{grid-template-columns:repeat(2,minmax(0,1fr));}
+    }
+    @media (max-width:520px){
         .stat-cards{grid-template-columns:1fr;}
     }
 </style>
@@ -114,8 +120,17 @@
             <div>
                 <h2 class="faculty-page-title">Analytics</h2>
                 <p class="live-line faculty-page-subtitle">Last 5 minutes · <span class="count">{{ $onlineNow ?? 0 }}</span> of your learners online</p>
+                <form class="course-filter" action="{{ route('faculty.analytics') }}" method="GET">
+                    <label for="course_id">Course</label>
+                    <select id="course_id" name="course_id" onchange="this.form.submit()">
+                        <option value="">All my courses</option>
+                        @foreach ($facultyCourses as $facultyCourse)
+                            <option value="{{ $facultyCourse->id }}" @selected($selectedCourseId === $facultyCourse->id)>{{ $facultyCourse->title }}</option>
+                        @endforeach
+                    </select>
+                </form>
             </div>
-            <a href="{{ route('faculty.analytics.report') }}" class="download-report-btn" title="Download the full analytics report as a PDF">
+            <a href="{{ route('faculty.analytics.report', $selectedCourseId ? ['course_id' => $selectedCourseId] : []) }}" class="download-report-btn" title="Download the full analytics report as a PDF">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
                 Download Report
             </a>
@@ -129,6 +144,13 @@
                 </span>
                 <span class="num" id="faculty-live-active-users">{{ $onlineNow ?? 0 }}</span>
                 <span class="label">Live Learners</span>
+            </div>
+            <div class="g-card cyan">
+                <span class="watermark">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="8" r="4"/><path d="M1 21c0-4 3.5-7 8-7s8 3 8 7"/><circle cx="17" cy="9" r="3"/><path d="M17 14c3.3 0 6 2.2 6 5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+                </span>
+                <span class="num">{{ $stats['total_learners'] ?? 0 }}</span>
+                <span class="label">Total Learners</span>
             </div>
             <div class="g-card gold">
                 <span class="watermark">
@@ -306,7 +328,7 @@
             </div>
             <div class="panel-body course-outcomes-wrap">
                 <table class="course-outcomes">
-                    <thead><tr><th>Course</th><th>Enrolled</th><th>Completed</th><th>Completion</th><th>Avg. Quiz</th><th>Pass Rate</th><th>Reviews to Grade</th></tr></thead>
+                    <thead><tr><th>Course</th><th>Enrolled</th><th>Completed</th><th>Completion</th><th>Avg. Quiz</th><th>Quiz Pass Rate (learners)</th><th>Avg. Rating</th><th>Reviews</th><th>Reviews to Grade</th></tr></thead>
                     <tbody>
                         @forelse($courseAnalytics as $course)
                             <tr>
@@ -316,13 +338,33 @@
                                 <td>{{ $course->completion_rate === null ? '—' : $course->completion_rate . '%' }}</td>
                                 <td>{{ $course->average_score === null ? '—' : $course->average_score . '%' }}</td>
                                 <td>{{ $course->pass_rate === null ? '—' : $course->pass_rate . '%' }}</td>
+                                <td>{{ $course->review_count >= \App\Support\CourseEvaluationTemplate::MINIMUM_REVIEWS_FOR_RATING ? number_format($course->rating_average, 1) : 'New' }}</td>
+                                <td>{{ $course->review_count }}</td>
                                 <td>{{ $course->pending_reviews }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" style="text-align:center;color:var(--muted);">Create a course to see its learner outcomes here.</td></tr>
+                            <tr><td colspan="9" style="text-align:center;color:var(--muted);">Create a course to see its learner outcomes here.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+            @include('components.pagination', ['paginator' => $courseAnalytics])
+        </section>
+
+        <section class="panel" style="margin-top:18px;">
+            <div class="panel-head"><span>Recent course evaluation comments</span><span class="range">Latest 5</span></div>
+            <div class="panel-body">
+                @forelse($recentCourseComments as $review)
+                    <article style="padding:12px 0;border-bottom:1px solid #e5e7eb;">
+                        <div style="display:flex;justify-content:space-between;gap:16px;align-items:center;">
+                            <strong>{{ $review->course?->title ?? 'Course' }}</strong>
+                            <span aria-label="{{ $review->rating }} out of 5">★ {{ $review->rating }}/5</span>
+                        </div>
+                        <p style="margin:6px 0 0;color:var(--muted);">{{ $review->comment }}</p>
+                    </article>
+                @empty
+                    <div class="empty-state">No written course evaluation comments yet.</div>
+                @endforelse
             </div>
         </section>
 
@@ -332,7 +374,7 @@
 
 <script>
     function refreshFacultyMonitoring() {
-        fetch('{{ route('faculty.analytics.live') }}')
+        fetch('{{ route('faculty.analytics.live', $selectedCourseId ? ['course_id' => $selectedCourseId] : []) }}')
             .then(response => response.json())
             .then(data => {
                 const active = document.getElementById('faculty-live-active-users');

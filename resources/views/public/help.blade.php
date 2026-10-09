@@ -198,9 +198,7 @@
 
         <div class="help__card">
 
-            @if (session('success'))
-                <div class="help__alert help__alert--ok">{{ session('success') }}</div>
-            @endif
+            <x-flash-toast :message="session('success')" />
 
             @if ($errors->any())
                 <div class="help__alert help__alert--err">

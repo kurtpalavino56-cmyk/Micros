@@ -159,9 +159,7 @@
             {{ $ttl }} minutes.
         </p>
 
-        @if (session('status'))
-            <div class="alert alert-ok">{{ session('status') }}</div>
-        @endif
+        <x-flash-toast :message="session('status')" />
 
         @if ($errors->any())
             <div class="alert alert-err">

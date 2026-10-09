@@ -9,6 +9,7 @@
     $professor   = $course['professor']   ?? '';
     $hours       = $course['hours']       ?? 0;
     $rating      = $course['rating']      ?? 0;
+    $reviewCount = $course['review_count'] ?? 0;
     $category    = $course['category']    ?? 'Web Development';
     $level       = $course['level']       ?? 'Intermediate';
     $image       = $course['image']       ?? null;
@@ -39,11 +40,7 @@
         <div class="course-card__meta">
             <span class="course-card__prof">{{ $professor }}</span>
             <span class="course-card__hours">{{ $hours }}h</span>
-            <span class="course-card__rating">
-                @for($i = 1; $i <= 5; $i++)
-                    {{ $i <= $rating ? '★' : '☆' }}
-                @endfor
-            </span>
+            @include('components.course-rating', ['rating' => $rating, 'count' => $reviewCount])
         </div>
     </div>
 </article>

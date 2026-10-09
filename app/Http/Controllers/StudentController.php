@@ -10,6 +10,7 @@ use App\Models\ComplaintReply;
 use App\Models\Course;
 use App\Models\CourseLesson;
 use App\Models\CourseModule;
+use App\Models\CourseReview;
 use App\Models\Enrollment;
 use App\Models\LessonActivity;
 use App\Models\LessonActivitySubmission;
@@ -20,23 +21,28 @@ use App\Models\QuizAttempt;
 use App\Models\StackingFramework;
 use App\Models\UserBadge;
 use App\Services\CourseCompletionService;
+use App\Services\CourseEvaluationService;
 use App\Services\CreditEvidenceReportService;
 use App\Services\MicrocredentialCompletionService;
 use App\Services\QuizAttemptService;
 use App\Services\StackingProgressService;
 use App\Services\StudentProgressService;
+use App\Services\UserNotificationService;
 use App\Support\CertificateBuilder;
+use App\Support\CourseEvaluationTemplate;
 use App\Support\SchoolCatalog;
 use App\Support\SkillCatalog;
 use App\Support\UserPresenter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 /**
@@ -92,6 +98,7 @@ class StudentController extends Controller
         // per-quiz question counts and newest-question timestamps, and
         // lazy-loading those cost several queries per module per course.
         $enrollments = Enrollment::with([
+            'course' => fn ($query) => $query->withAvg('reviews', 'rating')->withCount('reviews'),
             'course.modules.quiz.questions',
             'course.modules.lessons.quizzes.questions',
             'course.modules.lessons.activities',
@@ -111,6 +118,8 @@ class StudentController extends Controller
             'thumbnail_url' => ! empty($e->course->thumbnail_url) ? asset($e->course->thumbnail_url) : null,
             'progress_percent' => (int) $e->progress_percent,
             'is_completed' => $e->completion_status === MicrocredentialCompletionService::STATUS_COMPLETED,
+            'rating_average' => (float) ($e->course->reviews_avg_rating ?? 0),
+            'review_count' => (int) ($e->course->reviews_count ?? 0),
         ])->values();
 
         // Organized course lists for the dashboard.
@@ -162,6 +171,7 @@ class StudentController extends Controller
         $auth = Auth::user();
 
         $enrollments = Enrollment::with([
+            'course' => fn ($query) => $query->withAvg('reviews', 'rating')->withCount('reviews'),
             'course.modules.quiz.questions',
             'course.modules.lessons.quizzes.questions',
             'course.modules.lessons.activities',
@@ -180,6 +190,8 @@ class StudentController extends Controller
             'thumbnail_url' => ! empty($e->course->thumbnail_url) ? asset($e->course->thumbnail_url) : null,
             'progress_percent' => (int) $e->progress_percent,
             'is_completed' => $e->completion_status === MicrocredentialCompletionService::STATUS_COMPLETED,
+            'rating_average' => (float) ($e->course->reviews_avg_rating ?? 0),
+            'review_count' => (int) ($e->course->reviews_count ?? 0),
         ])->values();
 
         return view('student.courses.enrolled', [
@@ -320,7 +332,8 @@ class StudentController extends Controller
             ->where('is_published', true)
             // N+1 fix: the card mapper fell back to lessons()->count() per
             // course. Count them all in the main query instead.
-            ->withCount('lessons')
+            ->withCount(['lessons', 'reviews'])
+            ->withAvg('reviews', 'rating')
             ->when($filters['q'], function ($q) use ($filters) {
                 $term = '%'.$filters['q'].'%';
                 $q->where(function ($sub) use ($term) {
@@ -383,6 +396,8 @@ class StudentController extends Controller
             'duration' => $c->duration,
             'learning_hours' => $c->learning_hours,
             'lessons_count' => (int) $c->lessons_count,
+            'rating_average' => (float) ($c->reviews_avg_rating ?? 0),
+            'review_count' => (int) $c->reviews_count,
             'thumbnail_url' => $c->thumbnail_url ? asset($c->thumbnail_url) : null,
         ])->values();
 
@@ -408,7 +423,13 @@ class StudentController extends Controller
         // modules.quiz.questions added: syncEnrollmentProgress() walks every
         // module quiz and would otherwise lazy-load quiz + questions per
         // module on each visit.
-        $course = Course::with(['modules.lessons', 'modules.quiz.questions', 'quizzes.questions', 'creator', 'learningOutcomes', 'badge'])->findOrFail($id);
+        $course = Course::with([
+            'modules.lessons.quizzes.questions',
+            'modules.quiz.questions',
+            'creator',
+            'learningOutcomes',
+            'badge',
+        ])->findOrFail($id);
         $enrollment = Enrollment::where('user_id', $auth->id)
             ->where('course_id', $course->id)
             ->first();
@@ -419,23 +440,33 @@ class StudentController extends Controller
 
         $instructor = $course->creator;
 
-        $modules = $course->modules->map(fn (CourseModule $module) => (object) [
+        $quizSummary = fn (Quiz $quiz): object => (object) [
+            'id' => $quiz->id,
+            'title' => $quiz->title,
+            'questions_count' => $quiz->questions->count(),
+            'passing_score' => $quiz->passing_score,
+        ];
+        $finalExamModule = $course->modules->firstWhere('is_final', true);
+        $finalExamQuiz = $finalExamModule?->quiz;
+        $finalExam = $finalExamModule ? (object) [
+            'title' => $finalExamModule->title ?: 'Final Exam',
+            'quiz' => $finalExamQuiz && $finalExamQuiz->is_active ? $quizSummary($finalExamQuiz) : null,
+        ] : null;
+
+        $modules = $course->modules->reject(fn (CourseModule $module): bool => $module->is_final)->map(fn (CourseModule $module) => (object) [
             'title' => $module->title,
             'description' => trim(strip_tags((string) $module->description)),
             'lessons' => $module->lessons->map(fn (CourseLesson $lesson) => (object) [
                 'title' => $lesson->title,
                 'type' => $lesson->type,
                 'duration' => $lesson->duration,
+                'quizzes' => $lesson->quizzes
+                    ->where('is_active', true)
+                    ->map($quizSummary)
+                    ->values(),
             ])->values(),
+            'quiz' => $module->quiz && $module->quiz->is_active ? $quizSummary($module->quiz) : null,
         ])->values();
-
-        $quizModel = $course->quizzes->first();
-        $quiz = $quizModel ? (object) [
-            'id' => $quizModel->id,
-            'title' => $quizModel->title,
-            'questions_count' => $quizModel->questions->count(),
-            'passing_score' => $quizModel->passing_score,
-        ] : null;
 
         $progressPercent = $this->syncEnrollmentProgress($course, $enrollment);
         $completionReady = $enrollment
@@ -512,7 +543,7 @@ class StudentController extends Controller
                 'avatar_url' => $instructor?->avatar_url,
             ],
             'modules' => $modules,
-            'quiz' => $quiz,
+            'finalExam' => $finalExam,
             'is_enrolled' => (bool) $enrollment,
             'is_completed' => $enrollment?->completion_status === MicrocredentialCompletionService::STATUS_COMPLETED,
             'completion_ready' => $completionReady,
@@ -525,7 +556,7 @@ class StudentController extends Controller
 
     // ── Enrollment ────────────────────────────────────────────────────────
 
-    public function enroll(int $id)
+    public function enroll(int $id, UserNotificationService $userNotifications)
     {
         $auth = Auth::user();
         $course = Course::findOrFail($id);
@@ -583,6 +614,22 @@ class StudentController extends Controller
                 'metadata' => ['detail' => $auth->name.' enrolled in '.$course->title],
                 'occurred_at' => now(),
             ]);
+            $userNotifications->createForUser(
+                $auth->id,
+                'Enrollment confirmed: '.$course->title,
+                'You are enrolled in this course and can begin learning now.',
+                'enrollment',
+                'enrollment',
+                $enrollment->id,
+            );
+            $userNotifications->createForUser(
+                $course->created_by,
+                'New learner enrolled',
+                $auth->name.' enrolled in "'.$course->title.'".',
+                'enrollment',
+                'enrollment',
+                $enrollment->id,
+            );
         }
 
         $course->enrolled_count = $course->enrollments()->count();
@@ -594,10 +641,10 @@ class StudentController extends Controller
     /**
      * Learning / enrollment screen (Student_Course_Enrollment).
      */
-    public function learn(int $id)
+    public function learn(int $id, CourseEvaluationService $courseEvaluation)
     {
         $auth = Auth::user();
-        $course = Course::with(['modules.lessons.quizzes.questions', 'modules.lessons.activities', 'modules.quiz.questions'])->findOrFail($id);
+        $course = Course::with(['modules.lessons.quizzes.questions', 'modules.lessons.activities.submissions', 'modules.quiz.questions'])->findOrFail($id);
         $enrollment = Enrollment::where('user_id', $auth->id)
             ->where('course_id', $course->id)
             ->first();
@@ -610,7 +657,11 @@ class StudentController extends Controller
         $modules = $course->modules->map(fn ($m) => (object) [
             'id' => $m->id,
             'title' => $m->title,
+            'is_final' => (bool) $m->is_final,
             'description' => $m->description ?? '',
+            'assessment_count' => $m->lessons->sum(fn (CourseLesson $lesson) => $lesson->activities->where('is_active', true)->count()
+                + $lesson->quizzes->where('is_active', true)->count()
+            ) + (int) ($m->quiz?->is_active ?? false),
             'lessons' => $m->lessons->map(fn (CourseLesson $l) => (object) [
                 'id' => $l->id,
                 'title' => $l->title,
@@ -740,11 +791,20 @@ class StudentController extends Controller
             $enrollment->enrolled_at
         );
         $livePercent = $progressBreakdown['percent'];
-        $liveLessons = $this->resolveCompletedLessons(
-            $course,
-            array_values($state['completed_lessons'] ?? []),
-            $enrollment
-        );
+        $lessonIds = $course->modules
+            ->flatMap(fn ($module) => $module->lessons)
+            ->pluck('id')
+            ->unique()
+            ->values();
+        $liveLessons = $lessonIds->isEmpty()
+            ? []
+            : DB::table('lesson_completions')
+                ->where('user_id', $auth->id)
+                ->whereIn('lesson_id', $lessonIds)
+                ->whereNotNull('server_verified_at')
+                ->pluck('lesson_id')
+                ->map(fn ($lessonId) => (string) $lessonId)
+                ->all();
 
         $stateChanged = $liveLessons !== array_values($state['completed_lessons'] ?? []);
 
@@ -759,6 +819,74 @@ class StudentController extends Controller
             $enrollment->save();
         }
 
+        $courseReview = CourseReview::query()->where('course_id', $course->id)->where('user_id', $auth->id)->first();
+        $courseEvaluationEligible = $courseEvaluation->isEligible($course, $auth, $enrollment);
+        $recapQuizIds = $course->modules
+            ->reject(fn ($module) => $module->is_final)
+            ->flatMap(fn ($module) => collect([$module->quiz?->id])->merge($module->lessons->flatMap(fn ($lesson) => $lesson->quizzes->pluck('id'))))
+            ->filter()
+            ->unique()
+            ->values();
+        $recapAttempts = $recapQuizIds->isEmpty()
+            ? collect()
+            : QuizAttempt::query()
+                ->with('quiz')
+                ->where('user_id', $auth->id)
+                ->whereIn('quiz_id', $recapQuizIds)
+                ->whereNotNull('submitted_at')
+                ->latest('submitted_at')
+                ->get()
+                ->unique('quiz_id')
+                ->keyBy('quiz_id');
+        $courseRecap = $course->modules
+            ->reject(fn ($module) => $module->is_final)
+            ->map(function ($module) use ($recapAttempts) {
+                $lessons = $module->lessons->map(function ($lesson) use ($recapAttempts) {
+                    return [
+                        'title' => $lesson->title,
+                        'activities' => $lesson->activities->where('is_active', true)->map(function ($activity) {
+                            $submission = $activity->submissions->where('user_id', Auth::id())->sortByDesc('attempt_number')->first();
+
+                            return [
+                                'title' => $activity->title,
+                                'answer' => $submission?->response_text,
+                                'file_submitted' => (bool) $submission?->submission_path,
+                                'file_url' => $submission ? route('lesson-activities.download', $submission->id) : null,
+                                'status' => $submission?->status,
+                            ];
+                        })->values()->all(),
+                        'quizzes' => $lesson->quizzes->where('is_active', true)->map(function ($quiz) use ($recapAttempts) {
+                            $attempt = $recapAttempts->get($quiz->id);
+                            $editedAt = $this->quizLastEditedAt($quiz);
+                            if ($attempt && $editedAt && $attempt->submitted_at->lt($editedAt)) {
+                                $attempt = null;
+                            }
+
+                            return [
+                                'title' => $quiz->title,
+                                'score' => $attempt?->score,
+                                'passed' => $attempt?->passed,
+                            ];
+                        })->values()->all(),
+                    ];
+                })->values()->all();
+                $moduleAttempt = $module->quiz ? $recapAttempts->get($module->quiz->id) : null;
+                $moduleQuizEditedAt = $module->quiz ? $this->quizLastEditedAt($module->quiz) : null;
+                if ($moduleAttempt && $moduleQuizEditedAt && $moduleAttempt->submitted_at->lt($moduleQuizEditedAt)) {
+                    $moduleAttempt = null;
+                }
+
+                return [
+                    'title' => $module->title,
+                    'lessons' => $lessons,
+                    'summative' => $module->quiz ? [
+                        'title' => $module->quiz->title,
+                        'score' => $moduleAttempt?->score,
+                        'passed' => $moduleAttempt?->passed,
+                    ] : null,
+                ];
+            })->values()->all();
+
         return view('student.courses.enrollment', [
             'user' => UserPresenter::student($auth),
             'course' => (object) [
@@ -767,12 +895,19 @@ class StudentController extends Controller
                 'category' => $course->category,
                 'thumbnail_url' => $course->thumbnail_url ? asset($course->thumbnail_url) : null,
                 'progress_percent' => $livePercent,
+                'certificate_enabled' => (bool) $course->certificate_enabled,
+                'badge_id' => $course->badge_id,
             ],
             'modules' => $modules,
+            'courseReview' => $courseReview,
+            'courseEvaluationEligible' => $courseEvaluationEligible,
+            'courseEvaluationExhaustedFinalExam' => false,
+            'courseRecap' => $courseRecap,
+            'courseCompletionStatus' => $enrollment->completion_status,
+            'courseEvaluationQuestions' => CourseEvaluationTemplate::questions(),
             'current_lesson' => $modules->first()?->lessons->first(),
             'current_module' => $modules->first(),
             'total_lessons' => $modules->sum(fn ($m) => $m->lessons->count()),
-            'badge_count' => $auth->badges()->count(),
             'progress_percent' => $livePercent,
             'progress_breakdown' => $progressBreakdown,
             'saved_progress' => [
@@ -785,6 +920,60 @@ class StudentController extends Controller
             'quiz_unlocks' => (object) $quizUnlocks,
             'quiz_attempts' => (object) $quizAttempts,
         ]);
+    }
+
+    public function submitCourseEvaluation(int $id, Request $request, CourseEvaluationService $courseEvaluation)
+    {
+        $student = Auth::user();
+        $course = Course::with(['modules.quiz'])->findOrFail($id);
+        $enrollment = Enrollment::query()->where('user_id', $student->id)->where('course_id', $course->id)->first();
+        abort_unless($enrollment, 403);
+        abort_unless($courseEvaluation->isEligible($course, $student, $enrollment), 403);
+        abort_unless(! CourseReview::query()->where('course_id', $course->id)->where('user_id', $student->id)->exists(), 409);
+
+        $questions = CourseEvaluationTemplate::questions();
+        $rules = [
+            'rating' => ['required', 'integer', 'between:1,5'],
+            'comment' => ['nullable', 'string', 'max:3000'],
+        ];
+        foreach (array_keys($questions['course']) as $item) {
+            $rules['answers.course.'.$item] = ['required', 'integer', 'between:1,5'];
+        }
+        foreach (array_keys($questions['platform']) as $item) {
+            $rules['answers.platform.'.$item] = ['required', 'integer', 'between:1,5'];
+        }
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'The submitted course review is invalid.',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $data = $validator->validated();
+
+        CourseReview::query()->create([
+            'course_id' => $course->id,
+            'user_id' => $student->id,
+            'rating' => $data['rating'],
+            'answers' => $data['answers'],
+            'comment' => trim((string) ($data['comment'] ?? '')) ?: null,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'review_submitted' => true,
+                'evaluation_eligible' => true,
+                'message' => 'Thank you for evaluating this course.',
+            ]);
+        }
+
+        return redirect()->route('courses.learn', $course->id)->with('success', 'Thank you for evaluating this course.');
     }
 
     /**
@@ -820,7 +1009,7 @@ class StudentController extends Controller
     }
 
     /** Continue from lesson content into its first outstanding requirement. */
-    public function completeLesson(int $courseId, int $lessonId, Request $request)
+    public function completeLesson(int $courseId, int $lessonId, Request $request, CourseEvaluationService $courseEvaluation)
     {
         $student = Auth::user();
         $enrollment = Enrollment::query()
@@ -828,7 +1017,7 @@ class StudentController extends Controller
             ->where('course_id', $courseId)
             ->firstOrFail();
 
-        $course = Course::with('modules.lessons')->findOrFail($courseId);
+        $course = Course::with(['modules.lessons', 'modules.quiz.questions'])->findOrFail($courseId);
         $lesson = CourseLesson::query()
             ->where('course_id', $courseId)
             ->findOrFail($lessonId);
@@ -838,6 +1027,7 @@ class StudentController extends Controller
             return response()->json([
                 'ok' => false,
                 'message' => 'Complete the previous lessons and module assessment before continuing.',
+                'evaluation_eligible' => $courseEvaluation->isEligible($course, $student, $enrollment),
             ], 422);
         }
 
@@ -853,6 +1043,7 @@ class StudentController extends Controller
             return response()->json([
                 'ok' => false,
                 'message' => 'Spend a few seconds in the lesson before continuing to its assessments.',
+                'evaluation_eligible' => $courseEvaluation->isEligible($course, $student, $enrollment),
             ], 422);
         }
 
@@ -873,6 +1064,7 @@ class StudentController extends Controller
             'pending_review' => $nextRequirement['pending_review'],
             'progress_percent' => (int) $enrollment->fresh()->progress_percent,
             'progress_breakdown' => $this->progressService->progressBreakdown($course, (int) $student->id, $enrollment->enrolled_at),
+            'evaluation_eligible' => $courseEvaluation->isEligible($course, $student, $enrollment->fresh()),
             'message' => $nextRequirement['pending_review'] && ! $nextRequirement['url']
                 ? 'Your assignment is waiting for faculty review.'
                 : null,
@@ -896,15 +1088,11 @@ class StudentController extends Controller
         $requirements = collect();
 
         foreach ($lesson->activities->where('is_active', true)->where('is_required', true) as $activity) {
-            if ($enrollment->enrolled_at && $activity->created_at && $activity->created_at->gt($enrollment->enrolled_at)) {
-                continue;
-            }
-
             $requirements->push(['kind' => 'activity', 'sort_order' => (int) $activity->sort_order, 'item' => $activity]);
         }
 
         foreach ($lesson->quizzes->where('is_active', true) as $quiz) {
-            if (($enrollment->enrolled_at && $quiz->created_at && $quiz->created_at->gt($enrollment->enrolled_at)) || $quiz->questions->isEmpty()) {
+            if ($quiz->questions->isEmpty()) {
                 continue;
             }
 
@@ -944,12 +1132,9 @@ class StudentController extends Controller
         return ['url' => null, 'pending_review' => $pendingReview];
     }
 
-    private function lessonActivitiesSatisfied(CourseLesson $lesson, int $userId, ?Carbon $enrolledAt): bool
+    private function lessonActivitiesSatisfied(CourseLesson $lesson, int $userId): bool
     {
         foreach ($lesson->activities->where('is_active', true)->where('is_required', true) as $activity) {
-            if ($enrolledAt && $activity->created_at && $activity->created_at->gt($enrolledAt)) {
-                continue;
-            }
             $accepted = $activity->activity_type === 'assignment' ? ['passed'] : ['completed', 'passed'];
             if (! $activity->submissions()->where('user_id', $userId)->whereIn('status', $accepted)->exists()) {
                 return false;
@@ -959,16 +1144,13 @@ class StudentController extends Controller
         return true;
     }
 
-    private function lessonRequirementsSatisfied(CourseLesson $lesson, int $userId, ?Carbon $enrolledAt): bool
+    private function lessonRequirementsSatisfied(CourseLesson $lesson, int $userId): bool
     {
-        if (! $this->lessonActivitiesSatisfied($lesson, $userId, $enrolledAt)) {
+        if (! $this->lessonActivitiesSatisfied($lesson, $userId)) {
             return false;
         }
 
         foreach ($lesson->quizzes->where('is_active', true) as $quiz) {
-            if ($enrolledAt && $quiz->created_at && $quiz->created_at->gt($enrolledAt)) {
-                continue;
-            }
             if ($quiz->questions->isEmpty()) {
                 continue;
             }
@@ -999,7 +1181,7 @@ class StudentController extends Controller
                 }
 
                 if (! $this->lessonIsServerVerified((int) $lesson->id, $userId)
-                    || ! $this->lessonRequirementsSatisfied($lesson, $userId, $enrollment->enrolled_at)) {
+                    || ! $this->lessonRequirementsSatisfied($lesson, $userId)) {
                     return false;
                 }
             }
@@ -1026,7 +1208,6 @@ class StudentController extends Controller
         if (! $enrollment) {
             return false;
         }
-        $enrolledAt = $enrollment->enrolled_at;
         $targetModuleId = $quiz->module_id ?: $quiz->lesson?->module_id;
         $targetModuleIndex = $course->modules->search(fn ($module): bool => (int) $module->id === (int) $targetModuleId);
         if ($targetModuleIndex === false) {
@@ -1038,11 +1219,11 @@ class StudentController extends Controller
                 if ((int) $lesson->id === (int) $quiz->lesson_id) {
                     return ($this->lessonIsServerVerified((int) $lesson->id, $userId)
                             || session()->has($this->lessonContinuedSessionKey($userId, (int) $course->id, (int) $lesson->id)))
-                        && $this->lessonActivitiesSatisfied($lesson, $userId, $enrolledAt);
+                        && $this->lessonActivitiesSatisfied($lesson, $userId);
                 }
 
                 if (! $this->lessonIsServerVerified((int) $lesson->id, $userId)
-                    || ! $this->lessonRequirementsSatisfied($lesson, $userId, $enrolledAt)) {
+                    || ! $this->lessonRequirementsSatisfied($lesson, $userId)) {
                     return false;
                 }
             }
@@ -1139,7 +1320,7 @@ class StudentController extends Controller
         return 'quiz_tracking.'.$userId.'.'.$quizId;
     }
 
-    public function submitStandaloneQuiz(int $id, Request $request)
+    public function submitStandaloneQuiz(int $id, Request $request, CourseEvaluationService $courseEvaluation)
     {
         $student = Auth::user();
         $quiz = Quiz::with(['course', 'questions'])->where('is_active', true)->findOrFail($id);
@@ -1169,9 +1350,16 @@ class StudentController extends Controller
         $result = $this->quizAttempts->submit($student, $quiz, ['answers' => $answers], $startedAt > 0 ? Carbon::createFromTimestamp($startedAt) : null);
         if ($result['blocked']) {
             if ($request->expectsJson()) {
+                $course = Course::with('modules.quiz.questions')->findOrFail($quiz->course_id);
+                $enrollment = Enrollment::query()
+                    ->where('user_id', $student->id)
+                    ->where('course_id', $quiz->course_id)
+                    ->firstOrFail();
+
                 return response()->json([
                     'ok' => false,
                     'message' => 'No attempt is currently available. Check the attempt limit and retake lockout.',
+                    'evaluation_eligible' => $courseEvaluation->isEligible($course, $student, $enrollment),
                 ], 409);
             }
 
@@ -1214,6 +1402,7 @@ class StudentController extends Controller
                 'pending_review' => $nextRequirement['pending_review'],
                 'progress_percent' => (int) $enrollment->fresh()->progress_percent,
                 'progress_breakdown' => $this->progressService->progressBreakdown($course, (int) $student->id, $enrollment->enrolled_at),
+                'evaluation_eligible' => $courseEvaluation->isEligible($course, $student, $enrollment->fresh()),
             ]);
         }
 
@@ -1265,7 +1454,7 @@ class StudentController extends Controller
         return view('student.lesson-activity', $viewData);
     }
 
-    public function submitLessonActivity(int $id, Request $request)
+    public function submitLessonActivity(int $id, Request $request, UserNotificationService $userNotifications)
     {
         $student = Auth::user();
         $activity = LessonActivity::with('lesson')->where('is_active', true)->findOrFail($id);
@@ -1301,6 +1490,16 @@ class StudentController extends Controller
             'status' => $activity->activity_type === 'assignment' ? 'submitted' : 'completed',
             'submitted_at' => now(),
         ]);
+        if ($submission->status === 'submitted') {
+            $userNotifications->createForUser(
+                $course->created_by,
+                'Assignment awaiting review',
+                $student->name.' submitted "'.$activity->title.'" in "'.$course->title.'".',
+                'assessment',
+                'activity_submission',
+                $submission->id,
+            );
+        }
 
         $lessonCompleted = $this->progressService->completeLessonIfRequirementsSatisfied($course, $activity->lesson, $enrollment);
         if (! $lessonCompleted) {
@@ -1525,7 +1724,7 @@ class StudentController extends Controller
         return $this->quizAttempts->lastEditedAt($quiz);
     }
 
-    public function saveProgress(int $id, Request $request)
+    public function saveProgress(int $id, Request $request, CourseEvaluationService $courseEvaluation)
     {
         $data = $request->validate([
             'percent' => 'nullable|integer|min:0|max:100',
@@ -1551,7 +1750,11 @@ class StudentController extends Controller
             $module = $course->modules->get((int) $data['retake_check']);
             $quiz = $module?->quiz;
             if (! $quiz) {
-                return response()->json(['ok' => true, 'quiz_unlocks' => (object) []]);
+                return response()->json([
+                    'ok' => true,
+                    'quiz_unlocks' => (object) [],
+                    'evaluation_eligible' => $courseEvaluation->isEligible($course, $student, $enrollment),
+                ]);
             }
 
             $status = $this->quizAttempts->retakeStatus($quiz, $student->id);
@@ -1561,6 +1764,7 @@ class StudentController extends Controller
                     'exhausted' => true,
                     'allowed' => $status['allowed'],
                     'used' => $status['used'],
+                    'evaluation_eligible' => $courseEvaluation->isEligible($course, $student, $enrollment),
                 ]);
             }
 
@@ -1569,6 +1773,7 @@ class StudentController extends Controller
                 'quiz_unlocks' => $status['unlock']
                     ? [(string) $data['retake_check'] => $status['unlock']]
                     : (object) [],
+                'evaluation_eligible' => $courseEvaluation->isEligible($course, $student, $enrollment),
             ]);
         }
 
@@ -1611,7 +1816,13 @@ class StudentController extends Controller
             }
 
             if (! $this->quizIsUnlockedForStudent($quiz, (int) $student->id)) {
-                $quizSubmissions[(string) $moduleIndex] = ['blocked' => true, 'score' => null, 'passed' => false, 'unlock' => null];
+                $quizSubmissions[(string) $moduleIndex] = [
+                    'blocked' => true,
+                    'score' => null,
+                    'passed' => false,
+                    'unlock' => null,
+                    'message' => 'Complete the required course content before taking this quiz.',
+                ];
 
                 continue;
             }
@@ -1641,6 +1852,11 @@ class StudentController extends Controller
                 $result,
                 $startedAt > 0 ? Carbon::createFromTimestamp($startedAt) : null
             );
+            if ($submission['blocked']) {
+                $submission['message'] = $submission['unlock'] !== null
+                    ? 'This quiz is in its retake lockout period.'
+                    : 'No attempt is currently available. Check the attempt limit and retake lockout.';
+            }
             $quizSubmissions[(string) $moduleIndex] = $submission;
             if (! $submission['blocked'] && (int) $quiz->time_limit > 0) {
                 $request->session()->forget($this->quizTrackingSessionKey((int) $student->id, (int) $quiz->id));
@@ -1690,6 +1906,8 @@ class StudentController extends Controller
         // itself unless completion_status has genuinely reached
         // 'completed' (including the unconditional academic-unit gate).
         $badgeAwarded = $this->finalizeCompletion($student, $course, $enrollment);
+        $enrollment = $enrollment->fresh();
+        $evaluationEligible = $courseEvaluation->isEligible($course, $student, $enrollment);
 
         $quizAttemptSummary = [];
         foreach ($course->modules as $moduleIndex => $module) {
@@ -1714,15 +1932,16 @@ class StudentController extends Controller
             'quiz_unlocks' => (object) $quizUnlocks,
             'quiz_attempts' => (object) $quizAttemptSummary,
             'quiz_submissions' => (object) $quizSubmissions,
+            'evaluation_eligible' => $evaluationEligible,
         ]);
     }
 
     // ── Course completion -> badge award ────────────────────────────────
 
     /**
-     * Called via fetch() from the course player the moment a student
-     * finishes the last module quiz. Marks the enrollment complete and
-     * awards the badge linked to the course (courses.badge_id).
+     * Called via fetch() from the course player when all learning
+     * requirements are complete. Marks the enrollment complete and awards
+     * eligible credentials only after the required institutional gates pass.
      *
      * The Admin "Recent Badges" panel counts rows in user_badges, so it
      * climbs in real time as soon as a student earns a badge. Awards are
@@ -1742,6 +1961,14 @@ class StudentController extends Controller
                 'ok' => false,
                 'completed' => false,
                 'message' => 'Enroll in this course before marking it complete.',
+            ], 422);
+        }
+
+        if (! CourseReview::query()->where('course_id', $course->id)->where('user_id', $student->id)->exists()) {
+            return response()->json([
+                'ok' => false,
+                'completed' => false,
+                'message' => 'Submit the course review before requesting course completion.',
             ], 422);
         }
 
@@ -1838,6 +2065,7 @@ class StudentController extends Controller
             ->latest('earned_at')
             ->get()
             ->map(fn (UserBadge $ub) => (object) [
+                'id' => $ub->id,
                 'name' => $ub->badge->name ?? 'Badge',
                 'description' => $ub->badge->description ?? '',
                 'icon_url' => $ub->badge->icon_url ?? null,
@@ -1877,15 +2105,16 @@ class StudentController extends Controller
         $certificates = $auth->certificates()
             ->with('course:id,title')
             ->latest('issued_at')
-            ->get()
-            ->map(fn ($cert) => (object) [
-                'course_name' => $cert->course?->title ?: $cert->title ?: 'Microcredential Certificate',
-                'issued_at' => $cert->issued_at,
-                'issued_date' => $cert->issued_at?->format('F j, Y') ?? 'Date unavailable',
-                'view_url' => route('certificates.view', $cert->serial),
-                'download_url' => route('certificates.download', $cert->serial),
-            ])
-            ->values();
+            ->paginate(20)
+            ->withQueryString();
+        $certificates->getCollection()->transform(fn ($cert) => (object) [
+            'id' => $cert->id,
+            'course_name' => $cert->course?->title ?: $cert->title ?: 'Microcredential Certificate',
+            'issued_at' => $cert->issued_at,
+            'issued_date' => $cert->issued_at?->format('F j, Y') ?? 'Date unavailable',
+            'view_url' => route('certificates.view', $cert->serial),
+            'download_url' => route('certificates.download', $cert->serial),
+        ]);
 
         return view('student.certificates', [
             'user' => UserPresenter::student($auth),
@@ -2333,6 +2562,14 @@ class StudentController extends Controller
                     default => 'In progress',
                 },
             ])->values();
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $completionCoursesPage = new LengthAwarePaginator(
+            $completionCourses->forPage($currentPage, 20)->values(),
+            $completionCourses->count(),
+            20,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()],
+        );
 
         return view('student.analytics', [
             'user' => UserPresenter::student($auth),
@@ -2347,6 +2584,7 @@ class StudentController extends Controller
                     ->count(),
             ],
             'completionCourses' => $completionCourses,
+            'completionCoursesPage' => $completionCoursesPage,
             'recentQuizAttempts' => $recentQuizAttempts,
             'analyticsSeries' => $this->studentAnalyticsSeries($auth->id, $enrollments),
         ]);

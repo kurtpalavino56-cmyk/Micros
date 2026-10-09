@@ -179,7 +179,20 @@
             flex-direction: column;
             justify-content: center;
             padding: 3rem 2.8rem;
+            position: relative;
         }
+
+        .login-back {
+            position: absolute;
+            top: 1.4rem;
+            left: 1.8rem;
+            display: flex;
+            align-items: center;
+            color: rgba(255,255,255,0.55);
+            transition: color var(--transition);
+        }
+        .login-back:hover { color: var(--gold); }
+        .login-back svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 
         .login-form-panel__heading {
             font-family: var(--font-display);
@@ -344,13 +357,15 @@
         {{-- ── RIGHT: Login Form ── --}}
         <div class="login-form-panel">
 
+            <a href="{{ url('/') }}" class="login-back" title="Back to landing page" aria-label="Back to landing page">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+            </a>
+
             <h1 class="login-form-panel__heading">Welcome</h1>
             <p class="login-form-panel__sub">Sign in to continue your learning journey</p>
 
             {{-- Confirmation after a successful password reset. --}}
-            @if (session('status'))
-                <div class="alert-ok">{{ session('status') }}</div>
-            @endif
+            <x-flash-toast :message="session('status')" />
 
             @if ($errors->any())
                 <div class="alert-error">

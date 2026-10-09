@@ -3,6 +3,7 @@
 use App\Models\Course;
 use App\Models\CourseLesson;
 use App\Models\CourseModule;
+use App\Models\CourseReview;
 use App\Models\Enrollment;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
@@ -58,6 +59,20 @@ test('POST /courses/{id}/complete does not create a badge or certificate before 
     ]);
 
     $this->actingAs($student);
+    $this->post(route('courses.complete', $course->id))
+        ->assertUnprocessable()
+        ->assertJson([
+            'ok' => false,
+            'message' => 'Submit the course review before requesting course completion.',
+        ]);
+
+    CourseReview::create([
+        'course_id' => $course->id,
+        'user_id' => $student->id,
+        'rating' => 5,
+        'answers' => [],
+    ]);
+
     $response = $this->post(route('courses.complete', $course->id));
 
     $response->assertOk();
@@ -88,4 +103,3 @@ test('POST /courses/{id}/complete does not create a badge or certificate before 
     expect(DB::table('user_badges')->count())->toBeLessThanOrEqual(1)
         ->and(DB::table('certificates')->count())->toBeLessThanOrEqual(1);
 });
-

@@ -93,8 +93,8 @@
     .btn-outline{background:#fff;border:1.5px solid var(--line);color:var(--navy);font-weight:700;padding:12px 24px;border-radius:10px;font-size:15px;}
 
     /* Everything below the heading, plus the drawer, toast and pickers, uses Inter */
-    .profile-grid,.modal-overlay,.toast,.skillpick-pop{font-family:Inter,Arial,sans-serif;font-size:14px;line-height:1.5;color:var(--p-text);}
-    .profile-grid button,.modal-overlay button,.modal-overlay input,.modal-overlay select,.modal-overlay textarea,.toast button,.skillpick-pop button,.skillpick-pop input,.profile-grid select{font-family:inherit;}
+    .profile-grid,.modal-overlay,.skillpick-pop{font-family:Inter,Arial,sans-serif;font-size:14px;line-height:1.5;color:var(--p-text);}
+    .profile-grid button,.modal-overlay button,.modal-overlay input,.modal-overlay select,.modal-overlay textarea,.skillpick-pop button,.skillpick-pop input,.profile-grid select{font-family:inherit;}
 
     .profile-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start;}
     .profile-col,.profile-side{min-width:0;}
@@ -238,13 +238,6 @@
     .btn-save svg{width:16px;height:16px;}
     .btn-cancel:focus-visible,.btn-save:focus-visible,.btn-change:focus-visible,.student-id-copy:focus-visible,.btn-upload-avatar:focus-within,.modal-close:focus-visible,.tab-btn:focus-visible{outline:none;box-shadow:0 0 0 3px var(--p-focus);}
 
-    /* ── Success toast ───────────────────────────────────────── */
-    .toast{position:fixed;bottom:28px;right:28px;z-index:2000;display:flex;align-items:center;gap:12px;padding:13px 18px;border-radius:12px;background:var(--navy);color:#fff;box-shadow:0 8px 28px rgba(19,23,107,.28);font-size:14px;font-weight:500;transform:translateY(80px);opacity:0;transition:transform .4s cubic-bezier(.16,1,.3,1),opacity .4s ease;pointer-events:none;}
-    .toast.show{transform:translateY(0);opacity:1;pointer-events:auto;}
-    .toast svg{width:20px;height:20px;flex-shrink:0;color:#4ade80;}
-    .toast-close{background:none;border:none;color:#fff;opacity:.7;font-size:18px;cursor:pointer;padding:0 0 0 8px;line-height:1;}
-    .toast-close:hover{opacity:1;}
-
     /* ── Skill pickers (mini button + floating modal) ────────── */
     .skillpick{position:relative;display:block;margin-top:2px;}
     .skillpick-mini{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:8px 14px;border:1px solid var(--p-border-input);border-radius:var(--p-radius);background:#fff;color:var(--p-muted);font-size:14px;font-weight:500;cursor:pointer;transition:border-color .15s,color .15s,background .15s;}
@@ -328,13 +321,7 @@
 <body>
 
 {{-- ===== SUCCESS / ERROR TOAST ===== --}}
-@if (session('success'))
-<div class="toast" id="successToast">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-    {{ session('success') }}
-    <button class="toast-close" onclick="document.getElementById('successToast').classList.remove('show')">&times;</button>
-</div>
-@endif
+<x-flash-toast :message="session('success')" />
 
 @include('components.student-navigation')
 
@@ -1059,15 +1046,6 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeEditModal();
 });
 
-/* ====== Success Toast ====== */
-(function () {
-    const toast = document.getElementById('successToast');
-    if (!toast) return;
-    // Show on next frame so CSS transition fires
-    requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('show')));
-    // Auto-dismiss after 4 seconds
-    setTimeout(() => toast.classList.remove('show'), 4000);
-})();
 </script>
 
 

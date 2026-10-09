@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
-use App\Models\Announcement;
 use App\Models\Complaint;
-use App\Models\Notification;
+use App\Models\Course;
+use App\Services\UserNotificationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -24,6 +24,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        View::composer('components.navbar', function ($view): void {
+            $view->with(
+                'publicCourseCategories',
+                Course::where('is_published', true)
+                    ->where('is_approved', true)
+                    ->whereNotNull('category')
+                    ->distinct()
+                    ->orderBy('category')
+                    ->pluck('category')
+                    ->all()
+            );
+        });
+
         // Authenticated pages show a notification bell and a student/faculty
         // inbox envelope, so every view needs both unread counts.
         //
@@ -42,35 +55,7 @@ class AppServiceProvider extends ServiceProvider
                 if (Auth::check()) {
                     $user = Auth::user();
 
-                    $counts['notifications'] = Notification::where('user_id', $user->id)
-                        ->where('is_read', false)
-                        ->count();
-
-                    if ($user->isStudent() || $user->isFaculty()) {
-                        $roleName = $user->roleName();
-                        $readAt = $user->notifications_read_at;
-                        $unreadAnnouncementCount = Announcement::where('is_published', true)
-                            ->orderByDesc('is_pinned')
-                            ->latest('published_at')
-                            ->get()
-                            ->filter(function (Announcement $announcement) use ($roleName): bool {
-                                $audience = $announcement->audience;
-
-                                return empty($audience)
-                                    || count($audience) >= 2
-                                    || in_array('public', $audience, true)
-                                    || in_array($roleName, $audience, true);
-                            })
-                            ->take(5)
-                            ->filter(function (Announcement $announcement) use ($readAt): bool {
-                                $postedAt = $announcement->published_at ?? $announcement->created_at;
-
-                                return ! $postedAt || ! $readAt || $readAt->lt($postedAt);
-                            })
-                            ->count();
-
-                        $counts['notifications'] += $unreadAnnouncementCount;
-                    }
+                    $counts['notifications'] = app(UserNotificationService::class)->unreadCount($user);
 
                     if ($user->isFaculty() || $user->isStudent()) {
                         // Inbox = the signed-in user's admin message threads.

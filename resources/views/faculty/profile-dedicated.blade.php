@@ -269,9 +269,7 @@
             </div>
         </div>
 
-        @if (session('success'))
-            <div class="alert">{{ session('success') }}</div>
-        @endif
+        <x-flash-toast :message="session('success')" />
 
         <div class="grid">
             <section class="card profile-card">
@@ -351,4 +349,3 @@
     @include('components.responsive')
 </body>
 </html>
-

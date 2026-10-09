@@ -17,49 +17,53 @@ use Illuminate\Support\Carbon;
 
 uses(RefreshDatabase::class);
 
-function makeCourseWithModule(array $course = [], array $module = []): array
-{
-    $courseModel = Course::create(array_merge([
-        'title' => 'Testing Fundamentals',
-        'slug' => 'testing-fundamentals-'.uniqid(),
-        'description' => 'A test course',
-        'category' => 'Development',
-        'level' => 'Beginner',
-        'is_published' => true,
-    ], $course));
+if (! function_exists('makeCourseWithModule')) {
+    function makeCourseWithModule(array $course = [], array $module = []): array
+    {
+        $courseModel = Course::create(array_merge([
+            'title' => 'Testing Fundamentals',
+            'slug' => 'testing-fundamentals-'.uniqid(),
+            'description' => 'A test course',
+            'category' => 'Development',
+            'level' => 'Beginner',
+            'is_published' => true,
+        ], $course));
 
-    $moduleModel = CourseModule::create(array_merge([
-        'course_id' => $courseModel->id,
-        'title' => 'Module One',
-        'order' => 1,
-    ], $module));
+        $moduleModel = CourseModule::create(array_merge([
+            'course_id' => $courseModel->id,
+            'title' => 'Module One',
+            'order' => 1,
+        ], $module));
 
-    return [$courseModel, $moduleModel];
+        return [$courseModel, $moduleModel];
+    }
 }
 
-function addQuiz(Course $course, CourseModule $module, array $quiz = [], int $questionCount = 0): Quiz
-{
-    $quizModel = Quiz::create(array_merge([
-        'course_id' => $course->id,
-        'module_id' => $module->id,
-        'title' => 'Module Quiz',
-        'passing_score' => 70,
-        'attempts' => '3 Attempts',
-        'is_active' => true,
-    ], $quiz));
+if (! function_exists('addQuiz')) {
+    function addQuiz(Course $course, CourseModule $module, array $quiz = [], int $questionCount = 0): Quiz
+    {
+        $quizModel = Quiz::create(array_merge([
+            'course_id' => $course->id,
+            'module_id' => $module->id,
+            'title' => 'Module Quiz',
+            'passing_score' => 70,
+            'attempts' => '3 Attempts',
+            'is_active' => true,
+        ], $quiz));
 
-    for ($index = 1; $index <= $questionCount; $index++) {
-        QuizQuestion::create([
-            'quiz_id' => $quizModel->id,
-            'question' => "Question $index",
-            'type' => 'Multiple Choice',
-            'options' => ['A', 'B', 'C'],
-            'correct_answer' => 'A',
-            'points' => 1,
-        ]);
+        for ($index = 1; $index <= $questionCount; $index++) {
+            QuizQuestion::create([
+                'quiz_id' => $quizModel->id,
+                'question' => "Question $index",
+                'type' => 'Multiple Choice',
+                'options' => ['A', 'B', 'C'],
+                'correct_answer' => 'A',
+                'points' => 1,
+            ]);
+        }
+
+        return $quizModel->load('questions');
     }
-
-    return $quizModel->load('questions');
 }
 
 test('quiz grading calculates percentage and passing status from the current question count', function () {

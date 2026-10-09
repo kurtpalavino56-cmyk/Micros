@@ -41,7 +41,7 @@
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-<title>{{ $mode === 'quiz' ? 'Add Quiz' : ($mode === 'manage' ? 'Manage Course' : 'My Courses') }} | Upskill</title>
+<title>{{ $mode === 'final-exam' ? (($quiz ?? null) ? 'Edit Final Exam' : 'Create Final Exam') : ($mode === 'quiz' ? 'Add Quiz' : ($mode === 'manage' ? 'Manage Course' : 'My Courses')) }} | Upskill</title>
     {{-- Browser tab icon (favicon) --}}
     <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
@@ -78,9 +78,9 @@
     .page-head h2{font-size:26px;margin:0 0 4px;color:var(--navy);}
     .page-head p{margin:0;color:var(--muted);font-size:13px;font-weight:600;}
     .btn-outline{background:#fff;border:1.5px solid #c9ccdb;color:#9aa0b4;font-weight:600;padding:12px 28px;border-radius:999px;font-size:15px;}
-    .page-head .btn-outline{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#e5b82e;border:1px solid #c99812;border-radius:8px;color:#17202a;font-weight:700;box-shadow:0 3px 8px rgba(146,104,0,.18);text-decoration:none;transition:background .15s ease,box-shadow .15s ease,transform .15s ease;}
+    .page-head .btn-outline{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff2bf;border:1px solid #ead477;border-radius:8px;color:#17202a;font-weight:700;box-shadow:0 3px 8px rgba(146,104,0,.12);text-decoration:none;transition:background .15s ease,box-shadow .15s ease,transform .15s ease;}
     .page-head .btn-outline svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;}
-    .page-head .btn-outline:hover{background:#f0c642;border-color:#bd8d0c;box-shadow:0 0 0 3px rgba(229,184,46,.2),0 0 18px rgba(229,184,46,.55);transform:translateY(-1px);}
+    .page-head .btn-outline:hover{background:#ffeb99;border-color:#d9bb47;box-shadow:0 0 0 3px rgba(229,184,46,.16),0 0 14px rgba(229,184,46,.3);transform:translateY(-1px);}
 
     .course-card{border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:22px 24px;display:flex;align-items:center;gap:22px;margin-bottom:24px;}
     .thumb{width:88px;height:88px;border-radius:12px;background:var(--thumb);flex-shrink:0;background-size:cover;background-position:center;}
@@ -165,10 +165,15 @@
     .quiz-card{border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:22px;margin-bottom:26px;}
     .q-label{display:block;font-size:11px;font-weight:800;color:var(--navy);margin-bottom:7px;}
     .q-label .req{color:#dc2626;}
+    .field-help{display:block;margin-top:5px;color:#7a8699;font-size:11px;line-height:1.4;}
     .grid3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:16px;margin-bottom:18px;}
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;}
     .q-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
     .q-head h3{margin:0;font-size:21px;color:var(--navy);}
+    .question-select{width:17px;height:17px;accent-color:var(--navy);cursor:pointer;flex:0 0 auto;}
+    .question-bulk-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;margin-bottom:16px;border:1px solid var(--line);border-radius:12px;background:#f8faff;color:var(--ink);font-size:13px;}
+    .question-bulk-tools label{display:inline-flex;align-items:center;gap:9px;font-weight:700;cursor:pointer;}
+    .question-bulk-status{color:var(--muted);}
     .q-head .type-label{font-size:12px;font-weight:800;color:var(--navy);margin-left:auto;}
     .q-head .sel-wrap{min-width:190px;}
     .q-head .points{width:110px;}
@@ -182,7 +187,7 @@
     .mark-correct input:checked + .radio-dot{background:#22c55e;border-color:#22c55e;}
     .btn-add-choice{width:100%;background:#fff;border:1.5px solid #c9ccdb;border-radius:999px;padding:12px;font-weight:700;color:var(--ink);font-size:13px;margin-top:6px;}
     .tf-label{flex:1;max-width:420px;font-weight:700;font-size:14px;color:var(--ink);border:1.5px solid #c9ccdb;border-radius:999px;padding:12px 20px;background:#f9fafb;}
-    .save-quiz-row{display:flex;justify-content:flex-end;}
+    .save-quiz-row{display:flex;justify-content:center;}
     @media (max-width:1024px){ .grid3{grid-template-columns:1fr;} .grid2{grid-template-columns:1fr;} }
 
     /* Matches .lesson-row: the info block takes the free space and the
@@ -216,14 +221,14 @@
     .activity-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px;background:#f8faff;border:1px solid #e2e8f0;border-radius:12px;}
     .activity-form[hidden],.activity-edit-form[hidden]{display:none;}
     .activity-form > input,.activity-form > select,.activity-form > textarea{width:100%;min-width:0;border:1px solid #cbd5e1;border-radius:9px;padding:10px 12px;font-family:inherit;font-size:13px;font-weight:500;color:var(--ink);background:#fff;}
+    .activity-form > .up-ckeditor-wrapper{grid-column:1/-1;min-width:0;}
     .activity-form > textarea{grid-column:1/-1;min-height:76px;resize:vertical;}
     .activity-form > label{display:flex;align-items:center;gap:7px;font-size:12px;color:#334155;}
     .activity-form .activity-actions{grid-column:1/-1;}
     .activity-form .activity-actions input{min-width:120px;flex:1;border:1px solid #cbd5e1;border-radius:9px;padding:10px 12px;font-family:inherit;font-size:13px;font-weight:500;}
     .activity-form .activity-actions.full{justify-content:flex-end;}
     .lesson-quiz-card{display:flex;flex-direction:row;align-items:center;}
-    .quiz-edit-frame{width:100%;min-height:640px;border:1px solid var(--line);border-radius:14px;background:#fff;margin-top:10px;}
-    .quiz-edit-frame[hidden]{display:none;}
+    a.btn-edit-inline{display:inline-block;text-decoration:none;}
 
     .student-card{border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:14px 16px;display:flex;align-items:center;gap:14px;margin-bottom:14px;}
     .student-thumb{width:48px;height:48px;border-radius:10px;background:var(--thumb);flex-shrink:0;background-size:cover;background-position:center;}
@@ -347,13 +352,15 @@
     .quiz-none{flex:initial;color:#667085;font-size:11px;font-weight:500;}
     .lesson-form{margin:12px 0;padding:14px;border:1px solid #e4e7ec;border-radius:8px;background:#fbfcfe;}
     .lesson-form .up-ckeditor-wrapper .ck.ck-editor__main>.ck-editor__editable{min-height:110px;}
+    .activity-form .up-ckeditor-wrapper .ck.ck-editor__main>.ck-editor__editable{min-height:100px;}
+    .quiz-card .up-ckeditor-wrapper .ck.ck-editor__main>.ck-editor__editable{min-height:110px;}
     .lesson-form .actions{justify-content:flex-end;gap:8px;}
     .lesson-form .actions .input-outline{margin-right:auto;max-width:170px;}
     .input-outline{border-radius:6px;padding:9px 11px;font-size:13px;font-weight:500;}
     .btn-save-lesson,.btn-cancel-outline{border-radius:6px;padding:8px 13px;font-size:12px;}
     .btn-save-lesson{background:var(--navy);}
     .btn-cancel-outline{padding:8px 13px;}
-    .module-add-lesson{margin:12px 0 0 58px;}
+    .module-add-lesson{display:flex;justify-content:center;margin:12px 0 0;}
     .module-add-lesson .btn-secondary-action{min-height:32px;padding:6px 11px;font-size:11px;}
     .summative-assessment{margin:15px 0 0;padding:12px 0 0;border-top:1px solid #e5e7eb;border-radius:0;box-shadow:none;}
     .summative-label{margin-bottom:7px;color:#667085;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;}
@@ -443,8 +450,7 @@
         .q-head .type-label{margin-left:0;}
         .choice-row{gap:10px;flex-wrap:wrap;}
         .mark-correct{white-space:normal;}
-        .save-quiz-row{justify-content:stretch;}
-        .save-quiz-row > *{width:100%;}
+        .save-quiz-row{justify-content:center;}
 
         .course-banner{padding:18px 16px;}
         .quiz-row{gap:10px;}
@@ -475,12 +481,13 @@
     .activity-copy .activity-kind{color:#667085;font-size:10px;font-weight:600;}
     .activity-copy>strong{color:#344054;font-size:12px;font-weight:700;line-height:1.35;overflow-wrap:anywhere;}
     .activity-card .activity-actions{justify-content:flex-end;}
-    .lesson-quiz-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;}
+    .lesson-quiz-row{display:grid;grid-template-columns:16px minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;}
+    .lesson-quiz-row>.drag-handle{padding:0;border:0;background:transparent;color:#98a2b3;cursor:grab;}
     .lesson-quiz-row>div:first-child{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0;}
     .lesson-quiz-row .activity-actions{justify-content:flex-end;}
     .lesson-quiz-row .lesson-quiz-title{color:#344054;font-size:15px;font-weight:700;line-height:1.35;}
     .activity-meta{color:#667085;font-size:11px;line-height:1.4;}
-    .activity-form>.activity-form-context,.activity-form>.full,.activity-form>input[name="title"],.activity-form>select,.activity-form>textarea,.activity-form>label,.activity-form>.activity-actions{grid-column:1/-1;}
+    .activity-form>.activity-form-context,.activity-form>.full,.activity-form>input[name="title"],.activity-form>select,.activity-form>.up-ckeditor-wrapper,.activity-form>label,.activity-form>.activity-actions{grid-column:1/-1;}
     .activity-form>.activity-form-context{display:flex;flex-direction:column;gap:3px;}
     .activity-form-context strong{color:#344054;font-size:13px;font-weight:700;}
     .activity-form-context span{color:#667085;font-size:12px;line-height:1.4;}
@@ -492,8 +499,7 @@
     .summative-label{margin:0 0 6px;color:#8a6500;font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;}
     .summative-content{display:flex;align-items:center;justify-content:space-between;gap:10px;}
     .summative-content .quiz-none{margin:0 auto 0 0;}
-    .summative-assessment .quiz-edit-frame{margin-top:10px;}
-    .course-banner{background:var(--navy);border-color:var(--navy);color:#fff;}
+    .course-banner{background:#172f94;border-color:#172f94;color:#fff;}
     .banner-info .kicker{color:#f3cc54;}
     .banner-info .faculty-page-title{color:#fff!important;}
     .banner-meta,.banner-meta.faculty-page-subtitle{color:#fff!important;}
@@ -541,7 +547,7 @@
     .manage-course-page .lesson-quiz-row .lesson-quiz-title{font-size:17px;}
     .manage-course-page .quiz-none,.manage-course-page .activity-empty{font-size:13px;}
     .manage-course-page .btn-primary-action,.manage-course-page .btn-secondary-action,.manage-course-page .btn-edit-inline,.manage-course-page .btn-delete-activity{font-size:13px;}
-    .manage-course-page .activity-form>input,.manage-course-page .activity-form>select,.manage-course-page .activity-form>textarea,.manage-course-page .activity-form .activity-actions input{font-size:14px;}
+    .manage-course-page .activity-form>input,.manage-course-page .activity-form>select,.manage-course-page .activity-form .activity-actions input{font-size:14px;}
     .manage-course-page .activity-form>label{font-size:13px;}
     .manage-course-page .summative-label{font-size:13px;}
     .manage-course-page .quiz-info h4{font-size:15px;}
@@ -559,8 +565,8 @@
         .activity-panel{margin-left:0;padding:9px;}
         .activity-card .activity-head{grid-template-columns:16px minmax(0,1fr);align-items:start;}
         .activity-card .activity-actions{grid-column:2;justify-content:flex-start;}
-        .lesson-quiz-row{grid-template-columns:minmax(0,1fr);}
-        .lesson-quiz-row .activity-actions{justify-content:flex-start;}
+        .lesson-quiz-row{grid-template-columns:16px minmax(0,1fr);}
+        .lesson-quiz-row .activity-actions{grid-column:2;justify-content:flex-start;}
         .lesson-quiz-row{align-items:flex-start;}
         .summative-content{align-items:flex-start;flex-wrap:wrap;}
         .summative-content .quiz-info,.summative-content .quiz-none{flex:1 1 100%;}
@@ -600,15 +606,12 @@
             <div class="banner-actions">
                 <div class="row">
                     <span class="course-status-badge status-{{ Illuminate\Support\Str::slug($course->status ?? 'Draft') }}" aria-label="Course status: {{ $course->status ?? 'Draft' }}"><span class="course-status-indicator" aria-hidden="true"></span>{{ $course->status ?? 'Draft' }}</span>
-                    <a href="{{ route('faculty.activities.reviews', $course->id) }}" class="btn-pill">Activity Reviews @if(($pendingActivityReviews ?? 0) > 0)<span class="pending-count">{{ $pendingActivityReviews }}</span>@endif</a>
-                    <a href="{{ route('faculty.courses.edit', $course->id) }}" class="btn-pill">Edit Course</a>
+                    <a href="{{ route('faculty.courses.edit', $course->id) }}" class="btn-pill">Edit Course Details</a>
                 </div>
             </div>
         </section>
 
-        @if(session('success'))
-            <div class="manage-flash" role="status">{{ session('success') }}</div>
-        @endif
+        <x-flash-toast :message="session('success')" />
         @if($errors->has('submission'))
             <div class="manage-flash error" role="alert">{{ $errors->first('submission') }}</div>
         @endif
@@ -768,74 +771,8 @@
                             </div>
 
                             <div class="lesson-collapsible-content" id="lesson-content-{{ $lesson->id }}">
-                            <section class="activity-panel" aria-label="Lesson activities">
-                                <div class="activity-head">
-                                    <strong>Activities</strong>
-                                    <button class="btn-primary-action btn-compact" type="button" onclick="toggleActivityForm({{ $lesson->id }}, true)">+ Add Activity</button>
-                                </div>
-                                @php
-                                    $lessonActivities = collect($lesson->activities ?? [])->sortBy('sort_order')->values();
-                                @endphp
-                                <div class="sortable-list assessment-sort-list" data-order-kind="assessments" data-parent-id="{{ $lesson->id }}" data-order-url="{{ route('faculty.lesson-assessments.reorder', [$course->id, $lesson->id]) }}">
-                                @forelse($lessonActivities as $activity)
-                                    <div class="assessment-sort-item activity-sort-item sortable-item" data-order-item data-order-type="activity" data-order-id="{{ $activity->id }}">
-                                    <article class="activity-card">
-                                        <div class="activity-head">
-                                            <button class="drag-handle activity-drag-handle" type="button" draggable="true" title="Drag to reorder activity" aria-label="Drag to reorder activity">⋮⋮</button>
-                                            <div class="activity-copy"><span class="activity-kind">{{ Illuminate\Support\Str::headline($activity->activity_type) }}</span><strong>{{ $activity->title }}</strong><div class="activity-meta">{{ $activity->is_required ? 'Required' : 'Optional' }}@if($activity->activity_type === 'assignment') · {{ $activity->max_points }} points · Pass {{ $activity->passing_percent ?? 70 }}%@endif</div></div>
-                                            <div class="activity-actions"><button class="btn-edit-inline" type="button" onclick="toggleActivityEdit({{ $activity->id }})">Edit</button>
-                                                <form method="POST" action="{{ route('faculty.lesson-activity.destroy', [$course->id, $activity->id]) }}" onsubmit="return confirm('Remove this activity? Students will no longer see it. Existing submissions will be retained.');">@csrf<button class="btn-delete-activity" type="submit">Remove</button></form>
-                                            </div>
-                                        </div>
-                                        <form class="activity-form activity-edit-form" id="activity-edit-{{ $activity->id }}" @if((int) session('open_activity_edit') !== (int) $activity->id) hidden @endif method="POST" action="{{ route('faculty.lesson-activity.update', [$course->id, $activity->id]) }}">@csrf
-                                            @if((int) session('open_activity_edit') === (int) $activity->id && $errors->any())<div class="full" role="alert" style="color:#b91c1c;">{{ $errors->first() }}</div>@endif
-                                            <input name="title" maxlength="255" value="{{ old('title', $activity->title) }}" placeholder="Activity title" required>
-                                            <select name="activity_type">@foreach(['practice'=>'Practice','reflection'=>'Reflection','assignment'=>'Assignment (faculty reviewed)'] as $type=>$label)<option value="{{ $type }}" @selected(old('activity_type', $activity->activity_type) === $type)>{{ $label }}</option>@endforeach</select>
-                                            <textarea name="instructions" maxlength="10000" placeholder="Instructions and criteria">{{ old('instructions', $activity->instructions) }}</textarea>
-                                            <label><input type="checkbox" name="is_required" value="1" @checked(old('is_required', $activity->is_required))> Required for lesson completion</label>
-                                            <div class="activity-actions"><input type="number" name="max_points" min="1" max="10000" placeholder="Points (assignment)" value="{{ old('max_points', $activity->max_points) }}"><input type="number" name="passing_percent" min="1" max="100" placeholder="Pass %" value="{{ old('passing_percent', $activity->passing_percent) }}"></div>
-                                            <div class="activity-actions full"><button class="btn-save-lesson" type="submit">Save Activity</button><button class="btn-cancel-outline" type="button" onclick="toggleActivityEdit({{ $activity->id }})">Cancel</button></div>
-                                        </form>
-                                    </article>
-                                    </div>
-                                @empty
-                                    <p class="activity-empty">No activities added to this lesson.</p>
-                                @endforelse
-                                @if($lesson->quiz ?? null)
-                                    <section class="assessment-sort-item lesson-assessment sortable-item" data-order-item data-order-type="quiz" data-order-id="{{ $lesson->quiz->id }}" aria-label="Lesson assessment">
-                                        <div class="assessment-label">Assessment</div>
-                                        <div class="lesson-quiz-row">
-                                            <div><strong class="lesson-quiz-title">{{ $lesson->quiz->title }}</strong><div class="activity-meta">{{ $lesson->quiz->questions_count }} {{ Illuminate\Support\Str::plural('question', $lesson->quiz->questions_count) }} · Pass {{ $lesson->quiz->passing_score }}%</div></div>
-                                            <div class="activity-actions">
-                                                <button class="btn-edit-inline" type="button" onclick="toggleLessonQuizEdit({{ $lesson->id }})">Edit Quiz</button>
-                                                <button class="drag-handle activity-drag-handle" type="button" draggable="true" title="Drag to reorder lesson assessment" aria-label="Drag to reorder lesson assessment">⋮⋮</button>
-                                            </div>
-                                        </div>
-                                        <iframe class="quiz-edit-frame" id="lesson-quiz-edit-{{ $lesson->id }}" title="Edit lesson quiz" loading="lazy" hidden src="{{ route('faculty.lesson-quiz.create', [$course->id, $lesson->id, 'inline' => 1]) }}"></iframe>
-                                    </section>
-                                @endif
-                                </div>
-                                @unless($lesson->quiz ?? null)
-                                    <div class="lesson-assessment-empty">
-                                        <div class="assessment-label">Assessment</div>
-                                        <span class="quiz-none">No lesson quiz created yet.</span>
-                                        <a class="btn-secondary-action btn-compact" href="{{ route('faculty.lesson-quiz.create', [$course->id, $lesson->id]) }}">+ Add Lesson Quiz</a>
-                                    </div>
-                                @endunless
-                                <form class="activity-form" id="activity-add-{{ $lesson->id }}" @if((int) session('open_activity_form') !== (int) $lesson->id) hidden @endif method="POST" action="{{ route('faculty.lesson-activity.store', [$course->id, $lesson->id]) }}">@csrf
-                                    @if((int) session('open_activity_form') === (int) $lesson->id && $errors->any())<div class="full" role="alert" style="color:#b91c1c;">{{ $errors->first() }}</div>@endif
-                                    <div class="activity-form-context"><strong>Add activity to this lesson</strong><span>{{ $lesson->title }}</span></div>
-                                    <input name="title" maxlength="255" value="{{ old('title') }}" placeholder="Activity title" required>
-                                    <select name="activity_type"><option value="practice" @selected(old('activity_type') === 'practice')>Practice</option><option value="reflection" @selected(old('activity_type') === 'reflection')>Reflection</option><option value="assignment" @selected(old('activity_type') === 'assignment')>Assignment (faculty reviewed)</option></select>
-                                    <textarea name="instructions" maxlength="10000" placeholder="Instructions and criteria">{{ old('instructions') }}</textarea>
-                                    <label><input type="checkbox" name="is_required" value="1" @checked(old('is_required', true))> Required for lesson completion</label>
-                                    <div class="activity-actions"><input type="number" name="max_points" min="1" max="10000" value="{{ old('max_points') }}" placeholder="Points (assignment)"><input type="number" name="passing_percent" min="1" max="100" value="{{ old('passing_percent') }}" placeholder="Pass %"></div>
-                                    <div class="activity-actions full"><button class="btn-save-lesson" type="submit">Save Activity</button><button class="btn-cancel-outline" type="button" onclick="toggleActivityForm({{ $lesson->id }}, false)">Cancel</button></div>
-                                </form>
-                            </section>
-
-                            {{-- â”€â”€ Inline lesson editor â€” same layout as the
-                                 Add Lesson form above â”€â”€ --}}
+                            {{-- Inline lesson editor stays with the lesson content,
+                                 before its activities and assessments. --}}
                             @if($lesson->id ?? null)
                                 <form class="lesson-form lesson-edit-form" id="lesson-edit-{{ $lesson->id }}"
                                       style="display:{{ session('open_lesson_edit') == $lesson->id ? 'flex' : 'none' }};"
@@ -872,6 +809,72 @@
                                     </div>
                                 </form>
                             @endif
+
+                            <section class="activity-panel" aria-label="Lesson activities">
+                                <div class="activity-head">
+                                    <strong>Activities</strong>
+                                    <button class="btn-primary-action btn-compact" type="button" onclick="toggleActivityForm({{ $lesson->id }}, true)">+ Add Activity</button>
+                                </div>
+                                @php
+                                    $lessonActivities = collect($lesson->activities ?? [])->sortBy('sort_order')->values();
+                                @endphp
+                                <div class="sortable-list assessment-sort-list" data-order-kind="assessments" data-parent-id="{{ $lesson->id }}" data-order-url="{{ route('faculty.lesson-assessments.reorder', [$course->id, $lesson->id]) }}">
+                                @forelse($lessonActivities as $activity)
+                                    <div class="assessment-sort-item activity-sort-item sortable-item" data-order-item data-order-type="activity" data-order-id="{{ $activity->id }}">
+                                    <article class="activity-card">
+                                        <div class="activity-head">
+                                            <button class="drag-handle activity-drag-handle" type="button" draggable="true" title="Drag to reorder activity" aria-label="Drag to reorder activity">⋮⋮</button>
+                                            <div class="activity-copy"><span class="activity-kind">{{ Illuminate\Support\Str::headline($activity->activity_type) }}</span><strong>{{ $activity->title }}</strong><div class="activity-meta">{{ $activity->is_required ? 'Required' : 'Optional' }}@if($activity->activity_type === 'assignment') · {{ $activity->max_points }} points · Pass {{ $activity->passing_percent ?? 70 }}%@endif</div></div>
+                                            <div class="activity-actions"><button class="btn-edit-inline" type="button" onclick="toggleActivityEdit({{ $activity->id }})">Edit</button>
+                                                <form method="POST" action="{{ route('faculty.lesson-activity.destroy', [$course->id, $activity->id]) }}" onsubmit="return confirm('Remove this activity? Students will no longer see it. Existing submissions will be retained.');">@csrf<button class="btn-delete-activity" type="submit">Remove</button></form>
+                                            </div>
+                                        </div>
+                                        <form class="activity-form activity-edit-form" id="activity-edit-{{ $activity->id }}" @if((int) session('open_activity_edit') !== (int) $activity->id) hidden @endif method="POST" action="{{ route('faculty.lesson-activity.update', [$course->id, $activity->id]) }}">@csrf
+                                            @if((int) session('open_activity_edit') === (int) $activity->id && $errors->any())<div class="full" role="alert" style="color:#b91c1c;">{{ $errors->first() }}</div>@endif
+                                            <input name="title" maxlength="255" value="{{ old('title', $activity->title) }}" placeholder="Activity title" required>
+                                            <select name="activity_type">@foreach(['practice'=>'Practice','reflection'=>'Reflection','assignment'=>'Assignment (faculty reviewed)'] as $type=>$label)<option value="{{ $type }}" @selected(old('activity_type', $activity->activity_type) === $type)>{{ $label }}</option>@endforeach</select>
+                                            @include('components.rich-text-editor', ['name' => 'instructions', 'id' => 'activity-instructions-edit-'.$activity->id, 'value' => old('instructions', $activity->instructions), 'placeholder' => 'Instructions and criteria'])
+                                            <label><input type="checkbox" name="is_required" value="1" @checked(old('is_required', $activity->is_required))> Required for lesson completion</label>
+                                            <div class="activity-actions"><input type="number" name="max_points" min="1" max="10000" placeholder="Points (assignment)" value="{{ old('max_points', $activity->max_points) }}"><input type="number" name="passing_percent" min="1" max="100" placeholder="Pass %" value="{{ old('passing_percent', $activity->passing_percent) }}"></div>
+                                            <div class="activity-actions full"><button class="btn-save-lesson" type="submit">Save Activity</button><button class="btn-cancel-outline" type="button" onclick="toggleActivityEdit({{ $activity->id }})">Cancel</button></div>
+                                        </form>
+                                    </article>
+                                    </div>
+                                @empty
+                                    <p class="activity-empty">No activities added to this lesson.</p>
+                                @endforelse
+                                @if($lesson->quiz ?? null)
+                                    <section class="assessment-sort-item lesson-assessment sortable-item" data-order-item data-order-type="quiz" data-order-id="{{ $lesson->quiz->id }}" aria-label="Lesson assessment">
+                                        <div class="assessment-label">Assessment</div>
+                                        <div class="lesson-quiz-row">
+                                            <button class="drag-handle activity-drag-handle" type="button" draggable="true" title="Drag to reorder lesson assessment" aria-label="Drag to reorder lesson assessment">⋮⋮</button>
+                                            <div><strong class="lesson-quiz-title">{{ $lesson->quiz->title }}</strong><div class="activity-meta">{{ $lesson->quiz->questions_count }} {{ Illuminate\Support\Str::plural('question', $lesson->quiz->questions_count) }} · Pass {{ $lesson->quiz->passing_score }}%</div></div>
+                                            <div class="activity-actions">
+                                                <a class="btn-edit-inline" href="{{ route('faculty.lesson-quiz.create', [$course->id, $lesson->id]) }}">Edit Quiz</a>
+                                            </div>
+                                        </div>
+                                    </section>
+                                @endif
+                                </div>
+                                @unless($lesson->quiz ?? null)
+                                    <div class="lesson-assessment-empty">
+                                        <div class="assessment-label">Assessment</div>
+                                        <span class="quiz-none">No lesson quiz created yet.</span>
+                                        <a class="btn-secondary-action btn-compact" href="{{ route('faculty.lesson-quiz.create', [$course->id, $lesson->id]) }}">+ Add Lesson Quiz</a>
+                                    </div>
+                                @endunless
+                                <form class="activity-form" id="activity-add-{{ $lesson->id }}" @if((int) session('open_activity_form') !== (int) $lesson->id) hidden @endif method="POST" action="{{ route('faculty.lesson-activity.store', [$course->id, $lesson->id]) }}">@csrf
+                                    @if((int) session('open_activity_form') === (int) $lesson->id && $errors->any())<div class="full" role="alert" style="color:#b91c1c;">{{ $errors->first() }}</div>@endif
+                                    <div class="activity-form-context"><strong>Add activity to this lesson</strong><span>{{ $lesson->title }}</span></div>
+                                    <input name="title" maxlength="255" value="{{ old('title') }}" placeholder="Activity title" required>
+                                    <select name="activity_type"><option value="practice" @selected(old('activity_type') === 'practice')>Practice</option><option value="reflection" @selected(old('activity_type') === 'reflection')>Reflection</option><option value="assignment" @selected(old('activity_type') === 'assignment')>Assignment (faculty reviewed)</option></select>
+                                    @include('components.rich-text-editor', ['name' => 'instructions', 'id' => 'activity-instructions-add-'.$lesson->id, 'value' => old('instructions'), 'placeholder' => 'Instructions and criteria'])
+                                    <label><input type="checkbox" name="is_required" value="1" @checked(old('is_required', true))> Required for lesson completion</label>
+                                    <div class="activity-actions"><input type="number" name="max_points" min="1" max="10000" value="{{ old('max_points') }}" placeholder="Points (assignment)"><input type="number" name="passing_percent" min="1" max="100" value="{{ old('passing_percent') }}" placeholder="Pass %"></div>
+                                    <div class="activity-actions full"><button class="btn-save-lesson" type="submit">Save Activity</button><button class="btn-cancel-outline" type="button" onclick="toggleActivityForm({{ $lesson->id }}, false)">Cancel</button></div>
+                                </form>
+                            </section>
+
                             </div>{{-- /lesson-collapsible-content --}}
 
                             </div>{{-- /lesson-sort-item --}}
@@ -921,7 +924,7 @@
                                     <h4>{{ $module->quiz->title }}</h4>
                                     <div class="sub">{{ $module->quiz->questions_count }} {{ Illuminate\Support\Str::plural('question', $module->quiz->questions_count) }} · Pass {{ $module->quiz->passing_score }}%</div>
                                 </div>
-                                <button class="btn-edit-inline" type="button" onclick="toggleQuizEdit({{ $module->idx }})">Edit Quiz</button>
+                                <a class="btn-edit-inline" href="{{ route('faculty.quiz.create', [$course->id, $module->idx]) }}">Edit Quiz</a>
                                 <form method="POST"
                                       action="{{ route('faculty.quiz.destroy', [$course->id, $module->idx]) }}"
                                       style="display:inline-block;margin-left:8px;"
@@ -934,9 +937,6 @@
                                 <a class="btn-secondary-action" href="{{ route('faculty.quiz.create', [$course->id, $module->idx]) }}">+ Add Summative Quiz</a>
                             @endif
                             </div>
-                            @if($module->quiz ?? null)
-                                <iframe class="quiz-edit-frame" id="quiz-edit-{{ $module->idx }}" title="Edit summative quiz" loading="lazy" hidden src="{{ route('faculty.quiz.create', [$course->id, $module->idx, 'inline' => 1]) }}"></iframe>
-                            @endif
                         </section>
                     </div>
                 @empty
@@ -947,6 +947,35 @@
                 @endforelse
                 </div>{{-- /module-sort-list --}}
                 <div id="reorder-status" aria-live="polite"></div>
+
+                <section class="panel" aria-labelledby="course-completion-title" style="margin-top:18px;padding:22px;border:1px solid #e5e7eb;border-radius:14px;background:#fff;">
+                    <h3 id="course-completion-title" style="margin:0 0 6px;">Course completion</h3>
+                    <p style="margin:0 0 16px;color:#667085;">Add a separate course assessment that unlocks after students finish the course modules.</p>
+                    @if($finalModule)
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+                            <div>
+                                <strong>Final Exam</strong>
+                                @if($finalModule->quiz)
+                                    <div style="margin-top:4px;color:#667085;">{{ $finalModule->quiz->title }} · {{ $finalModule->quiz->questions_count }} {{ Illuminate\Support\Str::plural('question', $finalModule->quiz->questions_count) }} · Pass {{ $finalModule->quiz->passing_score }}% · {{ $finalModule->quiz->attempts ?: 'Unlimited' }} attempts</div>
+                                @else
+                                    <div style="margin-top:4px;color:#b45309;">Final Exam setup is required before course approval.</div>
+                                @endif
+                            </div>
+                            <div style="display:flex;gap:10px;align-items:center;">
+                                <a class="btn-secondary-action" href="{{ route('faculty.final-exam.edit', [$course->id, $finalModule->id]) }}">Edit Final Exam</a>
+                                <form method="POST" action="{{ route('faculty.final-exam.destroy', $course->id) }}" onsubmit="return confirm('Remove the final exam and its quiz?');">
+                                    @csrf
+                                    <button class="btn-text-action" type="submit">Remove final exam</button>
+                                </form>
+                            </div>
+                        </div>
+                    @else
+                        <form method="POST" action="{{ route('faculty.final-exam.store', $course->id) }}">
+                            @csrf
+                            <button class="btn-primary-action" type="submit">Add final exam</button>
+                        </form>
+                    @endif
+                </section>
             </section>
 
             {{-- Course quiz averages remain available below the authoring workspace. --}}
@@ -973,18 +1002,18 @@
 
         </div>
 
-    @elseif ($mode === 'quiz')
+    @elseif (in_array($mode, ['quiz', 'final-exam'], true))
 
         {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â• QUIZ BUILDER MODE â€” "Add Quiz : <module>" â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 
         {{-- âœ… Back to the Managing Course screen --}}
-        <a class="back-link" href="{{ route('faculty.courses.manage', $course->id ?? 1) }}">â€¹ Back to Modules</a>
-        <div class="faculty-page-heading"><h2 class="quiz-head faculty-page-title">{{ ($quiz ?? null) ? 'Edit' : 'Add' }} Quiz : {{ $moduleTitle }}</h2></div>
-        @if(session('success'))<div class="quiz-card" role="status" style="padding:10px 14px;background:#ecfdf3;color:#166534;">{{ session('success') }}</div>@endif
+        <a class="back-link" href="{{ route('faculty.courses.manage', $course->id ?? 1) }}">&larr; Back to Modules</a>
+        <div class="faculty-page-heading"><h2 class="quiz-head faculty-page-title">@if($mode === 'final-exam'){{ ($quiz ?? null) ? 'Edit' : 'Create' }} Final Exam: {{ $course->title }}@else{{ ($quiz ?? null) ? 'Edit' : 'Add' }} Quiz: {{ $moduleTitle }}@endif</h2></div>
+        <x-flash-toast :message="session('success')" />
 
         {{-- âœ… Real form â€” Save Quiz stores everything (session for now) and
              returns to the Managing Course screen with the quiz in the module --}}
-        <form method="POST" action="{{ !empty($lessonId) ? route('faculty.lesson-quiz.store', [$course->id, $lessonId]) : route('faculty.quiz.store', [$course->id, $moduleIdx]) }}">
+        <form method="POST" action="{{ $mode === 'final-exam' ? route('faculty.final-exam.update', [$course->id, $moduleIdx]) : (!empty($lessonId) ? route('faculty.lesson-quiz.store', [$course->id, $lessonId]) : route('faculty.quiz.store', [$course->id, $moduleIdx])) }}">
             @csrf
             @if(request()->boolean('inline'))<input type="hidden" name="inline" value="1">@endif
 
@@ -1007,16 +1036,18 @@
                 <div class="grid2">
                     <div>
                         <label class="q-label">Attempts allowed</label>
-                        <input class="input-outline" style="width:100%;" type="text" name="attempts" placeholder="1 Attempt" value="{{ $quiz->attempts ?? '' }}">
+                        <input class="input-outline" style="width:100%;" type="text" name="attempts" placeholder="Unlimited" value="{{ $quiz->attempts ?? '' }}">
+                        <small class="field-help">Leave blank for unlimited attempts. Enter a number to set a limit.</small>
                     </div>
                     <div>
                         <label class="q-label">Time Limit (min)</label>
-                        <input class="input-outline" style="width:100%;" type="number" name="time_limit" placeholder="30" min="0" value="{{ $quiz->time_limit ?? '' }}">
+                        <input class="input-outline" style="width:100%;" type="number" name="time_limit" placeholder="No time limit" min="1" value="{{ ($quiz->time_limit ?? 0) > 0 ? $quiz->time_limit : '' }}">
+                        <small class="field-help">Leave blank to allow unlimited time. A timer is applied only when you enter a number.</small>
                     </div>
                 </div>
                 <div>
                     <label class="q-label">Instructions ( Optional )</label>
-                    <textarea class="textarea-outline" name="instructions" placeholder="Read each question carefully before answering. You may only submit once.">{{ $quiz->instructions ?? '' }}</textarea>
+                    @include('components.rich-text-editor', ['name' => 'instructions', 'id' => 'assessment-instructions', 'value' => old('instructions', $quiz->instructions ?? ''), 'placeholder' => 'Add instructions for students...'])
                 </div>
             </div>
 
@@ -1030,18 +1061,26 @@
             @if ($isNewQuiz)
             <div class="quiz-card" id="create-quiz-intro" style="text-align:center;">
                 <p style="margin:0 0 16px;color:var(--muted);font-size:14px;">
-                    Set the quiz details above â€” especially <strong>No. of Items</strong> â€” then click
-                    <strong>Create Quiz</strong>. One question container will be created per item.
+                    Set the {{ $mode === 'final-exam' ? 'final exam' : 'quiz' }} details above &mdash; especially <strong>No. of Items</strong> &mdash; then click
+                    <strong>{{ $mode === 'final-exam' ? 'Create Final Exam' : 'Create Quiz' }}</strong>. One question container will be created per item.
                 </p>
-                <button class="btn-save-lesson" type="button" onclick="createQuizQuestions()">Create Quiz</button>
+                <button class="btn-save-lesson" type="button" onclick="createQuizQuestions()">{{ $mode === 'final-exam' ? 'Create Final Exam' : 'Create Quiz' }}</button>
             </div>
             @endif
 
             <div id="questions-area" style="display:{{ $isNewQuiz ? 'none' : 'block' }};">
+            <div class="question-bulk-tools" id="question-bulk-tools">
+                <label for="select-all-questions">
+                    <input class="question-select" id="select-all-questions" type="checkbox" aria-label="Select all questions">
+                    <span>Select all questions</span>
+                </label>
+                <span class="question-bulk-status" id="question-bulk-status" aria-live="polite">Select questions to change their type or points together.</span>
+            </div>
             <div id="questions">
                 @foreach ($questions as $q => $question)
                     <div class="quiz-card question-card">
                         <div class="q-head">
+                            <input class="question-select question-select-item" type="checkbox" aria-label="Select question {{ $q + 1 }}" onchange="updateQuestionSelectionState()">
                             <h3>Question {{ $q + 1 }}</h3>
                             <span class="type-label">Type</span>
                             <div class="sel-wrap">
@@ -1052,7 +1091,7 @@
                                     <option value="Identification" {{ $qType === 'Identification' ? 'selected' : '' }}>Identification</option>
                                 </select>
                             </div>
-                            <input class="input-outline points" type="number" name="questions[{{ $q }}][points]" placeholder="Points" min="0" value="{{ $question['points'] ?? '' }}">
+                            <input class="input-outline points" type="number" name="questions[{{ $q }}][points]" placeholder="Points" min="0" value="{{ $question['points'] ?? '' }}" oninput="syncSelectedQuestionPoints(this)">
                             {{-- âœ… Removes THIS question card --}}
                             <button class="btn-x" type="button" title="Remove question" onclick="removeQuestion(this)">&times;</button>
                         </div>
@@ -1117,7 +1156,7 @@
             </div>{{-- /questions-area --}}
 
             <div class="save-quiz-row" id="save-quiz-row" style="display:{{ $isNewQuiz ? 'none' : 'flex' }};">
-                <button class="btn-save-lesson" type="submit">Save Quiz</button>
+                <button class="btn-save-lesson" type="submit">{{ $mode === 'final-exam' ? 'Save Final Exam' : 'Save Quiz' }}</button>
             </div>
         </form>
 
@@ -1131,7 +1170,7 @@
                 <p class="faculty-page-subtitle">{{ $courses->count() }} Total {{ $courses->count() == 1 ? 'course' : 'courses' }} created</p>
             </div>
             {{-- âœ… Connected â€” goes to Faculty â€º Create Courses only --}}
-            <a href="{{ route('faculty.create') }}" class="btn-outline" aria-label="Create a course"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Create Courses</span></a>
+            <a href="{{ route('faculty.create') }}" class="btn-outline" aria-label="Create a new course"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Create New Course</span></a>
         </div>
 
         @forelse ($courses as $course)
@@ -1139,11 +1178,9 @@
                 <div class="thumb" @if($course->thumbnail_url ?? null) style="background-image:url('{{ $course->thumbnail_url }}')" @endif></div>
                 <div class="course-info">
                     <h3>{{ $course->title }}</h3>
-                    @php
-                        $descPreview = \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags((string) ($course->description ?? ''))))), 130);
-                    @endphp
-                    @if($descPreview !== '')
-                        <div class="desc">{{ $descPreview }}</div>
+                    @php($shortDescription = trim((string) ($course->short_description ?? '')))
+                    @if($shortDescription !== '')
+                        <div class="desc">{{ $shortDescription }}</div>
                     @endif
                     <div class="course-meta">
                         <span class="status-chip status-{{ Illuminate\Support\Str::slug($course->status ?? 'Draft') }}">
@@ -1166,6 +1203,7 @@
                 <div class="card-actions">
                     {{-- ✅ Manage → Managing Course screen for THIS course (same blade, manage mode) --}}
                     <a href="{{ route('faculty.courses.manage', $course->id ?? 1) }}" class="btn-action primary">Manage</a>
+                    <a href="{{ route('faculty.activities.reviews', $course->id ?? 1) }}" class="btn-action">Activity Reviews</a>
                 </div>
             </div>
         @empty
@@ -1216,23 +1254,6 @@
         if (!form) return;
         form.hidden = !form.hidden;
         if (!form.hidden) form.querySelector('input[name="title"]')?.focus();
-    }
-
-    function toggleQuizEdit(moduleId) {
-        var frame = document.getElementById('quiz-edit-' + moduleId);
-        if (!frame) return;
-        frame.hidden = !frame.hidden;
-        if (!frame.hidden) frame.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    function toggleLessonQuizEdit(lessonId) {
-        var frame = document.getElementById('lesson-quiz-edit-' + lessonId);
-        if (!frame) {
-            window.location.href = @json(route('faculty.lesson-quiz.create', [$course->id ?? 0, '__LESSON__'])).replace('__LESSON__', lessonId);
-            return;
-        }
-        frame.hidden = !frame.hidden;
-        if (!frame.hidden) frame.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     document.querySelectorAll('[data-order-kind][data-order-url]').forEach(function (list) {
@@ -1402,14 +1423,74 @@
     function questionTypeChanged(sel) {
         var card = sel.closest('.question-card');
         if (!card) return;
-        var t  = sel.value;
+        var t = sel.value;
+        renderQuestionType(card, t);
+
+        var selection = card.querySelector('.question-select-item');
+        if (selection && selection.checked) {
+            document.querySelectorAll('#questions .question-card').forEach(function (selectedCard) {
+                if (selectedCard === card) return;
+                var selected = selectedCard.querySelector('.question-select-item');
+                var selectedType = selectedCard.querySelector('select[name$="[type]"]');
+                if (!selected || !selected.checked || !selectedType) return;
+                selectedType.value = t;
+                renderQuestionType(selectedCard, t);
+            });
+        }
+    }
+
+    function renderQuestionType(card, type) {
         var mc = card.querySelector('.q-mc');
         var tf = card.querySelector('.q-tf');
         var id = card.querySelector('.q-id');
-        if (mc) mc.style.display = t === 'Multiple Choice' ? 'block' : 'none';
-        if (tf) tf.style.display = t === 'True or False'   ? 'block' : 'none';
-        if (id) id.style.display = t === 'Identification'  ? 'block' : 'none';
+        if (mc) mc.style.display = type === 'Multiple Choice' ? 'block' : 'none';
+        if (tf) tf.style.display = type === 'True or False' ? 'block' : 'none';
+        if (id) id.style.display = type === 'Identification' ? 'block' : 'none';
     }
+
+    function updateQuestionSelectionState() {
+        var master = document.getElementById('select-all-questions');
+        var status = document.getElementById('question-bulk-status');
+        var cards = Array.prototype.slice.call(document.querySelectorAll('#questions .question-card'));
+        var selectedCount = cards.filter(function (card) {
+            var checkbox = card.querySelector('.question-select-item');
+            return checkbox && checkbox.checked;
+        }).length;
+
+        if (master) {
+            master.checked = cards.length > 0 && selectedCount === cards.length;
+            master.indeterminate = selectedCount > 0 && selectedCount < cards.length;
+            master.setAttribute('aria-checked', master.indeterminate ? 'mixed' : String(master.checked));
+        }
+        if (status) {
+            status.textContent = selectedCount === 0
+                ? 'Select questions to change their type or points together.'
+                : selectedCount + ' question' + (selectedCount === 1 ? '' : 's') + ' selected. Changing type or points on a selected question updates all selected questions.';
+        }
+    }
+
+    function syncSelectedQuestionPoints(input) {
+        var card = input.closest('.question-card');
+        var selection = card && card.querySelector('.question-select-item');
+        if (!selection || !selection.checked) return;
+
+        document.querySelectorAll('#questions .question-card').forEach(function (selectedCard) {
+            if (selectedCard === card) return;
+            var selected = selectedCard.querySelector('.question-select-item');
+            var points = selectedCard.querySelector('.points');
+            if (selected && selected.checked && points) points.value = input.value;
+        });
+    }
+
+    document.addEventListener('change', function (event) {
+        if (event.target.id === 'select-all-questions') {
+            var shouldSelect = event.target.checked;
+            document.querySelectorAll('#questions .question-select-item').forEach(function (checkbox) {
+                checkbox.checked = shouldSelect;
+            });
+            updateQuestionSelectionState();
+        }
+    });
 
     function addQuestion() {
         var wrap = document.getElementById('questions');
@@ -1440,6 +1521,7 @@
         });
         card.innerHTML =
             '<div class="q-head">' +
+                '<input class="question-select question-select-item" type="checkbox" aria-label="Select question" onchange="updateQuestionSelectionState()">' +
                 '<h3>Question ?</h3>' +
                 '<span class="type-label">Type</span>' +
                 '<div class="sel-wrap">' +
@@ -1449,7 +1531,7 @@
                         '<option value="Identification">Identification</option>' +
                     '</select>' +
                 '</div>' +
-                '<input class="input-outline points" type="number" name="questions[' + q + '][points]" placeholder="Points" min="0">' +
+                '<input class="input-outline points" type="number" name="questions[' + q + '][points]" placeholder="Points" min="0" oninput="syncSelectedQuestionPoints(this)">' +
                 '<button class="btn-x" type="button" title="Remove question" onclick="removeQuestion(this)">\u2715</button>' +
             '</div>' +
             '<div style="margin-bottom:18px;">' +
@@ -1466,6 +1548,7 @@
             '</div>';
         wrap.appendChild(card);
         renumberQuestions();
+        updateQuestionSelectionState();
         var first = card.querySelector('input[type="text"]');
         if (first) first.focus();
     }
@@ -1475,6 +1558,7 @@
         if (card && confirm('Remove this question?')) {
             card.remove();
             renumberQuestions();
+            updateQuestionSelectionState();
         }
     }
 

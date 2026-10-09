@@ -9,7 +9,7 @@
         <h2>{{ $quiz->title }}</h2>
         <p>{{ $quiz->lesson?->title ?? '' }} · {{ $quiz->questions->count() }} questions · Pass {{ $quiz->passing_score }}%</p>
     </header>
-    @if($quiz->instructions)<div class="inline-assessment-instructions">{{ $quiz->instructions }}</div>@endif
+    @if($quiz->instructions)<div class="inline-assessment-instructions up-ckeditor-wrapper"><div class="ck-content">{!! \App\Support\RichTextSanitizer::sanitize($quiz->instructions) !!}</div></div>@endif
     @if(($time_limit_seconds ?? 0) > 0 && $quizAvailable)
         <p class="inline-quiz-timer" data-inline-quiz-timer role="timer" aria-live="polite"></p>
     @endif

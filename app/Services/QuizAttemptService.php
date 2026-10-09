@@ -18,7 +18,7 @@ class QuizAttemptService
     {
         $raw = strtolower(trim((string) ($quiz->attempts ?? '')));
         if ($raw === '') {
-            return 1;
+            return 0;
         }
         if (str_contains($raw, 'unlimited') || str_contains($raw, 'no limit')) {
             return 0;

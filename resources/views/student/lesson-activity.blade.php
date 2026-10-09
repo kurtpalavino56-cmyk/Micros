@@ -12,7 +12,7 @@
         <p>{{ $activity->lesson->course->title }} · {{ $activity->lesson->title }}</p>
         <h1>{{ $activity->title }}</h1>
         <p>{{ Illuminate\Support\Str::headline($activity->activity_type) }}@if($activity->is_required) · Required for lesson completion @else · Optional @endif</p>
-        @if($activity->instructions)<div>{!! nl2br(e($activity->instructions)) !!}</div>@endif
+        @if($activity->instructions)<div class="up-ckeditor-wrapper"><div class="ck-content">{!! \App\Support\RichTextSanitizer::sanitize($activity->instructions) !!}</div></div>@endif
         @if($activity->activity_type === 'assignment')<div class="activity-note">Your instructor will review this submission. A passing result is required to complete this lesson activity.</div>@endif
         @if(session('activity_result'))
             @php($activityResult = session('activity_result'))
@@ -53,7 +53,7 @@
     </section>
     <section class="activity-card"><h2>Your attempts</h2>
         @forelse($submissions as $submission)
-            <div class="activity-row"><strong>Attempt {{ $submission->attempt_number }} · {{ Illuminate\Support\Str::headline($submission->status) }}</strong>
+            <div class="activity-row" id="submission-{{ $submission->id }}"><strong>Attempt {{ $submission->attempt_number }} · {{ Illuminate\Support\Str::headline($submission->status) }}</strong>
                 @if($submission->score !== null)<p>Score: {{ $submission->score }} / {{ $activity->max_points ?? '—' }}</p>@endif
                 @if($submission->feedback)<p>{{ $submission->feedback }}</p>@endif
                 @if($submission->submission_path)<p><a href="{{ route('lesson-activities.download', $submission->id) }}">Download your submitted file</a></p>@endif

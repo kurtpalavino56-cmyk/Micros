@@ -7,6 +7,7 @@ use App\Models\CourseLesson;
 use App\Models\CourseModule;
 use App\Models\LessonActivity;
 use App\Models\Quiz;
+use App\Support\RichTextSanitizer;
 use Illuminate\Http\Request;
 
 class QuizManagementService
@@ -35,9 +36,9 @@ class QuizManagementService
             'course_id' => $course->id,
             'title' => trim($request->input('quiz_title', '')) ?: 'Untitled Quiz',
             'passing_score' => $passing,
-            'attempts' => $request->input('attempts'),
+            'attempts' => trim((string) $request->input('attempts', '')) ?: null,
             'time_limit' => (int) $request->input('time_limit', 0),
-            'instructions' => trim($request->input('instructions', '')),
+            'instructions' => RichTextSanitizer::sanitize($request->input('instructions', '')),
             'is_active' => true,
         ];
         if ($scope['lesson_id'] !== null) {

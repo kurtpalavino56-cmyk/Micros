@@ -398,16 +398,12 @@
             </div>
 
             <span class="count-pill">
-                {{ $categories->count() }}
-                categor{{ $categories->count() === 1 ? 'y' : 'ies' }}
+                {{ $totalCategories }}
+                categor{{ $totalCategories === 1 ? 'y' : 'ies' }}
             </span>
         </div>
 
-        @if (session('success'))
-            <div class="alert alert-ok">
-                {{ session('success') }}
-            </div>
-        @endif
+        <x-flash-toast :message="session('success')" />
 
         @if ($errors->any())
             <div class="alert alert-err">
@@ -588,6 +584,7 @@
 
                         </tbody>
                     </table>
+                    @include('components.pagination', ['paginator' => $categories])
 
                 @endif
 

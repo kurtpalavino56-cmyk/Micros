@@ -20,10 +20,6 @@ class StudentProgressService
         $lesson->loadMissing(['activities', 'quizzes.questions']);
 
         foreach ($lesson->activities->where('is_active', true)->where('is_required', true) as $activity) {
-            if ($enrollment->enrolled_at && $activity->created_at && $activity->created_at->gt($enrollment->enrolled_at)) {
-                continue;
-            }
-
             $acceptedStatuses = $activity->activity_type === 'assignment'
                 ? ['passed']
                 : ['completed', 'passed'];
@@ -37,10 +33,6 @@ class StudentProgressService
         }
 
         foreach ($lesson->quizzes->where('is_active', true) as $quiz) {
-            if ($enrollment->enrolled_at && $quiz->created_at && $quiz->created_at->gt($enrollment->enrolled_at)) {
-                continue;
-            }
-
             if ($quiz->questions->isEmpty()) {
                 continue;
             }
@@ -229,7 +221,6 @@ class StudentProgressService
         $requiredActivities = $lessons
             ->flatMap(fn ($lesson) => $lesson->activities)
             ->filter(fn ($activity) => $activity->is_active && $activity->is_required)
-            ->filter(fn ($activity) => ! $enrolledAt || ! $activity->created_at || ! $activity->created_at->gt($enrolledAt))
             ->values();
         $totalActivities = $requiredActivities->count();
         $completedActivities = 0;
@@ -278,10 +269,6 @@ class StudentProgressService
             ->filter(fn ($quiz) => $quiz && ($quiz->relationLoaded('questions')
                 ? $quiz->questions->isNotEmpty()
                 : $quiz->questions()->exists()))
-            ->filter(fn ($quiz) => ! $quiz->lesson_id
-                || ! $enrolledAt
-                || ! $quiz->created_at
-                || ! $quiz->created_at->gt($enrolledAt))
             ->unique('id')
             ->values();
         $totalQuizzes = $quizzes->count();

@@ -293,25 +293,6 @@
     .btn-save:hover{background:var(--navy-deep);}
     .btn-save svg{width:16px;height:16px;}
 
-    /* ===== SUCCESS TOAST ===== */
-    .toast{
-        position:fixed;bottom:28px;right:28px;z-index:2000;
-        background:var(--navy);color:#fff;
-        display:flex;align-items:center;gap:12px;
-        padding:14px 20px;border-radius:14px;
-        box-shadow:0 8px 30px rgba(19,23,107,.25);
-        font-size:14px;font-weight:700;
-        transform:translateY(80px);opacity:0;
-        transition:transform .4s cubic-bezier(.16,1,.3,1),opacity .4s ease;
-        pointer-events:none;
-    }
-    .toast.show{transform:translateY(0);opacity:1;pointer-events:auto;}
-    .toast svg{width:20px;height:20px;flex-shrink:0;color:#4ade80;}
-    .toast-close{
-        background:none;border:none;color:#fff;opacity:.7;
-        font-size:18px;cursor:pointer;padding:0 0 0 8px;line-height:1;
-    }
-
     @media (max-width:1180px){
         .two-col{grid-template-columns:1fr;}
         .charts-grid{grid-template-columns:1fr;}
@@ -391,13 +372,7 @@
 <body>
 
 {{-- ===== SUCCESS TOAST ===== --}}
-@if (session('success'))
-<div class="toast" id="successToast">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-    {{ session('success') }}
-    <button class="toast-close" onclick="document.getElementById('successToast').classList.remove('show')">&times;</button>
-</div>
-@endif
+<x-flash-toast :message="session('success')" />
 
 @include('components.authenticated-topbar')
 
@@ -561,136 +536,6 @@
             </section>
 
         </div>
-
-        {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â• â‘¡ PERFORMANCE + ACTIVITY â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-        @php
-            $performance = collect($performance ?? []);
-            $activity    = collect($activity ?? []);
-            $perfMax     = max($performance->max('percent') ?? 0, 1);
-            $actMax      = max($activity->max('hours') ?? 0, 1);
-        @endphp
-        <div class="charts-grid">
-
-            <section class="panel" style="margin-bottom:0;">
-                <div class="panel-head">
-                    <span>Performance</span>
-                    <span class="range">Last 6 Months</span>
-                </div>
-                <div class="panel-body">
-                    @if($performance->isNotEmpty())
-                        <div class="chart">
-                            @foreach($performance as $month)
-                                @php $isPeak = ($month['percent'] ?? 0) == $performance->max('percent'); @endphp
-                                <div class="col">
-                                    <div class="bar-wrap">
-                                        <div class="bar {{ $isPeak ? 'gold' : '' }}" style="height: {{ round((($month['percent'] ?? 0) / $perfMax) * 100) }}%;">
-                                            @if($isPeak)<span class="bar-value">{{ $month['percent'] }}%</span>@endif
-                                        </div>
-                                    </div>
-                                    <span class="axis-label">{{ $month['label'] }}</span>
-                                </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="empty-state">No performance data yet.</div>
-                    @endif
-                </div>
-            </section>
-
-            <section class="panel" style="margin-bottom:0;">
-                <div class="panel-head">
-                    <span>Activity</span>
-                    <span class="range">This Week</span>
-                </div>
-                <div class="panel-body">
-                    @if($activity->isNotEmpty())
-                        <div class="chart">
-                            @foreach($activity as $day)
-                                @php $isLow = ($day['hours'] ?? 0) == $activity->min('hours'); @endphp
-                                <div class="col">
-                                    <div class="bar-wrap">
-                                        <div class="bar {{ $isLow ? 'gold' : '' }}" style="height: {{ round((($day['hours'] ?? 0) / $actMax) * 100) }}%;">
-                                            @if($isLow)<span class="bar-value">{{ $day['hours'] }} hours</span>@endif
-                                        </div>
-                                    </div>
-                                    <span class="axis-label">{{ $day['label'] }}</span>
-                                </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="empty-state">No activity data yet.</div>
-                    @endif
-                </div>
-            </section>
-
-        </div>
-
-        {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â• â‘¡ COURSES TABLE â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-        <section class="panel" style="margin-bottom:0;">
-            <div class="panel-head">
-                <span>Courses</span>
-                {{-- âš  Not connected â€” filter does nothing yet --}}
-                <button class="filter-chip" type="button">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 3H2l8 9.5V19l4 2v-8.5L22 3z"/></svg>
-                    Filter
-                </button>
-            </div>
-            <div class="panel-body courses-table-wrap">
-                @if(($profileCourses ?? collect())->isNotEmpty())
-                    <table class="courses-table">
-                        <thead>
-                            <tr>
-                                <th>Course</th>
-                                <th>Rating</th>
-                                <th>Completion Rate</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($profileCourses as $course)
-                                <tr>
-                                    <td data-label="Course">
-                                        <div class="tbl-course">
-                                            <div class="tbl-thumb" @if($course->thumbnail_url ?? null) style="background-image:url('{{ $course->thumbnail_url }}')" @endif></div>
-                                            <div>
-                                                <h4>{{ $course->title }}</h4>
-                                                <span class="tbl-sub"><span class="cat">{{ $course->category ?? '' }}</span> &nbsp;-&nbsp; {{ ($course->students ?? 0) > 0 ? $course->students . ' Students' : 'No Students enrolled yet' }}</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td data-label="Rating">
-                                        @if($course->rating ?? null)
-                                            <span class="rating">
-                                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                                                {{ number_format($course->rating, 1) }}
-                                            </span>
-                                        @else
-                                            <span class="tbl-sub">No ratings yet</span>
-                                        @endif
-                                    </td>
-                                    <td data-label="Completion Rate">
-                                        <div class="progress-cell">
-                                            <div class="progress-track">
-                                                <div class="progress-fill" style="width: {{ min(100, max(0, $course->completion ?? 0)) }}%;"></div>
-                                            </div>
-                                            <span class="progress-pct">{{ $course->completion ?? 0 }}%</span>
-                                        </div>
-                                    </td>
-                                    <td data-label="Status">
-                                        @php $st = strtolower($course->status ?? 'draft'); @endphp
-                                        <span class="status-pill {{ in_array($st, ['active', 'published']) ? 'active' : ($st === 'archived' ? 'archived' : 'draft') }}">
-                                            {{ $course->status ?? 'Draft' }}
-                                        </span>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                @else
-                    <div class="empty-state">No course statistics yet.</div>
-                @endif
-            </div>
-        </section>
 
     </main>
 </div>
@@ -1014,15 +859,6 @@ document.addEventListener('keydown', e => {
 openEditModal(@json($errors->has('current_password') || $errors->has('password') || $errors->has('email') ? 'settings' : 'personal'));
 @endif
 
-/* ====== Success Toast ====== */
-(function () {
-    const toast = document.getElementById('successToast');
-    if (!toast) return;
-    // Show on next frame so CSS transition fires
-    requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('show')));
-    // Auto-dismiss after 4 seconds
-    setTimeout(() => toast.classList.remove('show'), 4000);
-})();
 </script>
 
 

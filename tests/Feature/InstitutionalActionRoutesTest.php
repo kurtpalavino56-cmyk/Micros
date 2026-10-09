@@ -13,6 +13,7 @@ use App\Models\QuizAttempt;
 use App\Models\QuizQuestion;
 use App\Models\User;
 use App\Services\MicrocredentialCompletionService;
+use App\Support\CompletionStatusPresenter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -86,6 +87,51 @@ test('faculty can verify an enrollment belonging to their own course', function 
         ->and($enrollment->fresh()->faculty_verified_by)->toBe($faculty->id);
 });
 
+test('faculty learner progress shows verify action when the required faculty review is ready', function () {
+    $faculty = User::factory()->faculty()->create();
+    [$course, $enrollment, $student] = makeReadyEnrollmentFor($faculty, [
+        'requires_faculty_verification' => true,
+    ]);
+
+    $this->actingAs($faculty)
+        ->get(route('faculty.students.course', $course->id))
+        ->assertOk()
+        ->assertSee($student->name)
+        ->assertSee('Needs review')
+        ->assertSee('Verify completion')
+        ->assertSee(route('faculty.enrollments.verify', $enrollment->id), false);
+});
+
+test('faculty review queue includes ready enrollments when verification was enabled after initial enrollment evaluation', function () {
+    $faculty = User::factory()->faculty()->create();
+    [$course, $enrollment, $student] = makeReadyEnrollmentFor($faculty);
+    $course->requires_faculty_verification = true;
+    $course->save();
+
+    expect($enrollment->faculty_verification_status)->toBe('not_required');
+
+    $this->actingAs($faculty)
+        ->get(route('faculty.students.course', $course->id))
+        ->assertOk()
+        ->assertSee($student->name)
+        ->assertSee('Needs review')
+        ->assertSee('Verify completion')
+        ->assertSee(route('faculty.enrollments.verify', $enrollment->id), false);
+
+    $this->post(route('faculty.enrollments.verify', $enrollment->id), ['decision' => 'verified'])
+        ->assertRedirect();
+
+    expect($enrollment->fresh()->faculty_verification_status)->toBe('verified');
+});
+
+test('learner progress is not labeled as awaiting institutional review before completion gates are ready', function () {
+    expect(CompletionStatusPresenter::institutionalLabel(
+        'assessment_pending',
+        'pending',
+        'pending'
+    ))->toBe('Assessment pending');
+});
+
 test('faculty cannot verify an enrollment belonging to another faculty members course', function () {
     $owner = User::factory()->faculty()->create();
     $otherFaculty = User::factory()->faculty()->create();
@@ -124,6 +170,21 @@ test('student cannot access the faculty verification endpoint', function () {
 });
 
 // ── Admin academic-unit confirmation ────────────────────────────────────
+
+test('admin course review shows the confirmation action while academic-unit review is pending', function () {
+    $faculty = User::factory()->faculty()->create();
+    $admin = User::factory()->admin()->create();
+    [$course, $enrollment] = makeReadyEnrollmentFor($faculty);
+
+    $this->actingAs($admin)
+        ->get(route('admin.courses.show', $course->id))
+        ->assertOk()
+        ->assertSee(route('admin.enrollments.academic-confirm', [
+            'id' => $course->id,
+            'enrollment' => $enrollment->id,
+        ]), false)
+        ->assertSee('Confirm');
+});
 
 test('admin can confirm academic-unit confirmation for an enrollment', function () {
     $faculty = User::factory()->faculty()->create();
