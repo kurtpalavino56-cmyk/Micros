@@ -28,19 +28,34 @@
         .audit-button.secondary:hover{background:#f2f4f8;}
         .audit-actions{display:flex;gap:9px;flex-wrap:wrap;}
         .audit-table-wrap{overflow-x:auto;}
-        .audit-table{width:100%;min-width:780px;border-collapse:collapse;}
+        .audit-table{width:100%;min-width:860px;border-collapse:collapse;}
         .audit-table th,.audit-table td{padding:13px 15px;border-bottom:1px solid #edf0f5;text-align:left;vertical-align:top;font-size:13px;}
         .audit-table th{background:#f9faff;color:#667085;font-size:11px;letter-spacing:.05em;text-transform:uppercase;}
         .audit-table tr:last-child td{border-bottom:0;}
         .audit-event{color:var(--ink);font-weight:700;}
         .audit-meta{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.45;overflow-wrap:anywhere;}
         .audit-method{display:inline-flex;padding:4px 7px;border-radius:6px;background:#f1f3f8;color:#475467;font-size:11px;font-weight:800;}
+        .audit-details-button{padding:7px 10px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--navy);font:inherit;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;}
+        .audit-details-button:hover{border-color:#c5cbe0;background:#f8f9fc;}
+        .audit-technical-modal{width:min(480px,calc(100% - 28px));max-width:none;max-height:calc(100% - 28px);padding:0;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);box-shadow:0 24px 70px rgba(10,20,55,.24);}
+        .audit-technical-modal::backdrop{background:rgba(15,23,42,.48);backdrop-filter:blur(2px);}
+        .audit-technical-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 20px;border-bottom:1px solid var(--line);}
+        .audit-technical-head h2{margin:0;color:var(--navy);font-size:17px;}
+        .audit-technical-head p{margin:5px 0 0;color:var(--muted);font-size:12px;line-height:1.45;}
+        .audit-technical-close{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 32px;border:0;border-radius:7px;background:#f3f5f9;color:#475467;font-size:20px;cursor:pointer;}
+        .audit-technical-body{display:grid;gap:14px;padding:20px;}
+        .audit-technical-item{display:grid;gap:5px;min-width:0;}
+        .audit-technical-item[hidden]{display:none;}
+        .audit-technical-label{color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+        .audit-technical-value{color:var(--ink);font-size:13px;line-height:1.5;overflow-wrap:anywhere;}
         .audit-role{display:inline-flex;margin-top:5px;padding:3px 8px;border-radius:999px;background:#eef1fb;color:var(--navy);font-size:10px;font-weight:700;text-transform:capitalize;}
-        .audit-changes{margin-top:8px;}
-        .audit-changes summary{color:var(--navy);font-size:12px;font-weight:700;cursor:pointer;}
-        .audit-changes table{width:100%;margin-top:8px;border-collapse:collapse;font-size:11px;}
-        .audit-changes th,.audit-changes td{padding:6px 8px;border:1px solid #edf0f5;text-align:left;vertical-align:top;overflow-wrap:anywhere;}
-        .audit-changes th{background:#f9faff;color:#667085;font-size:10px;text-transform:uppercase;}
+        .audit-change-button{min-height:25px;padding:4px 7px;border:1px solid #dfe4ee;border-radius:6px;background:#fff;color:var(--navy);font:inherit;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer;}
+        .audit-change-button:hover{border-color:#c5cbe0;background:#f8f9fc;}
+        .audit-changes-modal{width:min(760px,calc(100% - 28px));}
+        .audit-changes-table-wrap{max-height:min(60vh,520px);overflow:auto;padding:18px 20px;}
+        .audit-changes-table{width:100%;border-collapse:collapse;font-size:12px;}
+        .audit-changes-table th,.audit-changes-table td{padding:9px 10px;border:1px solid #edf0f5;text-align:left;vertical-align:top;overflow-wrap:anywhere;}
+        .audit-changes-table th{position:sticky;top:0;background:#f9faff;color:#667085;font-size:10px;text-transform:uppercase;letter-spacing:.04em;}
         .audit-empty{padding:36px!important;color:var(--muted);text-align:center;}
         .audit-pagination{padding:15px;}
         @media(max-width:1200px){.audit-layout{grid-template-columns:minmax(0,1fr);}.audit-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}.audit-filter-title,.audit-actions{grid-column:1/-1;}}
@@ -69,7 +84,7 @@
                 <section class="audit-card audit-table-wrap" aria-label="System activity audit log entries">
                     <table class="audit-table">
                         <thead>
-                            <tr><th>Date and time</th><th>User</th><th>Action</th><th>Target</th><th>Request</th></tr>
+                            <tr><th>Date and time</th><th>User</th><th>Action</th><th>Target</th><th>Technical details</th></tr>
                         </thead>
                         <tbody>
                             @forelse($logs as $log)
@@ -78,27 +93,12 @@
                                     <td><span class="audit-event">{{ $log->actor_name }}</span><br><span class="audit-role">{{ $log->actor_role === 'Administrator' ? 'Admin' : $log->actor_role }}</span></td>
                                     <td>
                                         <span class="audit-event">{{ $log->event }}</span>
-                                        @if($log->description)<div class="audit-meta">{{ $log->description }}</div>@endif
                                         @if(is_array($log->changes) && count($log->changes) > 0)
-                                            <details class="audit-changes">
-                                                <summary>View changes ({{ count($log->changes) }})</summary>
-                                                <table>
-                                                    <thead><tr><th>Field</th><th>Old value</th><th>New value</th></tr></thead>
-                                                    <tbody>
-                                                        @foreach($log->changes as $field => $change)
-                                                            <tr>
-                                                                <td>{{ Illuminate\Support\Str::headline($field) }}</td>
-                                                                <td>{{ is_array($change['old'] ?? null) || is_bool($change['old'] ?? null) ? json_encode($change['old'], JSON_UNESCAPED_UNICODE) : ($change['old'] ?? '—') }}</td>
-                                                                <td>{{ is_array($change['new'] ?? null) || is_bool($change['new'] ?? null) ? json_encode($change['new'], JSON_UNESCAPED_UNICODE) : ($change['new'] ?? '—') }}</td>
-                                                            </tr>
-                                                        @endforeach
-                                                    </tbody>
-                                                </table>
-                                            </details>
+                                            <button class="audit-change-button" type="button" data-audit-changes data-changes="{{ base64_encode(json_encode($log->changes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) }}">View changes ({{ count($log->changes) }})</button>
                                         @endif
                                     </td>
                                     <td>{{ $log->target_label ?: '—' }}</td>
-                                    <td><span class="audit-method">{{ $log->method }}</span><div class="audit-meta">{{ $log->route }}</div>@if($log->ip_address)<div class="audit-meta">{{ $log->ip_address }}</div>@endif</td>
+                                    <td><button class="audit-details-button" type="button" data-audit-details data-method="{{ $log->method }}" data-route="{{ $log->route }}" data-ip="{{ $log->ip_address ?? '' }}">View details</button></td>
                                 </tr>
                             @empty
                                 <tr><td class="audit-empty" colspan="5">No activity was recorded for these filters.</td></tr>
@@ -142,6 +142,104 @@
             </div>
         </main>
     </div>
+    <dialog class="audit-technical-modal" id="audit-technical-modal" aria-labelledby="audit-technical-title">
+        <header class="audit-technical-head">
+            <div>
+                <h2 id="audit-technical-title">Technical details</h2>
+                <p>Request metadata recorded for this action.</p>
+            </div>
+            <button class="audit-technical-close" type="button" data-close-audit-details aria-label="Close details">&times;</button>
+        </header>
+        <div class="audit-technical-body">
+            <div class="audit-technical-item"><span class="audit-technical-label">Method</span><span class="audit-method" id="audit-method-value"></span></div>
+            <div class="audit-technical-item"><span class="audit-technical-label">Route</span><span class="audit-technical-value" id="audit-route-value"></span></div>
+            <div class="audit-technical-item" id="audit-ip-row"><span class="audit-technical-label">IP address</span><span class="audit-technical-value" id="audit-ip-value"></span></div>
+        </div>
+    </dialog>
+    <dialog class="audit-technical-modal audit-changes-modal" id="audit-changes-modal" aria-labelledby="audit-changes-title">
+        <header class="audit-technical-head">
+            <div>
+                <h2 id="audit-changes-title">Changes</h2>
+                <p>Previous and updated values recorded for this action.</p>
+            </div>
+            <button class="audit-technical-close" type="button" data-close-audit-changes aria-label="Close changes">&times;</button>
+        </header>
+        <div class="audit-changes-table-wrap">
+            <table class="audit-changes-table">
+                <thead><tr><th>Field</th><th>Previous value</th><th>New value</th></tr></thead>
+                <tbody id="audit-changes-body"></tbody>
+            </table>
+        </div>
+    </dialog>
+    <script>
+        (function () {
+            const modal = document.getElementById('audit-technical-modal');
+            const methodValue = document.getElementById('audit-method-value');
+            const routeValue = document.getElementById('audit-route-value');
+            const ipRow = document.getElementById('audit-ip-row');
+            const ipValue = document.getElementById('audit-ip-value');
+            const changesModal = document.getElementById('audit-changes-modal');
+            const changesBody = document.getElementById('audit-changes-body');
+
+            document.querySelectorAll('[data-audit-details]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    methodValue.textContent = button.dataset.method || '—';
+                    routeValue.textContent = button.dataset.route || '—';
+                    ipValue.textContent = button.dataset.ip || '';
+                    ipRow.hidden = !button.dataset.ip;
+                    modal.showModal();
+                });
+            });
+
+            document.querySelector('[data-close-audit-details]').addEventListener('click', () => modal.close());
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    modal.close();
+                }
+            });
+
+            document.querySelectorAll('[data-audit-changes]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const bytes = Uint8Array.from(atob(button.dataset.changes || ''), (character) => character.charCodeAt(0));
+                    const changes = JSON.parse(new TextDecoder().decode(bytes));
+                    changesBody.replaceChildren();
+
+                    Object.entries(changes).forEach(([field, values]) => {
+                        const row = document.createElement('tr');
+                        const fieldCell = document.createElement('td');
+                        const previousCell = document.createElement('td');
+                        const nextCell = document.createElement('td');
+                        fieldCell.textContent = field.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase());
+                        previousCell.textContent = formatAuditValue(values.old);
+                        nextCell.textContent = formatAuditValue(values.new);
+                        row.append(fieldCell, previousCell, nextCell);
+                        changesBody.appendChild(row);
+                    });
+
+                    changesModal.showModal();
+                });
+            });
+
+            document.querySelector('[data-close-audit-changes]').addEventListener('click', () => changesModal.close());
+            changesModal.addEventListener('click', (event) => {
+                if (event.target === changesModal) {
+                    changesModal.close();
+                }
+            });
+
+            function formatAuditValue(value) {
+                if (value === null || value === undefined) {
+                    return '—';
+                }
+
+                if (typeof value === 'object' || typeof value === 'boolean') {
+                    return JSON.stringify(value);
+                }
+
+                return String(value);
+            }
+        })();
+    </script>
     @include('components.responsive')
 </body>
 </html>

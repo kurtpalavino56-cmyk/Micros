@@ -24,6 +24,7 @@ class StackingFramework extends Model
         'approved_by',
         'approved_at',
         'target_recognition',
+        'recognition_target_type',
         'completion_mode',
         'required_count',
         'cumulative_outcomes',

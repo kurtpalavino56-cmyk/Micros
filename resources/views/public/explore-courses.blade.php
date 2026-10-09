@@ -135,10 +135,6 @@
 
         <div class="explore__head">
             <h1 class="explore__title">All Courses</h1>
-            <p class="explore__sub">
-                Every published micro-credential from PSU faculty &mdash;
-                {{ $courses->total() }} course{{ $courses->total() === 1 ? '' : 's' }}
-            </p>
         </div>
 
         @if(count($categories ?? []))

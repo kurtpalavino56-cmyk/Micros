@@ -211,6 +211,7 @@
                             <p class="desc">{{ $descPreview }}</p>
                         @endif
                         <div class="meta">
+                            @include('components.course-rating', ['rating' => $course->rating_average, 'count' => $course->review_count])
                             @if($course->instructor)
                                 <span>{{ $course->instructor }}</span>
                             @endif

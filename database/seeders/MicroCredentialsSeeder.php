@@ -11,8 +11,8 @@ use Illuminate\Support\Str;
 /**
  * MicroCredentialsSeeder — seeds the full UPSKILL demo dataset:
  * roles, users (admin / faculty / students), courses with modules,
- * lessons and quizzes, enrollments, badges, certificates, pathways,
- * notifications and analytics events.
+ * lessons and quizzes, enrollments, badges, certificates, pathways, and
+ * analytics events.
  *
  * Demo logins (password for all: "password"):
  *   admin@example.com · faculty@example.com · student@example.com
@@ -434,21 +434,6 @@ class MicroCredentialsSeeder extends Seeder
             ['code' => 'FAC-4X8N2Q', 'created_by' => $admin->id, 'used_by' => null, 'used_at' => null, 'created_at' => now()->subDays(2), 'updated_at' => now()->subDays(2)],
             ['code' => 'FAC-9T3W6R', 'created_by' => $admin->id, 'used_by' => null, 'used_at' => null, 'created_at' => now()->subDay(), 'updated_at' => now()->subDay()],
         ]);
-
-        // ── Notifications ─────────────────────────────────────────────────
-        $notify = function (User $user, string $title, string $message, string $type, bool $unread, Carbon $when) {
-            DB::table('notifications')->insert([
-                'user_id' => $user->id, 'title' => $title, 'message' => $message,
-                'type' => $type, 'is_read' => ! $unread,
-                'created_at' => $when, 'updated_at' => $when,
-            ]);
-        };
-
-        foreach ([$ana, $faculty, $admin] as $u) {
-            $notify($u, 'Course update available', 'A new lesson was added to your enrolled course.', 'course', true, now()->subMinutes(10));
-            $notify($u, 'New announcement', 'The faculty team posted a new milestone update.', 'announcement', true, now()->subHour());
-            $notify($u, 'System reminder', 'Your badge portfolio was refreshed.', 'system', false, now()->subDay());
-        }
 
         // ── Announcements ─────────────────────────────────────────────────
         DB::table('announcements')->insert([

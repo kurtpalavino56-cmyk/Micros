@@ -630,6 +630,8 @@ function UpskillFileUploadPlugin(editor) {
 }
 
 function getEditorConfig(element) {
+    const isAnnouncementEditor = element.dataset.editorPreset === 'announcement';
+
     return {
         licenseKey: 'GPL',
 
@@ -666,7 +668,24 @@ function getEditorConfig(element) {
             UpskillFileUploadPlugin,
         ],
 
-        toolbar: [
+        toolbar: isAnnouncementEditor ? [
+            'undo',
+            'redo',
+            '|',
+            'heading',
+            '|',
+            'bold',
+            'italic',
+            'underline',
+            '|',
+            'bulletedList',
+            'numberedList',
+            '|',
+            'alignment',
+            '|',
+            'link',
+            'removeFormat',
+        ] : [
             'undo',
             'redo',
             '|',

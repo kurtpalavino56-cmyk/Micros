@@ -398,8 +398,8 @@
             </div>
 
             <span class="count-pill">
-                {{ $categories->count() }}
-                categor{{ $categories->count() === 1 ? 'y' : 'ies' }}
+                {{ $totalCategories }}
+                categor{{ $totalCategories === 1 ? 'y' : 'ies' }}
             </span>
         </div>
 
@@ -584,6 +584,7 @@
 
                         </tbody>
                     </table>
+                    @include('components.pagination', ['paginator' => $categories])
 
                 @endif
 

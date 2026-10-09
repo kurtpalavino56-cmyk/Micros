@@ -12,7 +12,9 @@ use App\Models\Notification;
 use App\Models\User;
 use App\Models\UserBadge;
 use App\Services\MicrocredentialCompletionService;
+use App\Services\UserNotificationService;
 use App\Support\CertificateBuilder;
+use App\Support\RichTextSanitizer;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -51,7 +53,8 @@ class PageController extends Controller
                 : Str::limit(trim(html_entity_decode(strip_tags((string) $c->description), ENT_QUOTES | ENT_HTML5, 'UTF-8')), 110),
             'professor' => $c->instructor ?? 'Faculty',
             'hours' => (int) filter_var($c->duration, FILTER_SANITIZE_NUMBER_INT),
-            'rating' => 0,
+            'rating' => (float) ($c->reviews_avg_rating ?? 0),
+            'review_count' => (int) ($c->reviews_count ?? 0),
             'category' => $c->category ?? 'General',
             'level' => $c->level ?? 'Beginner',
             'image' => $c->thumbnail_url ? asset($c->thumbnail_url) : null,
@@ -69,6 +72,7 @@ class PageController extends Controller
         // need to pad this one.
         $featured = Course::where('is_published', true)->where('is_approved', true)
             ->where('is_featured', true)
+            ->withAvg('reviews', 'rating')->withCount('reviews')
             ->latest('approved_at')->limit(3)->get();
 
         // ── Hero counters — real, live site-wide numbers ─────────────
@@ -91,54 +95,11 @@ class PageController extends Controller
             'scannedCertificate' => $scanned,
             'featuredCourses' => $cards($featured),
             'latestCourses' => $cards(
-                Course::where('is_published', true)->where('is_approved', true)->latest('created_at')->limit(3)->get()
+                Course::where('is_published', true)->where('is_approved', true)->withAvg('reviews', 'rating')->withCount('reviews')->latest('created_at')->limit(3)->get()
             ),
             'stats' => $stats,
             'announcements' => $announcements,
         ]);
-    }
-
-    /**
-     * Return admin announcements for notifications, filtered to the audience
-     * the admin chose (student / faculty). Guests see only announcements
-     * addressed to everyone.
-     *
-     * Unread state uses the same notifications_read_at watermark as the rest
-     * of the live feed, so the page's "Mark all as read" clears these too.
-     */
-    private function announcementFeed($auth)
-    {
-        $role = $auth ? $auth->roleName() : null;
-
-        return Announcement::with('author')
-            ->where('is_published', true)
-            ->orderByDesc('is_pinned')
-            ->latest('published_at')
-            ->get()
-            ->filter(function (Announcement $a) use ($role) {
-                $audience = $a->audience;
-
-                // No audience recorded, both roles, or Public = everyone.
-                if (empty($audience) || count($audience) >= 2 || in_array('public', $audience, true)) {
-                    return true;
-                }
-
-                return $role !== null && in_array($role, $audience, true);
-            })
-            ->take(5)
-            ->map(function (Announcement $a) use ($auth) {
-                $postedAt = $a->published_at ?? $a->created_at;
-
-                return (object) [
-                    'title' => $a->title,
-                    'message' => $a->body,
-                    'time' => $postedAt?->diffForHumans() ?? '',
-                    'type' => 'announcement',
-                    'unread' => $this->feedIsUnread($auth, $postedAt),
-                    'url' => null,
-                ];
-            })
-            ->values();
     }
 
     /** Build the homepage feed from published, audience-visible announcements. */
@@ -157,9 +118,9 @@ class PageController extends Controller
             ->filter(function (Announcement $a) use ($viewerRole) {
                 $audience = $a->audience;
 
-                // Rows created before the audience column existed, aimed at
-                // both roles, or marked Public are visible to everyone.
-                if (empty($audience) || count($audience) >= 2 || in_array('public', $audience, true)) {
+                // Rows created before the audience column existed or marked
+                // Public are visible to everyone.
+                if (empty($audience) || in_array('public', $audience, true)) {
                     return true;
                 }
 
@@ -168,16 +129,20 @@ class PageController extends Controller
                 return $viewerRole !== null && in_array($viewerRole, $audience, true);
             })
             ->take(3)
-            ->map(fn (Announcement $a) => [
-                'id' => $a->id,
-                'type' => 'general',
-                'label' => 'Announcement',
-                'date' => ($a->published_at ?? $a->created_at)?->format('F j, Y') ?? '',
-                'title' => $a->title,
-                'desc' => Str::limit((string) $a->body, 160),
-                'full_body' => (string) $a->body,
-                'has_more' => Str::length((string) $a->body) > 160,
-            ])
+            ->map(function (Announcement $a): array {
+                $plainBody = trim(html_entity_decode(strip_tags(preg_replace('/<\/(?:p|h[1-6]|li|blockquote)>/i', ' ', (string) $a->body) ?? '')));
+
+                return [
+                    'id' => $a->id,
+                    'type' => 'general',
+                    'label' => 'Announcement',
+                    'date' => ($a->published_at ?? $a->created_at)?->format('F j, Y') ?? '',
+                    'title' => $a->title,
+                    'desc' => Str::limit($plainBody, 160),
+                    'full_body' => RichTextSanitizer::sanitize((string) $a->body),
+                    'has_more' => Str::length($plainBody) > 160,
+                ];
+            })
             ->values();
 
         return $manual;
@@ -320,6 +285,7 @@ class PageController extends Controller
         // memory (and rendered them all) on each visit — fine at 10 courses,
         // a real problem at 500.
         $cards = Course::where('is_published', true)->where('is_approved', true)
+            ->withAvg('reviews', 'rating')->withCount('reviews')
             ->when($category, fn ($query) => $query->where('category', $category))
             ->orderByDesc('is_featured')
             ->orderBy('title')
@@ -333,7 +299,8 @@ class PageController extends Controller
                 : Str::limit(trim(html_entity_decode(strip_tags((string) $c->description), ENT_QUOTES | ENT_HTML5, 'UTF-8')), 110),
             'professor' => $c->instructor ?? 'Faculty',
             'hours' => (int) filter_var($c->duration, FILTER_SANITIZE_NUMBER_INT),
-            'rating' => 0,
+            'rating' => (float) ($c->reviews_avg_rating ?? 0),
+            'review_count' => (int) ($c->reviews_count ?? 0),
             'category' => $c->category ?? 'General',
             'level' => $c->level ?? 'Beginner',
             'image' => $c->thumbnail_url ? asset($c->thumbnail_url) : null,
@@ -388,158 +355,32 @@ class PageController extends Controller
         ]);
     }
 
-    /**
-     * Notifications feed — pulled from the notifications table for the
-     * signed-in user; falls back to the sample items for guests so the
-     * page always renders.
-     */
-    public function notifications(Request $request)
+    /** Show the shared, role-filtered notification feed. */
+    public function notifications(Request $request, UserNotificationService $userNotifications)
     {
         $auth = Auth::user();
 
-        // 0) Announcements the admin addressed to this viewer's role. These
-        //    always appear, whether or not the user has stored notifications,
-        //    which is why they are built before the early return below.
-        $announcements = $this->announcementFeed($auth);
-
-        // 1) Stored notifications for this user (highest priority).
-        if ($auth) {
-            $stored = Notification::query()
-                ->where('user_id', $auth->id)
-                ->latest()
-                ->limit(30)
-                ->get()
-                ->map(fn (Notification $n) => (object) [
-                    'title' => $n->title,
-                    'message' => $n->message,
-                    'time' => $n->created_at?->diffForHumans() ?? '',
-                    'type' => $n->type,
-                    'unread' => ! $n->is_read,
-                    'url' => $this->notificationUrl($auth, $n->type),
-                ]);
-            if ($stored->isNotEmpty()) {
-                return view('public.notifications', [
-                    // Announcements first — they are the admin talking to
-                    // everyone, not per-user activity.
-                    'notifications' => $announcements->concat($stored)->values(),
-                    'filter' => (string) $request->query('filter', 'all'),
-                ]);
-            }
-        }
-
-        // 2) Otherwise build a live activity feed so the bell is never empty.
-        $notifications = collect($announcements);
-
-        if ($auth && (int) $auth->role_id === User::ROLE_FACULTY) {
-            // Faculty: what is happening with THEIR courses.
-            $courseIds = Course::where('created_by', $auth->id)->pluck('id');
-
-            Enrollment::with(['user', 'course'])->whereIn('course_id', $courseIds)
-                ->latest()->limit(5)->get()
-                ->each(fn ($e) => $notifications->push((object) [
-                    'title' => 'New student enrolled',
-                    'message' => ($e->user->name ?? 'A student').' enrolled in "'.($e->course->title ?? 'your course').'".',
-                    'time' => $e->created_at?->diffForHumans() ?? '',
-                    'type' => 'enrollment',
-                    'unread' => $this->feedIsUnread($auth, $e->created_at),
-                    'url' => $this->notificationUrl($auth, 'enrollment', $e->course_id),
-                ]));
-
-            UserBadge::with(['user', 'badge'])->whereHas('user.enrollments', fn ($q) => $q->whereIn('course_id', $courseIds))
-                ->latest('earned_at')->limit(3)->get()
-                ->each(fn ($ub) => $notifications->push((object) [
-                    'title' => 'Badge awarded',
-                    'message' => ($ub->user->name ?? 'A student').' earned the "'.($ub->badge->name ?? 'Badge').'" badge.',
-                    'time' => $ub->earned_at?->diffForHumans() ?? '',
-                    'type' => 'badge',
-                    'unread' => $this->feedIsUnread($auth, $ub->earned_at),
-                    'url' => $this->notificationUrl($auth, 'badge'),
-                ]));
-        } else {
-            // Student / guest: their own badges + new courses on the site.
-            if ($auth) {
-                UserBadge::with('badge')->where('user_id', $auth->id)
-                    ->latest('earned_at')->limit(4)->get()
-                    ->each(fn ($ub) => $notifications->push((object) [
-                        'title' => 'Badge earned',
-                        'message' => 'You earned the "'.($ub->badge->name ?? 'Badge').'" badge. Congratulations!',
-                        'time' => $ub->earned_at?->diffForHumans() ?? '',
-                        'type' => 'badge',
-                        'unread' => $this->feedIsUnread($auth, $ub->earned_at),
-                        'url' => $this->notificationUrl($auth, 'badge'),
-                    ]));
-            }
-
-            Course::where('is_published', true)->where('is_approved', true)->latest('approved_at')->limit(3)->get()
-                ->each(fn ($c) => $notifications->push((object) [
-                    'title' => 'New course available',
-                    'message' => '"'.$c->title.'" was just published and is open for enrollment.',
-                    'time' => ($c->approved_at ?? $c->created_at)?->diffForHumans() ?? '',
-                    'type' => 'course',
-                    'unread' => $this->feedIsUnread($auth, $c->approved_at ?? $c->created_at),
-                    'url' => $this->notificationUrl($auth, 'course', $c->id),
-                ]));
-        }
-
-        if ($notifications->isEmpty()) {
-            $notifications->push((object) [
-                'title' => 'All caught up',
-                'message' => 'There is no new activity right now. Check back later for updates.',
-                'time' => '',
-                'type' => 'system',
-                'unread' => false,
-                'url' => null,
-            ]);
-        }
-
         return view('public.notifications', [
-            // take() is generous enough to keep the announcements that were
-            // seeded at the front of the collection.
-            'notifications' => $notifications->take(15)->values(),
+            'notifications' => $userNotifications->feed($auth),
             'filter' => (string) $request->query('filter', 'all'),
         ]);
     }
 
     /** Return the compact notification feed used by the authenticated bell. */
-    public function notificationPreview(): JsonResponse
+    public function notificationPreview(UserNotificationService $userNotifications): JsonResponse
     {
-        $auth = Auth::user();
-        $announcements = $this->announcementFeed($auth);
-        $stored = Notification::query()
-            ->where('user_id', $auth->id)
-            ->latest()
-            ->limit(6)
-            ->get()
-            ->map(fn (Notification $notification) => [
-                'title' => $notification->title,
-                'message' => $notification->message,
-                'time' => $notification->created_at?->diffForHumans() ?? '',
-                'unread' => ! $notification->is_read,
-            ]);
-
-        $items = $announcements->take(4)->map(fn ($notification) => [
-            'title' => $notification->title,
-            'message' => $notification->message,
-            'time' => $notification->time ?? '',
-            'unread' => (bool) ($notification->unread ?? false),
-        ])->concat($stored)->take(8)->values();
-
-        return response()->json(['notifications' => $items]);
-    }
-
-    /**
-     * Live-feed entries have no is_read column of their own, so they count as
-     * unread only when they happened after the user last cleared everything.
-     */
-    private function feedIsUnread(?User $auth, $occurredAt): bool
-    {
-        if (! $auth || ! $occurredAt) {
-            return true;
-        }
-
-        $readAt = $auth->notifications_read_at;
-
-        return ! $readAt || $occurredAt->gt($readAt);
+        return response()->json([
+            'notifications' => $userNotifications->feed(Auth::user(), 8)
+                ->map(fn (object $notification): array => [
+                    'title' => $notification->title,
+                    'message' => $notification->message,
+                    'time' => $notification->time,
+                    'unread' => $notification->unread,
+                    'url' => $notification->url,
+                ])
+                ->take(8)
+                ->values(),
+        ]);
     }
 
     /**
@@ -558,66 +399,6 @@ class PageController extends Controller
 
         return redirect()->route('notifications.index')
             ->with('success', 'All notifications marked as read.');
-    }
-
-    /**
-     * Resolve a notification's "View" target.
-     *
-     * The notifications page is shared by every role, but most destination
-     * routes sit behind RoleBasedAccess — sending a faculty member to
-     * courses.show would just bounce them back to their own dashboard.
-     * So the target is picked per role, and deep-linked with $entityId
-     * whenever the caller knows which record the notification is about.
-     *
-     * Returns null when there is nothing useful to open (e.g. the
-     * "All caught up" placeholder), and the Blade hides the link.
-     */
-    private function notificationUrl(?User $auth, ?string $type, ?int $entityId = null): ?string
-    {
-        // Guests can't enter any role-guarded area; send them somewhere public.
-        if (! $auth) {
-            return route('explore');
-        }
-
-        $type = (string) $type;
-
-        if ((int) $auth->role_id === User::ROLE_FACULTY) {
-            return match ($type) {
-                'enrollment' => route('faculty.students'),
-                'badge' => route('faculty.students'),
-                'course' => $entityId
-                    ? route('faculty.courses.manage', $entityId)
-                    : route('faculty.courses'),
-                'system' => null,
-                'announcement' => route('faculty.dashboard'),
-                default => route('faculty.dashboard'),
-            };
-        }
-
-        if ((int) $auth->role_id === User::ROLE_ADMIN) {
-            return match ($type) {
-                'course' => $entityId
-                    ? route('admin.courses.show', $entityId)
-                    : route('admin.courses'),
-                'enrollment' => route('admin.usermanagement'),
-                'system' => null,
-                'announcement' => route('admin.dashboard'),
-                default => route('admin.dashboard'),
-            };
-        }
-
-        // Student.
-        return match ($type) {
-            'course' => $entityId
-                ? route('courses.show', $entityId)
-                : route('courses.browse'),
-            'badge' => route('badges.index'),
-            'enrollment' => route('courses.enrolled'),
-            'certificate' => route('certificates.index'),
-            'system' => null,
-            'announcement' => route('dashboard'),
-            default => route('dashboard'),
-        };
     }
 
     /**

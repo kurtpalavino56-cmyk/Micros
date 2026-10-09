@@ -155,6 +155,8 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':admin', R
     Route::get('/Admin-certificates', [AdminController::class, 'certificates'])->name('admin.certificates');
     Route::post('/Admin-certificates/{id}/revoke', [AdminController::class, 'revokeCertificate'])
         ->whereNumber('id')->name('admin.certificates.revoke');
+    Route::post('/Admin-badges/{id}/revoke', [AdminController::class, 'revokeBadge'])
+        ->whereNumber('id')->name('admin.badges.revoke');
 
     Route::get('/Admin-profile', [AdminController::class, 'profile'])->name('admin.profile');
     Route::patch('/Admin-profile', [AdminController::class, 'updateProfile'])->name('admin.profile.update');
@@ -172,8 +174,15 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':admin', R
         ->whereNumber('id')->name('admin.facultycodes.delete');
 
     Route::get('/Admin-courses', [AdminController::class, 'courses'])->name('admin.courses');
+    Route::get('/Admin-enrollments', [AdminController::class, 'enrollmentReviews'])->name('admin.enrollments');
+    Route::get('/Admin-enrollments/{enrollment}', [AdminController::class, 'showEnrollmentReview'])
+        ->whereNumber('enrollment')->name('admin.enrollments.show');
+    Route::get('/Admin-enrollments/submissions/{submission}/download', [AdminController::class, 'downloadEnrollmentSubmission'])
+        ->whereNumber('submission')->name('admin.enrollments.submissions.download');
     Route::get('/Admin-courses/{id}', [AdminController::class, 'showCourse'])
         ->whereNumber('id')->name('admin.courses.show');
+    Route::get('/Admin-courses/{id}/enrollments', [AdminController::class, 'courseEnrollmentReviews'])
+        ->whereNumber('id')->name('admin.courses.enrollments');
     Route::post('/Admin-courses/{id}/enrollments/{enrollment}/academic-confirm', [AdminController::class, 'academicConfirmEnrollment'])
         ->whereNumber(['id', 'enrollment'])->name('admin.enrollments.academic-confirm');
     Route::post('/Admin-courses/{id}/approve', [AdminController::class, 'approveCourse'])
@@ -258,6 +267,8 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':student',
     Route::get('/courses/{id}', [StudentController::class, 'show'])->whereNumber('id')->name('courses.show');
     Route::post('/courses/{id}/enroll', [StudentController::class, 'enroll'])->whereNumber('id')->name('courses.enroll');
     Route::get('/courses/{id}/learn', [StudentController::class, 'learn'])->whereNumber('id')->name('courses.learn');
+    Route::post('/courses/{id}/evaluation', [StudentController::class, 'submitCourseEvaluation'])
+        ->whereNumber('id')->name('courses.evaluation.store');
     Route::post('/courses/{id}/progress', [StudentController::class, 'saveProgress'])
         ->whereNumber('id')->name('courses.progress');
     Route::post('/courses/{id}/complete', [StudentController::class, 'completeCourse'])
@@ -350,6 +361,14 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty',
 
     Route::post('/Faculty-mycourses/manage/{id}/modules', [FacultyController::class, 'storeModule'])
         ->whereNumber('id')->name('faculty.module.store');
+    Route::post('/Faculty-mycourses/manage/{id}/final-exam', [FacultyController::class, 'storeFinalExam'])
+        ->whereNumber('id')->name('faculty.final-exam.store');
+    Route::get('/Faculty-mycourses/manage/{id}/final-exam/{moduleId}', [FacultyController::class, 'finalExamCreate'])
+        ->whereNumber('id')->whereNumber('moduleId')->name('faculty.final-exam.edit');
+    Route::post('/Faculty-mycourses/manage/{id}/final-exam/{moduleId}', [FacultyController::class, 'storeFinalExamQuiz'])
+        ->whereNumber('id')->whereNumber('moduleId')->name('faculty.final-exam.update');
+    Route::post('/Faculty-mycourses/manage/{id}/final-exam/delete', [FacultyController::class, 'destroyFinalExam'])
+        ->whereNumber('id')->name('faculty.final-exam.destroy');
     Route::post('/Faculty-mycourses/manage/{id}/modules/{key}/delete', [FacultyController::class, 'deleteModule'])
         ->whereNumber('id')->name('faculty.module.delete');
     Route::post('/Faculty-mycourses/manage/{id}/modules/{moduleIndex}/update', [FacultyController::class, 'updateModule'])

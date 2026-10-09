@@ -3,6 +3,7 @@
     'name' => 'content',
     'value' => '',
     'placeholder' => 'Write here...',
+    'preset' => null,
 ])
 
 @php
@@ -17,6 +18,7 @@
         id="{{ $editorId }}"
         name="{{ $fieldName }}"
         data-ckeditor
+        @if($preset) data-editor-preset="{{ $preset }}" @endif
         data-placeholder="{{ $editorPlaceholder }}"
     >{{ $initialValue }}</textarea>
 </div>

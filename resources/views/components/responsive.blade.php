@@ -636,6 +636,10 @@
                 return null;
             }
 
+            if (form.hasAttribute('data-custom-confirmation')) {
+                return null;
+            }
+
             var action = form.getAttribute('action') || window.location.href;
             var pathname;
             try {
@@ -830,6 +834,5 @@
         });
     })();
 </script>
-
 
 

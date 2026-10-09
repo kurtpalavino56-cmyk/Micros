@@ -16,8 +16,6 @@
         .layout{display:grid;grid-template-columns:264px minmax(0,1fr);min-height:calc(100vh - 74px);align-items:start;}
         .main{min-width:0;padding:30px 36px 60px;}
         .review-page{max-width:1180px;margin:0 auto;}
-        .review-breadcrumb{margin-bottom:18px;font-size:12px;color:var(--review-muted);}
-        .review-breadcrumb a{color:var(--review-navy);font-weight:700;text-decoration:none;}
         .review-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:22px;}
         .review-header h1{margin:0 0 6px;color:var(--review-navy);font-size:28px;font-weight:800;letter-spacing:-.03em;}
         .review-header p{margin:0;color:var(--review-muted);font-size:14px;line-height:1.5;}
@@ -74,12 +72,11 @@
         @include('components.faculty-sidebar')
         <main class="main">
             <div class="review-page">
-                <div class="review-breadcrumb">
-                    <a href="{{ route('faculty.courses') }}">My Courses</a>
-                    <span> / </span>
-                    <a href="{{ route('faculty.courses.manage', $course->id) }}">{{ $course->title }}</a>
-                    <span> / Activity Reviews</span>
-                </div>
+                @include('components.breadcrumbs', ['breadcrumbClass' => 'faculty-breadcrumbs', 'items' => [
+                    ['label' => 'My Courses', 'url' => route('faculty.courses')],
+                    ['label' => $course->title, 'url' => route('faculty.courses.manage', $course->id)],
+                    ['label' => 'Activity Reviews'],
+                ]])
 
                 <header class="review-header">
                     <div>
@@ -123,7 +120,7 @@
                                 $lesson = $activity->lesson;
                                 $module = $lesson->module;
                             @endphp
-                            <article class="review-submission">
+                            <article class="review-submission" id="submission-{{ $submission->id }}">
                                 <header class="submission-top">
                                     <div>
                                         <div class="submission-course-path">
@@ -141,7 +138,7 @@
                                 </header>
 
                                 @if($activity->instructions)
-                                    <div class="assignment-instructions"><strong>Assignment instructions</strong>{{ $activity->instructions }}</div>
+                                    <div class="assignment-instructions"><strong>Assignment instructions</strong><div class="up-ckeditor-wrapper"><div class="ck-content">{!! \App\Support\RichTextSanitizer::sanitize($activity->instructions) !!}</div></div></div>
                                 @endif
 
                                 <div class="submission-content">

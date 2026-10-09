@@ -21,6 +21,8 @@ class CourseReadinessService
         ]);
 
         $modules = $course->modules;
+        $finalModule = $modules->firstWhere('is_final', true);
+        $regularModules = $modules->reject(fn (CourseModule $module): bool => $module->is_final);
         $hasCourseDetails = filled($course->title)
             && $course->title !== 'Untitled Course'
             && filled($course->short_description)
@@ -29,10 +31,13 @@ class CourseReadinessService
             && filled($course->level);
         $hasLearningOutcome = $course->learningOutcomes->isNotEmpty()
             || ! empty($course->objectives);
-        $hasModules = $modules->isNotEmpty();
-        $hasLessonContent = $hasModules && $modules->every(fn (CourseModule $module): bool => $module->lessons->isNotEmpty()
+        $hasModules = $regularModules->isNotEmpty();
+        $hasLessonContent = $hasModules && $regularModules->every(fn (CourseModule $module): bool => $module->lessons->isNotEmpty()
             && $module->lessons->every(fn (CourseLesson $lesson): bool => $this->hasLessonMaterial($lesson))
         );
+        $hasFinalExam = ! $finalModule || ($finalModule->quiz
+            && $finalModule->quiz->is_active
+            && $finalModule->quiz->questions->isNotEmpty());
         $hasAssessment = $modules->contains(function (CourseModule $module): bool {
             if ($module->quiz && $module->quiz->is_active && $module->quiz->questions->isNotEmpty()) {
                 return true;
@@ -66,8 +71,10 @@ class CourseReadinessService
             ],
             [
                 'label' => 'Lessons and learning materials',
-                'complete' => $hasLessonContent,
-                'detail' => 'Every module needs a lesson, and each lesson needs written content or an uploaded learning file.',
+                'complete' => $hasLessonContent && $hasFinalExam,
+                'detail' => $finalModule
+                    ? 'Every regular module needs lesson content, and the Final Exam needs at least one question.'
+                    : 'Every module needs a lesson, and each lesson needs written content or an uploaded learning file.',
             ],
             [
                 'label' => 'Assessment',

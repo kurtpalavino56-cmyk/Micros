@@ -20,7 +20,7 @@
     .hero {
         position: relative;
         overflow: visible;
-        background: var(--landing-white);
+        background: url("{{ asset('Images/Legacy_bldg.jpg') }}") right center / cover no-repeat;
         color: var(--landing-navy);
         padding: 5.5rem 0 4.5rem;
     }
@@ -36,7 +36,7 @@
     .hero::before {
         inset: 0;
         border-radius: 0;
-        background: linear-gradient(115deg, rgba(9,39,216,.025) 0%, rgba(9,39,216,.07) 100%);
+        background: linear-gradient(90deg, #fff 0%, rgba(255,255,255,.96) 30%, rgba(255,255,255,.76) 54%, rgba(255,255,255,.14) 100%);
         z-index: 0;
     }
 
@@ -958,21 +958,21 @@
                 <div class="hero__panel-body">
                     <div class="hero__carousel" data-carousel role="region" aria-label="Course highlights" aria-roledescription="carousel">
                         @forelse ($heroCourses as $course)
-                            <article class="hero__slide {{ $loop->first ? 'is-active' : '' }}" aria-hidden="{{ $loop->first ? 'false' : 'true' }}">
+                            <a class="hero__slide {{ $loop->first ? 'is-active' : '' }}" href="{{ $course['slug'] ?? route('explore') }}" aria-label="View course: {{ $course['title'] ?? 'Explore our courses' }}" aria-hidden="{{ $loop->first ? 'false' : 'true' }}">
                                 <div class="hero-course-visual" @if(!empty($course['image'])) style="background-image: url('{{ $course['image'] }}')" @endif></div>
                                 <div class="hero-course-content">
                                     <div class="hero-course-tags">
                                         <span>{{ $course['category'] ?? 'Microcredential' }}</span>
                                         @if(!empty($course['level']))<span>{{ $course['level'] }}</span>@endif
                                     </div>
-                                    <h2 class="hero-course-title"><a href="{{ $course['slug'] ?? route('explore') }}">{{ $course['title'] ?? 'Explore our courses' }}</a></h2>
+                                    <h2 class="hero-course-title">{{ $course['title'] ?? 'Explore our courses' }}</h2>
                                     <p class="hero-course-description">{{ $course['description'] ?? 'Build practical skills with flexible microcredentials from PSU.' }}</p>
                                     <div class="hero-course-footer">
                                         <span class="hero-course-meta">{{ $course['professor'] ?? 'PSU Faculty' }}@if(!empty($course['hours'])) · {{ $course['hours'] }} {{ (int) $course['hours'] === 1 ? 'hour' : 'hours' }}@endif</span>
-                                        <a class="hero-course-link" href="{{ $course['slug'] ?? route('explore') }}">View course <span aria-hidden="true">→</span></a>
+                                        <span class="hero-course-link">View course <span aria-hidden="true">→</span></span>
                                     </div>
                                 </div>
-                            </article>
+                            </a>
                         @empty
                             <div class="hero-course-empty">
                                 <div class="hero-course-tags"><span>PSU Microcredentials</span></div>
@@ -1095,7 +1095,7 @@
                         <div class="ann-card__title">{{ $ann['title'] }}</div>
                         <p class="ann-card__desc">
                             <span class="preview-text">{{ $ann['desc'] }}</span>
-                            <span class="full-text" hidden>{{ $ann['full_body'] }}</span>
+                            <div class="full-text ck-content" hidden>{!! $ann['full_body'] !!}</div>
                         </p>
                         @if ($ann['has_more'])
                             <button class="ann-card__more" type="button" aria-expanded="false">More</button>
@@ -1238,6 +1238,7 @@
                 slide.classList.toggle('is-prev', isPrevious);
                 slide.classList.toggle('is-next', isNext);
                 slide.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+                slide.tabIndex = isActive ? 0 : -1;
                 slide.querySelectorAll('a, button, [tabindex]').forEach((element) => {
                     element.tabIndex = isActive ? 0 : -1;
                 });

@@ -3,11 +3,14 @@
 namespace App\Services;
 
 use App\Models\Course;
-use App\Models\Notification;
+use App\Models\User;
 
 class CourseModerationService
 {
-    public function __construct(private CourseReadinessService $courseReadiness) {}
+    public function __construct(
+        private CourseReadinessService $courseReadiness,
+        private UserNotificationService $userNotifications,
+    ) {}
 
     public function approve(Course $course, int $adminId): void
     {
@@ -26,6 +29,23 @@ class CourseModerationService
         $course->approved_by = $adminId;
         $course->approved_at = now();
         $course->save();
+
+        $this->userNotifications->createForUser(
+            $course->created_by,
+            'Course approved: '.$course->title,
+            'Your course is approved and now available to students.',
+            'course',
+            'course',
+            $course->id,
+        );
+        $this->userNotifications->createForRole(
+            User::ROLE_STUDENT,
+            'New course available',
+            '"'.$course->title.'" is approved and open for enrollment.',
+            'course',
+            'course',
+            $course->id,
+        );
     }
 
     public function deny(Course $course, string $feedback, int $adminId): void
@@ -38,15 +58,14 @@ class CourseModerationService
         $course->denial_feedback = trim($feedback);
         $course->save();
 
-        if ($course->created_by) {
-            Notification::create([
-                'user_id' => $course->created_by,
-                'title' => 'Course denied: '.$course->title,
-                'message' => $course->denial_feedback,
-                'type' => 'course',
-                'is_read' => false,
-            ]);
-        }
+        $this->userNotifications->createForUser(
+            $course->created_by,
+            'Course denied: '.$course->title,
+            $course->denial_feedback,
+            'course',
+            'course',
+            $course->id,
+        );
     }
 
     public function togglePublish(Course $course): bool

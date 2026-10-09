@@ -12,7 +12,7 @@
     </header>
 
     @if($activity->instructions)
-        <div class="inline-assessment-instructions">{!! nl2br(e($activity->instructions)) !!}</div>
+        <div class="inline-assessment-instructions up-ckeditor-wrapper"><div class="ck-content">{!! \App\Support\RichTextSanitizer::sanitize($activity->instructions) !!}</div></div>
     @endif
 
     @if($lesson_completed)

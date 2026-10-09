@@ -25,7 +25,7 @@
         </header>
         <div class="badge-grid">
             @forelse ($badges as $badge)
-                <div class="badge-card" role="button" tabindex="0" aria-expanded="false"
+                <div class="badge-card" id="badge-{{ $badge->id }}" role="button" tabindex="0" aria-expanded="false"
                         aria-label="Show details for {{ $badge->name }}">
                     <span class="badge-card__inner">
                         <span class="badge-face badge-front ui-card-surface" data-badge-face="front">

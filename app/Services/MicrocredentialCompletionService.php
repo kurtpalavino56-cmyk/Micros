@@ -7,6 +7,7 @@ use App\Models\CompetencyProgress;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\QuizAttempt;
+use App\Models\User;
 use App\Models\UserBadge;
 use App\Support\CertificateBuilder;
 use Illuminate\Database\QueryException;
@@ -45,7 +46,10 @@ use Illuminate\Support\Str;
  */
 class MicrocredentialCompletionService
 {
-    public function __construct(private StackingProgressService $stackingProgress) {}
+    public function __construct(
+        private StackingProgressService $stackingProgress,
+        private UserNotificationService $userNotifications,
+    ) {}
 
     /**
      * Statuses `enrollments.completion_status` can hold, matching the
@@ -132,6 +136,7 @@ class MicrocredentialCompletionService
             return $enrollment;
         }
 
+        $previousCompletionStatus = $enrollment->completion_status;
         $enrollment->loadMissing([
             'course.modules.quiz.questions',
             'course.modules.lessons.quizzes.questions',
@@ -209,6 +214,40 @@ class MicrocredentialCompletionService
         }
 
         $enrollment->save();
+
+        if (
+            $previousCompletionStatus !== self::STATUS_AWAITING_FACULTY_VERIFICATION
+            && $enrollment->completion_status === self::STATUS_AWAITING_FACULTY_VERIFICATION
+        ) {
+            $this->userNotifications->createForUser(
+                $enrollment->user_id,
+                'Course requirements completed',
+                'Your course learning requirements are complete and awaiting institutional review.',
+                'enrollment',
+                'enrollment',
+                $enrollment->id,
+            );
+
+            if ($enrollment->faculty_verification_status === self::PENDING) {
+                $this->userNotifications->createForUser(
+                    $course->created_by,
+                    'Completion awaiting faculty verification',
+                    'A learner completed the required work for "'.$course->title.'" and is awaiting your verification.',
+                    'enrollment',
+                    'enrollment',
+                    $enrollment->id,
+                );
+            } elseif ($enrollment->faculty_verification_status === self::NOT_REQUIRED) {
+                $this->userNotifications->createForRole(
+                    User::ROLE_ADMIN,
+                    'Completion awaiting confirmation',
+                    'A learner completed "'.$course->title.'" and is awaiting institutional confirmation.',
+                    'enrollment',
+                    'enrollment',
+                    $enrollment->id,
+                );
+            }
+        }
 
         if ($this->isOfficiallyCompleted($enrollment)) {
             $this->stackingProgress->syncForCompletedEnrollment($enrollment);
@@ -468,7 +507,7 @@ class MicrocredentialCompletionService
         $snapshot = $this->buildCredentialSnapshot($course);
 
         try {
-            return UserBadge::create([
+            $userBadge = UserBadge::create([
                 'user_id' => $enrollment->user_id,
                 'badge_id' => $course->badge_id,
                 'earned_at' => now(),
@@ -490,6 +529,17 @@ class MicrocredentialCompletionService
                 ->where('badge_id', $course->badge_id)
                 ->first();
         }
+
+        $this->userNotifications->createForUser(
+            $enrollment->user_id,
+            'Badge earned',
+            'You earned a badge for completing "'.$course->title.'".',
+            'badge',
+            'badge',
+            $userBadge->id,
+        );
+
+        return $userBadge;
     }
 
     /**
@@ -611,14 +661,6 @@ class MicrocredentialCompletionService
                 'credit_equivalency_snapshot' => $certificateSnapshot['credit_equivalency'],
                 'learning_hours_snapshot' => $certificateSnapshot['learning_hours'],
             ]);
-
-            try {
-                return CertificateBuilder::ensureFileGenerated($certificate);
-            } catch (\Throwable $e) {
-                report($e);
-
-                return $certificate;
-            }
         } catch (QueryException $e) {
             // Lost a race to a concurrent evaluate() call for the same
             // learner+course. The unique(['user_id','course_id']) index on
@@ -638,6 +680,23 @@ class MicrocredentialCompletionService
             }
 
             return $existing;
+        }
+
+        $this->userNotifications->createForUser(
+            $enrollment->user_id,
+            'Certificate issued',
+            'Your certificate for "'.$course->title.'" is ready to view.',
+            'certificate',
+            'certificate',
+            $certificate->id,
+        );
+
+        try {
+            return CertificateBuilder::ensureFileGenerated($certificate);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return $certificate;
         }
     }
 

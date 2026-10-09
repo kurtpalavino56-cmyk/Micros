@@ -81,12 +81,15 @@
         .framework-modal .remove-row { border:0; background:#fff1f2; color:#b42318; border-radius:8px; width:32px; height:32px; cursor:pointer; font-weight:900; }
         .framework-modal .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:20px; padding-top:16px; border-top:1px solid #edf0f5; }
         .framework-modal .field small { color:#7a8699; font-size:11px; line-height:1.4; }
+        .framework-modal .field .field-error { color:#b42318; font-size:11px; line-height:1.4; }
+        .framework-modal .field[hidden] { display:none; }
         .framework-modal .form-section-label { padding-top:8px; margin-top:4px; border-top:1px solid #edf0f5; }
         .framework-modal .form-section-label strong { color:var(--framework-navy); font-size:14px; }
         .framework-modal .form-section-label span { color:#7a8699; font-size:11px; line-height:1.4; }
         .completion-rule-summary { margin-top:14px; padding:10px 12px; border-left:3px solid #2c43d8; background:#f4f6ff; color:#25346f; font-size:12px; font-weight:800; }
         .requirement-table-head { display:grid; grid-template-columns:minmax(0,1fr) 100px 110px 34px; gap:8px; margin:4px 0 7px; color:#7a8699; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
         .requirement-header p { margin:4px 0 0; color:#7a8699; font-size:11px; line-height:1.4; }
+        .framework-config-summary { margin-top:8px; color:#7a8699; font-size:11px; line-height:1.45; }
 
         @media (max-width:800px) {
             .framework-main { padding:24px 18px 40px !important; }
@@ -190,6 +193,7 @@
             <div class="framework-modal-body">
                 <form method="POST" action="{{ route('admin.stacking-frameworks.store') }}" id="create-framework-form">
                     @csrf
+                    <input type="hidden" name="form_context" value="create-framework-modal">
                     @include('admin.stacking-framework-fields', ['framework' => null, 'formId' => 'create-framework-form'])
                     <div class="actions">
                         <button class="framework-button primary" type="submit">Save draft</button>
@@ -212,6 +216,7 @@
                     <form method="POST" action="{{ route('admin.stacking-frameworks.update', $framework->id) }}" id="framework-form-{{ $framework->id }}">
                         @csrf
                         @method('PATCH')
+                        <input type="hidden" name="form_context" value="edit-framework-modal-{{ $framework->id }}">
                         <fieldset @disabled($framework->status === 'approved') style="border:0;padding:0;margin:0;min-width:0;">
                             @include('admin.stacking-framework-fields', ['framework' => $framework, 'formId' => 'framework-'.$framework->id])
                         </fieldset>
@@ -286,6 +291,10 @@
                 var modal = document.querySelector('.framework-modal.is-open');
                 if (modal) closeModal(modal);
             });
+
+            @if($errors->any())
+                openModal(@js(old('form_context', 'create-framework-modal')));
+            @endif
         })();
     </script>
 </body>

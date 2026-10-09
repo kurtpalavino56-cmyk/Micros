@@ -6,7 +6,7 @@
         </div>
     </header>
 
-    @if ($certificates->count())
+    @if ($certificates->total())
         <div class="certificate-table-wrap ui-table-wrap">
             <table class="certificate-table ui-table" aria-label="Earned certificates">
                 <thead>
@@ -18,7 +18,7 @@
                 </thead>
                 <tbody>
                     @foreach ($certificates as $certificate)
-                        <tr>
+                        <tr id="certificate-{{ $certificate->id }}">
                             <td data-label="Course">
                                 <h3 class="certificate-course">{{ $certificate->course_name }}</h3>
                             </td>
@@ -34,6 +34,7 @@
                 </tbody>
             </table>
         </div>
+        @include('components.pagination', ['paginator' => $certificates])
     @else
         <div class="empty-state ui-empty-state">
             <strong>No certificates yet</strong>

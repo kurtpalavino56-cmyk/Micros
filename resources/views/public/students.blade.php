@@ -1,4 +1,6 @@
-<x-layout title="Credential Verification | UpSkill" shell="public" page="verification">
+@extends('layouts.app')
+
+@section('title', 'Credential Verification | UpSkill')
 
 @push('styles')
 <style>
@@ -379,7 +381,8 @@
 </style>
 @endpush
 
-<div class="credential-lookup-page">
+@section('content')
+<div class="credential-lookup-page page-verification">
     <section class="students-hero">
         <div class="credential-lookup" aria-labelledby="credential-lookup-title">
         <h1 id="credential-lookup-title">Verification</h1>
@@ -438,6 +441,8 @@
         </section>
     </div>
 @endif
+@endsection
+
 @push('scripts')
 <script>
     (function () {
@@ -632,5 +637,3 @@
     })();
 </script>
 @endpush
-
-</x-layout>

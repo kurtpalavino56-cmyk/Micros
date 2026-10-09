@@ -13,8 +13,8 @@
         //   ->credit_equivalency, ->equivalent_course, ->badge_name, ->badge_description,
         //   ->assessment_strategy, ->grading_rubric
         'instructor_detail' => $instructorDetail,   // ->name, ->department, ->bio, ->avatar_url
-        'modules'           => $modules,            // each: ->title, ->description, ->lessons (->title, ->type, ->duration)
-        'quiz'              => $quiz ?? null,       // ->id, ->title, ->questions_count, ->passing_score
+        'modules'           => $modules,            // modules with lessons, lesson quizzes, and optional module quiz
+        'finalExam'         => $finalExam ?? null,   // separate course-completion assessment
         'prerequisites'     => $prerequisites,      // each: ->title, ->completed
         'prerequisites_met' => $prerequisitesMet,
         'missing_prerequisite_titles' => $missing,
@@ -188,6 +188,7 @@
     .course-module-lesson{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:8px 0;font-size:13px;color:var(--c-text);}
     .course-module-lesson+.course-module-lesson{border-top:1px solid #f0f2f5;}
     .course-module-lesson small{color:var(--c-muted);font-size:12px;white-space:nowrap;}
+    .course-module-lesson.is-quiz{padding-left:16px;color:var(--c-strong);}
 
     .quiz-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 22px;background:var(--c-surface-alt);border-top:1px solid var(--c-border);}
     .quiz-title{margin:0 0 2px;font-size:15px;font-weight:600;color:var(--c-strong);}
@@ -447,7 +448,7 @@
                 @endif
 
                 {{-- Course content --}}
-                @if(($modules ?? collect())->count())
+                @if(($modules ?? collect())->isNotEmpty() || ($finalExam ?? null))
                     <section class="info-panel">
                         <div class="info-panel-head">Course content</div>
 
@@ -470,23 +471,35 @@
                                                 <span>{{ $lesson->title }}</span>
                                                 <small>{{ $lesson->type ?: 'Lesson' }}@if($lesson->duration) &middot; {{ $lesson->duration }}@endif</small>
                                             </div>
+                                            @foreach($lesson->quizzes as $lessonQuiz)
+                                                <div class="course-module-lesson is-quiz">
+                                                    <span>Lesson quiz: {{ $lessonQuiz->title }}</span>
+                                                    <small>{{ $lessonQuiz->questions_count }} {{ Str::plural('question', $lessonQuiz->questions_count) }} &middot; Pass {{ $lessonQuiz->passing_score }}%</small>
+                                                </div>
+                                            @endforeach
                                         @endforeach
+                                    </div>
+                                @endif
+                                @if($module->quiz)
+                                    <div class="quiz-row">
+                                        <div class="quiz-info">
+                                            <p class="quiz-title">Module quiz: {{ $module->quiz->title }}</p>
+                                            <p class="quiz-sub">{{ $module->quiz->questions_count }} {{ Str::plural('question', $module->quiz->questions_count) }} &middot; Pass {{ $module->quiz->passing_score }}%</p>
+                                        </div>
                                     </div>
                                 @endif
                             </div>
                         @endforeach
 
-                        {{-- Inline quiz (bottom of the content list) --}}
-                        @if($quiz ?? false)
+                        @if($finalExam)
                             <div class="quiz-row">
                                 <div class="quiz-info">
-                                    <p class="quiz-title">{{ $quiz->title }}</p>
-                                    <p class="quiz-sub">
-                                        {{ $quiz->questions_count }} {{ Str::plural('question', $quiz->questions_count) }}
-                                        @if($quiz->passing_score ?? false)
-                                            &middot; Pass {{ $quiz->passing_score }}%
-                                        @endif
-                                    </p>
+                                    <p class="quiz-title">Final Exam</p>
+                                    @if($finalExam->quiz)
+                                        <p class="quiz-sub">{{ $finalExam->quiz->questions_count }} {{ Str::plural('question', $finalExam->quiz->questions_count) }} &middot; Pass {{ $finalExam->quiz->passing_score }}%</p>
+                                    @else
+                                        <p class="quiz-sub">Course-completion assessment</p>
+                                    @endif
                                 </div>
                             </div>
                         @endif

@@ -107,7 +107,7 @@
             <section class="pathway-list" aria-labelledby="pathway-list-title">
                 <div class="list-heading">
                     <h2 id="pathway-list-title">Created pathways</h2>
-                    <span>{{ $pathways->count() }} {{ $pathways->count() === 1 ? 'pathway' : 'pathways' }}</span>
+                    <span>{{ $pathways->total() }} {{ $pathways->total() === 1 ? 'pathway' : 'pathways' }}</span>
                 </div>
                 @if($pathways->isEmpty())
                     <div class="empty-state">No pathways yet. Create one above to get started.</div>
@@ -150,6 +150,7 @@
                             </tbody>
                         </table>
                     </div>
+                    @include('components.pagination', ['paginator' => $pathways])
                 @endif
             </section>
         </div>
@@ -327,4 +328,3 @@
 @include('components.responsive')
 </body>
 </html>
-

@@ -132,7 +132,7 @@
     .auth-notifications-head{display:flex;align-items:baseline;justify-content:space-between;padding:14px 16px 11px;border-bottom:1px solid #eef0f5;}
     .auth-notifications-head strong{font-size:15px;}.auth-notifications-head span{font-size:11px;color:#6b7280;}
     .auth-notifications-list{max-height:300px;overflow:auto;padding:4px 0;}
-    .auth-notifications-item{display:block;padding:11px 16px;border-bottom:1px solid #f0f2f6;}.auth-notifications-item:hover{background:#f7f9ff;}
+    .auth-notifications-item{display:block;padding:11px 16px;border-bottom:1px solid #f0f2f6;color:inherit;text-decoration:none;}.auth-notifications-item:hover{background:#f7f9ff;}
     .auth-notifications-item strong{display:block;font-size:12px;}.auth-notifications-item p{margin:3px 0 0;color:#5f6b85;font-size:11px;line-height:1.4;}.auth-notifications-item time{display:block;margin-top:4px;color:#9aa3b5;font-size:10px;}.auth-notifications-item.is-unread{border-left:3px solid var(--gold);padding-left:13px;}
     .auth-notifications-status{padding:18px 16px;margin:0;color:#6b7280;font-size:12px;text-align:center;}
     .auth-notifications-all{display:block;padding:11px 16px;background:#f7f9ff;color:var(--navy);font-size:12px;font-weight:800;text-align:center;}
@@ -198,7 +198,9 @@
                     });
                 }
                 notificationsList.innerHTML = items.map(function (item) {
-                    return '<div class="auth-notifications-item ' + (item.unread ? 'is-unread' : '') + '"><strong>' + escapeHtml(item.title) + '</strong><p>' + escapeHtml(item.message) + '</p><time>' + escapeHtml(item.time) + '</time></div>';
+                    var tag = item.url ? 'a' : 'div';
+                    var href = item.url ? ' href="' + escapeHtml(item.url) + '"' : '';
+                    return '<' + tag + href + ' class="auth-notifications-item ' + (item.unread ? 'is-unread' : '') + '"><strong>' + escapeHtml(item.title) + '</strong><p>' + escapeHtml(item.message) + '</p><time>' + escapeHtml(item.time) + '</time></' + tag + '>';
                 }).join('');
             }
             notificationsTrigger.addEventListener('click', function () {

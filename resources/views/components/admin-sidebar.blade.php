@@ -356,26 +356,54 @@
 </style>
 
 <aside class="sidebar shared-admin-sidebar" aria-label="Admin navigation">
-    <div class="sb-section open"><div class="sb-section-hd"><div class="sb-hd-left"><span class="sb-section-label">Main</span></div></div><div class="sb-items">
-        <a href="{{ route('admin.dashboard') }}" class="sb-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"><span class="sb-item-text">Home</span></a>
-    </div></div>
-    <div class="sb-section open"><div class="sb-section-hd"><div class="sb-hd-left"><span class="sb-section-label">Management</span></div></div><div class="sb-items">
-        <a href="{{ route('admin.usermanagement') }}" class="sb-item {{ request()->routeIs('admin.usermanagement', 'admin.users.*') ? 'active' : '' }}"><span class="sb-item-text">User Management</span></a>
-        <a href="{{ route('admin.courses') }}" class="sb-item {{ request()->routeIs('admin.courses*') ? 'active' : '' }}"><span class="sb-item-text">Courses &amp; Badges</span></a>
-        <a href="{{ route('admin.certificates') }}" class="sb-item {{ request()->routeIs('admin.certificates*') ? 'active' : '' }}"><span class="sb-item-text">Certificates</span></a>
-        <a href="{{ route('admin.facultycodes') }}" class="sb-item {{ request()->routeIs('admin.facultycodes') ? 'active' : '' }}"><span class="sb-item-text">Faculty Codes</span></a>
-        <a href="{{ route('admin.categories') }}" class="sb-item {{ request()->routeIs('admin.categories*') ? 'active' : '' }}"><span class="sb-item-text">Program Categories</span></a>
-        <a href="{{ route('admin.pathways') }}" class="sb-item {{ request()->routeIs('admin.pathways*') ? 'active' : '' }}"><span class="sb-item-text">Learning Pathways</span></a>
-        <a href="{{ route('admin.stacking-frameworks') }}" class="sb-item {{ request()->routeIs('admin.stacking-frameworks*') ? 'active' : '' }}"><span class="sb-item-text">Stacking Frameworks</span></a>
-        <a href="{{ route('admin.academic-credit-recognition') }}" class="sb-item {{ request()->routeIs('admin.academic-credit-recognition*') ? 'active' : '' }}"><span class="sb-item-text">Legacy Credit Requests</span></a>
-    </div></div>
-    <div class="sb-section open"><div class="sb-section-hd"><div class="sb-hd-left"><span class="sb-section-label">Analytics</span></div></div><div class="sb-items">
-        <a href="{{ route('admin.report') }}" class="sb-item {{ request()->routeIs('admin.report') ? 'active' : '' }}"><span class="sb-item-text">Report</span></a>
-        <a href="{{ route('admin.audit-logs') }}" class="sb-item {{ request()->routeIs('admin.audit-logs*') ? 'active' : '' }}"><span class="sb-item-text">Audit Logs</span></a>
-    </div></div>
-    <div class="sb-section open"><div class="sb-section-hd"><div class="sb-hd-left"><span class="sb-section-label">Communication</span></div></div><div class="sb-items">
-        <a href="{{ route('admin.announcements') }}" class="sb-item {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}"><span class="sb-item-text">Announcements</span></a>
-    </div></div>
+    <div class="sb-section open">
+        <div class="sb-section-hd"><div class="sb-hd-left"><span class="sb-section-label">Overview</span></div></div>
+        <div class="sb-items">
+            <a href="{{ route('admin.dashboard') }}" class="sb-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"><span class="sb-item-text">Home</span></a>
+        </div>
+    </div>
+
+    <div class="sb-section open">
+        <div class="sb-section-hd"><div class="sb-hd-left"><span class="sb-section-label">People &amp; Access</span></div></div>
+        <div class="sb-items">
+            <a href="{{ route('admin.usermanagement') }}" class="sb-item {{ request()->routeIs('admin.usermanagement', 'admin.users.*') ? 'active' : '' }}"><span class="sb-item-text">User Management</span></a>
+            <a href="{{ route('admin.facultycodes') }}" class="sb-item {{ request()->routeIs('admin.facultycodes') ? 'active' : '' }}"><span class="sb-item-text">Faculty Codes</span></a>
+        </div>
+    </div>
+
+    <div class="sb-section open">
+        <div class="sb-section-hd"><div class="sb-hd-left"><span class="sb-section-label">Courses &amp; Credentials</span></div></div>
+        <div class="sb-items">
+            <a href="{{ route('admin.courses') }}" class="sb-item {{ request()->routeIs('admin.courses*') && ! request()->routeIs('admin.courses.enrollments') ? 'active' : '' }}"><span class="sb-item-text">Courses</span></a>
+            <a href="{{ route('admin.enrollments') }}" class="sb-item {{ request()->routeIs('admin.enrollments*', 'admin.courses.enrollments') ? 'active' : '' }}"><span class="sb-item-text">Completion Verification</span></a>
+            <a href="{{ route('admin.certificates') }}" class="sb-item {{ request()->routeIs('admin.certificates*') ? 'active' : '' }}"><span class="sb-item-text">Credentials</span></a>
+        </div>
+    </div>
+
+    <div class="sb-section open">
+        <div class="sb-section-hd"><div class="sb-hd-left"><span class="sb-section-label">Academic Structure</span></div></div>
+        <div class="sb-items">
+            <a href="{{ route('admin.categories') }}" class="sb-item {{ request()->routeIs('admin.categories*') ? 'active' : '' }}"><span class="sb-item-text">Program Categories</span></a>
+            <a href="{{ route('admin.pathways') }}" class="sb-item {{ request()->routeIs('admin.pathways*') ? 'active' : '' }}"><span class="sb-item-text">Learning Pathways</span></a>
+            <a href="{{ route('admin.stacking-frameworks') }}" class="sb-item {{ request()->routeIs('admin.stacking-frameworks*') ? 'active' : '' }}"><span class="sb-item-text">Stacking Frameworks</span></a>
+            <a href="{{ route('admin.academic-credit-recognition') }}" class="sb-item {{ request()->routeIs('admin.academic-credit-recognition*') ? 'active' : '' }}"><span class="sb-item-text">Legacy Credit Requests</span></a>
+        </div>
+    </div>
+
+    <div class="sb-section open">
+        <div class="sb-section-hd"><div class="sb-hd-left"><span class="sb-section-label">Reports &amp; Oversight</span></div></div>
+        <div class="sb-items">
+            <a href="{{ route('admin.report') }}" class="sb-item {{ request()->routeIs('admin.report') ? 'active' : '' }}"><span class="sb-item-text">Report</span></a>
+            <a href="{{ route('admin.audit-logs') }}" class="sb-item {{ request()->routeIs('admin.audit-logs*') ? 'active' : '' }}"><span class="sb-item-text">Audit Logs</span></a>
+        </div>
+    </div>
+
+    <div class="sb-section open">
+        <div class="sb-section-hd"><div class="sb-hd-left"><span class="sb-section-label">Communication</span></div></div>
+        <div class="sb-items">
+            <a href="{{ route('admin.announcements') }}" class="sb-item {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}"><span class="sb-item-text">Announcements</span></a>
+        </div>
+    </div>
 </aside>
 <script>
     // Open the section containing the active item, and keep the collapse

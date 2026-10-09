@@ -18,6 +18,7 @@ use App\Models\Pathway;
 use App\Models\Quiz;
 use App\Models\StackingFramework;
 use App\Models\User;
+use App\Models\UserBadge;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -86,7 +87,7 @@ class RecordAuditActions
                 'target_id' => $target['id'] ?? null,
                 'target_label' => isset($target['label']) ? Str::limit($target['label'], 255, '') : null,
                 'changes' => $changes === [] ? null : $changes,
-                'description' => $event.' via '.$request->method().' '.$routeUri,
+                'description' => '',
                 'method' => $request->method(),
                 'route' => Str::limit($routeUri, 255, ''),
                 'ip_address' => $request->ip(),
@@ -221,6 +222,9 @@ class RecordAuditActions
         } elseif (str_starts_with($routeName, 'admin.stacking-frameworks.')) {
             $model = $id ? StackingFramework::find($id) : StackingFramework::query()->where('name', $request->input('name'))->latest('id')->first();
             $type = 'stacking framework';
+        } elseif ($routeName === 'admin.badges.revoke') {
+            $model = $id ? UserBadge::with('badge')->find($id) : null;
+            $type = 'badge';
         } elseif (str_starts_with($routeName, 'admin.certificates.')) {
             $model = $id ? Certificate::find($id) : null;
             $type = 'certificate';
@@ -284,6 +288,7 @@ class RecordAuditActions
             $model instanceof Complaint => 'Message thread: '.$model->subject,
             $model instanceof Quiz => 'Course: '.($model->course?->title ?? 'Unknown').'; Quiz: '.$model->title,
             $model instanceof Certificate => 'Certificate: '.$model->serial,
+            $model instanceof UserBadge => 'Badge: '.($model->badge?->name ?? 'Unknown'),
             $model instanceof CourseCategory => 'Category: '.$model->name,
             $model instanceof Pathway => 'Pathway: '.$model->name,
             $model instanceof FacultyCode => 'Faculty code: '.$model->code,
@@ -327,6 +332,7 @@ class RecordAuditActions
             str_ends_with($routeName, 'announcements.update') => ['title', 'body'],
             str_ends_with($routeName, 'announcements.pin') => ['is_pinned'],
             str_ends_with($routeName, 'certificates.revoke') => ['status', 'revoked_at', 'revocation_reason'],
+            str_ends_with($routeName, 'badges.revoke') => ['status', 'revoked_at', 'revocation_reason'],
             str_ends_with($routeName, 'complaints.resolve') => ['status'],
             str_ends_with($routeName, 'categories.update') => ['name', 'description', 'is_active'],
             str_ends_with($routeName, 'pathways.update') => ['name', 'description', 'is_active'],

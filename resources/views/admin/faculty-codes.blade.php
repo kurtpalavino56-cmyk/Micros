@@ -163,14 +163,9 @@
 
     <x-flash-toast :message="session('success')" />
 
-    @php
-        $availableCount = $codes->where('is_used', false)->count();
-        $usedCount      = $codes->where('is_used', true)->count();
-    @endphp
-
     <div class="code-stats">
         <div class="code-stat">
-            <div class="num">{{ $codes->count() }}</div>
+            <div class="num">{{ $totalCodes }}</div>
             <div class="lbl">Total Codes</div>
         </div>
         <div class="code-stat">
@@ -241,6 +236,7 @@
                 </tbody>
             </table>
         </div>
+        @include('components.pagination', ['paginator' => $codes])
     @endif
 
 </main>

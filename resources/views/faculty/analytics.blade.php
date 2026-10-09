@@ -328,7 +328,7 @@
             </div>
             <div class="panel-body course-outcomes-wrap">
                 <table class="course-outcomes">
-                    <thead><tr><th>Course</th><th>Enrolled</th><th>Completed</th><th>Completion</th><th>Avg. Quiz</th><th>Quiz Pass Rate (learners)</th><th>Reviews to Grade</th></tr></thead>
+                    <thead><tr><th>Course</th><th>Enrolled</th><th>Completed</th><th>Completion</th><th>Avg. Quiz</th><th>Quiz Pass Rate (learners)</th><th>Avg. Rating</th><th>Reviews</th><th>Reviews to Grade</th></tr></thead>
                     <tbody>
                         @forelse($courseAnalytics as $course)
                             <tr>
@@ -338,13 +338,33 @@
                                 <td>{{ $course->completion_rate === null ? '—' : $course->completion_rate . '%' }}</td>
                                 <td>{{ $course->average_score === null ? '—' : $course->average_score . '%' }}</td>
                                 <td>{{ $course->pass_rate === null ? '—' : $course->pass_rate . '%' }}</td>
+                                <td>{{ $course->review_count >= \App\Support\CourseEvaluationTemplate::MINIMUM_REVIEWS_FOR_RATING ? number_format($course->rating_average, 1) : 'New' }}</td>
+                                <td>{{ $course->review_count }}</td>
                                 <td>{{ $course->pending_reviews }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" style="text-align:center;color:var(--muted);">Create a course to see its learner outcomes here.</td></tr>
+                            <tr><td colspan="9" style="text-align:center;color:var(--muted);">Create a course to see its learner outcomes here.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+            @include('components.pagination', ['paginator' => $courseAnalytics])
+        </section>
+
+        <section class="panel" style="margin-top:18px;">
+            <div class="panel-head"><span>Recent course evaluation comments</span><span class="range">Latest 5</span></div>
+            <div class="panel-body">
+                @forelse($recentCourseComments as $review)
+                    <article style="padding:12px 0;border-bottom:1px solid #e5e7eb;">
+                        <div style="display:flex;justify-content:space-between;gap:16px;align-items:center;">
+                            <strong>{{ $review->course?->title ?? 'Course' }}</strong>
+                            <span aria-label="{{ $review->rating }} out of 5">★ {{ $review->rating }}/5</span>
+                        </div>
+                        <p style="margin:6px 0 0;color:var(--muted);">{{ $review->comment }}</p>
+                    </article>
+                @empty
+                    <div class="empty-state">No written course evaluation comments yet.</div>
+                @endforelse
             </div>
         </section>
 

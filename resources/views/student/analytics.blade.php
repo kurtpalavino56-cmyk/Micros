@@ -22,7 +22,7 @@
             ['label' => 'Assessment Average', 'value' => $assessmentAverage === null ? '—' : number_format($assessmentAverage, 1) . '%', 'icon' => 'award'],
             ['label' => 'Est. Study Time / Week', 'value' => $weeklyHours . 'h', 'icon' => 'clock'],
         ];
-        $courseRows = $courseCollection->map(fn ($course) => [
+        $courseRows = collect($completionCoursesPage->items())->map(fn ($course) => [
             'name' => $course->title ?? 'Course',
             'percent' => (int) ($course->percent ?? 0),
             'status' => $course->status ?? 'In progress',
@@ -77,7 +77,7 @@
             </article>
         </section>
         <section class="course-card ui-card-surface" aria-labelledby="course-progress-title">
-            <div class="course-header ui-card-header"><div class="ui-card-header__content"><h2 class="ui-section-title" id="course-progress-title">Course progress</h2><p>Progress across your enrolled courses</p></div><span class="course-count ui-badge">{{ $courseRows->count() }} courses</span></div>
+            <div class="course-header ui-card-header"><div class="ui-card-header__content"><h2 class="ui-section-title" id="course-progress-title">Course progress</h2><p>Progress across your enrolled courses</p></div><span class="course-count ui-badge">{{ $completionCoursesPage->total() }} courses</span></div>
             <table class="course-table ui-table"><thead><tr><th>Course</th><th>Progress</th><th>Status</th></tr></thead><tbody>
                 @forelse ($courseRows as $course)
                     <tr>
@@ -89,6 +89,7 @@
                     <tr><td class="empty-courses ui-empty-state" colspan="3">Enroll in a course to see your progress here.</td></tr>
                 @endforelse
             </tbody></table>
+            @include('components.pagination', ['paginator' => $completionCoursesPage])
         </section>
             </div>
     </div>

@@ -55,10 +55,6 @@
         }
         .page-wrap { max-width: 1180px; margin: 0 auto; }
 
-        .back-link { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: .84rem; font-weight: 600; color: var(--blue); }
-        .back-link .ico { width: 16px; height: 16px; }
-        .back-link:hover { color: var(--navy); }
-
         /* Cards */
         .card { background: var(--white); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; box-shadow: 0 1px 3px rgba(9,37,95,.04); }
         .card-title { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-size: .95rem; font-weight: 700; color: var(--title); }
@@ -178,6 +174,11 @@
         .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
         .chip { padding: 5px 13px; border-radius: 999px; background: var(--soft); color: var(--blue); font-size: .77rem; font-weight: 500; }
         .chip.rel { background: var(--yellow-soft); color: var(--yellow-text); }
+        .syllabus-details .chip-row { margin-bottom: 12px; }
+        .syllabus-details p { margin-top: 9px; line-height: 1.55; }
+        .syllabus-details .outcome-heading { display: block; margin-top: 12px; }
+        .syllabus-details .obj-list { margin-top: 3px; }
+        .syllabus-details .obj-list li { gap: 10px; padding: 5px 0; line-height: 1.5; }
         .related-head { margin: 18px 0 4px; font-size: .86rem; font-weight: 700; color: var(--title); }
         .related-hint { margin-bottom: 10px; font-size: .76rem; color: var(--muted); line-height: 1.5; }
 
@@ -226,7 +227,7 @@
         .lesson-activity-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; color: var(--title); font-weight: 700; }
         .lesson-activity-meta { color: var(--muted); font-size: .74rem; font-weight: 500; }
         .activity-rubric { margin: 6px 0 0; padding: 8px 10px; overflow-x: auto; border-radius: 6px; background: #f5f7fa; color: #4b5563; font: .76rem/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; }
-        .quiz-instructions { margin-bottom: 10px; font-style: italic; }
+        .quiz-instructions { margin-bottom: 10px; font-style: normal; }
         .quiz-question { padding: 8px 0; border-top: 1px solid var(--line); }
         .quiz-question:first-of-type { border-top: 0; }
         .quiz-question-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
@@ -258,21 +259,7 @@
         .pct-num { font-size: .86rem; font-weight: 700; color: var(--title); }
         .pct-sub { margin-top: 8px; font-size: .78rem; color: var(--muted); }
 
-        /* Enrollment review */
-        .enr-list { max-height: 360px; overflow-y: auto; }
-        .enr-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 0; border-top: 1px solid var(--line); }
-        .enr-row:first-child { border-top: 0; padding-top: 0; }
-        .enr-avatar { width: 34px; height: 34px; flex: 0 0 34px; border-radius: 50%; background: var(--soft); color: #7c98c4; display: flex; align-items: center; justify-content: center; }
-        .enr-avatar .ico { width: 17px; height: 17px; }
-        .enr-name { flex: 1; min-width: 100px; font-size: .84rem; font-weight: 600; color: var(--title); }
-        .enr-name small { display: block; font-size: .72rem; font-weight: 400; color: var(--muted); }
-        .pill { padding: 3px 10px; border-radius: 999px; font-size: .7rem; font-weight: 600; white-space: nowrap; }
-        .pill-pending { background: var(--yellow-soft); color: var(--yellow-text); }
-        .pill-ok { background: #e3f6ea; color: #166534; }
-        .pill-bad { background: #fff1f0; color: var(--danger); }
-        .pill-neutral { background: #f1f3f7; color: #5b6678; }
-        .enr-actions { display: flex; gap: 6px; margin-left: auto; }
-        .enr-actions .btn { padding: 5px 12px; font-size: .74rem; }
+        .enrollment-review-link { width: 100%; margin-top: 12px; }
 
         @media (max-width: 1100px) {
             .cols { grid-template-columns: 1fr; }
@@ -346,9 +333,10 @@
     <main class="main">
     <div class="page-wrap">
 
-        <a href="{{ route('admin.courses') }}" class="back-link">
-            <svg class="ico"><use href="#i-left"/></svg> Back to courses and badges
-        </a>
+        @include('components.breadcrumbs', ['items' => [
+            ['label' => 'Courses & Badges', 'url' => route('admin.courses')],
+            ['label' => $course->title],
+        ]])
 
         <x-flash-toast :message="session('success')" />
         @error('approval')
@@ -469,20 +457,25 @@
                 <section class="card stats">
                     <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-bars"/></svg></span><div><small>Level</small><b>{{ $course->level ?? '—' }}</b></div></div>
                     <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-clock"/></svg></span><div><small>Duration</small><b>{{ $course->duration ?? '—' }}</b></div></div>
-                    <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-cap"/></svg></span><div><small>Program</small><b>{{ $course->program ?? '—' }}</b></div></div>
-                    <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-cal"/></svg></span><div><small>Term</small><b>{{ $course->term ?? '—' }}</b></div></div>
                     <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-users"/></svg></span><div><small>Students</small><b>{{ $course->students }}</b></div></div>
                     <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-layers"/></svg></span><div><small>Modules</small><b>{{ $course->modules_count }}</b></div></div>
                     <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-play"/></svg></span><div><small>Lessons</small><b>{{ $course->lessons_count }}</b></div></div>
                 </section>
 
-                <section class="card">
+                <section class="card syllabus-details">
                     <div class="card-title"><svg class="ico"><use href="#i-file"/></svg>Micro-credential syllabus details</div>
                     <div class="chip-row"><span class="chip">PQF {{ $course->pqf_level ? 'Level '.$course->pqf_level : 'not specified' }}</span><span class="chip">{{ $course->learning_hours ? $course->learning_hours.' learning hours' : 'Learning hours not specified' }}</span><span class="chip">{{ $course->delivery_mode ? Illuminate\Support\Str::headline($course->delivery_mode) : 'Delivery mode not specified' }}</span></div>
                     <p><strong>Intended learners:</strong> {{ $course->target_learners ?: 'Not specified' }}</p>
                     <p><strong>Assessment strategy:</strong> {{ $course->assessment_strategy ?: 'Not specified' }}</p>
                     <p><strong>Mastery criteria:</strong> {{ $course->grading_rubric ?: 'Not specified' }}</p>
-                    @if(!empty($course->learning_outcomes))<strong>Measurable learning outcomes</strong><ul class="obj-list">@foreach($course->learning_outcomes as $outcome)<li>{{ $outcome }}</li>@endforeach</ul>@endif
+                    @if(!empty($course->learning_outcomes))
+                        <strong class="outcome-heading">Measurable learning outcomes</strong>
+                        <ul class="obj-list">
+                            @foreach($course->learning_outcomes as $outcome)
+                                <li>{{ $outcome }}</li>
+                            @endforeach
+                        </ul>
+                    @endif
                 </section>
 
                 <div class="stack">
@@ -588,7 +581,7 @@
                                                     </span>
                                                 </div>
                                                 @if ($lessonQuiz->instructions)
-                                                    <div class="assessment-instructions">{{ $lessonQuiz->instructions }}</div>
+                                                    <div class="assessment-instructions up-ckeditor-wrapper"><div class="rich ck-content">{!! \App\Support\RichTextSanitizer::sanitize($lessonQuiz->instructions) !!}</div></div>
                                                 @endif
                                                 @forelse ($lessonQuiz->questions as $qi => $question)
                                                     <div class="assessment-question">
@@ -626,7 +619,7 @@
                                                     </span>
                                                 </div>
                                                 @if (filled($lessonActivity->instructions))
-                                                    <div class="activity-instructions">{{ $lessonActivity->instructions }}</div>
+                                                    <div class="activity-instructions up-ckeditor-wrapper"><div class="rich ck-content">{!! \App\Support\RichTextSanitizer::sanitize($lessonActivity->instructions) !!}</div></div>
                                                 @else
                                                     <p class="lesson-desc lesson-empty">No instructions have been added to this activity.</p>
                                                 @endif
@@ -649,7 +642,7 @@
                                     </div>
                                     <div class="quiz-detail">
                                         @if ($module->quiz->instructions)
-                                            <p class="quiz-instructions">{{ $module->quiz->instructions }}</p>
+                                            <div class="quiz-instructions up-ckeditor-wrapper"><div class="rich ck-content">{!! \App\Support\RichTextSanitizer::sanitize($module->quiz->instructions) !!}</div></div>
                                         @endif
                                         @foreach ($module->quiz->questions as $qi => $q)
                                             <div class="quiz-question">
@@ -734,40 +727,12 @@
                     <div class="pct-sub">Average completion · {{ $course->students }} enrolled</div>
                 </section>
 
-                {{-- Institutional completion review. Confirm / Reject only shows when an
-                     enrollment awaits academic-unit confirmation. --}}
                 <section class="card">
-                    <div class="card-title"><svg class="ico"><use href="#i-users"/></svg>Enrollment review</div>
-                    <div class="enr-list">
-                        @forelse ($enrollments as $enrollment)
-                            @php
-                                $unit = $enrollment->academic_unit_confirmation_status;
-                                $pillClass = $enrollment->academic_confirmation_actionable ? 'pill-pending'
-                                    : ($unit === 'confirmed' ? 'pill-ok' : ($unit === 'rejected' ? 'pill-bad' : 'pill-neutral'));
-                                $tip = 'Faculty verification: ' . ucfirst(str_replace('_', ' ', $enrollment->faculty_verification_status))
-                                     . ' · Academic unit: ' . ucfirst(str_replace('_', ' ', $unit))
-                                     . ' · Completed: ' . ($enrollment->completed_at?->format('M j, Y') ?? '—');
-                            @endphp
-                            <div class="enr-row" title="{{ $tip }}">
-                                <span class="enr-avatar"><svg class="ico"><use href="#i-user"/></svg></span>
-                                <div class="enr-name">
-                                    {{ $enrollment->student_name }}
-                                    <small>{{ ucfirst(str_replace('_', ' ', $enrollment->completion_status)) }}</small>
-                                </div>
-                                <span class="pill {{ $pillClass }}">{{ $enrollment->institutional_label }}</span>
-
-                                @if ($enrollment->academic_confirmation_actionable)
-                                    <form method="POST" action="{{ route('admin.enrollments.academic-confirm', ['id' => $course->id, 'enrollment' => $enrollment->id]) }}" class="enr-actions">
-                                        @csrf
-                                        <button type="submit" name="decision" value="confirmed" class="btn btn-blue">Confirm</button>
-                                        <button type="submit" name="decision" value="rejected" class="btn">Reject</button>
-                                    </form>
-                                @endif
-                            </div>
-                        @empty
-                            <div class="empty-note">No enrollments for this course yet.</div>
-                        @endforelse
-                    </div>
+                    <div class="card-title"><svg class="ico"><use href="#i-users"/></svg>Completion verification</div>
+                    <p>Review student enrollment status and record academic-unit decisions for this course.</p>
+                    <a class="btn btn-blue enrollment-review-link" href="{{ route('admin.courses.enrollments', $course->id) }}">
+                        Review {{ $course->students }} {{ Illuminate\Support\Str::plural('enrollment', $course->students) }}
+                    </a>
                 </section>
             </div>
         </div>

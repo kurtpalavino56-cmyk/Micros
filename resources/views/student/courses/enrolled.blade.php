@@ -149,6 +149,7 @@
                         @if($course->category)
                             <div class="cat">{{ $course->category }}</div>
                         @endif
+                        @include('components.course-rating', ['rating' => $course->rating_average, 'count' => $course->review_count])
                         <div class="progress-track">
                             <div class="progress-fill" style="width:{{ $course->progress_percent ?? 0 }}%"></div>
                         </div>
@@ -176,6 +177,7 @@
                         @if($course->category)
                             <div class="cat">{{ $course->category }}</div>
                         @endif
+                        @include('components.course-rating', ['rating' => $course->rating_average, 'count' => $course->review_count])
                         <div class="progress-track">
                             <div class="progress-fill" style="width:{{ $course->progress_percent ?? 0 }}%"></div>
                         </div>
@@ -219,4 +221,3 @@
     @include('components.responsive')
 </body>
 </html>
-
