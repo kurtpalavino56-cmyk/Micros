@@ -292,30 +292,6 @@
     }
 
 
-    .student-sidebar-layout .page-head h1,
-    .student-sidebar-layout .page-head h2,
-    .student-sidebar-layout .profile-head h1,
-    .student-sidebar-layout .profile-head h2,
-    .student-sidebar-layout .page-header h1,
-    .student-sidebar-layout .analytics-header h1,
-    .student-sidebar-layout main.student-dashboard .hero-copy > h2,
-    .student-sidebar-layout .hero-title {
-        font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        font-size: 30px;
-        font-weight: 700;
-    }
-
-    .student-sidebar-layout .page-head p:not(.eyebrow),
-    .student-sidebar-layout .profile-head p,
-    .student-sidebar-layout .page-header > p:last-child,
-    .student-sidebar-layout .analytics-header .subtitle,
-    .student-sidebar-layout main.student-dashboard .hero-copy > p:not(.eyebrow),
-    .student-sidebar-layout .hero-subheading {
-        font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        font-size: 15px;
-        font-weight: 400;
-    }
-
 
     /* ================================
        MOBILE
