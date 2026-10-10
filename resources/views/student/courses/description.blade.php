@@ -195,7 +195,7 @@
                             <h3 class="ui-card-header__title course-overview__title" id="course-overview-title">About this course</h3>
                         </div>
                         <div class="info-panel-body">
-                            <div class="course-overview__body">{!! $course->description !!}</div>
+                            <div class="rich-content">{!! $course->description !!}</div>
                         </div>
                     </section>
                 @endif

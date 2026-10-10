@@ -1095,7 +1095,7 @@
                         <div class="ann-card__title">{{ $ann['title'] }}</div>
                         <p class="ann-card__desc">
                             <span class="preview-text">{{ $ann['desc'] }}</span>
-                            <div class="full-text ck-content" hidden>{!! $ann['full_body'] !!}</div>
+                            <div class="full-text ck-content rich-content" hidden>{!! $ann['full_body'] !!}</div>
                         </p>
                         @if ($ann['has_more'])
                             <button class="ann-card__more" type="button" aria-expanded="false">More</button>

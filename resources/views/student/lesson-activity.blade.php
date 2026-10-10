@@ -12,7 +12,7 @@
         <p>{{ $activity->lesson->course->title }} · {{ $activity->lesson->title }}</p>
         <h1>{{ $activity->title }}</h1>
         <p>{{ Illuminate\Support\Str::headline($activity->activity_type) }}@if($activity->is_required) · Required for lesson completion @else · Optional @endif</p>
-        @if($activity->instructions)<div class="up-ckeditor-wrapper"><div class="ck-content">{!! \App\Support\RichTextSanitizer::sanitize($activity->instructions) !!}</div></div>@endif
+        @if($activity->instructions)<div class="up-ckeditor-wrapper"><div class="ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($activity->instructions) !!}</div></div>@endif
         @if($activity->activity_type === 'assignment')<div class="activity-note">Your instructor will review this submission. A passing result is required to complete this lesson activity.</div>@endif
         @if(session('activity_result'))
             @php($activityResult = session('activity_result'))

@@ -107,6 +107,41 @@ test('course creation normalizes fields, stores relationships, and generates uni
         ->and($second->approval_status)->toBe('draft');
 });
 
+test('course creation preserves safe rich text formatting from the editor', function () {
+    $author = User::factory()->faculty()->create();
+    $description = '<h1 style="text-align:center;color:#123456;background-image:url(javascript:alert(1));width:expression(alert(1))" onclick="alert(1)">Course highlights</h1>'
+        .'<p><span style="color:#336699;background-color:#fff4c7">Build practical skills</span></p>'
+        .'<ol><li><strong>Practice</strong></li></ol>'
+        .'<a href="javascript:alert(1)" onclick="alert(1)">Unsafe link</a>'
+        .'<a href="https://example.test/course" target="_blank" rel="noopener">Safe link</a>'
+        .'<img src="javascript:alert(1)" onerror="alert(1)">'
+        .'<oembed url="javascript:alert(1)" onload="alert(1)"></oembed>'
+        .'<oembed url="https://example.test/video"></oembed>';
+
+    $course = app(CourseCreationService::class)->create(
+        Request::create('/courses', 'POST'),
+        ['title' => 'Rich Text Course', 'description' => $description],
+        $author
+    );
+
+    expect($course->description)
+        ->toContain('<h1 style="text-align:center;color:#123456">Course highlights</h1>')
+        ->toContain('<span style="color:#336699;background-color:#fff4c7">Build practical skills</span>')
+        ->toContain('<ol><li><strong>Practice</strong></li></ol>')
+        ->toContain('<a>Unsafe link</a>')
+        ->toContain('<a href="https://example.test/course" target="_blank" rel="noopener">Safe link</a>')
+        ->toContain('<img>')
+        ->toContain('<oembed></oembed>')
+        ->toContain('<oembed url="https://example.test/video"></oembed>')
+        ->not->toContain('onclick=')
+        ->not->toContain('onerror=')
+        ->not->toContain('onload=')
+        ->not->toContain('javascript:')
+        ->not->toContain('url(')
+        ->not->toContain('expression(')
+        ->not->toContain('width:');
+});
+
 test('course module service assigns the next order and only deletes matching course modules', function () {
     $course = makeFacultyTestCourse();
     $otherCourse = makeFacultyTestCourse(['slug' => 'other-course-'.uniqid()]);

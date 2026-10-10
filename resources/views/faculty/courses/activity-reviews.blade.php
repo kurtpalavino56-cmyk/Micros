@@ -138,7 +138,7 @@
                                 </header>
 
                                 @if($activity->instructions)
-                                    <div class="assignment-instructions"><strong>Assignment instructions</strong><div class="up-ckeditor-wrapper"><div class="ck-content">{!! \App\Support\RichTextSanitizer::sanitize($activity->instructions) !!}</div></div></div>
+                                    <div class="assignment-instructions"><strong>Assignment instructions</strong><div class="up-ckeditor-wrapper"><div class="ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($activity->instructions) !!}</div></div></div>
                                 @endif
 
                                 <div class="submission-content">

@@ -177,14 +177,10 @@
         padding:32px 34px 38px;
         background:#fff;
     }
-    #lb-desc{
-        margin:0;
-        color:#1f2937;
-        font-size:16px;
-        line-height:1.75;
-    }
-    #lb-desc > :first-child{margin-top:0;}
-    #lb-desc > :last-child{margin-bottom:0;}
+    .lesson-editor-body .rich-content{font-size:16px;}
+    #lb-desc{margin:0;color:#1f2937;font-size:16px;line-height:1.75;}
+    #lb-desc>:first-child{margin-top:0;}
+    #lb-desc>:last-child{margin-bottom:0;}
     #lb-desc img{max-width:100%;height:auto;}
     #lb-desc figure.image{margin:24px 0;}
     #lb-desc figure.image img{display:block;margin-left:auto;margin-right:auto;}
@@ -192,11 +188,27 @@
     #lb-desc table{width:100%;border-collapse:collapse;}
     #lb-desc th,#lb-desc td{padding:10px 12px;border:1px solid #dfe3ec;text-align:left;}
     #lb-desc th{background:#f3f5fa;color:var(--navy);font-weight:700;}
-    #lb-desc a{color:#155eef;text-decoration:underline;}
+    #lb-desc a{color:#155eef;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px;}
+    #lb-desc a:hover{color:#0b4acb;}
     #lb-desc blockquote{margin:20px 0;padding:14px 18px;border-left:4px solid #155eef;background:#f5f7fa;border-radius:6px;}
     #lb-desc pre{display:block;margin:20px 0;padding:16px;overflow-x:auto;border-radius:10px;background:#f3f4f6;border:1px solid #d1d5db;font-family:Consolas,Monaco,"Courier New",monospace;font-size:14px;line-height:1.6;white-space:pre;}
     #lb-desc pre code{display:block;padding:0;background:transparent;border:0;font-family:inherit;font-size:inherit;}
     #lb-desc code{padding:.15rem .35rem;border-radius:4px;background:#f1f3f5;color:#374151;font-family:Consolas,Monaco,"Courier New",monospace;font-size:.9em;}
+    #lb-desc .text-align-left,#lb-desc [style*="text-align:left"]{text-align:left;}
+    #lb-desc .text-align-center,#lb-desc [style*="text-align:center"]{text-align:center;}
+    #lb-desc .text-align-right,#lb-desc [style*="text-align:right"]{text-align:right;}
+    #lb-desc .text-align-justify,#lb-desc [style*="text-align:justify"]{text-align:justify;}
+    #lb-desc figure.image.image-style-align-left{text-align:left;}
+    #lb-desc figure.image.image-style-align-center{text-align:center;}
+    #lb-desc figure.image.image-style-align-right{text-align:right;}
+    #lb-desc figure.image.image-style-align-left img,
+    #lb-desc figure.image.image-style-align-center img,
+    #lb-desc figure.image.image-style-align-right img{display:inline-block;}
+    .up-ckeditor-wrapper .ck-content .text-align-left{ text-align:left; }
+    .up-ckeditor-wrapper .ck-content .text-align-center{ text-align:center; }
+    .up-ckeditor-wrapper .ck-content .text-align-right{ text-align:right; }
+    .up-ckeditor-wrapper .ck-content .text-align-justify{ text-align:justify; }
+    .up-ckeditor-wrapper .ck-content blockquote{margin:12px 0;padding:10px 16px;border-left:4px solid #155eef;background:#f5f7fa;}
     #lb-desc .lesson-embedded-media{width:100%;margin:24px 0;}
     #lb-desc .lesson-embedded-media__frame{position:relative;width:100%;aspect-ratio:16 / 9;overflow:hidden;border-radius:12px;background:#111827;}
     #lb-desc .lesson-embedded-media__frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
@@ -240,7 +252,7 @@
         .lesson-card-topbar{padding:16px 18px;}
         .lesson-editor-body{padding:24px 20px 30px;}
         .lesson-card-label{font-size:16px;}
-        #lb-desc{font-size:15px;}
+        .lesson-editor-body .rich-content{font-size:15px;}
         #lb-desc .lesson-pdf-embed__frame{height:55vh;min-height:320px;}
         .inline-assessment-panel{padding:19px 17px;}
         .inline-assessment-header h2{font-size:19px;}
@@ -637,137 +649,6 @@
     border: 0;
 }
 
-.lesson-content pre,
-#lb-desc pre {
-    display: block;
-    margin: 18px 0;
-    padding: 16px;
-    overflow-x: auto;
-    border-radius: 10px;
-    background: #f3f4f6;
-    border: 1px solid #d1d5db;
-    font-family: Consolas, Monaco, "Courier New", monospace;
-    font-size: 14px;
-    line-height: 1.6;
-    white-space: pre;
-}
-
-.lesson-content pre code,
-#lb-desc pre code {
-    display: block;
-    padding: 0;
-    background: transparent;
-    border: 0;
-    font-family: inherit;
-    font-size: inherit;
-}
-
-
-#lb-desc blockquote {
-    margin: 18px 0;
-    padding: 12px 18px;
-    border-left: 4px solid #155eef;
-    background: #f5f7fa;
-    border-radius: 6px;
-    font-style: italic;
-}
-
-#lb-desc blockquote p:last-child {
-    margin-bottom: 0;
-}
-
-
-#lb-desc .text-align-left {
-    text-align: left;
-}
-
-#lb-desc .text-align-center {
-    text-align: center;
-}
-
-#lb-desc .text-align-right {
-    text-align: right;
-}
-
-#lb-desc .text-align-justify {
-    text-align: justify;
-}
-
-#lb-desc [style*="text-align:left"] {
-    text-align: left;
-}
-
-#lb-desc [style*="text-align:center"] {
-    text-align: center;
-}
-
-#lb-desc [style*="text-align:right"] {
-    text-align: right;
-}
-
-#lb-desc [style*="text-align:justify"] {
-    text-align: justify;
-}
-
-/*image alignment */
-#lb-desc figure.image {
-    margin: 18px 0;
-}
-
-#lb-desc figure.image.image-style-align-left {
-    text-align: left;
-}
-
-#lb-desc figure.image.image-style-align-center {
-    text-align: center;
-}
-
-#lb-desc figure.image.image-style-align-right {
-    text-align: right;
-}
-
-#lb-desc figure.image.image-style-align-left img,
-#lb-desc figure.image.image-style-align-center img,
-#lb-desc figure.image.image-style-align-right img {
-    display: inline-block;
-}
-
-/*student page styling link */
-#lb-desc a {
-    color: #155eef;
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 2px;
-}
-
-#lb-desc a:hover {
-    color: #0b4acb;
-}
-
-
-.up-ckeditor-wrapper .ck-content .text-align-left {
-    text-align: left;
-}
-
-.up-ckeditor-wrapper .ck-content .text-align-center {
-    text-align: center;
-}
-
-.up-ckeditor-wrapper .ck-content .text-align-right {
-    text-align: right;
-}
-
-.up-ckeditor-wrapper .ck-content .text-align-justify {
-    text-align: justify;
-}
-
-.up-ckeditor-wrapper .ck-content blockquote {
-    margin: 12px 0;
-    padding: 10px 16px;
-    border-left: 4px solid #155eef;
-    background: #f5f7fa;
-}
-
 .lesson-pdf-embed {
     width: 100%;
     margin: 20px 0;
@@ -809,26 +690,18 @@
     text-decoration: none;
 }
 
-.module-description-content {
-    color: #4b5563;
-    font-size: 15px;
-    line-height: 1.75;
-}
-.module-description-content > :first-child { margin-top: 0; }
-.module-description-content > :last-child { margin-bottom: 0; }
+.module-description-content{color:#4b5563;font-size:15px;line-height:1.75;}
+.module-description-content>:first-child{margin-top:0;}
+.module-description-content>:last-child{margin-bottom:0;}
 .module-description-content h1,
 .module-description-content h2,
 .module-description-content h3,
-.module-description-content h4 {
-    color: var(--navy);
-    line-height: 1.3;
-    margin: 18px 0 8px;
-}
-.module-description-content p { margin: 0 0 12px; }
+.module-description-content h4{color:var(--navy);line-height:1.3;margin:18px 0 8px;}
+.module-description-content p{margin:0 0 12px;}
 .module-description-content ul,
-.module-description-content ol { padding-left: 22px; margin: 10px 0 14px; }
-.module-description-content img { max-width: 100%; height: auto; border-radius: 10px; }
-.module-description-content a { color: #155eef; font-weight: 600; }
+.module-description-content ol{padding-left:22px;margin:10px 0 14px;}
+.module-description-content img{max-width:100%;height:auto;border-radius:10px;}
+.module-description-content a{color:#155eef;font-weight:600;}
 .module-description-empty { color: #6b7280; font-style: italic; }
 
 /* Keep the module welcome title legible against its navy hero. The page-wide
@@ -1035,7 +908,7 @@
             {{-- Info card --}}
             <div class="welcome-info-card module-description-card">
                 <h4>About this module</h4>
-                <div id="wm-description" class="module-description-content">
+                <div id="wm-description" class="module-description-content rich-content">
                     <p>Module description will appear here.</p>
                 </div>
             </div>
@@ -1059,7 +932,7 @@
                     <span class="lesson-card-label" id="lc-label">Lesson</span>
                 </div>
                 <article class="lesson-editor-body">
-                    <div id="lb-desc">
+                    <div id="lb-desc" class="rich-content">
                         <p>Lesson content will appear here.</p>
                     </div>
                 </article>
@@ -1096,7 +969,7 @@
             <header class="lesson-header-btn"><span id="final-exam-instructions-title">Final Exam Instructions</span></header>
             <article class="final-exam-instructions">
                 <h2 id="final-exam-title"></h2>
-                <div id="final-exam-instructions-content" class="final-exam-instructions-content"></div>
+                <div id="final-exam-instructions-content" class="final-exam-instructions-content rich-content"></div>
                 <button class="btn-quiz-submit" id="btn-start-final-exam" type="button" onclick="startFinalExam()">Start the exam</button>
             </article>
         </section>

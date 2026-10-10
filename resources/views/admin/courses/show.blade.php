@@ -485,7 +485,7 @@
                             $descHtml = $tidy($course->description);
                             $descBlank = trim(preg_replace('/[\s\x{00A0}]+/u', ' ', html_entity_decode(strip_tags($descHtml, '<img><oembed>')))) === '';
                         @endphp
-                        <div class="rich">{!! $descBlank ? 'No description provided.' : $descHtml !!}</div>
+                        <div class="rich rich-content">{!! $descBlank ? 'No description provided.' : $descHtml !!}</div>
                     </section>
 
                     <section class="card">
@@ -529,7 +529,7 @@
 
                             <div class="module-body">
                                 @if ($module->description)
-                                    <div class="module-sub rich">{!! $tidy($module->description) !!}</div>
+                                    <div class="module-sub rich rich-content">{!! $tidy($module->description) !!}</div>
                                 @endif
 
                                 @foreach ($module->lessons as $lesson)
@@ -554,9 +554,9 @@
                                     @endphp
                                     <div class="lesson-detail open">
                                         @if ($hasBody)
-                                            <div class="rich">{!! $lBody !!}</div>
+                                            <div class="rich rich-content">{!! $lBody !!}</div>
                                         @elseif ($hasDesc)
-                                            <div class="rich">{!! $lDesc !!}</div>
+                                            <div class="rich rich-content">{!! $lDesc !!}</div>
                                         @endif
                                         @if ($lFile && (($lesson->type ?? '') === 'Image' || $lIsImageFile))
                                             <div class="rich"><img src="{{ $lFile }}" alt="{{ $lesson->title }}"></div>
@@ -581,7 +581,7 @@
                                                     </span>
                                                 </div>
                                                 @if ($lessonQuiz->instructions)
-                                                    <div class="assessment-instructions up-ckeditor-wrapper"><div class="rich ck-content">{!! \App\Support\RichTextSanitizer::sanitize($lessonQuiz->instructions) !!}</div></div>
+                                                    <div class="assessment-instructions up-ckeditor-wrapper"><div class="rich ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($lessonQuiz->instructions) !!}</div></div>
                                                 @endif
                                                 @forelse ($lessonQuiz->questions as $qi => $question)
                                                     <div class="assessment-question">
@@ -619,7 +619,7 @@
                                                     </span>
                                                 </div>
                                                 @if (filled($lessonActivity->instructions))
-                                                    <div class="activity-instructions up-ckeditor-wrapper"><div class="rich ck-content">{!! \App\Support\RichTextSanitizer::sanitize($lessonActivity->instructions) !!}</div></div>
+                                                    <div class="activity-instructions up-ckeditor-wrapper"><div class="rich ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($lessonActivity->instructions) !!}</div></div>
                                                 @else
                                                     <p class="lesson-desc lesson-empty">No instructions have been added to this activity.</p>
                                                 @endif
@@ -642,7 +642,7 @@
                                     </div>
                                     <div class="quiz-detail">
                                         @if ($module->quiz->instructions)
-                                            <div class="quiz-instructions up-ckeditor-wrapper"><div class="rich ck-content">{!! \App\Support\RichTextSanitizer::sanitize($module->quiz->instructions) !!}</div></div>
+                                            <div class="quiz-instructions up-ckeditor-wrapper"><div class="rich ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($module->quiz->instructions) !!}</div></div>
                                         @endif
                                         @foreach ($module->quiz->questions as $qi => $q)
                                             <div class="quiz-question">

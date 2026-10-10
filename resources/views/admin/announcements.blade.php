@@ -194,7 +194,7 @@
                 <div class="ann-head">
                     <div style="min-width:0;">
                         <h3 class="ann-title">{{ $a->title }}</h3>
-                        <div class="ann-body ck-content">{!! \App\Support\RichTextSanitizer::sanitize($a->body) !!}</div>
+                        <div class="ann-body ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($a->body) !!}</div>
                         <div>
                             @foreach ($a->audience as $role)
                                 <span class="pill {{ $role }}">{{ ucfirst($role) }}</span>

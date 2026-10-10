@@ -10,19 +10,6 @@
     .public-course__hero h1{font-size:clamp(2rem,4vw,3.1rem);line-height:1.08;margin:0 0 .7rem;color:#fff}
     .public-course__sub{font-size:1.05rem;color:rgba(255,255,255,.8);margin:0 0 1rem;max-width:680px}
     .public-course__desc{font-size:.95rem;line-height:1.6;color:rgba(255,255,255,.82);max-width:720px;margin:.4rem 0 0}
-    .public-course__full-description{color:#40516e;font-size:.95rem;line-height:1.7}
-    .public-course__full-description > :first-child{margin-top:0}
-    .public-course__full-description > :last-child{margin-bottom:0}
-    .public-course__full-description h2{margin:1.5rem 0 .65rem;color:#08245f;font-size:1.55rem;line-height:1.3}
-    .public-course__full-description h1{margin:0 0 .65rem;color:#08245f;font-size:1.55rem;line-height:1.3}
-    .public-course__full-description h3{margin:1.25rem 0 .55rem;color:#123b78;font-size:1.28rem;line-height:1.35}
-    .public-course__full-description h4{margin:1rem 0 .45rem;color:#214b84;font-size:1.08rem;line-height:1.4}
-    .public-course__full-description p{margin:0 0 1rem}
-    .public-course__full-description figure.image{max-width:100%;margin:1rem 0}
-    .public-course__full-description figure.image img{display:block;width:auto;max-width:100%;height:auto}
-    .public-course__full-description ul,.public-course__full-description ol{margin:.6rem 0 1rem;padding-left:1.6rem}
-    .public-course__full-description li{margin:.3rem 0}
-    .public-course__full-description a{color:#1c5ca8;text-decoration:underline}
     .public-course__thumb{min-height:210px;border-radius:10px;background:url('{{ $course->thumbnail_url ? asset($course->thumbnail_url) : asset('Images/PSU_Front_Building.jpg') }}') center/cover}
     .public-course__actions{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1.4rem}
     .public-course__button{display:inline-flex;align-items:center;justify-content:center;border-radius:8px;padding:.72rem 1rem;font-weight:750;background:#f5c518;color:#13176b}
@@ -97,7 +84,7 @@
                 @if(trim(strip_tags((string) $course->description)) !== '')
                     <article class="public-course__panel public-course__full-description">
                         <h2>About this course</h2>
-                        {!! $course->description !!}
+                        <div class="rich-content">{!! $course->description !!}</div>
                     </article>
                 @endif
 

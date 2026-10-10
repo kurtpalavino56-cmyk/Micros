@@ -94,7 +94,7 @@ class RichTextSanitizer
                             continue;
                         }
 
-                        if (in_array($name, ['src', 'href'], true) && ! preg_match('/^(https?:\/\/|\/)/i', $value)) {
+                        if (! preg_match('/^(https?:\/\/|\/)/i', $value)) {
                             continue;
                         }
                     }
