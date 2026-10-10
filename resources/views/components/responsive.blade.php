@@ -279,9 +279,12 @@
             appearance: none !important;
             min-width: 0 !important;
             width: 100% !important;
-            max-width: 100% !important;
             box-sizing: border-box !important;
         }
+        body:not(.page-onboarding) input[type="date"],
+        body:not(.page-onboarding) input[type="time"],
+        body:not(.page-onboarding) input[type="datetime-local"],
+        body:not(.page-onboarding) input[type="month"] { max-width: 100% !important; }
         /* iOS centres the native value; match the other text fields. */
         input[type="date"]::-webkit-date-and-time-value { text-align: left !important; }
 
@@ -813,4 +816,3 @@
         });
     })();
 </script>
-

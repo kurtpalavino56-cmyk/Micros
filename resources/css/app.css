@@ -111,6 +111,115 @@
     --ui-space-6: 1.5rem;
     --ui-space-8: 2rem;
     --ui-space-12: 3rem;
+
+    --dashboard-hero-color: #fff;
+    --dashboard-hero-subtitle: rgba(255, 255, 255, .72);
+    --dashboard-hero-eyebrow: #f4c430;
+    --dashboard-hero-background-image:
+        radial-gradient(ellipse 34% 190% at 8% 0%, rgba(37, 83, 220, .58) 0%, rgba(37, 83, 220, .3) 44%, transparent 82%),
+        radial-gradient(ellipse 40% 210% at 42% 120%, rgba(30, 65, 190, .68) 0%, rgba(30, 65, 190, .32) 48%, transparent 84%),
+        radial-gradient(ellipse 34% 180% at 76% -35%, rgba(56, 76, 205, .62) 0%, rgba(56, 76, 205, .28) 48%, transparent 84%),
+        radial-gradient(ellipse 32% 190% at 105% 100%, rgba(25, 76, 190, .6) 0%, rgba(25, 76, 190, .28) 50%, transparent 86%),
+        radial-gradient(ellipse 55% 150% at 54% 48%, rgba(25, 42, 132, .5) 0%, transparent 88%),
+        linear-gradient(112deg, #07143f 0%, #101f70 52%, #081742 100%);
+    --dashboard-hero-shadow: 0 14px 35px rgba(11, 27, 69, .14);
+    --dashboard-hero-meta-border: rgba(255, 255, 255, .19);
+    --dashboard-hero-meta-background: rgba(255, 255, 255, .1);
+    --dashboard-hero-decoration-border: rgba(255, 255, 255, .16);
+    --dashboard-hero-decoration-shadow: 0 0 0 25px rgba(255, 255, 255, .04), 0 0 0 52px rgba(255, 255, 255, .03);
+    --dashboard-hero-action-background: #e5b43c;
+    --dashboard-hero-action-color: #08245f;
+
+    --dashboard-stat-container-color: #0e1a3a;
+    --dashboard-stat-decoration-color: #6e7e9b;
+    --dashboard-stat-navy: #0b1b45;
+    --dashboard-stat-gold: #f4c430;
+    --dashboard-stat-cyan: #2447d4;
+    --dashboard-stat-deep: #fff5d1;
+    --dashboard-stat-ink: #0b1b45;
+    --dashboard-stat-shadow: 0 12px 26px rgba(11, 27, 69, .12);
+    --dashboard-stat-hover-shadow: 0 18px 32px rgba(11, 27, 69, .2);
+    --dashboard-stat-deep-shadow: inset 0 0 0 1px rgba(244, 196, 48, .35);
+    --dashboard-stat-decoration: rgba(255, 255, 255, .11);
+    --dashboard-stat-icon-default-background: rgba(255, 255, 255, .12);
+    --dashboard-stat-icon-background: rgba(11, 27, 69, .09);
+
+    --dashboard-featured-gradient: linear-gradient(145deg, #0b1b45, #2447d4);
+    --dashboard-featured-shadow: 0 14px 30px rgba(11, 27, 69, .14);
+    --dashboard-featured-color: #fff;
+    --dashboard-featured-muted: rgba(255, 255, 255, .75);
+    --dashboard-featured-accent: #f4c430;
+    --dashboard-featured-decoration: rgba(229, 180, 60, .78);
+    --dashboard-featured-action-color: #0b1b45;
+
+    --course-hero-background: #172f94;
+    --course-hero-color: #fff;
+    --course-hero-shadow: 0 10px 28px rgba(19, 23, 107, .14);
+    --course-hero-description: rgba(255, 255, 255, .86);
+    --course-hero-skills-label: rgba(255, 255, 255, .7);
+    --course-hero-meta: rgba(255, 255, 255, .9);
+    --course-hero-meta-border: rgba(255, 255, 255, .18);
+    --course-hero-category-background: #e8edf7;
+    --course-hero-tag-color: #13176b;
+    --course-hero-level-background: #f5c518;
+    --course-hero-feature-border: rgba(255, 255, 255, .45);
+    --course-hero-skill-background: rgba(255, 255, 255, .12);
+    --course-hero-skill-border: rgba(255, 255, 255, .2);
+
+    --onboarding-navy: #111b3a;
+    --onboarding-blue: #1736c8;
+    --onboarding-gold: #ffd400;
+    --onboarding-gold-soft: #fff7d2;
+    --onboarding-ink: #182442;
+    --onboarding-muted: #73809a;
+    --onboarding-line: #e3e8f1;
+    --onboarding-canvas: #f4f6fb;
+    --onboarding-white: #fff;
+    --onboarding-shadow: 0 18px 42px rgba(23, 41, 87, .08);
+    --onboarding-radial-glow: rgba(255, 244, 185, .78);
+    --onboarding-brand-gold: #efc400;
+    --onboarding-brand-psu: #67738b;
+    --onboarding-brand-label: #102b8f;
+    --onboarding-progress-copy: #8a96aa;
+    --onboarding-finish-muted: #8290a7;
+    --onboarding-progress-track: #e0e5ed;
+    --onboarding-step-title: #111a31;
+    --onboarding-step-subtitle: #75819a;
+    --onboarding-illustration-text: #25375b;
+    --onboarding-illustration-gradient-start: #fff0a6;
+    --onboarding-illustration-gradient-middle: #fff7d5;
+    --onboarding-illustration-gradient-end: #e7ecff;
+    --onboarding-sparkle-background: #fff3b5;
+    --onboarding-sparkle-color: #122dc4;
+    --onboarding-field-label: #34415b;
+    --onboarding-field-border: #dfe5ef;
+    --onboarding-field-focus: #4a63ff;
+    --onboarding-field-focus-shadow: rgba(74, 99, 255, .12);
+    --onboarding-validation-border: #ffd8d8;
+    --onboarding-validation-background: #fff4f4;
+    --onboarding-validation-color: #a33232;
+    --onboarding-skill-border: #dfe5ef;
+    --onboarding-skill-background: #fff;
+    --onboarding-skill-color: #34415b;
+    --onboarding-skill-hover-border: #aab8ff;
+    --onboarding-skill-hover-background: #f8f9ff;
+    --onboarding-skill-checked-border: #263fd0;
+    --onboarding-skill-checked-background: #e9edff;
+    --onboarding-skill-checked-color: #172eae;
+    --onboarding-skill-checked-shadow: rgba(38, 63, 208, .08);
+    --onboarding-skill-focus-outline: rgba(74, 99, 255, .35);
+    --onboarding-more-border: #8998e9;
+    --onboarding-more-background: #f7f8ff;
+    --onboarding-more-color: #1835bf;
+    --onboarding-more-hover-background: #edf0ff;
+    --onboarding-button-color: #10235d;
+    --onboarding-button-hover-background: #ffe04d;
+    --onboarding-button-shadow: 0 8px 16px rgba(255, 212, 0, .2);
+    --onboarding-button-hover-shadow: 0 11px 19px rgba(255, 212, 0, .3);
+    --onboarding-secondary-border: #dfe5ef;
+    --onboarding-secondary-color: #394660;
+    --onboarding-secondary-hover-background: #f7f8fb;
+    --onboarding-secondary-hover-shadow: 0 6px 15px rgba(30, 45, 70, .08);
 }
 }
 
@@ -3262,127 +3371,161 @@ body.app-shell.page-course-description{
 
 /* resources/views/student/onboarding.blade.php styles 1 */
 body.app-shell.page-onboarding {
-            color-scheme: light;
-            --navy: var(--ui-brand-dark);
-            --blue: var(--ui-brand-blue);
-            --gold: var(--ui-accent-yellow);
-            --gold-soft: var(--ui-accent-yellow-soft);
-            --ink: var(--ui-text-strong);
-            --muted: var(--ui-text-muted);
-            --line: var(--ui-border);
-            --canvas: var(--ui-surface-subtle);
-            --white: var(--ui-surface);
-            --shadow: 0 18px 42px rgba(23, 41, 87, .08);
-        }
+    color-scheme: light;
+    min-height: 100vh;
+    margin: 0;
+    color: var(--onboarding-ink);
+    background:
+        radial-gradient(ellipse at 2% 8%, var(--onboarding-radial-glow), transparent 30rem),
+        var(--onboarding-canvas);
+    font: 400 15px/1.55 'Inter', sans-serif;
+}
 
-        body.app-shell.page-onboarding .onboard-brand {
-            position:relative; top:auto; left:auto; width:min(100% - 36px, 674px); margin:0 auto; padding-top:1rem;
-            display:flex; align-items:center; gap:8px; color:var(--blue);
-            font:900 var(--text-base)/1 var(--font-display); letter-spacing:-.04em;
-        }
-        body.app-shell.page-onboarding .onboard-brand .brand-gold { color:var(--ui-accent-yellow); }
-        body.app-shell.page-onboarding .onboard-brand .brand-psu { margin-left:1px; color:var(--ui-text-muted); font:500 var(--text-xs)/1 'Inter',sans-serif; letter-spacing:.04em; }
-        body.app-shell.page-onboarding .onboard-brand .brand-label { margin-left:3px; color:var(--ui-brand-dark); font:700 var(--text-xs)/1 'Inter',sans-serif; letter-spacing:.2em; }
+body.app-shell.page-onboarding .app-main--auth {
+    display: block;
+    min-height: 100vh;
+    width: 100%;
+    padding: 0;
+}
+
+body.app-shell.page-onboarding button,
+body.app-shell.page-onboarding input,
+body.app-shell.page-onboarding select,
+body.app-shell.page-onboarding textarea {
+    font: inherit;
+}
+
+body.app-shell.page-onboarding .onboard-brand {
+    position: absolute;
+    top: 26px;
+    left: clamp(20px, 4vw, 56px);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--onboarding-blue);
+    font: 900 16px/1 'Poppins', sans-serif;
+    letter-spacing: -.04em;
+}
+
+body.app-shell.page-onboarding .onboard-brand .brand-gold {
+    color: var(--onboarding-brand-gold);
+}
+
+body.app-shell.page-onboarding .onboard-brand .brand-psu {
+    margin-left: 1px;
+    color: var(--onboarding-brand-psu);
+    font: 500 10px/1 'Inter', sans-serif;
+    letter-spacing: .04em;
+}
+
+body.app-shell.page-onboarding .onboard-brand .brand-label {
+    margin-left: 3px;
+    color: var(--onboarding-brand-label);
+    font: 700 10px/1 'Inter', sans-serif;
+    letter-spacing: .2em;
+}
+
         body.app-shell.page-onboarding .wizard-wrap { width:min(100% - 36px, 674px); margin:0 auto; padding:76px 0 48px; }
         body.app-shell.page-onboarding .wizard-progress { margin-bottom:25px; }
-        body.app-shell.page-onboarding .progress-copy { display:flex; justify-content:space-between; gap:12px; margin-bottom:12px; color:var(--ui-text-muted); font-size:var(--text-xs); font-weight:700; }
-        body.app-shell.page-onboarding .progress-track { height:6px; overflow:hidden; border-radius:var(--ui-radius-pill); background:var(--ui-border); }
-        body.app-shell.page-onboarding .progress-fill { width:11.12%; height:100%; border-radius:inherit; background:var(--ui-brand-blue); transition:width .25s ease; }
-        body.app-shell.page-onboarding .step-title { margin:0; color:var(--ui-text-strong); font:800 clamp(var(--text-2xl),5vw,var(--text-3xl))/1.06 var(--font-display); letter-spacing:-.045em; }
-        body.app-shell.page-onboarding .step-subtitle { margin:9px 0 21px; color:var(--ui-text-muted); font-size:var(--text-sm); }
+        body.app-shell.page-onboarding .progress-copy { display:flex; justify-content:space-between; gap:12px; margin-bottom:12px; color:var(--onboarding-progress-copy); font-size:11px; font-weight:700; }
+        body.app-shell.page-onboarding .progress-track { height:6px; overflow:hidden; border-radius:999px; background:var(--onboarding-progress-track); }
+        body.app-shell.page-onboarding .progress-fill { width:11.12%; height:100%; border-radius:inherit; background:var(--onboarding-gold); transition:width .25s ease; }
+        body.app-shell.page-onboarding .step-title { margin:0; color:var(--onboarding-step-title); font:800 clamp(30px,5vw,46px)/1.06 'Poppins',sans-serif; letter-spacing:-.045em; }
+        body.app-shell.page-onboarding .step-subtitle { margin:9px 0 21px; color:var(--onboarding-step-subtitle); font-size:15px; }
         body.app-shell.page-onboarding .illustration {
             position:relative; isolation:isolate; min-height:300px; margin:0 0 21px;
             display:flex; flex-direction:column; align-items:center; justify-content:center;
             gap:11px; border:0; border-radius:0; background:transparent; box-shadow:none;
-            color:var(--ui-text-strong); font-size:var(--text-sm); font-weight:600;
+            color:var(--onboarding-illustration-text); font-size:13px; font-weight:600;
         }
         body.app-shell.page-onboarding .illustration::before {
             position:absolute; z-index:-1; top:50%; left:50%; width:min(78%, 430px); height:250px;
             border-radius:61% 39% 43% 57% / 46% 38% 62% 54%;
-            background:linear-gradient(135deg,var(--ui-surface-subtle) 0%,var(--ui-surface-subtle) 52%,var(--color-psu-blue-100) 100%);
+            background:linear-gradient(135deg,var(--onboarding-illustration-gradient-start) 0%,var(--onboarding-illustration-gradient-middle) 52%,var(--onboarding-illustration-gradient-end) 100%);
             content:""; transform:translate(-50%,-50%) rotate(-6deg);
         }
         body.app-shell.page-onboarding .step-panel[data-step="1"] .illustration::before {
             border-radius:31% 69% 48% 52% / 61% 32% 68% 39%;
-            background:linear-gradient(135deg,var(--ui-surface-subtle) 0%,var(--ui-surface-subtle) 52%,var(--color-psu-blue-100) 100%);
+            background:linear-gradient(135deg,var(--onboarding-illustration-gradient-start) 0%,var(--onboarding-illustration-gradient-middle) 52%,var(--onboarding-illustration-gradient-end) 100%);
             transform:translate(-50%,-50%) rotate(13deg);
         }
         body.app-shell.page-onboarding .step-panel[data-step="2"] .illustration::before {
             border-radius:72% 28% 61% 39% / 35% 66% 34% 65%;
-            background:linear-gradient(135deg,var(--ui-surface-subtle) 0%,var(--ui-surface-subtle) 52%,var(--color-psu-blue-100) 100%);
+            background:linear-gradient(135deg,var(--onboarding-illustration-gradient-start) 0%,var(--onboarding-illustration-gradient-middle) 52%,var(--onboarding-illustration-gradient-end) 100%);
             transform:translate(-50%,-50%) rotate(-14deg);
         }
         body.app-shell.page-onboarding .step-panel[data-step="3"] .illustration::before {
             border-radius:43% 57% 29% 71% / 72% 41% 59% 28%;
-            background:linear-gradient(135deg,var(--ui-surface-subtle) 0%,var(--ui-surface-subtle) 52%,var(--color-psu-blue-100) 100%);
+            background:linear-gradient(135deg,var(--onboarding-illustration-gradient-start) 0%,var(--onboarding-illustration-gradient-middle) 52%,var(--onboarding-illustration-gradient-end) 100%);
             transform:translate(-50%,-50%) rotate(19deg);
         }
         body.app-shell.page-onboarding .step-panel[data-step="4"] .illustration::before {
             border-radius:26% 74% 40% 60% / 49% 72% 28% 51%;
-            background:linear-gradient(135deg,var(--ui-surface-subtle) 0%,var(--ui-surface-subtle) 52%,var(--color-psu-blue-100) 100%);
+            background:linear-gradient(135deg,var(--onboarding-illustration-gradient-start) 0%,var(--onboarding-illustration-gradient-middle) 52%,var(--onboarding-illustration-gradient-end) 100%);
             transform:translate(-50%,-50%) rotate(-19deg);
         }
         body.app-shell.page-onboarding .step-panel[data-step="5"] .illustration::before {
             border-radius:64% 36% 73% 27% / 31% 58% 42% 69%;
-            background:linear-gradient(135deg,var(--ui-surface-subtle) 0%,var(--ui-surface-subtle) 52%,var(--color-psu-blue-100) 100%);
+            background:linear-gradient(135deg,var(--onboarding-illustration-gradient-start) 0%,var(--onboarding-illustration-gradient-middle) 52%,var(--onboarding-illustration-gradient-end) 100%);
             transform:translate(-50%,-50%) rotate(23deg);
         }
         body.app-shell.page-onboarding .step-panel[data-step="6"] .illustration::before {
             border-radius:35% 65% 24% 76% / 63% 27% 73% 37%;
-            background:linear-gradient(135deg,var(--ui-surface-subtle) 0%,var(--ui-surface-subtle) 52%,var(--color-psu-blue-100) 100%);
+            background:linear-gradient(135deg,var(--onboarding-illustration-gradient-start) 0%,var(--onboarding-illustration-gradient-middle) 52%,var(--onboarding-illustration-gradient-end) 100%);
             transform:translate(-50%,-50%) rotate(-24deg);
         }
         body.app-shell.page-onboarding .step-panel[data-step="7"] .illustration::before {
             border-radius:78% 22% 55% 45% / 43% 73% 27% 57%;
-            background:linear-gradient(135deg,var(--ui-surface-subtle) 0%,var(--ui-surface-subtle) 52%,var(--color-psu-blue-100) 100%);
+            background:linear-gradient(135deg,var(--onboarding-illustration-gradient-start) 0%,var(--onboarding-illustration-gradient-middle) 52%,var(--onboarding-illustration-gradient-end) 100%);
             transform:translate(-50%,-50%) rotate(9deg);
         }
         body.app-shell.page-onboarding .step-panel[data-step="8"] .illustration::before {
             border-radius:22% 78% 67% 33% / 76% 39% 61% 24%;
-            background:linear-gradient(135deg,var(--ui-surface-subtle) 0%,var(--ui-surface-subtle) 52%,var(--color-psu-blue-100) 100%);
+            background:linear-gradient(135deg,var(--onboarding-illustration-gradient-start) 0%,var(--onboarding-illustration-gradient-middle) 52%,var(--onboarding-illustration-gradient-end) 100%);
             transform:translate(-50%,-50%) rotate(-8deg);
         }
         body.app-shell.page-onboarding .illustration img { position:relative; display:block; width:min(calc(100% - 24px), 420px); height:280px; object-fit:contain; }
-        body.app-shell.page-onboarding .sparkle { display:grid; width:56px; height:56px; place-items:center; border-radius:50%; background:var(--ui-accent-yellow-soft); color:var(--ui-brand-blue); }
+        body.app-shell.page-onboarding .sparkle { display:grid; width:56px; height:56px; place-items:center; border-radius:50%; background:var(--onboarding-sparkle-background); color:var(--onboarding-sparkle-color); }
         body.app-shell.page-onboarding .sparkle svg { width:25px; height:25px; }
         body.app-shell.page-onboarding .step-panel { min-height:250px; }
-        body.app-shell.page-onboarding .step-panel[hidden] { display:none !important; }
-        body.app-shell.page-onboarding .field-label { display:block; margin:0 0 9px; color:var(--ui-text-body); font-size:var(--text-sm); font-weight:700; }
+        body.app-shell.page-onboarding .step-panel[hidden] { display:none; }
+        body.app-shell.page-onboarding .field-label { display:block; margin:0 0 9px; color:var(--onboarding-field-label); font-size:13px; font-weight:700; }
         body.app-shell.page-onboarding .field-control {
             display:block; width:100%; min-height:58px; padding:14px 18px;
-            border:1.5px solid var(--ui-border-strong); border-radius:var(--ui-radius-lg); outline:none;
-            background:var(--white); color:var(--ink); font-size:var(--text-sm);
+            border:1.5px solid var(--onboarding-field-border); border-radius:17px; outline:none;
+            background:var(--onboarding-white); color:var(--onboarding-ink); font-size:15px;
             transition:border-color .18s, box-shadow .18s;
         }
-        body.app-shell.page-onboarding .field-control:focus { border-color:var(--ui-brand-blue); box-shadow:0 0 0 3px rgba(74,99,255,.12); }
+        body.app-shell.page-onboarding .field-control option { padding:0 2px 1px; }
+        body.app-shell.page-onboarding .field-control:focus { border-color:var(--onboarding-field-focus); box-shadow:0 0 0 3px var(--onboarding-field-focus-shadow); }
         body.app-shell.page-onboarding textarea.field-control { min-height:130px; resize:vertical; }
-        body.app-shell.page-onboarding .field-hint { margin:9px 0 0; color:var(--muted); font-size:var(--text-xs); }
+        body.app-shell.page-onboarding .field-hint { margin:9px 0 0; color:var(--onboarding-muted); font-size:12px; }
         body.app-shell.page-onboarding .validation-message {
-            margin:0 0 17px; padding:12px 15px; border:1px solid var(--ui-danger-surface);
-            border-radius:var(--ui-radius-md); background:var(--ui-danger-surface); color:var(--ui-danger); font-size:var(--text-sm); font-weight:600;
+            margin:0 0 17px; padding:12px 15px; border:1px solid var(--onboarding-validation-border);
+            border-radius:13px; background:var(--onboarding-validation-background); color:var(--onboarding-validation-color); font-size:13px; font-weight:600;
         }
         body.app-shell.page-onboarding .validation-message:empty { display:none; }
         body.app-shell.page-onboarding .validation-message ul { margin:0; padding-left:19px; }
         body.app-shell.page-onboarding .skills-grid { display:flex; flex-wrap:wrap; gap:10px; }
         body.app-shell.page-onboarding .skill-option { position:relative; display:inline-flex; }
-        body.app-shell.page-onboarding .skill-option[hidden] { display:none !important; }
+        body.app-shell.page-onboarding .skill-option[hidden] { display:none; }
         body.app-shell.page-onboarding .skill-option input { position:absolute; width:1px; height:1px; opacity:0; }
         body.app-shell.page-onboarding .skill-bubble {
             display:inline-flex; min-height:43px; align-items:center; justify-content:center;
-            padding:9px 16px; border:1px solid var(--ui-border-strong); border-radius:var(--ui-radius-pill);
-            background:var(--ui-surface); color:var(--ui-text-body); font-size:var(--text-sm); font-weight:600;
+            padding:9px 16px; border:1px solid var(--onboarding-skill-border); border-radius:999px;
+            background:var(--onboarding-skill-background); color:var(--onboarding-skill-color); font-size:13px; font-weight:600;
             cursor:pointer; user-select:none; transition:transform .16s,border-color .16s,background .16s,box-shadow .16s,color .16s;
         }
-        body.app-shell.page-onboarding .skill-bubble:hover { transform:translateY(-1px); border-color:var(--color-psu-blue-200); background:var(--color-psu-blue-50); }
-        body.app-shell.page-onboarding .skill-option input:checked + .skill-bubble { border-color:var(--ui-brand-blue); background:var(--color-psu-blue-100); color:var(--ui-brand-blue); box-shadow:0 0 0 2px rgba(38,63,208,.08); }
-        body.app-shell.page-onboarding .skill-option input:focus-visible + .skill-bubble { outline:3px solid rgba(74,99,255,.35); outline-offset:2px; }
+        body.app-shell.page-onboarding .skill-bubble:hover { transform:translateY(-1px); border-color:var(--onboarding-skill-hover-border); background:var(--onboarding-skill-hover-background); }
+        body.app-shell.page-onboarding .skill-option input:checked + .skill-bubble { border-color:var(--onboarding-skill-checked-border); background:var(--onboarding-skill-checked-background); color:var(--onboarding-skill-checked-color); box-shadow:0 0 0 2px var(--onboarding-skill-checked-shadow); }
+        body.app-shell.page-onboarding .skill-option input:focus-visible + .skill-bubble { outline:3px solid var(--onboarding-skill-focus-outline); outline-offset:2px; }
         body.app-shell.page-onboarding .more-skills {
-            min-height:43px; padding:9px 17px; border:1px dashed var(--color-psu-blue-400); border-radius:var(--ui-radius-pill);
-            background:var(--color-psu-blue-50); color:var(--ui-brand-blue); font-size:var(--text-sm); font-weight:800; cursor:pointer;
+            min-height:43px; padding:9px 17px; border:1px dashed var(--onboarding-more-border); border-radius:999px;
+            background:var(--onboarding-more-background); color:var(--onboarding-more-color); font-size:13px; font-weight:800; cursor:pointer;
             transition:background .18s,transform .18s;
         }
-        body.app-shell.page-onboarding .more-skills:hover { transform:translateY(-1px); background:var(--color-psu-blue-50); }
-        body.app-shell.page-onboarding .skills-count { margin:13px 0 0; color:var(--muted); font-size:var(--text-xs); }
+        body.app-shell.page-onboarding .more-skills:hover { transform:translateY(-1px); background:var(--onboarding-more-hover-background); }
+        body.app-shell.page-onboarding .skills-count { margin:13px 0 0; color:var(--onboarding-muted); font-size:12px; }
         body.app-shell.page-onboarding .other-school { margin-top:14px; }
         body.app-shell.page-onboarding .other-school[hidden] { display:none; }
         body.app-shell.page-onboarding .wizard-actions {
@@ -3391,42 +3534,51 @@ body.app-shell.page-onboarding {
         }
         body.app-shell.page-onboarding .wizard-actions .right-actions { display:flex; gap:10px; margin-left:auto; }
         body.app-shell.page-onboarding .wizard-button {
-            min-height:48px; padding:12px 23px; border:0; border-radius:var(--ui-radius-lg);
-            background:var(--gold); color:var(--ui-brand-dark); font-size:var(--text-sm); font-weight:800;
-            cursor:pointer; box-shadow:0 8px 16px rgba(255,212,0,.2);
+            min-height:48px; padding:12px 23px; border:0; border-radius:15px;
+            background:var(--onboarding-gold); color:var(--onboarding-button-color); font-size:13px; font-weight:800;
+            cursor:pointer; box-shadow:var(--onboarding-button-shadow);
             transition:transform .16s,background .16s,box-shadow .16s;
         }
-        body.app-shell.page-onboarding .wizard-button:hover { transform:translateY(-2px); background:var(--ui-accent-yellow); box-shadow:0 11px 19px rgba(255,212,0,.3); }
+        body.app-shell.page-onboarding .wizard-button:hover { transform:translateY(-2px); background:var(--onboarding-button-hover-background); box-shadow:var(--onboarding-button-hover-shadow); }
         body.app-shell.page-onboarding .wizard-button:active { transform:translateY(0); }
-        body.app-shell.page-onboarding .wizard-button.secondary { border:1px solid var(--ui-border-strong); background:var(--ui-surface); color:var(--ui-text-body); box-shadow:none; }
-        body.app-shell.page-onboarding .wizard-button.secondary:hover { background:var(--ui-surface-subtle); box-shadow:0 6px 15px rgba(30,45,70,.08); }
+        body.app-shell.page-onboarding .wizard-button.secondary { border:1px solid var(--onboarding-secondary-border); background:var(--onboarding-white); color:var(--onboarding-secondary-color); box-shadow:none; }
+        body.app-shell.page-onboarding .wizard-button.secondary:hover { background:var(--onboarding-secondary-hover-background); box-shadow:var(--onboarding-secondary-hover-shadow); }
         body.app-shell.page-onboarding .wizard-button[hidden] { display:none; }
-        body.app-shell.page-onboarding .finish-note { margin:12px 0 0; color:var(--muted); font-size:var(--text-xs); text-align:right; }
+        body.app-shell.page-onboarding .finish-note { margin:12px 0 0; color:var(--onboarding-finish-muted); font-size:12px; text-align:right; }
         @media (max-width:620px) {
-            body.app-shell.page-onboarding .onboard-brand { top:auto; left:auto; }
+            body.app-shell.page-onboarding .onboard-brand { top:19px; left:18px; }
             body.app-shell.page-onboarding .wizard-wrap { width:min(100% - 30px, 674px); padding-top:72px; }
             body.app-shell.page-onboarding .illustration { min-height:260px; }
             body.app-shell.page-onboarding .illustration::before { width:88%; height:210px; }
             body.app-shell.page-onboarding .illustration img { height:240px; }
-            body.app-shell.page-onboarding .step-title { font-size:var(--text-3xl); }
-            body.app-shell.page-onboarding .step-subtitle { font-size:var(--text-sm); }
+            body.app-shell.page-onboarding .step-title { font-size:34px; }
+            body.app-shell.page-onboarding .step-subtitle { font-size:14px; }
             body.app-shell.page-onboarding .step-panel { min-height:260px; }
-            body.app-shell.page-onboarding .skill-bubble { min-height:40px; padding:8px 13px; font-size:var(--text-xs); }
+            body.app-shell.page-onboarding .skill-bubble { min-height:40px; padding:8px 13px; font-size:12px; }
             body.app-shell.page-onboarding .wizard-actions { margin-top:18px; }
             body.app-shell.page-onboarding .wizard-button { min-height:46px; padding:11px 17px; }
         }
-        @media (prefers-reduced-motion:reduce) { body.app-shell.page-onboarding *, body.app-shell.page-onboarding *::before, body.app-shell.page-onboarding *::after { scroll-behavior:auto !important; transition-duration:.01ms !important; } }
+        @media (prefers-reduced-motion:reduce) { body.app-shell.page-onboarding *, body.app-shell.page-onboarding *::before, body.app-shell.page-onboarding *::after { scroll-behavior:auto; transition-duration:.01ms; } }
 }
 
 @layer pages {
 body.app-shell.page-dashboard .student-dashboard .hero {
-    border: 1px solid var(--ui-border);
-    background: linear-gradient(var(--ui-overlay-light), var(--ui-overlay-light)), var(--dashboard-hero-image) right center / cover;
-    color: var(--ui-text-strong);
+    border: 0;
+    background-color: transparent;
+    background-image: var(--dashboard-hero-background-image);
+    background-size: cover;
+    background-position: center;
+    box-shadow: var(--dashboard-hero-shadow);
+    color: var(--dashboard-hero-color);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--ui-space-6);
+}
+
+body.app-shell.page-dashboard .student-dashboard .hero::after {
+    border-color: var(--dashboard-hero-decoration-border);
+    box-shadow: var(--dashboard-hero-decoration-shadow);
 }
 
 body.app-shell.page-dashboard .student-dashboard .hero-copy {
@@ -3435,50 +3587,61 @@ body.app-shell.page-dashboard .student-dashboard .hero-copy {
 }
 
 body.app-shell.page-dashboard .student-dashboard .hero-action {
+    border-color: transparent;
+    background: var(--dashboard-hero-action-background);
+    color: var(--dashboard-hero-action-color);
     position: static;
     flex: 0 0 auto;
     align-self: center;
     margin: 0 0 0 auto;
 }
 
-body.app-shell.page-dashboard .student-dashboard .hero h2 {
-    color: var(--ui-text-strong);
+body.app-shell.page-dashboard .student-dashboard .hero-action:hover {
+    border-color: transparent;
+    background: var(--dashboard-hero-action-background);
+    color: var(--dashboard-hero-action-color);
 }
 
-body.app-shell.page-dashboard .student-dashboard .hero p {
-    color: var(--ui-text-body);
+body.app-shell.page-dashboard .student-dashboard .hero h2 {
+    color: var(--dashboard-hero-color);
+}
+
+body.app-shell.page-dashboard .student-dashboard .hero p:not(.eyebrow) {
+    color: var(--dashboard-hero-subtitle);
 }
 
 body.app-shell.page-dashboard .student-dashboard .hero .eyebrow {
-    color: var(--ui-brand-blue);
+    color: var(--dashboard-hero-eyebrow);
 }
 
 body.app-shell.page-dashboard .student-dashboard .hero-meta span {
-    border-color: var(--ui-border);
-    background: var(--ui-surface-subtle);
-    color: var(--ui-text-body);
+    border-color: var(--dashboard-hero-meta-border);
+    background: var(--dashboard-hero-meta-background);
+    color: var(--dashboard-hero-color);
 }
 
 body.app-shell.page-dashboard .student-dashboard .featured-course {
-    border: 1px solid var(--ui-border);
-    background: var(--ui-surface);
-    color: var(--ui-text-strong);
+    border: 0;
+    background: var(--dashboard-featured-gradient);
+    box-shadow: var(--dashboard-featured-shadow);
+    color: var(--dashboard-featured-color);
 }
 
 body.app-shell.page-dashboard .student-dashboard .featured-course::after {
-    display: none;
+    display: block;
+    border-color: var(--dashboard-featured-decoration);
 }
 
 body.app-shell.page-dashboard .student-dashboard .featured-course small {
-    color: var(--ui-text-muted);
+    color: var(--dashboard-featured-accent);
 }
 
 body.app-shell.page-dashboard .student-dashboard .featured-course h4 {
-    color: var(--ui-text-strong);
+    color: var(--dashboard-featured-color);
 }
 
 body.app-shell.page-dashboard .student-dashboard .featured-course p {
-    color: var(--ui-text-body);
+    color: var(--dashboard-featured-muted);
 }
 
 body.app-shell.page-dashboard .student-dashboard .stat-card,
@@ -3486,21 +3649,65 @@ body.app-shell.page-dashboard .student-dashboard .stat-card.c-navy,
 body.app-shell.page-dashboard .student-dashboard .stat-card.c-gold,
 body.app-shell.page-dashboard .student-dashboard .stat-card.c-cyan,
 body.app-shell.page-dashboard .student-dashboard .stat-card.c-deep {
-    border: 1px solid var(--ui-border);
-    background: var(--ui-surface);
-    color: var(--ui-text-strong);
-    box-shadow: var(--ui-shadow-soft);
+    border: 0;
+    background: var(--dashboard-stat-navy);
+    color: var(--ui-on-brand);
+    box-shadow: var(--dashboard-stat-shadow);
+}
+
+body.app-shell.page-dashboard .student-dashboard .stat-card.c-gold {
+    background: var(--dashboard-stat-gold);
+    color: var(--dashboard-stat-ink);
+}
+
+body.app-shell.page-dashboard .student-dashboard .stat-card.c-cyan {
+    background: var(--dashboard-stat-cyan);
+}
+
+body.app-shell.page-dashboard .student-dashboard .stat-card.c-deep {
+    background: var(--dashboard-stat-deep);
+    color: var(--dashboard-stat-ink);
+    box-shadow: var(--dashboard-stat-deep-shadow);
+}
+
+body.app-shell.page-dashboard .student-dashboard .stat-card:hover {
+    box-shadow: var(--dashboard-stat-hover-shadow);
+}
+
+body.app-shell.page-dashboard .student-dashboard .stat-card::after {
+    background: var(--dashboard-stat-decoration);
 }
 
 body.app-shell.page-dashboard .student-dashboard .stat-top svg {
-    border-radius: var(--ui-radius-sm);
-    background: var(--ui-brand-blue-soft);
-    color: var(--ui-brand-blue);
+    background: var(--dashboard-stat-icon-default-background);
+    color: var(--dashboard-stat-gold);
+}
+
+body.app-shell.page-dashboard .student-dashboard .stat-card.c-gold .stat-top svg,
+body.app-shell.page-dashboard .student-dashboard .stat-card.c-deep .stat-top svg {
+    background: var(--dashboard-stat-icon-background);
+    color: var(--dashboard-stat-ink);
+}
+
+body.app-shell.page-dashboard .student-dashboard .stat-top .num {
+    color: inherit;
 }
 
 body.app-shell.page-dashboard .student-dashboard .stat-card .label {
-    color: var(--ui-text-body);
-    opacity: 1;
+    color: inherit;
+    opacity: .78;
+}
+
+body.app-shell.page-dashboard .student-dashboard .featured-course a {
+    border-color: transparent;
+    background: var(--dashboard-featured-accent);
+    color: var(--dashboard-featured-action-color);
+}
+
+body.app-shell.page-dashboard .student-dashboard .featured-course a:hover {
+    border-color: transparent;
+    background: var(--dashboard-featured-accent);
+    color: var(--dashboard-featured-action-color);
 }
 
 body.app-shell.page-dashboard .student-dashboard .prog-item-pct {
@@ -3521,30 +3728,51 @@ body.app-shell.page-profile .skill-chip-want {
 }
 
 body.app-shell.page-course-description .hero {
-    border: 1px solid var(--ui-border);
-    background: var(--ui-surface);
-    color: var(--ui-text-strong);
+    border: 0;
+    background: var(--course-hero-background);
+    box-shadow: var(--course-hero-shadow);
+    color: var(--course-hero-color);
+}
+
+body.app-shell.page-course-description .tag-cat {
+    border: 0;
+    background: var(--course-hero-category-background);
+    color: var(--course-hero-tag-color);
+}
+
+body.app-shell.page-course-description .tag-level {
+    border: 0;
+    background: var(--course-hero-level-background);
+    color: var(--course-hero-tag-color);
+}
+
+body.app-shell.page-course-description .tag-feat {
+    border: 1px solid var(--course-hero-feature-border);
+    background: transparent;
+    color: var(--course-hero-color);
 }
 
 body.app-shell.page-course-description .hero-title {
-    color: var(--ui-text-strong);
+    color: var(--course-hero-color);
 }
 
-body.app-shell.page-course-description .hero-desc,
-body.app-shell.page-course-description .skills-label,
+body.app-shell.page-course-description .hero-desc {
+    color: var(--course-hero-description);
+}
+
+body.app-shell.page-course-description .skills-label {
+    color: var(--course-hero-skills-label);
+}
+
 body.app-shell.page-course-description .hero-meta {
-    color: var(--ui-text-body);
+    border-color: var(--course-hero-meta-border);
+    color: var(--course-hero-meta);
 }
 
-body.app-shell.page-course-description .hero-meta {
-    border-color: var(--ui-border);
-}
-
-body.app-shell.page-course-description .skill-tag,
-body.app-shell.page-course-description .tag-feat {
-    border: 1px solid var(--ui-border);
-    background: var(--ui-surface-subtle);
-    color: var(--ui-text-body);
+body.app-shell.page-course-description .skill-tag {
+    border-color: var(--course-hero-skill-border);
+    background: var(--course-hero-skill-background);
+    color: var(--course-hero-color);
 }
 
 @media (max-width: 640px) {
@@ -3649,4 +3877,103 @@ body.app-shell.page-profile .skillpick-btn.primary.ui-button--primary:hover {
 .ui-card-header > a {
     color: var(--ui-brand-blue);
 }
+
+body.app-shell.page-dashboard .student-dashboard .hero .ui-page-title {
+    color: var(--dashboard-hero-color);
+}
+
+body.app-shell.page-dashboard .student-dashboard .hero .ui-page-subtitle {
+    color: var(--dashboard-hero-subtitle);
+}
+
+body.app-shell.page-dashboard .student-dashboard .hero-action.ui-button--primary,
+body.app-shell.page-dashboard .student-dashboard .hero-action.ui-button--primary:hover {
+    border-color: transparent;
+    background: var(--dashboard-hero-action-background);
+    color: var(--dashboard-hero-action-color);
+}
+
+body.app-shell.page-dashboard .student-dashboard .featured-course a.ui-button--primary,
+body.app-shell.page-dashboard .student-dashboard .featured-course a.ui-button--primary:hover {
+    border-color: transparent;
+    background: var(--dashboard-featured-accent);
+    color: var(--dashboard-featured-action-color);
+}
+
+body.app-shell.page-dashboard .student-dashboard .hero-action.ui-button--primary,
+body.app-shell.page-dashboard .student-dashboard .hero-action.ui-button--primary:hover {
+    border-color: var(--dashboard-hero-action-color);
+}
+
+body.app-shell.page-dashboard .student-dashboard .featured-course a.ui-button--primary,
+body.app-shell.page-dashboard .student-dashboard .featured-course a.ui-button--primary:hover {
+    border-color: var(--dashboard-featured-action-color);
+}
+
+body.app-shell.page-dashboard .student-dashboard .stats {
+    color: var(--dashboard-stat-container-color);
+}
+
+body.app-shell.page-dashboard .student-dashboard .stat-card::after {
+    color: var(--dashboard-stat-decoration-color);
+}
+
+body.app-shell.page-course-description .hero-title {
+    color: var(--course-hero-color);
+}
+
+body.app-shell.page-course-description .tag-cat {
+    background: var(--course-hero-category-background);
+    color: var(--course-hero-tag-color);
+}
+
+body.app-shell.page-course-description .tag-level {
+    background: var(--course-hero-level-background);
+    color: var(--course-hero-tag-color);
+}
+
+body.app-shell.page-course-description .tag-feat {
+    background: transparent;
+    color: var(--course-hero-color);
+}
+
+body.app-shell.page-course-description .hero-desc {
+    color: var(--course-hero-description);
+}
+
+body.app-shell.page-course-description .hero-meta {
+    border-color: var(--course-hero-meta-border) var(--course-hero-meta) var(--course-hero-meta);
+}
+}
+
+/* Override the later unlayered shell resets only for onboarding's restored sizing. */
+body.app-shell.page-onboarding .illustration img {
+    max-width: none;
+    height: 280px;
+}
+
+body.app-shell.page-onboarding .field-control {
+    max-width: none;
+}
+
+body.app-shell.page-onboarding .skill-option input {
+    color: initial;
+    border-color: currentColor;
+    max-width: none;
+    margin: 3px 3px 3px 4px;
+}
+
+body.app-shell.page-dashboard .student-dashboard .stats .stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--dashboard-stat-hover-shadow);
+}
+
+body.app-shell.page-dashboard .student-dashboard .stats .stat-card.c-deep:hover {
+    box-shadow: var(--dashboard-stat-deep-shadow);
+}
+
+@media (max-width: 620px) {
+    body.app-shell.page-onboarding .illustration img {
+        height: 240px;
+    }
 }
