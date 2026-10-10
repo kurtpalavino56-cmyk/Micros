@@ -1,7 +1,7 @@
 {{--
     resources/views/dashboard.blade.php
 
-    Single self-contained Blade view (no layout file needed).
+    Student dashboard content rendered inside the shared student shell.
 
     Expected data from the controller, e.g.:
 
@@ -20,448 +20,11 @@
     Each $course is expected to expose:
         ->id, ->title, ->category, ->thumbnail_url, ->progress_percent
 --}}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard | Upskill</title>
-    {{-- Browser tab icon (favicon) --}}
-    <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-<style>
-    :root{
-        --navy:#13176b;
-        --navy-deep:#0c0f4d;
-        --gold:#dba617;
-        --gold-dark:#c4930f;
-        --cyan:#7fe9e3;
-        --thumb:#d8e3f8;
-        --ink:#13176b;
-        --muted:#6b7280;
-        --line:#e5e7eb;
-        --shadow: 0 10px 25px rgba(19,23,107,0.08);
-    }
-    *{box-sizing:border-box;}
-    body{font-family:"Segoe UI", Roboto, Helvetica, Arial, sans-serif;color:var(--ink);margin:0;background:#fff;}
-    a{text-decoration:none;color:inherit;}
-    button{font-family:inherit;cursor:pointer;}
-
-
-    /* Layout */
-    .layout{display:grid;grid-template-columns:264px 1fr;min-height:calc(100vh - 74px);align-items:start;}
-
-    /* Sidebar */
-
-
-    /* hover: text + icon turn gold (non-active links) */
+<x-layout title="Dashboard | Upskill" shell="student" page="dashboard">
 
 
 
-
-
-
-
-
-    /* Main */
-    .main{padding:32px 36px 60px;}
-/* Stats */
-    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;margin-bottom:36px;}
-    /* Gradient stat cards (same design as course Analytics) */
-    .stat-card{position:relative;border-radius:18px;box-shadow:var(--shadow);padding:30px 22px;text-align:center;color:#fff;overflow:hidden;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-    .stat-card.c-navy{background:linear-gradient(135deg,var(--navy) 0%,#2a30b0 100%);}
-    .stat-card.c-gold{background:linear-gradient(135deg,var(--gold-dark) 0%,#f0c14b 100%);}
-    .stat-card.c-cyan{background:linear-gradient(135deg,#2fb3ab 0%,var(--cyan) 100%);}
-    .stat-card.c-deep{background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 100%);}
-    .stat-top{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;position:relative;z-index:1;}
-    .stat-top svg{width:42px;height:42px;color:#fff;}
-    .stat-top .num{font-size:44px;font-weight:800;color:#fff;line-height:1;}
-    .stat-card .label{font-weight:800;font-size:17px;color:#fff;position:relative;z-index:1;}
-
-    /* Content grid */
-    .content-grid{display:grid;grid-template-columns:1fr 360px;gap:28px;}
-    .courses-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
-    .courses-head h3{font-size:24px;margin:0;color:var(--navy);}
-    .courses-head .enroll-more{font-weight:700;color:var(--navy);font-size:17px;}
-
-    .course-card{border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:18px;display:flex;align-items:center;gap:18px;margin-bottom:20px;}
-    .thumb{width:78px;height:78px;border-radius:12px;background:var(--thumb);flex-shrink:0;background-size:cover;background-position:center;}
-    .thumb img{display:block;width:100%;height:100%;border-radius:inherit;object-fit:cover;}
-    .course-info{flex:1;min-width:0;}
-    .course-info h4{margin:0 0 4px;font-size:17px;color:var(--navy);}
-    .course-info .cat{font-size:13px;color:var(--muted);margin-bottom:8px;}
-    .progress-track{flex:1;height:7px;border-radius:999px;background:#e3e6f0;overflow:hidden;}
-    .progress-fill{height:100%;background:var(--navy);border-radius:999px;}
-    .pct{font-size:12px;color:var(--muted);margin-top:6px;}
-    .btn-start{background:#fff;border:1.5px solid var(--navy);color:var(--navy);font-weight:700;padding:10px 22px;border-radius:10px;font-size:15px;flex-shrink:0;}
-    .empty-state{border:1px dashed var(--line);border-radius:16px;padding:30px;text-align:center;color:var(--muted);}
-
-    /* Side panels */
-    .panel{border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:24px;min-height:230px;}
-    .panel-head{background:var(--gold);color:var(--navy);font-weight:800;font-size:22px;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;}
-    .panel-body{padding:18px 22px;color:var(--muted);font-size:14px;}
-    .panel-body ul{margin:0;padding-left:18px;}
-    .panel-body li{margin-bottom:8px;}
-
-    @media (max-width:980px){
-        .layout{grid-template-columns:1fr;}
-
-        .stats{grid-template-columns:repeat(2,1fr);}
-        .content-grid{grid-template-columns:1fr;}
-    }
-
-    /* ── Course areas (Not Yet Completed / Completed Courses) ── */
-    .courses-area-title{margin:20px 0 12px;font-size:15px;font-weight:800;color:var(--navy);letter-spacing:.3px;}
-    .empty-state-slim{padding:10px 2px 4px;}
-    .btn-start.btn-completed{background:var(--green, #15803d);}
-
-    /* ── Progress panel items ── */
-    .prog-item{margin-bottom:16px;}
-    .prog-item:last-child{margin-bottom:0;}
-    .prog-item-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
-    .prog-item-title{font-weight:700;color:var(--navy);font-size:13px;}
-    .prog-item-pct{font-weight:800;color:var(--gold-dark);font-size:13px;white-space:nowrap;}
-    .prog-bar{height:8px;border-radius:999px;background:#e8ecf7;overflow:hidden;}
-    .prog-bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--navy),#3b41c8);transition:width .4s ease;}
-    .prog-bar-fill.prog-bar-done{background:linear-gradient(90deg,#1d9e6b,#34d399);}
-    .prog-item-sub{margin-top:5px;font-size:11.5px;color:var(--muted);}
-
-    /* ── About Me first-login modal ── */
-    .am-overlay{position:fixed;inset:0;z-index:1000;background:rgba(12,15,77,.55);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px;}
-    .am-card{background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(12,15,77,.35);width:100%;max-width:520px;max-height:92vh;overflow-y:auto;}
-    .am-head{background:linear-gradient(135deg,var(--navy),var(--navy-deep));color:#fff;padding:22px 26px;border-radius:20px 20px 0 0;}
-    .am-head h3{margin:0;font-size:20px;letter-spacing:.3px;}
-    .am-head p{margin:6px 0 0;font-size:13px;color:#c9cdf5;}
-    .am-body{padding:22px 26px 26px;}
-    .am-field{margin-bottom:14px;}
-    .am-field label{display:block;font-size:12.5px;font-weight:700;color:var(--navy);margin-bottom:5px;}
-    .am-field input,.am-field select,.am-field textarea{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13.5px;font-family:inherit;color:var(--ink);outline:none;transition:border-color .2s;}
-    .am-field input:focus,.am-field select:focus,.am-field textarea:focus{border-color:var(--gold);}
-    .am-field textarea{resize:vertical;min-height:64px;}
-    .am-hint{font-size:11px;color:var(--muted);margin-top:4px;}
-    .am-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-    .am-errors{background:#fde8e8;border:1px solid #f5b5b5;color:#b91c1c;border-radius:10px;padding:10px 14px;font-size:12.5px;margin-bottom:14px;}
-    /* Per-field "Needs to Fill" hint */
-    .am-needs{display:none;color:#b91c1c;font-size:12px;font-weight:700;margin-top:5px;}
-    /* ── Skills pickers: mini button + floating modal ───────────────── */
-    .skillpick{position:relative;}
-    .skillpick-mini{
-        display:inline-flex;align-items:center;gap:8px;
-        background:#fff;border:1.5px solid var(--line);border-radius:999px;
-        padding:9px 14px 9px 18px;font-size:13.5px;font-weight:700;color:#6b7280;
-        cursor:pointer;transition:border-color .18s,color .18s,background .18s;
-    }
-    .skillpick-mini:hover{border-color:var(--navy);color:var(--navy);}
-    .skillpick-mini svg{width:14px;height:14px;}
-    .skillpick-mini.has-value{background:var(--navy);border-color:var(--navy);color:#fff;}
-
-    .skillpick-backdrop{position:fixed;inset:0;z-index:1300;background:rgba(9,12,45,.45);}
-    .skillpick-backdrop[hidden]{display:none;}
-
-    .skillpick-pop{
-        position:fixed;z-index:1301;top:50%;left:50%;transform:translate(-50%,-50%);
-        width:min(460px,calc(100vw - 32px));max-height:min(82vh,640px);
-        display:flex;flex-direction:column;
-        background:#fff;border:1.5px solid #e6e3f7;border-radius:20px;
-        box-shadow:0 30px 70px rgba(9,12,45,.38);padding:20px;
-    }
-    .skillpick-pop[hidden]{display:none;}
-
-    .skillpick-hd{margin-bottom:12px;flex-shrink:0;}
-    .skillpick-hd strong{display:block;font-size:15px;color:var(--navy);}
-    .skillpick-hd span{display:block;font-size:11.5px;color:#8a8fa8;margin-top:2px;line-height:1.4;}
-
-    .skillpick-search{position:relative;margin-bottom:10px;flex-shrink:0;}
-    .skillpick-search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:#8a8fa8;}
-    .skillpick-search input{width:100%;border:1.5px solid #e6e3f7;border-radius:999px;
-        padding:9px 14px 9px 34px;font-size:13.5px;color:var(--ink);outline:none;}
-    .skillpick-search input:focus{border-color:var(--navy);}
-
-    .skillpick-count{display:flex;align-items:center;justify-content:space-between;gap:8px;
-        font-size:11.5px;color:#8a8fa8;margin-bottom:8px;flex-shrink:0;}
-    .skillpick-clearall{border:none;background:transparent;color:var(--navy);font-size:11.5px;
-        font-weight:700;cursor:pointer;padding:0;}
-    .skillpick-clearall:hover{text-decoration:underline;}
-
-    .skillpick-list{flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;
-        flex-direction:column;gap:10px;padding:2px 2px 4px;}
-    .skillpick-group[hidden]{display:none;}
-    .skillpick-group-hd{font-size:10.5px;font-weight:800;letter-spacing:.6px;
-        text-transform:uppercase;color:#a8adc4;margin:14px 0 8px 6px;}
-    .skillpick-group:first-child .skillpick-group-hd{margin-top:2px;}
-    .skillpick-empty{padding:18px 6px;text-align:center;color:#8a8fa8;font-size:12.5px;}
-
-    .skillpick-opt{position:relative;display:flex;align-items:center;gap:12px;cursor:pointer;
-        background:#fff;border:1px solid #eceaf8;border-radius:999px;padding:11px 16px;
-        font-size:13.5px;color:var(--ink);transition:border-color .15s,box-shadow .15s;}
-    .skillpick-opt:hover{border-color:#c9c4ee;}
-    .skillpick-opt[hidden]{display:none;}
-    .skillpick-opt input{position:absolute;opacity:0;pointer-events:none;}
-    .skillpick-tick{width:19px;height:19px;border-radius:50%;flex-shrink:0;
-        border:1.5px solid #d5d2e8;background:#fff;display:inline-flex;
-        align-items:center;justify-content:center;transition:background .15s,border-color .15s;}
-    .skillpick-tick svg{width:11px;height:11px;color:#fff;opacity:0;}
-    .skillpick-opt.on{border-color:#c9c4ee;box-shadow:0 1px 4px rgba(19,23,107,.06);}
-    .skillpick-opt.on .skillpick-tick{background:var(--navy);border-color:var(--navy);}
-    .skillpick-opt.on .skillpick-tick svg{opacity:1;}
-    .skillpick-name{font-weight:600;}
-
-    .skillpick-ft{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;
-        flex-shrink:0;padding-top:14px;border-top:1px solid #eceaf8;}
-    .skillpick-btn{border:1.5px solid var(--line);background:#fff;color:var(--navy);
-        border-radius:10px;padding:8px 16px;font-size:13.5px;font-weight:700;cursor:pointer;}
-    .skillpick-btn:hover{background:#f3f6ff;}
-    .skillpick-btn.primary{background:var(--navy);border-color:var(--navy);color:#fff;}
-
-    @media (max-width:520px){ .skillpick-pop{padding:16px;border-radius:16px;} }
-    .am-field.invalid .am-needs{display:block;}
-    .am-field.invalid input,
-    .am-field.invalid select,
-    .am-field.invalid textarea,
-    .am-field.invalid .skillpick-mini{border-color:#dc2626 !important;background:#fff7f7;color:#b91c1c;}
-    .am-actions{display:flex;gap:10px;margin-top:18px;}
-    .am-save{flex:1;background:var(--gold);color:#fff;border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:800;cursor:pointer;letter-spacing:.3px;transition:background .2s;}
-    .am-save:hover{background:var(--gold-dark);}
-    /* Skills checkbox dropdown */
-    @media (max-width:560px){.am-row{grid-template-columns:1fr;}}
-</style>
-
-<style>
-    :root {
-        --pm-navy: #08245f;
-        --pm-navy-deep: #061b49;
-        --pm-blue: #2f68ba;
-        --pm-blue-soft: #eef5ff;
-        --pm-gold: #e5b43c;
-        --pm-gold-soft: #fff5d8;
-        --pm-ink: #14254b;
-        --pm-muted: #6e7e9b;
-        --pm-line: #e2e9f4;
-        --pm-surface: #ffffff;
-        --pm-canvas: #f5f8fd;
-        --pm-shadow: 0 12px 32px rgba(8, 36, 95, .08);
-        --pm-shadow-hover: 0 18px 40px rgba(8, 36, 95, .14);
-    }
-    html, body { background: var(--pm-canvas); color: var(--pm-ink); }
-    body { font-family: 'Inter', 'Segoe UI', sans-serif; }
-    a { color: inherit; }
-    button, input { font: inherit; }
-
-
-
-
-
-    .brand-copy { display: flex; flex-direction: column; gap: 1px; }
-    .brand-copy small { color: var(--pm-muted); font-size: 10px; letter-spacing: .04em; font-weight: 600; }
-
-
-
-    .top-search { display: flex; align-items: center; gap: 9px; width: min(290px, 25vw); margin-left: auto; padding: 10px 14px; border: 1px solid var(--pm-line); border-radius: 999px; color: var(--pm-muted); }
-    .top-search svg { width: 17px; height: 17px; flex: 0 0 auto; }
-    .top-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--pm-ink); font-size: 12px; }
-    .top-search input::placeholder { color: #9aa8bd; }
-
-
-
-    .logout-btn { background: #fff5f5; border: 1px solid #f0cccc; color: #b84444; border-radius: 999px; padding: 8px 12px; font-weight: 700; cursor: pointer; }
-
-    .layout { grid-template-columns: 244px minmax(0, 1fr); min-height: calc(100vh - 76px); }
-
-
-
-
-
-
-
-
-
-    .main { padding: 30px 34px 58px; min-width: 0; }
-    .hero { position: relative; overflow: hidden; min-height: 190px; border-radius: 18px; padding: 30px 34px; margin-bottom: 22px; color: #fff; background: linear-gradient(100deg, rgba(8,36,95,.98) 0%, rgba(20,76,145,.90) 58%, rgba(20,76,145,.52) 100%), url('{{ asset('Images/PSU_Front_Building.jpg') }}') right center/cover; box-shadow: var(--pm-shadow); }
-    .hero::after { content: ''; position: absolute; right: -5%; top: -80px; width: 320px; height: 320px; border: 1px solid rgba(255,255,255,.16); border-radius: 50%; box-shadow: 0 0 0 25px rgba(255,255,255,.04), 0 0 0 52px rgba(255,255,255,.03); }
-    .hero-copy { position: relative; z-index: 1; max-width: 650px; }
-    .eyebrow { margin: 0 0 7px; color: #f7d889; font-size: 12px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
-    .hero h2 { margin: 0 0 7px; color: #fff; font-size: clamp(29px, 3.2vw, 44px); line-height: 1.5; letter-spacing: -.035em; }
-    .hero p { max-width: 560px; margin: 0; color: rgba(255,255,255,.78); font-size: 14px; }
-    .hero-meta { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 17px; }
-    .hero-meta span { border: 1px solid rgba(255,255,255,.19); background: rgba(255,255,255,.10); border-radius: 999px; padding: 6px 11px; font-size: 11px; font-weight: 700; }
-    .hero-action { position: absolute; right: 31px; bottom: 28px; z-index: 2; background: var(--pm-gold); color: var(--pm-navy); border-radius: 999px; padding: 11px 17px; font-size: 12px; font-weight: 800; }
-
-    .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
-    .stat-card { min-height: 118px; padding: 18px; align-items: flex-start; justify-content: space-between; text-align: left; color: var(--pm-ink); background: var(--pm-surface); border: 1px solid var(--pm-line); border-radius: 14px; box-shadow: var(--pm-shadow); transition: transform .22s ease, box-shadow .22s ease; }
-    .stat-card:hover { transform: translateY(-3px); box-shadow: var(--pm-shadow-hover); }
-    .stat-card.c-navy, .stat-card.c-gold, .stat-card.c-cyan, .stat-card.c-deep { background: var(--pm-surface); color: var(--pm-ink); }
-    .stat-top { justify-content: flex-start; width: 100%; margin: 0 0 9px; gap: 11px; }
-    .stat-top svg { width: 35px; height: 35px; padding: 8px; border-radius: 50%; color: var(--pm-navy); background: var(--pm-blue-soft); }
-    .c-gold .stat-top svg { color: #b98108; background: var(--pm-gold-soft); }
-    .c-cyan .stat-top svg { color: #168b88; background: #e2f7f4; }
-    .c-deep .stat-top svg { color: #4b65bc; background: #edf0ff; }
-    .stat-top .num { color: var(--pm-navy); font-size: 30px; font-weight: 800; line-height: 1; }
-    .stat-card .label { color: var(--pm-ink); font-size: 12px; font-weight: 800; }
-    .stat-card::after { content: 'View details \203A'; color: var(--pm-muted); font-size: 10px; font-weight: 700; }
-
-    .content-grid { grid-template-columns: minmax(0, 1.5fr) minmax(300px, .85fr); gap: 18px; }
-    .courses-head { margin-bottom: 11px; }
-    .courses-head h3 { color: var(--pm-navy); font-size: 21px; letter-spacing: -.02em; }
-    .courses-head .enroll-more { color: var(--pm-blue); font-size: 12px; }
-    .dashboard-chevron { display: inline-block; margin-left: 2px; font-size: 1.8em; line-height: .7; vertical-align: -0.08em; font-weight: 800; }
-    .courses-area-title { color: var(--pm-navy); margin: 16px 0 9px; font-size: 11px; text-transform: uppercase; letter-spacing: .12em; }
-    .course-card { margin-bottom: 10px; padding: 13px; gap: 13px; background: var(--pm-surface); border: 1px solid var(--pm-line); border-radius: 13px; box-shadow: 0 5px 18px rgba(8,36,95,.05); transition: transform .2s ease, box-shadow .2s ease; }
-    .course-card:hover { transform: translateY(-2px); box-shadow: var(--pm-shadow); }
-    .thumb { width: 72px; height: 62px; border-radius: 10px; background: linear-gradient(135deg, #dbeafe, #b9d4f4); }
-    .course-info h4 { color: var(--pm-navy); font-size: 14px; }
-    .course-info .cat { color: var(--pm-muted); margin-bottom: 7px; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
-    .progress-track { height: 7px; background: #e8eef7; }
-    .progress-fill { background: linear-gradient(90deg, var(--pm-blue), #6ea6e8); }
-    .pct { color: var(--pm-muted); margin-top: 5px; font-size: 10px; }
-    .btn-start{background:#6ea6e8;border:1px solid #6ea6e8;color:#0B1B45;border-radius:999px;padding:8px 13px;font-size:11px;font-weight:800;}
-    .btn-start:hover{background:#F4C430;border-color:#F4C430;color:#0B1B45;}
-    .btn-start.btn-completed { background: #168457; border-color: #168457; color: #fff; }
-    .btn-start.btn-completed:hover{background:#106443;border-color:#106443;color:#fff;}
-
-    .panel { margin-bottom: 14px; min-height: 0; overflow: hidden; border: 1px solid var(--pm-line); border-radius: 14px; background: var(--pm-surface); box-shadow: var(--pm-shadow); }
-    .panel-head { padding: 14px 16px; background: #fff; color: var(--pm-navy); border-bottom: 1px solid var(--pm-line); font-size: 15px; }
-    .panel-head a { color: var(--pm-blue) !important; font-size: 11px; }
-    .panel-body { padding: 15px 16px; color: var(--pm-muted); font-size: 12px; }
-    .prog-item { margin-bottom: 14px; }
-    .prog-item-title { color: var(--pm-ink); font-size: 11px; }
-    .prog-item-pct { color: var(--pm-blue); font-size: 11px; }
-    .prog-bar { height: 7px; background: #eaf0f8; }
-    .prog-bar-fill { background: linear-gradient(90deg, var(--pm-blue), #76b1ed); }
-    .prog-bar-fill.prog-bar-done { background: linear-gradient(90deg, #1c9b67, #59c997); }
-    .prog-item-sub { color: var(--pm-muted); font-size: 10px; }
-
-    .featured-course { margin-bottom: 14px; padding: 18px; min-height: 205px; border-radius: 14px; color: #fff; background: linear-gradient(145deg, #08245f, #174d96); box-shadow: var(--pm-shadow); position: relative; overflow: hidden; }
-    .featured-course::after { content: ''; position: absolute; right: -35px; top: -40px; width: 145px; height: 145px; border: 18px solid rgba(229,180,60,.78); transform: rotate(32deg); }
-    .featured-course small { color: #f8d982; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
-    .featured-course h4 { position: relative; z-index: 1; margin: 24px 0 7px; color: #fff; font-size: 21px; line-height: 1.12; }
-    .featured-course p { position: relative; z-index: 1; max-width: 280px; margin: 0 0 14px; color: rgba(255,255,255,.75); font-size: 11px; }
-    .featured-course a { position: relative; z-index: 1; display: inline-block; border-radius: 999px; padding: 9px 14px; background: var(--pm-gold); color: var(--pm-navy); font-size: 11px; font-weight: 800; }
-
-    @media (max-width: 1120px) { .top-search { width: 220px; } .stats { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 980px) { .layout { grid-template-columns: 1fr; }   .content-grid { grid-template-columns: 1fr; } .hero-action { position: static; display: inline-block; margin-top: 16px; } }
-    @media (max-width: 700px) {   .main { padding: 20px 16px 42px; } .hero { padding: 24px 22px; } .hero h2 { font-size: 29px; } .stats { gap: 9px; } .stat-card { min-height: 105px; padding: 13px; } .stat-top .num { font-size: 25px; } .course-card { align-items: flex-start; flex-wrap: wrap; } .course-info { min-width: calc(100% - 88px); } .btn-start { margin-left: 85px; } }
-    @media (max-width: 480px) { .stats { grid-template-columns: 1fr 1fr; } .stat-card .label { font-size: 10px; } .hero-meta { display: none; } }
-</style>
-<style>
-main.student-dashboard {
-  --dash-navy:#0B1B45; --dash-navy-deep:#071233; --dash-royal:#2447D4;
-  --dash-gold:#F4C430; --dash-gold-soft:#FFF5D1; --dash-canvas:#F4F6FB;
-  --dash-ink:#0E1A3A; --dash-muted:#64748B; --dash-line:#E6EAF2;
-  color:var(--dash-ink);font-family:'Inter',ui-sans-serif,system-ui,sans-serif;
-  padding:28px clamp(18px,3vw,42px) 56px;min-width:0;
-}
-.layout:has(main.student-dashboard){background:var(--dash-canvas);}
-main.student-dashboard h1,main.student-dashboard h2,main.student-dashboard h3,main.student-dashboard h4,
-main.student-dashboard .num,main.student-dashboard .meta-num{font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif}
-main.student-dashboard .hero{position:relative;isolation:isolate;overflow:hidden;border-radius:22px;background-image:radial-gradient(ellipse 34% 190% at 8% 0%,rgba(37,83,220,.58) 0%,rgba(37,83,220,.3) 44%,transparent 82%),radial-gradient(ellipse 40% 210% at 42% 120%,rgba(30,65,190,.68) 0%,rgba(30,65,190,.32) 48%,transparent 84%),radial-gradient(ellipse 34% 180% at 76% -35%,rgba(56,76,205,.62) 0%,rgba(56,76,205,.28) 48%,transparent 84%),radial-gradient(ellipse 32% 190% at 105% 100%,rgba(25,76,190,.6) 0%,rgba(25,76,190,.28) 50%,transparent 86%),radial-gradient(ellipse 55% 150% at 54% 48%,rgba(25,42,132,.5) 0%,transparent 88%),linear-gradient(112deg,#07143f 0%,#101f70 52%,#081742 100%);background-size:cover;background-position:center;box-shadow:0 14px 35px rgba(11,27,69,.14);color:#fff}
-main.student-dashboard .hero-copy{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
-main.student-dashboard .hero-copy .eyebrow,
-main.student-dashboard .hero-copy h2,
-main.student-dashboard .hero-copy>p{margin:0}
-main.student-dashboard .hero-copy .hero-meta{margin-top:0}
-main.student-dashboard .hero h2{font-size:35px;font-weight:800;letter-spacing:-.04em}
-main.student-dashboard .hero p{color:rgba(255,255,255,.72)}
-main.student-dashboard .hero .eyebrow{color:#F4C430;font-weight:700}
-main.student-dashboard .featured-course{padding:22px;border-radius:18px;background:linear-gradient(145deg,#0B1B45,#2447D4);box-shadow:0 14px 30px rgba(11,27,69,.14)}
-main.student-dashboard .featured-course small{color:#F4C430}
-main.student-dashboard .featured-course a{background:#F4C430;color:#0B1B45}
-main.student-dashboard .badges-earned-list{padding:10px!important}
-main.student-dashboard .earned-badge-row{display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:12px;color:var(--dash-ink);font-size:12px;font-weight:600}
-main.student-dashboard .earned-badge-row:hover{background:var(--dash-canvas)}
-main.student-dashboard .earned-badge-icon{display:grid;width:38px;height:38px;flex:none;place-items:center;border-radius:50%;background:#F4C430;color:#0B1B45;font-size:19px}
-main.student-dashboard .stats{gap:15px;margin:22px 0 30px}
-main.student-dashboard .stat-card{position:relative;min-height:176px;padding:20px 22px;align-items:stretch;text-align:left;border:0;border-radius:18px;color:#fff;box-shadow:0 12px 26px rgba(11,27,69,.12)}
-main.student-dashboard .stat-card{position:relative;min-height:176px;padding:20px 22px;align-items:stretch;text-align:left;border:0;border-radius:18px;color:#fff;box-shadow:0 12px 26px rgba(11,27,69,.12);transition:transform .2s ease,box-shadow .2s ease}
-main.student-dashboard .stat-card:hover{transform:translateY(-4px);box-shadow:0 18px 32px rgba(11,27,69,.2)}
-main.student-dashboard .stat-card.c-navy{background:#0B1B45}
-main.student-dashboard .stat-card.c-gold{background:#F4C430;color:#0B1B45}
-main.student-dashboard .stat-card.c-cyan{background:#2447D4}
-main.student-dashboard .stat-card.c-deep{background:#FFF5D1;color:#0B1B45;box-shadow:inset 0 0 0 1px rgba(244,196,48,.35)}
-main.student-dashboard .stat-card:after{content:"";position:absolute;width:124px;height:124px;right:-35px;top:-44px;border-radius:50%;background:rgba(255,255,255,.11)}
-main.student-dashboard .stat-top{position:static;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:0;margin:0}
-main.student-dashboard .stat-top svg{width:38px;height:38px;margin-bottom:18px;padding:9px;border-radius:12px;background:rgba(255,255,255,.12);color:#F4C430}
-main.student-dashboard .stat-card.c-gold .stat-top svg,main.student-dashboard .stat-card.c-deep .stat-top svg{background:rgba(11,27,69,.09);color:#0B1B45}
-main.student-dashboard .stat-top .num{font-size:38px;color:inherit;line-height:1}
-main.student-dashboard .stat-card .label{margin-top:8px;font-size:13px;color:inherit;font-weight:600;opacity:.78}
-main.student-dashboard .content-grid{grid-template-columns:minmax(0,1.7fr) minmax(270px,.8fr);gap:22px}
-main.student-dashboard .courses-head h3{font-size:19px;font-weight:700;color:var(--dash-ink)}
-main.student-dashboard .courses-head .enroll-more{font-size:12px;color:var(--dash-royal)}
-main.student-dashboard .course-card,main.student-dashboard .panel{border:1px solid var(--dash-line);border-radius:17px;background:#fff;box-shadow:0 5px 18px rgba(11,27,69,.045)}
-main.student-dashboard .course-card,main.student-dashboard .panel{border:1px solid var(--dash-line);border-radius:17px;background:#fff;box-shadow:0 5px 18px rgba(11,27,69,.045);transition:transform .2s ease,box-shadow .2s ease}
-main.student-dashboard .course-card:hover,main.student-dashboard .panel:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(11,27,69,.1)}
-main.student-dashboard .course-card{gap:14px;padding:15px;margin-bottom:12px}
-main.student-dashboard .thumb{width:58px;height:58px;border-radius:12px;background-color:#EEF2FF}
-main.student-dashboard .course-info h4{font-size:13px;font-weight:700;color:var(--dash-ink)}
-main.student-dashboard .course-info .cat{font-size:11px;color:var(--dash-muted)}
-main.student-dashboard .progress-track{height:7px;background:#EDF1F8}
-main.student-dashboard .course-card .progress-fill.progress-in-progress{background:#F4C430!important}
-main.student-dashboard .course-card .progress-fill.progress-completed{background:#27A879!important}
-main.student-dashboard .pct{font-size:11px;color:var(--dash-muted)}
-main.student-dashboard .btn-start{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:999px;background:#6ea6e8;padding:9px 15px;color:#0B1B45;font-size:11px;font-weight:700;transition:transform .18s ease,background-color .18s ease}
-main.student-dashboard .btn-start:hover{transform:translateY(-1px);background:#F4C430;color:#0B1B45}
-main.student-dashboard .btn-start.btn-completed{background:#168457;color:#fff}
-main.student-dashboard .btn-start.btn-completed:hover{background:#106443;color:#fff}
-main.student-dashboard .courses-area-title{color:var(--dash-muted);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
-main.student-dashboard .panel{overflow:hidden;margin-bottom:17px;min-height:0}
-main.student-dashboard .panel-head{padding:14px 17px;border-bottom:1px solid #EEF1F6;background:#fff;color:var(--dash-ink);font-size:13px;font-weight:700}
-main.student-dashboard .panel-body{padding:16px 17px;color:var(--dash-muted);font-size:12px}
-main.student-dashboard .prog-item-title{color:var(--dash-ink);font-size:11px}
-main.student-dashboard .prog-item-pct{color:#C9960C;font-size:11px}
-main.student-dashboard .prog-bar{height:7px;background:#EDF1F8}
-main.student-dashboard .prog-bar-fill{background:var(--dash-royal)}
-main.student-dashboard .prog-bar-fill.prog-bar-done{background:#27A879}
-main.student-dashboard .empty-state{border-color:var(--dash-line);border-radius:15px;background:#fff;color:var(--dash-muted)}
-@media(max-width:980px){main.student-dashboard .content-grid{grid-template-columns:1fr}}
-@media(max-width:640px){main.student-dashboard{padding:20px 14px 40px}main.student-dashboard .stats{gap:9px;margin:16px 0 22px}main.student-dashboard .stat-card{min-height:142px;padding:14px 11px}main.student-dashboard .stat-top svg{width:32px;height:32px;margin-bottom:12px}main.student-dashboard .stat-top .num{font-size:25px}main.student-dashboard .course-card{flex-direction:row;align-items:center}main.student-dashboard .thumb{width:52px;height:52px}}
-main.student-dashboard{
-  --dash-type-meta:13px;
-  --dash-type-category:13px;
-  --dash-type-body:16px;
-  --dash-type-heading:26px;
-  --dash-type-subheading:20px;
-  --dash-type-display:42px;
-}
-main.student-dashboard .hero h2{font-size:var(--dash-type-display);line-height:1.2}
-main.student-dashboard .hero-copy>p:not(.eyebrow){font-size:var(--dash-type-body);line-height:1.618}
-main.student-dashboard .hero .eyebrow,
-main.student-dashboard .hero-meta span,
-main.student-dashboard .hero-action,
-main.student-dashboard .pct,
-main.student-dashboard .courses-area-title,
-main.student-dashboard .prog-item-sub{font-size:var(--dash-type-meta)}
-main.student-dashboard .course-info .cat{font-size:11px;text-transform:none;letter-spacing:normal}
-main.student-dashboard .stat-top .num{font-size:var(--dash-type-display)}
-main.student-dashboard .stat-card .label,
-main.student-dashboard .panel-body,
-main.student-dashboard .prog-item-title,
-main.student-dashboard .prog-item-pct,
-main.student-dashboard .empty-state{font-size:var(--dash-type-body)}
-main.student-dashboard .course-info h4{font-size:14px}
-main.student-dashboard .pct{font-size:12px}
-main.student-dashboard .btn-start{font-size:13px;color:#fff}
-main.student-dashboard .btn-start:hover{color:#0B1B45}
-main.student-dashboard .courses-head h3{font-size:var(--dash-type-heading)}
-main.student-dashboard .panel-head{font-size:var(--dash-type-subheading)}
-main.student-dashboard .courses-head .enroll-more{font-size:var(--dash-type-meta)}
-main.student-dashboard .panel-body,
-main.student-dashboard .empty-state{line-height:1.618}
-@media(max-width:640px){
-  main.student-dashboard .hero h2{font-size:32px}
-  main.student-dashboard .stat-top .num{font-size:var(--dash-type-heading)}
-}
-</style>
-</head>
-<body>
-
-@include('components.student-navigation')
-
-<div class="layout student-sidebar-layout">
-    @include('components.student-sidebar')
-
-    <main class="main student-dashboard">
+<div class="page-content student-dashboard">
         @php
             $featuredCourse = $inProgressCourses->first() ?? $completedCourses->first();
             $greetingHour = now('Asia/Manila')->hour;
@@ -469,14 +32,14 @@ main.student-dashboard .empty-state{line-height:1.618}
                 ? 'Good morning'
                 : ($greetingHour < 17 ? 'Good afternoon' : 'Good evening');
         @endphp
-        <section class="hero">
-            <div class="hero-copy student-page-heading student-page-heading--inverse">
+        <section class="hero" style="--dashboard-hero-image: url('{{ asset('Images/PSU_Front_Building.jpg') }}')">
+            <div class="hero-copy student-page-heading">
+                <h2 class="ui-page-title">{{ $timeGreeting }}, {{ $user->name ?? 'Student' }}!</h2>
+                <p class="ui-page-subtitle">Build in-demand skills, earn microcredentials, and take the next step in your Penn State journey.</p>
                 <p class="eyebrow">Continue your learning</p>
-                <h2>{{ $timeGreeting }}, {{ $user->name ?? 'Student' }}!</h2>
-                <p>Build in-demand skills, earn microcredentials, and take the next step in your Penn State journey.</p>
                 <div class="hero-meta"><span>Student ID: {{ $user->student_id ?? '—' }}</span></div>
             </div>
-            <a href="{{ route('courses.browse') }}" class="hero-action">Explore courses</a>
+            <a href="{{ route('courses.browse') }}" class="hero-action ui-button ui-button--primary">Explore courses</a>
         </section>
 
         <section class="stats" aria-label="Learning summary">
@@ -495,35 +58,34 @@ main.student-dashboard .empty-state{line-height:1.618}
                 <div class="courses-head"><h3>Your course progress</h3><a href="{{ route('courses.enrolled') }}" class="enroll-more">View all courses <span class="dashboard-chevron">&rsaquo;</span></a></div>
                 @php $inProgressCourses = $inProgressCourses ?? collect(); $completedCourses = $completedCourses ?? collect(); @endphp
                 @if ($inProgressCourses->isEmpty() && $completedCourses->isEmpty())
-                    <div class="empty-state">You haven't enrolled in any courses yet.<br><a href="{{ route('courses.browse') }}" class="enroll-more">Browse courses to get started</a></div>
+                    <div class="empty-state ui-empty-state">You haven't enrolled in any courses yet.<br><a href="{{ route('courses.browse') }}" class="enroll-more">Browse courses to get started</a></div>
                 @else
                     @forelse ($inProgressCourses as $course)
-                    <div class="course-card"><div class="thumb">@if($course->thumbnail_url)<img src="{{ $course->thumbnail_url }}" alt="{{ $course->title }} course thumbnail" loading="lazy" onerror="this.remove()">@endif</div><div class="course-info"><h4>{{ $course->title }}</h4>@if($course->category)<div class="cat">{{ $course->category }}</div>@endif @include('components.course-rating', ['rating' => $course->rating_average, 'count' => $course->review_count])<div class="progress-track"><div class="progress-fill progress-in-progress" style="width:{{ $course->progress_percent ?? 0 }}%"></div></div><div class="pct">{{ $course->progress_percent ?? 0 }}% complete</div></div><a class="btn-start" href="{{ route('courses.show', $course->id) }}">{{ ($course->progress_percent ?? 0) > 0 ? 'Continue' : 'Start' }}</a></div>
-                    @empty <div class="empty-state empty-state-slim">Nothing in progress right now.</div> @endforelse
+                    <div class="course-card ui-card-surface"><div class="thumb">@if($course->thumbnail_url)<img src="{{ $course->thumbnail_url }}" alt="{{ $course->title }} course thumbnail" loading="lazy" onerror="this.remove()">@endif</div><div class="course-info"><h4>{{ $course->title }}</h4>@if($course->category)<div class="cat">{{ $course->category }}</div>@endif @include('components.course-rating', ['rating' => $course->rating_average, 'count' => $course->review_count])<div class="progress-track ui-progress-track"><div class="progress-fill progress-in-progress ui-progress-fill" style="width:{{ $course->progress_percent ?? 0 }}%"></div></div><div class="pct">{{ $course->progress_percent ?? 0 }}% complete</div></div><a class="btn-start ui-button ui-button--primary" href="{{ route('courses.show', $course->id) }}">{{ ($course->progress_percent ?? 0) > 0 ? 'Continue' : 'Start' }}</a></div>
+                    @empty <div class="empty-state empty-state-slim ui-empty-state">Nothing in progress right now.</div> @endforelse
                     @if($completedCourses->isNotEmpty())<h4 class="courses-area-title">Completed courses</h4>@endif
                     @foreach ($completedCourses as $course)
-                    <div class="course-card"><div class="thumb">@if($course->thumbnail_url)<img src="{{ $course->thumbnail_url }}" alt="{{ $course->title }} course thumbnail" loading="lazy" onerror="this.remove()">@endif</div><div class="course-info"><h4>{{ $course->title }}</h4>@if($course->category)<div class="cat">{{ $course->category }}</div>@endif @include('components.course-rating', ['rating' => $course->rating_average, 'count' => $course->review_count])<div class="progress-track"><div class="progress-fill progress-completed" style="width:100%"></div></div><div class="pct">Completed</div></div><a class="btn-start btn-completed" href="{{ route('courses.show', $course->id) }}">View</a></div>
+                    <div class="course-card ui-card-surface"><div class="thumb">@if($course->thumbnail_url)<img src="{{ $course->thumbnail_url }}" alt="{{ $course->title }} course thumbnail" loading="lazy" onerror="this.remove()">@endif</div><div class="course-info"><h4>{{ $course->title }}</h4>@if($course->category)<div class="cat">{{ $course->category }}</div>@endif @include('components.course-rating', ['rating' => $course->rating_average, 'count' => $course->review_count])<div class="progress-track ui-progress-track"><div class="progress-fill progress-completed ui-progress-fill" style="width:100%"></div></div><div class="pct">Completed</div></div><a class="btn-start btn-completed ui-button ui-button--secondary" href="{{ route('courses.show', $course->id) }}">View</a></div>
                     @endforeach
                 @endif
             </section>
 
             <aside class="side-col">
                 @if($featuredCourse)
-                <div class="featured-course"><small>Featured course</small><h4>{{ \Illuminate\Support\Str::limit($featuredCourse->title, 46) }}</h4><p>Keep building practical skills and move closer to your next microcredential.</p><a href="{{ route('courses.show', $featuredCourse->id) }}">Continue course <span class="dashboard-chevron">&rsaquo;</span></a></div>
+                <div class="featured-course"><small>Featured course</small><h4>{{ \Illuminate\Support\Str::limit($featuredCourse->title, 46) }}</h4><p>Keep building practical skills and move closer to your next microcredential.</p><a class="ui-button ui-button--primary" href="{{ route('courses.show', $featuredCourse->id) }}">Continue course <span class="dashboard-chevron">&rsaquo;</span></a></div>
                 @endif
                 @if(($stackingFrameworks ?? collect())->isNotEmpty())
-                    <div class="panel"><div class="panel-head"><span>Stacking progress</span><a href="{{ route('stacking.progress') }}">View all <span class="dashboard-chevron">&rsaquo;</span></a></div><div class="panel-body">
+                    <div class="panel ui-card-surface"><div class="panel-head ui-card-header"><span class="ui-card-header__title">Stacking progress</span><a href="{{ route('stacking.progress') }}">View all <span class="dashboard-chevron">&rsaquo;</span></a></div><div class="panel-body">
                         @foreach($stackingFrameworks->take(2) as $stacking)
                             <p style="margin:0 0 8px;font-weight:700;">{{ \Illuminate\Support\Str::limit($stacking['framework']->name, 28) }}</p>
-                            <p style="margin:0 0 12px;color:#718096;font-size:12px;">{{ $stacking['completed_required_count'] }} of {{ $stacking['total_required_count'] }} required microcredentials completed</p>
+                            <p style="margin:0 0 12px;color:var(--ui-text-body);font-size:var(--text-xs);">{{ $stacking['completed_required_count'] }} of {{ $stacking['total_required_count'] }} required microcredentials completed</p>
                         @endforeach
                     </div></div>
                 @endif
-                <div class="panel"><div class="panel-head"><span>Badges earned</span><a href="{{ route('badges.index') }}">View all <span class="dashboard-chevron">&rsaquo;</span></a></div><div class="panel-body badges-earned-list">@forelse ($badges ?? [] as $badge)<div class="earned-badge-row"><span class="earned-badge-icon" aria-hidden="true">✦</span><span>{{ $badge->name ?? $badge }}</span></div>@empty<p>No badges earned yet.</p>@endforelse</div></div>
+                <div class="panel ui-card-surface"><div class="panel-head ui-card-header"><span class="ui-card-header__title">Badges earned</span><a href="{{ route('badges.index') }}">View all <span class="dashboard-chevron">&rsaquo;</span></a></div><div class="panel-body badges-earned-list">@forelse ($badges ?? [] as $badge)<div class="earned-badge-row"><span class="earned-badge-icon" aria-hidden="true">✦</span><span>{{ $badge->name ?? $badge }}</span></div>@empty<p>No badges earned yet.</p>@endforelse</div></div>
             </aside>
         </div>
-    </main>
-</div>
+    </div>
 
 @php
     // Only this form's own validation failures should re-open it. Checking
@@ -536,7 +98,7 @@ main.student-dashboard .empty-state{line-height:1.618}
 @if (($show_about_form ?? false) || $aboutHasErrors)
 <div class="am-overlay" id="about-me-overlay">
     <div class="am-card">
-        <div class="am-head">
+        <div class="am-head ui-card-header">
             <h3>About Me</h3>
             <p>Tell us a bit about yourself — this personalizes your course recommendations.</p>
         </div>
@@ -632,7 +194,7 @@ main.student-dashboard .empty-state{line-height:1.618}
 
                         <div class="skillpick" data-picker="{{ $picker['key'] }}">
                             <button type="button"
-                                    class="skillpick-mini {{ count($picker['saved']) ? 'has-value' : '' }}"
+                                    class="skillpick-mini ui-button ui-button--secondary {{ count($picker['saved']) ? 'has-value' : '' }}"
                                     onclick="openSkillPick('{{ $picker['key'] }}')">
                                 <span class="skillpick-mini-label">
                                     {{ count($picker['saved']) ? count($picker['saved']) . ' selected' : 'None' }}
@@ -663,7 +225,7 @@ main.student-dashboard .empty-state{line-height:1.618}
 
                                 <div class="skillpick-count">
                                     <span class="skillpick-count-line">No skills selected</span>
-                                    <button type="button" class="skillpick-clearall"
+                                    <button type="button" class="skillpick-clearall ui-button ui-button--ghost ui-button--sm"
                                             onclick="clearSkillPick('{{ $picker['key'] }}')">Clear all</button>
                                 </div>
 
@@ -692,9 +254,9 @@ main.student-dashboard .empty-state{line-height:1.618}
                                 </div>
 
                                 <div class="skillpick-ft">
-                                    <button type="button" class="skillpick-btn"
+                                    <button type="button" class="skillpick-btn ui-button ui-button--secondary"
                                             onclick="cancelSkillPick('{{ $picker['key'] }}')">Cancel</button>
-                                    <button type="button" class="skillpick-btn primary"
+                                    <button type="button" class="skillpick-btn primary ui-button ui-button--primary"
                                             onclick="saveSkillPick('{{ $picker['key'] }}')">Save</button>
                                 </div>
                             </div>
@@ -706,7 +268,7 @@ main.student-dashboard .empty-state{line-height:1.618}
                 @endforeach
 
                 <div class="am-actions">
-                    <button type="submit" class="am-save">Save and Continue</button>
+                    <button type="submit" class="am-save ui-button ui-button--primary">Save and Continue</button>
                 </div>
             </form>
         </div>
@@ -937,11 +499,7 @@ main.student-dashboard .empty-state{line-height:1.618}
         onclick="window.scrollTo({top:0,behavior:'smooth'});">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
 </button>
-<style>
-    #back-to-top-btn{position:fixed;right:26px;bottom:26px;z-index:2000;width:48px;height:48px;border-radius:50%;border:none;background:#13176b;color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 22px rgba(19,23,107,.35);transition:transform .15s ease,background .2s ease;}
-    #back-to-top-btn:hover{background:#dba617;transform:translateY(-3px);}
-    #back-to-top-btn svg{width:22px;height:22px;}
-</style>
+
 <script>
     (function () {
         var btn = document.getElementById('back-to-top-btn');
@@ -975,6 +533,4 @@ main.student-dashboard .empty-state{line-height:1.618}
 
 
     {{-- Shared responsiveness layer (drawer nav + grid stacking) --}}
-    @include('components.responsive')
-</body>
-</html>
+</x-layout>

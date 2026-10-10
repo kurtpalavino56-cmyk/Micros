@@ -10,118 +10,19 @@
         'inProgressCourses' => collection (id,title,category,thumbnail_url,progress_percent)
         'completedCourses'  => collection (same shape)
 --}}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Enrolled Courses | Upskill</title>
-    {{-- Browser tab icon (favicon) --}}
-    <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
-<style>
-    :root{
-        --navy:#13176b;
-        --navy-deep:#0c0f4d;
-        --gold:#dba617;
-        --gold-dark:#c4930f;
-        --cyan:#7fe9e3;
-        --thumb:#d8e3f8;
-        --ink:#13176b;
-        --muted:#6b7280;
-        --line:#e5e7eb;
-        --green:#15803d;
-        --shadow: 0 10px 25px rgba(19,23,107,0.08);
-    }
-    *{box-sizing:border-box;}
-    body{font-family:"Segoe UI", Roboto, Helvetica, Arial, sans-serif;color:var(--ink);margin:0;background:#fff;}
-    a{text-decoration:none;color:inherit;}
-    button{font-family:inherit;cursor:pointer;}
+<x-layout title="Enrolled Courses | Upskill" shell="student" page="courses-enrolled">
 
-    /* Topbar */
+{{-- Sidebar --}}
+{{-- Main content --}}
+    <div class="page-content">
 
-
-
-
-
-
-
-
-
-
-
-
-
-    /* Layout */
-    .layout{display:grid;grid-template-columns:264px 1fr;min-height:calc(100vh - 74px);align-items:start;}
-
-    /* Sidebar */
-
-
-
-
-
-
-
-
-
-
-    /* Main */
-    .main{padding:32px 36px 60px;}
-    .page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;}
-    .page-head h2{font-size:30px;margin:0 0 6px;color:var(--navy);}
-    .page-head p{margin:0 0 28px;color:var(--muted);font-size:15px;}
-    .btn-outline{background:#fff;border:2px solid var(--navy);color:var(--navy);font-weight:800;padding:10px 22px;border-radius:12px;font-size:14px;transition:background .15s ease,color .15s ease;}
-    .btn-outline:hover{background:var(--navy);color:#fff;}
-
-    /* Course areas */
-    .courses-area-title{margin:26px 0 14px;font-size:17px;font-weight:800;color:var(--navy);letter-spacing:.3px;display:flex;align-items:center;gap:10px;}
-    .courses-area-title .count-chip{background:#eef1fb;color:var(--navy);font-size:12px;font-weight:800;padding:3px 12px;border-radius:999px;}
-    .course-card{display:flex;align-items:center;gap:22px;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:20px 24px;margin-bottom:16px;background:#fff;border-left:6px solid var(--navy);transition:transform .18s ease,box-shadow .18s ease;}
-    .course-card:hover{transform:translateY(-3px);box-shadow:0 18px 38px rgba(19,23,107,.16);}
-    .course-card.is-completed{border-left-color:var(--green);}
-    .course-card .thumb{width:140px;height:96px;border-radius:14px;background:linear-gradient(135deg,var(--navy) 0%,#3b41c8 100%);background-size:cover;background-position:center;flex-shrink:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);}
-    .course-info{flex:1;min-width:0;}
-    .course-info h4{margin:0 0 4px;font-size:17px;color:var(--navy);}
-    .course-info .cat{font-size:12.5px;color:var(--muted);margin-bottom:10px;}
-    .progress-track{height:7px;border-radius:999px;background:#e8ecf7;overflow:hidden;margin-bottom:7px;max-width:420px;}
-    .progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--navy),#3b41c8);}
-    .course-card.is-completed .progress-fill{background:linear-gradient(90deg,var(--green),#34d399);}
-    .pct{font-size:12px;color:var(--muted);font-weight:700;}
-    .btn-start{background:var(--gold);color:#fff;border:none;border-radius:12px;padding:11px 26px;font-size:14px;font-weight:800;white-space:nowrap;transition:background .2s ease;flex-shrink:0;}
-    .btn-start:hover{background:var(--gold-dark);}
-    .btn-start.btn-completed{background:var(--green);}
-    .btn-start.btn-completed:hover{background:#0f6b30;}
-    .empty-state{color:var(--muted);font-size:14px;padding:14px 4px;}
-    .enroll-more{color:var(--gold-dark);font-weight:700;text-decoration:underline;}
-
-    @media (max-width:980px){
-        .layout{grid-template-columns:1fr;}
-
-        .course-card{flex-direction:column;align-items:flex-start;}
-        .course-card .thumb{width:100%;height:150px;}
-    }
-</style>
-</head>
-<body>
-
-@include('components.student-navigation')
-
-<div class="layout student-sidebar-layout">
-
-    {{-- Sidebar --}}
-    @include('components.student-sidebar')
-
-    {{-- Main content --}}
-    <main class="main">
-
-        <div class="page-head student-page-heading">
+        <div class="page-head student-page-heading page-header ui-page-header">
             <div>
-                <h2>Enrolled Courses</h2>
-                <p>All the courses you're enrolled in, organized by your progress.</p>
+                <h2 class="ui-page-title">Enrolled Courses</h2>
+                <p class="ui-page-subtitle">All the courses you're enrolled in, organized by your progress.</p>
             </div>
             <a href="{{ route('courses.browse') }}">
-                <button class="btn-outline" type="button">+ Enroll More</button>
+                <button class="btn-outline ui-button ui-button--secondary" type="button">+ Enroll More</button>
             </a>
         </div>
 
@@ -131,7 +32,7 @@
         @endphp
 
         @if ($inProgressCourses->isEmpty() && $completedCourses->isEmpty())
-            <div class="empty-state">
+            <div class="empty-state ui-empty-state">
                 You haven't enrolled in any courses yet.
                 <br>
                 <a href="{{ route('courses.browse') }}" class="enroll-more">Browse courses to get started</a>
@@ -142,7 +43,7 @@
                 <span class="count-chip">{{ $inProgressCourses->count() }}</span>
             </h3>
             @forelse ($inProgressCourses as $course)
-                <div class="course-card">
+                <div class="course-card ui-card-surface">
                     <div class="thumb" @if($course->thumbnail_url) style="background-image:url('{{ $course->thumbnail_url }}')" @endif></div>
                     <div class="course-info">
                         <h4>{{ $course->title }}</h4>
@@ -150,19 +51,19 @@
                             <div class="cat">{{ $course->category }}</div>
                         @endif
                         @include('components.course-rating', ['rating' => $course->rating_average, 'count' => $course->review_count])
-                        <div class="progress-track">
-                            <div class="progress-fill" style="width:{{ $course->progress_percent ?? 0 }}%"></div>
+                        <div class="progress-track ui-progress-track">
+                            <div class="progress-fill ui-progress-fill" style="width:{{ $course->progress_percent ?? 0 }}%"></div>
                         </div>
                         <div class="pct">{{ $course->progress_percent ?? 0 }}% Complete</div>
                     </div>
                     <a href="{{ route('courses.show', ['id' => $course->id, 'from' => 'enrollments']) }}">
-                        <button class="btn-start" type="button">
+                        <button class="btn-start ui-button ui-button--primary" type="button">
                             {{ ($course->progress_percent ?? 0) > 0 ? 'Continue' : 'Start' }}
                         </button>
                     </a>
                 </div>
             @empty
-                <div class="empty-state">Nothing in progress right now.</div>
+                <div class="empty-state ui-empty-state">Nothing in progress right now.</div>
             @endforelse
 
             <h3 class="courses-area-title">
@@ -170,7 +71,7 @@
                 <span class="count-chip">{{ $completedCourses->count() }}</span>
             </h3>
             @forelse ($completedCourses as $course)
-                <div class="course-card is-completed">
+                <div class="course-card is-completed ui-card-surface">
                     <div class="thumb" @if($course->thumbnail_url) style="background-image:url('{{ $course->thumbnail_url }}')" @endif></div>
                     <div class="course-info">
                         <h4>{{ $course->title }}</h4>
@@ -178,33 +79,28 @@
                             <div class="cat">{{ $course->category }}</div>
                         @endif
                         @include('components.course-rating', ['rating' => $course->rating_average, 'count' => $course->review_count])
-                        <div class="progress-track">
-                            <div class="progress-fill" style="width:{{ $course->progress_percent ?? 0 }}%"></div>
+                        <div class="progress-track ui-progress-track">
+                            <div class="progress-fill ui-progress-fill" style="width:{{ $course->progress_percent ?? 0 }}%"></div>
                         </div>
                         <div class="pct">{{ $course->progress_percent ?? 0 }}% Complete</div>
                     </div>
                     <a href="{{ route('courses.show', ['id' => $course->id, 'from' => 'enrollments']) }}">
-                        <button class="btn-start btn-completed" type="button">Review</button>
+                        <button class="btn-start btn-completed ui-button ui-button--secondary" type="button">Review</button>
                     </a>
                 </div>
             @empty
-                <div class="empty-state">No completed courses yet - finish a course and it will appear here.</div>
+                <div class="empty-state ui-empty-state">No completed courses yet - finish a course and it will appear here.</div>
             @endforelse
         @endif
 
-    </main>
-</div>
+    </div>
 
 {{-- â”€â”€ Back to top (appears on long pages) â”€â”€ --}}
 <button id="back-to-top-btn" type="button" title="Back to top" aria-label="Back to top"
         onclick="window.scrollTo({top:0,behavior:'smooth'});">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
 </button>
-<style>
-    #back-to-top-btn{position:fixed;right:26px;bottom:26px;z-index:2000;width:48px;height:48px;border-radius:50%;border:none;background:#13176b;color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 22px rgba(19,23,107,.35);transition:transform .15s ease,background .2s ease;}
-    #back-to-top-btn:hover{background:#dba617;transform:translateY(-3px);}
-    #back-to-top-btn svg{width:22px;height:22px;}
-</style>
+
 <script>
     (function () {
         var btn = document.getElementById('back-to-top-btn');
@@ -218,6 +114,4 @@
 </script>
 
     {{-- Shared responsiveness layer (drawer nav + grid stacking) --}}
-    @include('components.responsive')
-</body>
-</html>
+</x-layout>
