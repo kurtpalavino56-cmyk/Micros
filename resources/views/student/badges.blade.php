@@ -20,9 +20,7 @@
         </div>
 
         {{-- Recently Earned --}}
-        <header class="ui-card-header badge-section-header">
-            <h3 class="ui-section-title">Recently Earned</h3>
-        </header>
+        <h3 class="ui-section-title">Recently Earned</h3>
         <div class="badge-grid">
             @forelse ($badges as $badge)
                 <div class="badge-card" id="badge-{{ $badge->id }}" role="button" tabindex="0" aria-expanded="false"
@@ -43,7 +41,7 @@
                             @if($badge->description)
                                 <span class="desc">{{ $badge->description }}</span>
                             @endif
-                            <span class="badge-earned-pill ui-badge ui-badge--accent">{{ strtolower($badge->status ?? 'active') === 'revoked' ? 'Revoked' : 'Earned' }}</span>
+                            <span class="badge-earned-pill ui-badge {{ strtolower($badge->status ?? 'active') === 'revoked' ? 'ui-badge--danger' : 'ui-badge--accent' }}">{{ strtolower($badge->status ?? 'active') === 'revoked' ? 'Revoked' : 'Earned' }}</span>
                             <span class="badge-flip-hint">Click or press Enter to view details</span>
                         </span>
                         <span class="badge-face badge-back ui-card-surface" data-badge-face="back" aria-hidden="true">

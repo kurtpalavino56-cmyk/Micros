@@ -2002,11 +2002,6 @@ body.app-shell .app-main .ui-card-header .ui-badge {
     flex: 0 0 auto;
 }
 
-body.app-shell .app-main .badge-section-header {
-    margin: 0 0 var(--ui-space-4);
-    padding-inline: var(--ui-space-6);
-}
-
 body.app-shell .app-main .path-card .ui-card-header {
     margin: -22px -23px var(--ui-space-4);
     border-radius: var(--ui-radius-md) var(--ui-radius-md) 0 0;
@@ -2187,8 +2182,8 @@ body.app-shell .app-main .goal-node.is-current {
 }
 
 body.app-shell .app-main .stat-icon {
-    background: var(--ui-surface-subtle);
-    color: var(--ui-text-body);
+    background: var(--ui-brand-blue-soft);
+    color: var(--ui-brand-blue);
 }
 
 body.app-shell .app-main .ui-empty-state,
