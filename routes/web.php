@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\FacultyAnalyticsReportController;
 use App\Http\Controllers\FacultyController;
+use App\Http\Controllers\OpenBadgeCredentialController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\StudentController;
 use App\Http\Middleware\PreventBackHistory;
@@ -80,6 +81,20 @@ Route::post('/faculty-register', [RegisterController::class, 'storeFaculty'])->n
 // Students directory — public, reached from the homepage nav. Lists only
 // students who are actually enrolled in at least one course.
 Route::get('/students', [PageController::class, 'students'])->name('students.index');
+
+Route::get('/open-badges/issuers/psu', [OpenBadgeCredentialController::class, 'issuer'])
+    ->name('openbadges.issuer');
+Route::get('/open-badges/keys/jwks.json', [OpenBadgeCredentialController::class, 'jwks'])
+    ->name('openbadges.jwks');
+Route::get('/open-badges/keys/{keyId}.json', [OpenBadgeCredentialController::class, 'key'])
+    ->where('keyId', '[a-f0-9]{64}')->name('openbadges.keys.show');
+Route::get('/open-badges/achievements/{badgeId}', [OpenBadgeCredentialController::class, 'achievement'])
+    ->whereNumber('badgeId')->name('openbadges.achievements.show');
+Route::get('/open-badges/credentials/{credentialUid}.jwt', [OpenBadgeCredentialController::class, 'show'])
+    ->whereUuid('credentialUid')->name('openbadges.credentials.show');
+Route::middleware(['auth', RoleBasedAccess::class.':student'])
+    ->get('/student/badges/{credentialUid}/download', [OpenBadgeCredentialController::class, 'download'])
+    ->whereUuid('credentialUid')->name('openbadges.credentials.download');
 
 // Navbar section links → smooth-scroll targets on the homepage.
 Route::get('/announcements', [PageController::class, 'announcementsRedirect']);

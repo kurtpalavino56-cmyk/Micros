@@ -365,6 +365,15 @@
     }
 
     .certfloat__btn:hover { background: #071550; }
+    .badge-verify-title{margin:8px 44px 4px 0;color:var(--navy);font-family:var(--font-display);font-size:24px;font-weight:800;}
+    .badge-verify-description{margin:0 0 18px;color:var(--text-muted);font-size:14px;line-height:1.6;}
+    .badge-verify-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+    .badge-verify-detail{padding:12px;border:1px solid #e5e7eb;border-radius:10px;background:#f8faff;overflow-wrap:anywhere;}
+    .badge-verify-detail dt{margin-bottom:4px;color:#64748b;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;}
+    .badge-verify-detail dd{margin:0;color:#18213d;font-size:13px;font-weight:600;}
+    .badge-verify-extra{margin-top:16px;color:#374151;font-size:13px;line-height:1.55;}
+    .badge-verify-extra h3{margin:14px 0 5px;color:var(--navy);font-size:14px;}
+    .badge-verify-extra ul{margin:0;padding-left:20px;}
 
     @media (max-width: 600px) {
         .students-hero { padding: 2.5rem 16px; }
@@ -377,6 +386,7 @@
         .certfloat { padding: 14px; }
         .certfloat__verified { margin-bottom: 10px; }
         .certfloat__btn { margin-top: 12px; }
+        .badge-verify-details{grid-template-columns:1fr;}
     }
 </style>
 @endpush
@@ -386,24 +396,24 @@
     <section class="students-hero">
         <div class="credential-lookup" aria-labelledby="credential-lookup-title">
         <h1 id="credential-lookup-title">Verification</h1>
-        <p class="credential-lookup__intro">Verify a certificate by Credential ID or scan its QR code.</p>
+        <p class="credential-lookup__intro">Verify a certificate or badge by Credential ID, or scan its QR code.</p>
 
         <form class="credential-search" id="credentialLookupForm" method="GET" action="{{ route('students.index') }}">
             <svg class="credential-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
             <input class="credential-search__input" id="credentialIdInput" type="search" name="credential_id"
-                value="{{ $credentialId }}" placeholder="PSU-LC-MC-2026-123456" autocomplete="off" required
-                aria-label="Certificate Credential ID">
+                value="{{ $credentialId }}" placeholder="Certificate serial or badge UUID" autocomplete="off" required
+                aria-label="Certificate serial or badge UUID">
             <button class="credential-search__button" id="credentialSearchButton" type="submit">Search</button>
         </form>
         <label class="credential-dropzone" id="credentialDropzone" for="credentialImageInput">
             <svg class="credential-dropzone__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16.5v1A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5v-1"/><path d="m8 9 4-4 4 4M12 5v10"/></svg>
             <span class="credential-dropzone__copy">
                 <strong>Drop a QR image here or click to upload</strong>
-                <span>Choose an image of the certificate QR code</span>
+                <span>Choose an image of a certificate or badge QR code</span>
             </span>
             <input id="credentialImageInput" type="file" accept="image/*" aria-label="Upload an image of a certificate QR code">
         </label>
-        <p class="students-hero__hint">Credential ID format: <code>PSU-LC-MC-2026-123456</code></p>
+        <p class="students-hero__hint">Enter the certificate serial or the badge UUID shown on the badge.</p>
         <div class="credential-search__tools">
             <span class="credential-scan-status" id="credentialScanStatus" role="status" aria-live="polite"></span>
         </div>
@@ -428,15 +438,63 @@
         </section>
     </div>
 @endif
-@if ($hasSearched && !$credential)
+@if ($badgeCredential)
+    <div class="certfloat-overlay" id="credentialBadgeModal" role="presentation">
+        <section class="certfloat" role="dialog" aria-modal="true" aria-labelledby="credentialBadgeTitle" tabindex="-1">
+            <button class="certfloat__close" type="button" data-close-badge-modal aria-label="Close">&times;</button>
+            @if(($badgeCredential['status'] ?? 'active') === 'revoked')
+                <div class="certfloat__verified is-revoked" id="credentialBadgeTitle" role="status">Revoked Badge</div>
+            @else
+                <div class="certfloat__verified" id="credentialBadgeTitle" role="status">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                    Verified Badge
+                </div>
+            @endif
+            <h2 class="badge-verify-title">{{ $badgeCredential['name'] }}</h2>
+            @if($badgeCredential['description'])
+                <p class="badge-verify-description">{{ $badgeCredential['description'] }}</p>
+            @endif
+            <dl class="badge-verify-details">
+                <div class="badge-verify-detail"><dt>Recipient</dt><dd>{{ $badgeCredential['recipient'] }}</dd></div>
+                <div class="badge-verify-detail"><dt>Issuer</dt><dd>{{ $badgeCredential['issuer'] }}</dd></div>
+                <div class="badge-verify-detail"><dt>Date issued</dt><dd>{{ $badgeCredential['issued_at']?->format('F j, Y') ?? 'Date unavailable' }}</dd></div>
+                <div class="badge-verify-detail"><dt>Credential ID</dt><dd>{{ $badgeCredential['credential_id'] }}</dd></div>
+                @if($badgeCredential['badge_level'])
+                    <div class="badge-verify-detail"><dt>Badge level</dt><dd>{{ $badgeCredential['badge_level'] }}</dd></div>
+                @endif
+                @if($badgeCredential['pqf_level'])
+                    <div class="badge-verify-detail"><dt>PQF level</dt><dd>{{ $badgeCredential['pqf_level'] }}</dd></div>
+                @endif
+            </dl>
+            @if(!empty($badgeCredential['competencies']) || !empty($badgeCredential['learning_outcomes']) || $badgeCredential['revoked_at'])
+                <div class="badge-verify-extra">
+                    @if($badgeCredential['revoked_at'])
+                        <h3>Revocation</h3>
+                        <p>Revoked {{ $badgeCredential['revoked_at']->format('F j, Y') }}. {{ $badgeCredential['revocation_reason'] }}</p>
+                    @endif
+                    @if(!empty($badgeCredential['competencies']))
+                        <h3>Competencies</h3>
+                        <ul>@foreach($badgeCredential['competencies'] as $competency)<li>{{ is_array($competency) ? ($competency['title'] ?? $competency['name'] ?? 'Competency') : $competency }}</li>@endforeach</ul>
+                    @endif
+                    @if(!empty($badgeCredential['learning_outcomes']))
+                        <h3>Learning outcomes</h3>
+                        <ul>@foreach($badgeCredential['learning_outcomes'] as $outcome)<li>{{ is_array($outcome) ? trim(($outcome['code'] ?? '').' '.($outcome['description'] ?? '')) : $outcome }}</li>@endforeach</ul>
+                    @endif
+                </div>
+            @endif
+            <button class="certfloat__btn" type="button" data-close-badge-modal>Continue to UPSKILL</button>
+        </section>
+    </div>
+@endif
+@if ($hasSearched && !$credential && !$badgeCredential)
     <div class="credential-lookup-modal" id="credentialNotFoundModal" role="presentation">
         <section class="credential-lookup-modal__dialog" role="alertdialog" aria-modal="true" aria-labelledby="credentialNotFoundTitle" aria-describedby="credentialNotFoundMessage" tabindex="-1">
             <button class="credential-lookup-modal__close" type="button" data-close-credential-modal aria-label="Close">&times;</button>
             <div class="credential-lookup-modal__icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01"/><path d="M10.3 3.9 2.6 17.2A2 2 0 0 0 4.3 20h15.4a2 2 0 0 0 1.7-2.8L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
             </div>
-            <h2 id="credentialNotFoundTitle">Certificate not found</h2>
-            <p id="credentialNotFoundMessage">No certificate matches that Credential ID. Check the ID printed on the certificate and try again.</p>
+            <h2 id="credentialNotFoundTitle">Credential not found</h2>
+            <p id="credentialNotFoundMessage">No certificate or badge matches that Credential ID. Check the ID and try again.</p>
             <button class="credential-lookup-modal__button" type="button" data-close-credential-modal>Try again</button>
         </section>
     </div>
@@ -453,6 +511,7 @@
         const status = document.getElementById('credentialScanStatus');
         const notFoundModal = document.getElementById('credentialNotFoundModal');
         const certificateModal = document.getElementById('credentialCertificateModal');
+        const badgeModal = document.getElementById('credentialBadgeModal');
 
         if (dropzone && imageInput) {
             ['dragenter', 'dragover'].forEach(function (eventName) {
@@ -534,9 +593,46 @@
             certificateModal.querySelector('.certfloat__close').focus();
         }
 
+        if (badgeModal) {
+            function closeBadgeModal() {
+                badgeModal.remove();
+                document.body.style.overflow = '';
+                if (window.history.replaceState) {
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+                credentialInput.focus();
+            }
+
+            badgeModal.querySelectorAll('[data-close-badge-modal]').forEach(function (button) {
+                button.addEventListener('click', closeBadgeModal);
+            });
+            badgeModal.addEventListener('click', function (event) {
+                if (event.target === badgeModal) closeBadgeModal();
+            });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && document.getElementById('credentialBadgeModal')) {
+                    closeBadgeModal();
+                }
+            });
+            document.body.style.overflow = 'hidden';
+            badgeModal.querySelector('.certfloat__close').focus();
+        }
+
         function credentialIdFromQr(text) {
-            const match = text.match(/PSU-LC-MC-\d{4}-\d{6}/i);
-            return match ? match[0].toUpperCase() : null;
+            const value = text.trim();
+            const serialMatch = value.match(/PSU-LC-MC-\d{4}-\d{6}/i);
+            if (serialMatch) return serialMatch[0].toUpperCase();
+
+            try {
+                const qrUrl = new URL(value);
+                const queryId = qrUrl.searchParams.get('credential_id');
+                if (queryId) return credentialIdFromQr(queryId);
+            } catch (error) {
+                // QR payload may be a raw UUID instead of a URL.
+            }
+
+            const badgeUuidMatch = value.match(/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i);
+            return badgeUuidMatch ? badgeUuidMatch[0].toLowerCase() : null;
         }
 
         function detectWithBrowser(file) {

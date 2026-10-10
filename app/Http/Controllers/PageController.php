@@ -332,25 +332,53 @@ class PageController extends Controller
     /** Public certificate lookup by the credential ID printed on each certificate. */
     public function students(Request $request)
     {
-        $credentialId = strtoupper(trim((string) $request->query('credential_id', '')));
+        $credentialId = trim((string) $request->query('credential_id', ''));
+        $certificateId = strtoupper($credentialId);
         $credential = null;
+        $badgeCredential = null;
 
         if ($credentialId !== '') {
-            $certificate = Certificate::with(['user', 'course'])
-                ->where('serial', $credentialId)
-                ->first();
+            if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $credentialId)) {
+                $userBadge = UserBadge::with(['user', 'badge'])
+                    ->where('credential_uid', strtolower($credentialId))
+                    ->first();
 
-            if ($certificate && $certificate->course) {
-                $credential = CertificateBuilder::pdfData($certificate);
-                $credential['credential_id'] = $credential['serial'];
-                $credential['credential_title'] = $credential['course_title'];
-                $credential['issued_at'] = $credential['date_completed'];
+                if ($userBadge && $userBadge->badge) {
+                    $badgeCredential = [
+                        'credential_id' => $userBadge->credential_uid,
+                        'name' => $userBadge->badge->name,
+                        'description' => $userBadge->badge->description,
+                        'recipient' => $userBadge->user?->name ?? 'Unavailable',
+                        'issuer' => $userBadge->badge->issuing_institution ?: 'Pangasinan State University',
+                        'issued_at' => $userBadge->earned_at,
+                        'status' => $userBadge->status ?: 'active',
+                        'revoked_at' => $userBadge->revoked_at,
+                        'revocation_reason' => $userBadge->revocation_reason,
+                        'icon_url' => $userBadge->badge->icon_url,
+                        'badge_level' => $userBadge->badge->badge_level,
+                        'pqf_level' => $userBadge->pqf_level_snapshot ?: $userBadge->badge->pqf_level,
+                        'competencies' => $userBadge->competencies_snapshot ?? [],
+                        'learning_outcomes' => $userBadge->learning_outcomes_snapshot ?? [],
+                    ];
+                }
+            } else {
+                $certificate = Certificate::with(['user', 'course'])
+                    ->where('serial', $certificateId)
+                    ->first();
+
+                if ($certificate && $certificate->course) {
+                    $credential = CertificateBuilder::pdfData($certificate);
+                    $credential['credential_id'] = $credential['serial'];
+                    $credential['credential_title'] = $credential['course_title'];
+                    $credential['issued_at'] = $credential['date_completed'];
+                }
             }
         }
 
         return view('public.students', [
             'credentialId' => $credentialId,
             'credential' => $credential,
+            'badgeCredential' => $badgeCredential,
             'hasSearched' => $credentialId !== '',
         ]);
     }

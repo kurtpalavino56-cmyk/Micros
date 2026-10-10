@@ -99,6 +99,18 @@
                                     <div class="badge-detail"><dt>Revocation reason</dt><dd>{{ $badge->revocation_reason }}</dd></div>
                                 @endif
                             </dl>
+                            @if($badge->credential_uid && $badge->verification_qr_url && $badge->verification_url)
+                                <span class="badge-verification-qr">
+                                    <img src="{{ $badge->verification_qr_url }}" alt="QR code to verify {{ $badge->name }}">
+                                    <span class="badge-verification-qr__copy">
+                                        <span>Scan to verify this badge</span>
+                                        <a href="{{ $badge->verification_url }}" target="_blank" rel="noopener">Open verification page</a>
+                                    </span>
+                                </span>
+                            @endif
+                            @if($badge->credential_uid && strtolower($badge->status ?? 'active') !== 'revoked')
+                                <a class="badge-credential-download" href="{{ route('openbadges.credentials.download', $badge->credential_uid) }}">Download portable credential</a>
+                            @endif
                             <span class="badge-flip-hint">Click to return to badge</span>
                         </span>
                     </span>
@@ -134,7 +146,9 @@
         var back = card.querySelector('[data-badge-face="back"]');
         var title = card.querySelector('.badge-title').textContent.trim();
 
-        function toggleBadge() {
+        function toggleBadge(event) {
+            if (event.target.closest('a, button')) return;
+
             var flipped = card.classList.toggle('is-flipped');
             card.setAttribute('aria-expanded', flipped ? 'true' : 'false');
             card.setAttribute('aria-label', (flipped ? 'Hide details for ' : 'Show details for ') + title);
@@ -144,6 +158,8 @@
 
         card.addEventListener('click', toggleBadge);
         card.addEventListener('keydown', function (event) {
+            if (event.target !== card) return;
+
             if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
                 toggleBadge();

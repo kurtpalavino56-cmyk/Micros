@@ -15,6 +15,7 @@ class UserBadge extends Model
         // stacking_framework_id: a badge may contribute to more than one
         // approved framework, computed rather than stored.
         'credential_uid',
+        'credential_jws',
         'status',
         'revoked_at',
         'revoked_by',
