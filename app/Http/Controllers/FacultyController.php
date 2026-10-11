@@ -15,6 +15,7 @@ use App\Models\Enrollment;
 use App\Models\LessonActivity;
 use App\Models\LessonActivitySubmission;
 use App\Models\Quiz;
+use App\Models\QuizAttempt;
 use App\Models\QuizQuestion;
 use App\Models\User;
 use App\Services\CourseCreationService;
@@ -27,6 +28,7 @@ use App\Services\QuizManagementService;
 use App\Services\StudentProgressService;
 use App\Services\UserNotificationService;
 use App\Support\CertificateBuilder;
+use App\Support\CompletionStatusPresenter;
 use App\Support\RichTextSanitizer;
 use App\Support\SkillCatalog;
 use App\Support\UserPresenter;
@@ -280,6 +282,83 @@ class FacultyController extends Controller
             'filter' => $filter,
             'needsReviewCount' => $needsReviewCount,
             'totalStudents' => Enrollment::where('course_id', $course->id)->count(),
+        ]);
+    }
+
+    /** Show the learning record and submitted work for an enrollment in an owned course. */
+    public function reviewEnrollment(int $id, Enrollment $enrollment): View
+    {
+        $course = $this->ownedCourse($id);
+        abort_unless((int) $enrollment->course_id === (int) $course->id, 404);
+
+        $enrollment->load(['user', 'course.modules.lessons.activities']);
+        $institutionalLabel = CompletionStatusPresenter::institutionalLabel(
+            $enrollment->completion_status,
+            $enrollment->faculty_verification_status,
+            $enrollment->academic_unit_confirmation_status,
+        );
+        $enrollment->setAttribute('institutional_label', $institutionalLabel);
+        $enrollment->setAttribute('review_status', match (true) {
+            $enrollment->faculty_verification_status === 'rejected' => 'denied',
+            $enrollment->faculty_verification_status === 'verified' => 'approved',
+            $enrollment->completion_status === MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION => 'pending',
+            default => 'other',
+        });
+        $enrollment->setAttribute('faculty_verification_actionable',
+            $course->requires_faculty_verification
+            && in_array($enrollment->faculty_verification_status, ['pending', 'not_required'], true)
+            && $enrollment->completion_status === MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION
+        );
+
+        $modules = $course->modules;
+        $lessonIds = $modules->flatMap(fn ($module) => $module->lessons->pluck('id'))->values();
+        $lessonCompletions = DB::table('lesson_completions')
+            ->where('user_id', $enrollment->user_id)
+            ->whereIn('lesson_id', $lessonIds)
+            ->get()
+            ->keyBy('lesson_id');
+        $activitySubmissions = LessonActivitySubmission::with('reviewer')
+            ->where('user_id', $enrollment->user_id)
+            ->whereHas('activity.lesson', fn ($query) => $query->where('course_id', $course->id))
+            ->latest('submitted_at')
+            ->get()
+            ->groupBy('lesson_activity_id');
+        $quizzes = Quiz::where('course_id', $course->id)
+            ->where(function ($query) use ($course) {
+                $query->whereHas('module', fn ($moduleQuery) => $moduleQuery->where('course_id', $course->id))
+                    ->orWhereHas('lesson', fn ($lessonQuery) => $lessonQuery->where('course_id', $course->id));
+            })
+            ->get();
+        $quizAttempts = QuizAttempt::with(['quiz', 'answers.question'])
+            ->where('user_id', $enrollment->user_id)
+            ->whereIn('quiz_id', $quizzes->pluck('id'))
+            ->latest('submitted_at')
+            ->get()
+            ->groupBy('quiz_id');
+        $lessonQuizzes = $quizzes->whereNotNull('lesson_id')->groupBy('lesson_id');
+        $moduleQuizzes = $quizzes->whereNotNull('module_id')->keyBy('module_id');
+        $activityCount = $modules->sum(fn ($module) => $module->lessons->sum(fn ($lesson) => $lesson->activities->count()));
+        $completedActivities = $activitySubmissions->keys()->count();
+        $passedQuizzes = $quizAttempts->flatten(1)->where('passed', true)->pluck('quiz_id')->unique()->count();
+
+        return view('admin.enrollments.show', [
+            'enrollment' => $enrollment,
+            'course' => $course,
+            'student' => $enrollment->user,
+            'modules' => $modules,
+            'lessonCompletions' => $lessonCompletions,
+            'activitySubmissions' => $activitySubmissions,
+            'quizzes' => $quizzes,
+            'lessonQuizzes' => $lessonQuizzes,
+            'moduleQuizzes' => $moduleQuizzes,
+            'quizAttempts' => $quizAttempts,
+            'completedLessons' => $lessonCompletions->count(),
+            'totalLessons' => $lessonIds->count(),
+            'completedActivities' => $completedActivities,
+            'totalActivities' => $activityCount,
+            'passedQuizzes' => $passedQuizzes,
+            'totalQuizzes' => $quizzes->count(),
+            'reviewRole' => 'faculty',
         ]);
     }
 
@@ -943,9 +1022,10 @@ class FacultyController extends Controller
             }
         }
 
-        return back()->with('success', $data['decision'] === 'verified'
-            ? 'Faculty verification recorded.'
-            : 'Enrollment marked as rejected.');
+        return redirect()->route('faculty.students.course', ['id' => $enrollment->course_id, 'filter' => 'needs_review'])
+            ->with('success', $data['decision'] === 'verified'
+                ? 'Faculty verification recorded.'
+                : 'Enrollment marked as rejected.');
     }
 
     // ── Create Course ─────────────────────────────────────────────────────

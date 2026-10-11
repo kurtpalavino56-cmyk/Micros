@@ -353,6 +353,8 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty',
     Route::get('/Faculty-students', [FacultyController::class, 'students'])->name('faculty.students');
     Route::get('/Faculty-students/{id}', [FacultyController::class, 'courseStudents'])
         ->whereNumber('id')->name('faculty.students.course');
+    Route::get('/Faculty-students/{id}/enrollments/{enrollment}/review', [FacultyController::class, 'reviewEnrollment'])
+        ->whereNumber(['id', 'enrollment'])->name('faculty.students.enrollments.review');
 
     Route::get('/Faculty-mycourses', [FacultyController::class, 'courses'])->name('faculty.courses');
     Route::get('/Faculty-mycourses/manage/{id?}', [FacultyController::class, 'manage'])

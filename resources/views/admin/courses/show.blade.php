@@ -729,9 +729,9 @@
 
                 <section class="card">
                     <div class="card-title"><svg class="ico"><use href="#i-users"/></svg>Completion verification</div>
-                    <p>Review student enrollment status and record academic-unit decisions for this course.</p>
+                    <p>Verify completed course requirements and record the academic-unit decision for this course.</p>
                     <a class="btn btn-blue enrollment-review-link" href="{{ route('admin.courses.enrollments', $course->id) }}">
-                        Review {{ $course->students }} {{ Illuminate\Support\Str::plural('enrollment', $course->students) }}
+                        Review completed requirements
                     </a>
                 </section>
             </div>

@@ -57,7 +57,7 @@
         .audit-changes-table th,.audit-changes-table td{padding:9px 10px;border:1px solid #edf0f5;text-align:left;vertical-align:top;overflow-wrap:anywhere;}
         .audit-changes-table th{position:sticky;top:0;background:#f9faff;color:#667085;font-size:10px;text-transform:uppercase;letter-spacing:.04em;}
         .audit-empty{padding:36px!important;color:var(--muted);text-align:center;}
-        .audit-pagination{padding:15px;}
+        .audit-pagination{padding:0 15px 8px;}
         @media(max-width:1200px){.audit-layout{grid-template-columns:minmax(0,1fr);}.audit-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}.audit-filter-title,.audit-actions{grid-column:1/-1;}}
         @media(max-width:700px){.audit-main{padding:22px 14px 40px!important;}.audit-heading{flex-direction:column;}.audit-heading h1{font-size:25px;}.audit-filters{display:flex;}.audit-actions{width:100%;}.audit-actions>*{flex:1;}}
     </style>
@@ -106,7 +106,9 @@
                         </tbody>
                     </table>
                     @if($logs->hasPages())
-                        <div class="audit-pagination">{{ $logs->links() }}</div>
+                        <div class="audit-pagination">
+                            @include('components.pagination', ['paginator' => $logs, 'ariaLabel' => 'Audit log pages'])
+                        </div>
                     @endif
                 </section>
                 <aside class="audit-card" aria-label="Audit log filters">

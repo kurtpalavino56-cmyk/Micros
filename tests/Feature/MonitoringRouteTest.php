@@ -26,6 +26,42 @@ test('admin can read the live monitoring feed', function () {
         ]);
 });
 
+test('admin dashboard shows supporting metrics and all quick access cards', function () {
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertSee('Total Learners')
+        ->assertSee('Published Courses')
+        ->assertSee('Pending Reviews')
+        ->assertSee('Credentials Earned')
+        ->assertSee('vs last week')
+        ->assertSee('vs last month')
+        ->assertDontSee('class="stat-arrow"')
+        ->assertSee('Courses &amp; Badges', false)
+        ->assertSee('Completion Verification')
+        ->assertSee('User Management')
+        ->assertSee('Certificates')
+        ->assertSee('Announcements')
+        ->assertSee('Audit Logs');
+});
+
+test('admin dashboard compares new learners with the previous week', function () {
+    $admin = User::factory()->admin()->create();
+    $weekStart = now()->startOfWeek();
+
+    User::factory()->create(['created_at' => $weekStart->copy()->addDay()]);
+    User::factory()->create(['created_at' => $weekStart->copy()->addDays(2)]);
+    User::factory()->create(['created_at' => $weekStart->copy()->subDays(6)]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertSee('+1</span> vs last week', false)
+        ->assertSee('stat-trend-up');
+});
+
 test('faculty dashboard renders for a signed-in faculty member', function () {
     $faculty = User::factory()->faculty()->create();
 
@@ -33,4 +69,3 @@ test('faculty dashboard renders for a signed-in faculty member', function () {
         ->get('/Faculty-dashboard')
         ->assertOk();
 });
-

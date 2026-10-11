@@ -1,6 +1,3 @@
-<div>
-    <!-- Simplicity is the consequence of refined emotions. - Jean D'Alembert -->
-</div>
 @if($paginator->hasPages())
     @php
         $currentPage = $paginator->currentPage();
@@ -14,7 +11,10 @@
                 ->values()
                 ->all();
     @endphp
-    <nav class="shared-pagination" aria-label="Pagination">
+    <nav class="shared-pagination" aria-label="{{ $ariaLabel ?? 'Pagination' }}">
+        @if(filled($summary ?? null))
+            <span class="shared-pagination__summary">{{ $summary }}</span>
+        @endif
         @if($paginator->onFirstPage())
             <span class="shared-pagination__link is-disabled" aria-disabled="true">« First</span>
             <span class="shared-pagination__link is-disabled" aria-disabled="true">‹ Back</span>
@@ -46,11 +46,12 @@
     </nav>
     <style>
         .shared-pagination{display:flex;align-items:center;justify-content:center;gap:7px;padding:14px 8px;flex-wrap:wrap;}
+        .shared-pagination__summary{margin-right:8px;color:#526078;font-size:.78rem;font-weight:600;text-align:center;white-space:nowrap;}
         .shared-pagination__link{display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 11px;border:1px solid #e5e7eb;border-radius:5px;background:#fff;color:#17212b;font:inherit;font-size:.78rem;text-decoration:none;white-space:nowrap;}
         .shared-pagination__link:hover{border-color:#c8ced8;background:#f8f9fb;}
         .shared-pagination__link.is-active{border-color:#111;background:#111;color:#fff;}
         .shared-pagination__link.is-disabled{color:#9aa1ad;background:#fff;}
         .shared-pagination__ellipsis{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:36px;color:#17212b;font-size:.8rem;}
-        @media(max-width:560px){.shared-pagination{gap:4px;padding:12px 4px;}.shared-pagination__link{min-width:32px;height:34px;padding:0 8px;font-size:.74rem;}}
+        @media(max-width:560px){.shared-pagination{gap:4px;padding:12px 4px;}.shared-pagination__summary{width:100%;margin:0 0 4px;text-align:center;}.shared-pagination__link{min-width:32px;height:34px;padding:0 8px;font-size:.74rem;}}
     </style>
 @endif

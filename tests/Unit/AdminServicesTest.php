@@ -140,6 +140,27 @@ test('course moderation toggles publish and feature without conflating the two f
     expect($course->fresh()->is_published)->toBeFalse();
 });
 
+test('course moderation prevents featuring a fourth course but allows unfeaturing', function () {
+    $service = app(CourseModerationService::class);
+    $featuredCourses = collect(range(1, 3))->map(fn (int $number) => makeAdminModerationCourse([
+        'title' => 'Featured Course '.$number,
+        'is_featured' => true,
+    ]));
+    $fourthCourse = makeAdminModerationCourse([
+        'title' => 'Fourth Course',
+        'is_featured' => false,
+    ]);
+
+    expect(fn () => $service->toggleFeature($fourthCourse))
+        ->toThrow(DomainException::class, 'Only three courses can be featured at a time.');
+    expect($fourthCourse->fresh()->is_featured)->toBeFalse()
+        ->and(Course::where('is_featured', true)->count())->toBe(3);
+
+    expect($service->toggleFeature($featuredCourses->first()))->toBeFalse()
+        ->and($service->toggleFeature($fourthCourse))->toBeTrue()
+        ->and(Course::where('is_featured', true)->count())->toBe(3);
+});
+
 test('course moderation deletes a course and returns its title', function () {
     $course = makeAdminModerationCourse(['title' => 'Remove This Course']);
 

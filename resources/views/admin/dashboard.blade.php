@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,531 +9,176 @@
     <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 
     <style>
         /* =========================================================
-           UPSKILL ADMIN DASHBOARD
-           Blue / White / Yellow UI
-           Design-only layer
+           UPSKILL ADMIN DASHBOARD – simple version
+           White surfaces, thin borders, one blue accent.
         ========================================================= */
-
-        /* Avoid resetting margins and padding on shared components */
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-        }
+        *, *::before, *::after { box-sizing: border-box; }
 
         :root {
-            --navy: #09255f;
-            --blue: #0b4ea2;
-            --blue-light: #eaf2ff;
-            --blue-soft: #f4f7fc;
-
+            --navy: #0f2557;
+            --blue: #1d4ed8;
             --yellow: #f4c430;
-            --yellow-soft: #fff8dc;
-
-            --white: #ffffff;
-            --surface: #f5f7fa;
-
-            --border: #e2e7ef;
-            --border-light: #edf0f5;
-
-            --text: #17212b;
-            --text-muted: #687385;
-            --text-soft: #929baa;
-
-            --green: #247a5b;
-            --green-soft: #eaf7f1;
-
-            --red: #b54747;
-            --red-soft: #fff0f0;
-
-            --shadow-sm: 0 1px 3px rgba(9, 37, 95, .05);
-            --shadow-md: 0 5px 18px rgba(9, 37, 95, .08);
-
-            --radius: 10px;
-            --radius-sm: 7px;
+            --canvas: #f6f7f9;
+            --white: #fff;
+            --line: #e5e8ee;
+            --line-soft: #eef0f4;
+            --ink: #1a2233;
+            --muted: #667085;
+            --soft: #98a2b3;
+            --green: #1f7a58;
+            --red: #b94040;
+            --r: 10px;
         }
 
-        /* PAGE */
         body {
             margin: 0;
-            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background: var(--surface);
-            color: var(--text);
             min-height: 100vh;
+            background: var(--canvas);
+            color: var(--ink);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
             -webkit-font-smoothing: antialiased;
         }
+        .layout { min-height: calc(100vh - 66px); background: var(--canvas); }
 
-        .layout {
-            min-height: calc(100vh - 66px);
-        }
-
-        .main {
-            margin-left: 0;
+        main.admin-dashboard {
             width: 100%;
             min-width: 0;
-            padding: 30px 30px 44px;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 32px clamp(18px, 3vw, 40px) 56px;
         }
+        .admin-dashboard :is(h1, h2, h3, .stat-val) { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; }
+        :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 
-        /* PAGE HEADER */
-        .page-heading {
-            font-size: 1.45rem;
-            line-height: 1.25;
-            font-weight: 700;
-            letter-spacing: -.02em;
-            color: var(--navy);
-            margin-bottom: 5px;
-        }
-
-        .page-sub {
-            font-size: .84rem;
-            line-height: 1.5;
-            font-weight: 400;
-            color: var(--text-muted);
-            margin-bottom: 25px;
-        }
+        /* HEADER */
+        .page-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
+        .page-heading { margin: 0; font-size: 1.6rem; font-weight: 700; letter-spacing: -.03em; color: #000; }
+        .page-sub { margin: 4px 0 0; font-size: .9rem; color: var(--muted); }
+        .today-chip { display: inline-flex; align-items: center; gap: 7px; font-size: .82rem; color: var(--muted); }
+        .today-chip svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
         /* STAT CARDS */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 14px;
-            margin-bottom: 18px;
-        }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+        .stat-card { position: relative; overflow: hidden; padding: 18px 20px 18px 24px; background: var(--white); border: 1px solid var(--line); border-radius: var(--r); }
+        .stat-card::before { position: absolute; inset: 8px auto 8px 0; width: 4px; border-radius: 0 4px 4px 0; background: var(--yellow); content: ""; }
+        .stat-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-direction: row-reverse; }
+        .stat-icon { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; color: #8a6900; }
+        .stat-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+        .stat-lbl { font-size: .84rem; font-weight: 500; color: var(--muted); }
+        .stat-val { margin: 12px 0 8px; font-size: 2rem; font-weight: 700; letter-spacing: -.03em; line-height: 1; color: var(--navy); font-variant-numeric: tabular-nums; }
+        .stat-context { display: flex; align-items: center; gap: 6px; font-size: .78rem; color: #000; }
+        .stat-trend { display: inline-flex; align-items: center; gap: 3px; font-weight: 600; }
+        .stat-trend svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+        .stat-trend-up { color: var(--green); }
+        .stat-trend-down { color: var(--red); }
+        .stat-trend-neutral { color: #000; }
 
-        .stat-card {
+        /* SECTION HEADINGS */
+        .section-hd { margin: 30px 0 12px; }
+        .section-hd h2 { margin: 0; font-size: 1.05rem; font-weight: 700; color: #000; }
+        .section-hd p { margin: 3px 0 0; font-size: .82rem; color: var(--muted); }
+
+        /* QUICK ACCESS */
+        .quick-modules-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+        .quick-module-card {
             position: relative;
-            min-height: 112px;
-            background: var(--white);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 19px 20px;
-            box-shadow: var(--shadow-sm);
-            text-align: left;
-            overflow: hidden;
-            transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
-        }
-
-        .stat-card::before {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 3px;
-            background: var(--yellow);
-        }
-
-        .stat-card:hover {
-            border-color: #cfd8e6;
-            box-shadow: var(--shadow-md);
-            transform: translateY(-1px);
-        }
-
-        .stat-val {
-            font-size: 1.8rem;
-            line-height: 1;
-            font-weight: 700;
-            letter-spacing: -.025em;
-            color: var(--navy);
-            margin-bottom: 9px;
-        }
-
-        .stat-lbl {
-            font-size: .72rem;
-            line-height: 1.3;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: .055em;
-        }
-
-        /* TWO-COLUMN LAYOUT */
-        .two-col {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-            gap: 16px;
-            margin-bottom: 16px !important;
-        }
-
-        /* CARD */
-        .card {
-            min-width: 0;
+            grid-template-columns: 24px minmax(0, 1fr);
+            column-gap: 14px;
+            padding: 16px 18px;
             background: var(--white);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 19px 20px;
-            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--line);
+            border-radius: var(--r);
+            transition: border-color .15s ease;
         }
+        .quick-module-card:hover { border-color: var(--blue); }
+        .quick-module-head { display: contents; }
+        .quick-module-mark { grid-row: 1 / span 2; color: var(--blue); padding-top: 1px; }
+        .quick-module-mark svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+        .quick-module-copy { min-width: 0; }
+        .quick-module-card h3 { margin: 0; font-size: .92rem; font-weight: 600; color: var(--ink); }
+        .quick-module-card p { margin: 4px 0 0; font-size: .78rem; line-height: 1.45; color: var(--muted); }
+        .quick-module-info { grid-column: 2; margin-top: 8px; font-size: .76rem; font-weight: 600; color: var(--navy); }
+        .quick-module-link { position: absolute; inset: 0; border-radius: var(--r); font-size: 0; }
 
-        .card-hd {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            min-height: 25px;
-            margin-bottom: 14px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border-light);
-        }
+        /* CARDS + GRIDS */
+        .two-col { display: grid; gap: 16px; margin-top: 16px; }
+        .monitor-grid, .active-grid { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+        .analytics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .card { min-width: 0; padding: 0 20px 12px; background: var(--white); border: 1px solid var(--line); border-radius: var(--r); }
+        .card-hd { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 54px; margin: 0 -20px 4px; padding: 0 20px; border-bottom: 1px solid var(--line-soft); }
+        .card-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: .92rem; font-weight: 700; color: #000; }
+        .view-all { font-size: .8rem; font-weight: 500; color: var(--blue); text-decoration: none; }
+        .view-all:hover { text-decoration: underline; }
 
-        .card-title {
-            font-size: .88rem;
-            line-height: 1.3;
-            font-weight: 700;
-            color: var(--navy);
-            letter-spacing: -.01em;
-        }
+        .live-dot { display: inline-flex; align-items: center; gap: 6px; font-size: .76rem; color: var(--muted); }
+        .live-dot::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 
-        .view-all {
-            display: inline-flex;
-            align-items: center;
-            min-height: 28px;
-            padding: 0 9px;
-            border-radius: 6px;
-            color: var(--blue);
-            background: transparent;
-            font-size: .73rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: background .18s ease, color .18s ease;
-        }
+        /* LIVE FEED */
+        #live-activity-list { max-height: 320px; overflow-y: auto; padding-left: 22px; }
+        #live-activity-list:empty::before { content: "Waiting for live activity…"; display: block; padding: 28px 4px; text-align: center; font-size: .82rem; color: var(--soft); }
+        .feed-item { position: relative; padding: 12px 0 12px 4px; }
+        .feed-item::before { position: absolute; top: 0; bottom: -1px; left: -17px; width: 1px; background: var(--line); content: ""; }
+        .feed-item::after { position: absolute; top: 17px; left: -22px; z-index: 1; width: 8px; height: 8px; border: 1.5px solid var(--yellow); border-radius: 50%; background: var(--white); content: ""; }
+        .feed-item:first-child::after { background: var(--yellow); }
+        .feed-item:last-child::before { bottom: 50%; }
+        .feed-title { font-size: .86rem; font-weight: 600; color: var(--ink); }
+        .feed-detail { margin-top: 3px; font-size: .78rem; color: #526078; }
+        .feed-time { color: #526078; white-space: nowrap; }
+        .feed-empty { padding: 22px 4px; font-size: .82rem; color: var(--red); }
 
-        .view-all:hover {
-            color: var(--navy);
-            background: var(--blue-light);
-            opacity: 1;
-        }
+        /* SNAPSHOT */
+        .snapshot-hero { padding: 16px 0; border-bottom: 1px solid var(--line-soft); }
+        .snapshot-hero span { font-size: .82rem; color: var(--muted); }
+        .snapshot-hero strong { display: block; margin: 6px 0 4px; font: 700 2.2rem/1 'Plus Jakarta Sans', sans-serif; letter-spacing: -.03em; color: var(--navy); }
+        .snapshot-hero small { font-size: .78rem; color: #000; }
+        .snapshot-metric { display: flex; align-items: baseline; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
+        .snapshot-metric:last-child { border-bottom: 0; }
+        .snapshot-metric span { order: 1; font-size: .84rem; color: var(--muted); }
+        .snapshot-metric strong { order: 2; font: 600 1rem 'Plus Jakarta Sans', sans-serif; color: var(--ink); }
 
-        /* LIVE MONITORING */
-        #live-activity-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-        }
-
-        #live-activity-list .badge-card {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-align: left;
-            border: 0;
-            border-bottom: 1px solid var(--border-light);
-            border-radius: 0;
-            padding: 11px 2px;
-        }
-
-        #live-activity-list .badge-card:last-child {
-            border-bottom: 0;
-        }
-
-        #live-activity-list .badge-card::before {
-            content: "";
-            width: 7px;
-            height: 7px;
-            flex: 0 0 7px;
-            border-radius: 50%;
-            background: var(--yellow);
-            box-shadow: 0 0 0 3px var(--yellow-soft);
-        }
-
-        /* PLATFORM SNAPSHOT */
-        .chart-row {
-            margin-bottom: 15px;
-        }
-
-        .chart-row:last-child {
-            margin-bottom: 0;
-        }
-
-        .chart-lbl {
-            font-size: .77rem;
-            line-height: 1.4;
-            font-weight: 500;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-        }
-
-        .card > .chart-row:not(:has(.bar-track)) {
-            padding: 9px 11px;
-            background: var(--blue-soft);
-            border-left: 3px solid var(--blue);
-            border-radius: 5px;
-        }
-
-        .card > .chart-row:not(:has(.bar-track)) .chart-lbl {
-            margin-bottom: 0;
-            color: var(--navy);
-            font-weight: 600;
-        }
-
-        /* ACTIVE COURSES */
-        .course-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            min-height: 61px;
-            padding: 10px 2px;
-            border-bottom: 1px solid var(--border-light);
-        }
-
-        .course-item:last-child {
-            border-bottom: 0;
-        }
-
-        .course-thumb {
-            width: 42px;
-            height: 42px;
-            flex: 0 0 42px;
-            background: var(--blue-light);
-            border: 1px solid #d7e3f7;
-            border-radius: 7px;
-            overflow: hidden;
-        }
-
-        .course-body {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .course-name {
-            font-size: .79rem;
-            line-height: 1.35;
-            font-weight: 600;
-            color: var(--text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .course-meta {
-            font-size: .68rem;
-            line-height: 1.35;
-            color: var(--text-soft);
-            margin-top: 3px;
-        }
-
-        .course-pct {
-            min-width: 48px;
-            padding: 5px 7px;
-            border: 1px solid #d5deeb;
-            border-radius: 6px;
-            background: var(--blue-soft);
-            color: var(--navy);
-            font-size: .72rem;
-            line-height: 1;
-            font-weight: 700;
-            text-align: center;
-            flex-shrink: 0;
-        }
+        /* COURSES */
+        .course-item { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
+        .course-item:last-child { border-bottom: 0; }
+        .course-thumb { width: 44px; height: 44px; flex: 0 0 44px; overflow: hidden; border-radius: 8px; background: var(--line-soft); }
+        .course-body { flex: 1; min-width: 0; }
+        .course-name { font-size: .88rem; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .course-meta { margin-top: 3px; font-size: .76rem; color: var(--muted); }
+        .course-pct { flex-shrink: 0; font: 600 .86rem 'Plus Jakarta Sans', sans-serif; color: var(--navy); }
 
         /* BADGES */
-        .badges-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 9px;
-        }
-
-        .badge-card {
-            background: var(--white);
-            border: 1px solid var(--border);
-            border-radius: 7px;
-            padding: 12px 11px;
-            text-align: left;
-            transition: border-color .18s ease, background .18s ease;
-        }
-
-        .badge-card:hover {
-            border-color: #c7d5e9;
-            background: #fbfcfe;
-        }
-
-        .badge-name {
-            font-size: .77rem;
-            line-height: 1.35;
-            font-weight: 600;
-            color: var(--navy);
-        }
-
-        .badge-count {
-            font-size: .68rem;
-            line-height: 1.35;
-            color: var(--text-soft);
-            margin-top: 4px;
-        }
-
-        #recent-badges-grid .badge-card {
-            position: relative;
-            padding-left: 15px;
-        }
-
-        #recent-badges-grid .badge-card::before {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: 12px;
-            bottom: 12px;
-            width: 3px;
-            border-radius: 2px;
-            background: var(--yellow);
-        }
+        .badges-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding-top: 10px; }
+        .badge-card { padding: 12px 14px; border: 1px solid var(--line-soft); border-radius: 8px; }
+        .badge-name { font-size: .84rem; font-weight: 600; color: var(--ink); }
+        .badge-count { margin-top: 3px; font-size: .76rem; color: var(--muted); }
 
         /* BAR CHARTS */
-        .bar-track {
-            height: 7px;
-            background: #e9edf3;
-            border-radius: 3px;
-            overflow: hidden;
-        }
-
-        .bar-fill {
-            height: 100%;
-            background: var(--blue);
-            border-radius: 3px;
-            transition: width .6s ease;
-        }
-
-        .card .bar-track + * {
-            margin-top: 0;
-        }
-
-        /* EMPTY / LOADING STATES */
-        #live-activity-list:empty::before {
-            content: "Waiting for live activity...";
-            display: block;
-            padding: 22px 4px;
-            color: var(--text-soft);
-            font-size: .76rem;
-            text-align: center;
-        }
+        .chart-row { padding: 11px 0; }
+        .chart-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 7px; }
+        .chart-lbl { min-width: 0; font-size: .84rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chart-val { flex-shrink: 0; font-size: .84rem; font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; }
+        .bar-track { height: 6px; border-radius: 999px; background: var(--line-soft); overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 999px; background: var(--blue); transition: width .6s ease; }
 
         /* RESPONSIVE */
         @media (max-width: 1100px) {
-            .main {
-                padding: 26px 22px 38px;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
+            .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .quick-modules-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
-
-        @media (max-width: 850px) {
-            .main {
-                margin-left: 0;
-                width: 100%;
-                padding: 24px 18px 34px;
-            }
-
-            .two-col {
-                grid-template-columns: 1fr;
-            }
+        @media (max-width: 900px) {
+            .monitor-grid, .active-grid, .analytics-grid { grid-template-columns: 1fr; }
         }
-
-        @media (max-width: 560px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .page-heading {
-                font-size: 1.25rem;
-            }
-
-            .card {
-                padding: 16px;
-            }
-
-            .badges-grid {
-                grid-template-columns: 1fr;
-            }
+        @media (max-width: 600px) {
+            main.admin-dashboard { padding: 22px 14px 40px; }
+            .stats-grid, .quick-modules-grid, .badges-grid { grid-template-columns: 1fr; }
         }
+        @media (prefers-reduced-motion: reduce) { .bar-fill { transition: none; } }
+
     </style>
-<style>
-:root {}
-main.admin-dashboard {
-  --dash-navy:#0B1B45; --dash-navy-deep:#071233; --dash-royal:#2447D4;
-  --dash-gold:#F4C430; --dash-gold-soft:#FFF5D1; --dash-canvas:#F4F6FB;
-  --dash-ink:#0E1A3A; --dash-muted:#64748B; --dash-line:#E6EAF2;
-  color:var(--dash-ink); font-family:'Inter',ui-sans-serif,system-ui,sans-serif;
-  padding:32px clamp(20px,3vw,44px) 56px; min-width:0;
-}
-main.admin-dashboard h1,main.admin-dashboard h2,main.admin-dashboard h3,main.admin-dashboard h4,
-main.admin-dashboard .page-heading,main.admin-dashboard .stat-val {
-  font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif;
-}
-.layout:has(main.admin-dashboard){background:var(--dash-canvas);}
-main.admin-dashboard .page-heading{font-size:27px;font-weight:800;letter-spacing:-.04em;color:var(--dash-ink);line-height:1.2}
-main.admin-dashboard .page-sub{margin-top:7px;color:var(--dash-muted);font-size:14px}
-main.admin-dashboard .stats-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
-main.admin-dashboard .stats-grid{gap:16px;margin:24px 0 0}
-main.admin-dashboard .stat-card{min-height:126px;padding:21px 22px;border:1px solid var(--dash-line);border-radius:18px;background:#fff;box-shadow:0 5px 18px rgba(11,27,69,.045);text-align:left}
-main.admin-dashboard .stat-val{font-size:32px;font-weight:800;line-height:1;color:var(--dash-navy)}
-main.admin-dashboard .stat-lbl{margin-top:10px;font-size:12px;font-weight:600;letter-spacing:.01em;color:var(--dash-muted)}
-main.admin-dashboard .two-col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:22px}
-main.admin-dashboard .two-col.monitor-grid,main.admin-dashboard .two-col.active-grid{grid-template-columns:minmax(0,3fr) minmax(280px,2fr)}
-main.admin-dashboard .card{min-width:0;padding:0 20px 18px;border:1px solid var(--dash-line);border-radius:18px;background:#fff;box-shadow:0 5px 18px rgba(11,27,69,.045)}
-main.admin-dashboard .stat-card{position:relative;min-height:152px;padding:25px 22px 22px 27px;border:1px solid var(--dash-line);border-radius:18px;background:#fff;box-shadow:0 5px 18px rgba(11,27,69,.045);text-align:left;overflow:hidden}
-main.admin-dashboard .stat-card:before{content:"";position:absolute;left:0;top:22px;bottom:22px;width:4px;border-radius:0 5px 5px 0;background:var(--dash-gold)}
-main.admin-dashboard .stat-val{font-size:40px;font-weight:800;line-height:1;color:var(--dash-ink)}
-main.admin-dashboard .stat-lbl{margin-top:10px;font-size:13px;font-weight:500;letter-spacing:0;color:var(--dash-muted)}
-main.admin-dashboard .two-col{display:grid;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:22px}
-main.admin-dashboard .two-col.monitor-grid{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
-main.admin-dashboard .two-col.active-grid{grid-template-columns:minmax(0,1.4fr) minmax(320px,1fr)}
-main.admin-dashboard .card{min-width:0;padding:0 20px 18px;border:1px solid var(--dash-line);border-radius:18px;background:#fff;box-shadow:0 5px 18px rgba(11,27,69,.045);transition:transform .2s ease,box-shadow .2s ease}
-main.admin-dashboard .card:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(11,27,69,.09)}
-main.admin-dashboard .card-hd{min-height:58px;margin:0 -20px 14px;padding:0 20px;border-bottom:1px solid #EEF1F6;background:#fff;color:var(--dash-ink)}
-main.admin-dashboard .card-title{font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif;font-size:14px;font-weight:700;color:var(--dash-ink)}
-main.admin-dashboard .view-all{font-size:12px;font-weight:700;color:var(--dash-royal)}
-main.admin-dashboard .chart-row{margin:13px 0}
-main.admin-dashboard .chart-lbl{margin-bottom:8px;color:var(--dash-muted);font-size:12px;font-weight:500}
-main.admin-dashboard .bar-track{height:8px;border-radius:999px;background:#EDF1F8;overflow:hidden}
-main.admin-dashboard .bar-fill{height:100%;border-radius:999px;background:var(--dash-royal)}
-main.admin-dashboard .course-item{gap:13px;padding:13px 0;border-bottom:1px solid #EEF1F6}
-main.admin-dashboard .course-item:hover{background:var(--dash-canvas)}
-main.admin-dashboard .course-thumb{width:42px;height:42px;border-radius:12px;background:var(--dash-gold-soft)}
-main.admin-dashboard .course-name{font-size:13px;font-weight:700;color:var(--dash-ink)}
-main.admin-dashboard .course-meta{margin-top:4px;color:var(--dash-muted);font-size:11px}
-main.admin-dashboard .course-pct{font-family:'Plus Jakarta Sans',sans-serif;color:var(--dash-ink);font-size:13px;font-weight:700}
-main.admin-dashboard .badge-card{border:1px solid var(--dash-line);border-radius:13px;background:#fff;padding:13px}
-main.admin-dashboard .active-grid .badge-card{transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
-main.admin-dashboard .active-grid .badge-card:hover{transform:translateY(-2px);border-color:rgba(244,196,48,.75);box-shadow:0 7px 18px rgba(11,27,69,.07)}
-main.admin-dashboard .badge-name{font-size:12px;font-weight:700;color:var(--dash-ink)}
-main.admin-dashboard .badge-count{margin-top:4px;font-size:11px;color:var(--dash-muted)}
-main.admin-dashboard .chart-row:last-child{margin-bottom:0}
-main.admin-dashboard .snapshot-hero{position:relative;overflow:hidden;margin-bottom:12px;padding:19px 20px;border-radius:16px;background:#0B1B45;color:#fff}
-main.admin-dashboard .snapshot-hero:after{content:"";position:absolute;right:-25px;top:-50px;width:130px;height:130px;border-radius:50%;background:rgba(244,196,48,.16);filter:blur(3px)}
-main.admin-dashboard .snapshot-hero span,main.admin-dashboard .snapshot-hero strong,main.admin-dashboard .snapshot-hero small{position:relative;display:block;z-index:1}
-main.admin-dashboard .snapshot-hero span{font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.62)}
-main.admin-dashboard .snapshot-hero strong{margin-top:10px;font:700 42px/1 'Plus Jakarta Sans',sans-serif;color:#fff}
-main.admin-dashboard .snapshot-hero small{margin-top:8px;font-size:11px;color:rgba(255,255,255,.65)}
-main.admin-dashboard .snapshot-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
-main.admin-dashboard .snapshot-metric{min-width:0;padding:12px;border-radius:12px;background:var(--dash-canvas)}
-main.admin-dashboard .snapshot-metric strong,main.admin-dashboard .snapshot-metric span{display:block}
-main.admin-dashboard .snapshot-metric strong{font:700 17px 'Plus Jakarta Sans',sans-serif;color:var(--dash-ink)}
-main.admin-dashboard .snapshot-metric span{margin-top:4px;font-size:10px;line-height:1.3;color:var(--dash-muted)}
-main.admin-dashboard .quick-modules{margin-top:28px}
-main.admin-dashboard .quick-modules-heading{margin-bottom:14px}
-main.admin-dashboard .quick-modules-heading h2{margin:0;color:var(--dash-ink);font-size:19px;font-weight:800;letter-spacing:-.02em}
-main.admin-dashboard .quick-modules-heading p{margin:5px 0 0;color:var(--dash-muted);font-size:12px;line-height:1.45}
-main.admin-dashboard .quick-modules-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-main.admin-dashboard .quick-module-card{display:flex;min-width:0;min-height:210px;flex-direction:column;align-items:flex-start;padding:18px;border:1px solid var(--dash-line);border-radius:16px;background:#fff;box-shadow:0 5px 18px rgba(11,27,69,.045);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
-main.admin-dashboard .quick-module-card:hover{transform:translateY(-2px);border-color:#d2d9e8;box-shadow:0 10px 22px rgba(11,27,69,.08)}
-main.admin-dashboard .quick-module-card h3{margin:0;color:var(--dash-ink);font-size:15px;font-weight:700}
-main.admin-dashboard .quick-module-card p{margin:8px 0 12px;color:var(--dash-muted);font-size:12px;line-height:1.5}
-main.admin-dashboard .quick-module-info{margin-top:auto;color:#52617a;font-size:11px;font-weight:700}
-main.admin-dashboard .quick-module-link{display:inline-flex;align-items:center;justify-content:center;min-height:34px;margin-top:13px;padding:7px 11px;border:1px solid #dce3f1;border-radius:8px;background:#f8faff;color:var(--dash-royal);font-size:11px;font-weight:700;text-decoration:none;transition:background .18s ease,border-color .18s ease}
-main.admin-dashboard .quick-module-link:hover{border-color:#bfcbed;background:#eef2ff}
-main.admin-dashboard .quick-module-link:focus-visible{outline:3px solid rgba(36,71,212,.3);outline-offset:2px}
-@media(max-width:900px){main.admin-dashboard .two-col.monitor-grid,main.admin-dashboard .two-col.active-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:900px){main.admin-dashboard .two-col.monitor-grid,main.admin-dashboard .two-col.active-grid{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}}
-@media(max-width:680px){main.admin-dashboard{padding:24px 16px 40px}main.admin-dashboard .two-col,main.admin-dashboard .two-col.monitor-grid,main.admin-dashboard .two-col.active-grid{grid-template-columns:1fr}main.admin-dashboard .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}main.admin-dashboard .stat-card{min-height:108px;padding:17px}}
-@media(max-width:860px){main.admin-dashboard .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:900px){main.admin-dashboard .quick-modules-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:600px){main.admin-dashboard .quick-modules-grid{grid-template-columns:1fr}main.admin-dashboard .quick-module-card{min-height:185px}}
-</style>
 </head>
 
 <body>
@@ -546,43 +190,97 @@ main.admin-dashboard .quick-module-link:focus-visible{outline:3px solid rgba(36,
 
         <main class="main admin-dashboard">
 
-            <div class="page-heading">Welcome back, Admin</div>
-            <div class="page-sub">Here's what's happening on your platform today.</div>
+            <div class="page-top">
+                <div>
+                    <h1 class="page-heading">Welcome back, Admin</h1>
+                    <p class="page-sub">Here's what's happening on your platform today.</p>
+                </div>
+                <span class="today-chip">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+                    {{ now()->format('l, F j') }}
+                </span>
+            </div>
 
             {{-- STAT CARDS --}}
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-val" id="live-active-users">0</div>
-                    <div class="stat-lbl">Active Users</div>
+                    <div class="stat-heading">
+                        <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 20v-1.5A4.5 4.5 0 0 1 8 14h2a4.5 4.5 0 0 1 4.5 4.5V20zM16 5.5a3 3 0 0 1 0 5.8M17 14h1a3 3 0 0 1 3 3v3h-4"/></svg></span>
+                        <div class="stat-lbl">Total learners</div>
+                    </div>
+                    <div class="stat-val">{{ number_format($stats['total_students']) }}</div>
+                    @php($trend = $stats['learners_weekly_change'])
+                    <div class="stat-footer"><div class="stat-context"><span class="stat-trend {{ $trend > 0 ? 'stat-trend-up' : ($trend < 0 ? 'stat-trend-down' : 'stat-trend-neutral') }}">@if($trend !== 0)<svg viewBox="0 0 16 16" aria-hidden="true"><path d="{{ $trend > 0 ? 'M8 13V3m-4 4 4-4 4 4' : 'M8 3v10m-4-4 4 4 4-4' }}"/></svg>@endif{{ $trend > 0 ? '+' : '' }}{{ number_format($trend) }}</span> vs last week</div></div>
                 </div>
 
                 <div class="stat-card">
-                    <div class="stat-val" id="live-events-today">0</div>
-                    <div class="stat-lbl">Events Today</div>
+                    <div class="stat-heading">
+                        <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21z"/><path d="M4 5.5v13A2.5 2.5 0 0 1 6.5 16H20"/></svg></span>
+                        <div class="stat-lbl">Published courses</div>
+                    </div>
+                    <div class="stat-val">{{ number_format($stats['published_courses']) }}</div>
+                    @php($trend = $stats['courses_weekly_change'])
+                    <div class="stat-footer"><div class="stat-context"><span class="stat-trend {{ $trend > 0 ? 'stat-trend-up' : ($trend < 0 ? 'stat-trend-down' : 'stat-trend-neutral') }}">@if($trend !== 0)<svg viewBox="0 0 16 16" aria-hidden="true"><path d="{{ $trend > 0 ? 'M8 13V3m-4 4 4-4 4 4' : 'M8 3v10m-4-4 4 4 4-4' }}"/></svg>@endif{{ $trend > 0 ? '+' : '' }}{{ number_format($trend) }}</span> vs last week</div></div>
                 </div>
 
                 <div class="stat-card">
-                    <div class="stat-val" id="live-enrollments-today">0</div>
-                    <div class="stat-lbl">Enrollments Today</div>
+                    <div class="stat-heading">
+                        <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+                        <div class="stat-lbl">Pending reviews</div>
+                    </div>
+                    <div class="stat-val">{{ number_format($stats['pending_reviews']) }}</div>
+                    @php($trend = $stats['pending_reviews_weekly_change'])
+                    <div class="stat-footer"><div class="stat-context"><span class="stat-trend {{ $trend > 0 ? 'stat-trend-up' : ($trend < 0 ? 'stat-trend-down' : 'stat-trend-neutral') }}">@if($trend !== 0)<svg viewBox="0 0 16 16" aria-hidden="true"><path d="{{ $trend > 0 ? 'M8 13V3m-4 4 4-4 4 4' : 'M8 3v10m-4-4 4 4 4-4' }}"/></svg>@endif{{ $trend > 0 ? '+' : '' }}{{ number_format($trend) }}</span> vs last week</div></div>
                 </div>
 
                 <div class="stat-card">
-                    <div class="stat-val" id="live-badges-today">0</div>
-                    <div class="stat-lbl">Badges Today</div>
+                    <div class="stat-heading">
+                        <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="m8.5 12-1 9 4.5-2.5 4.5 2.5-1-9M9.5 8l1.6 1.6L14.5 6"/></svg></span>
+                        <div class="stat-lbl">Credentials earned</div>
+                    </div>
+                    <div class="stat-val">{{ number_format($stats['credentials_earned']) }}</div>
+                    @php($trend = $stats['credentials_monthly_change'])
+                    <div class="stat-footer"><div class="stat-context"><span class="stat-trend {{ $trend > 0 ? 'stat-trend-up' : ($trend < 0 ? 'stat-trend-down' : 'stat-trend-neutral') }}">@if($trend !== 0)<svg viewBox="0 0 16 16" aria-hidden="true"><path d="{{ $trend > 0 ? 'M8 13V3m-4 4 4-4 4 4' : 'M8 3v10m-4-4 4 4 4-4' }}"/></svg>@endif{{ $trend > 0 ? '+' : '' }}{{ number_format($trend) }}</span> vs last month</div></div>
                 </div>
             </div>
 
+            {{-- QUICK ACCESS --}}
             <section class="quick-modules" aria-labelledby="quick-modules-title">
-                <header class="quick-modules-heading">
+                <header class="section-hd">
                     <h2 id="quick-modules-title">Quick access</h2>
                     <p>Common administration tasks, with current counts to help you decide where to go next.</p>
                 </header>
                 <div class="quick-modules-grid">
-                    @foreach($quickModules as $module)
+                    @foreach($quickModules as $index => $module)
                         <article class="quick-module-card">
-                            <h3>{{ $module['title'] }}</h3>
-                            <p>{{ $module['description'] }}</p>
-                            <div class="quick-module-info">{{ $module['info'] }}</div>
+                            <div class="quick-module-head">
+                                <span class="quick-module-mark" aria-hidden="true">
+                                    @switch($index)
+                                        @case(0)
+                                            <svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21z"/><path d="M4 5.5v13A2.5 2.5 0 0 1 6.5 16H20M8 7h8M8 10h8"/></svg>
+                                            @break
+                                        @case(1)
+                                            <svg viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.4 8-8 10-4.6-2-8-5-8-10V6z"/><path d="m8.5 12 2.3 2.3 4.8-5"/></svg>
+                                            @break
+                                        @case(2)
+                                            <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 20v-1.5A4.5 4.5 0 0 1 8 14h2a4.5 4.5 0 0 1 4.5 4.5V20zM16 5.5a3 3 0 0 1 0 5.8M17 14h1a3 3 0 0 1 3 3v3h-4"/></svg>
+                                            @break
+                                        @case(3)
+                                            <svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5M9 12h6M9 16h6"/></svg>
+                                            @break
+                                        @case(4)
+                                            <svg viewBox="0 0 24 24"><path d="M4 10v4h4l8 5V5l-8 5zM8 14l2 6h4l-2-4M19 9l2-2M19 15l2 2"/></svg>
+                                            @break
+                                        @default
+                                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2M4 4l2 2M20 4l-2 2"/></svg>
+                                    @endswitch
+                                </span>
+                                <div class="quick-module-copy">
+                                    <h3>{{ $module['title'] }}</h3>
+                                    <p>{{ $module['description'] }}</p>
+                                </div>
+                                <div class="quick-module-info">{{ $module['info'] }}</div>
+                            </div>
                             <a class="quick-module-link" href="{{ route($module['route']) }}">{{ $module['button'] }}</a>
                         </article>
                     @endforeach
@@ -590,17 +288,18 @@ main.admin-dashboard .quick-module-link:focus-visible{outline:3px solid rgba(36,
             </section>
 
             {{-- LIVE MONITORING + PLATFORM SNAPSHOT --}}
-            <div class="two-col monitor-grid" style="margin-bottom: 18px;">
+            <div class="two-col monitor-grid">
                 <div class="card">
                     <div class="card-hd">
-                        <span class="card-title">Live Monitoring Feed</span>
+                        <span class="card-title">Live monitoring feed</span>
+                        <span class="live-dot">Live</span>
                     </div>
-                    <div id="live-activity-list" class="badges-grid"></div>
+                    <div id="live-activity-list" aria-live="polite"></div>
                 </div>
 
                 <div class="card">
                     <div class="card-hd">
-                        <span class="card-title">Current Platform Snapshot</span>
+                        <span class="card-title">Current platform snapshot</span>
                     </div>
 
                     <div class="snapshot-hero">
@@ -611,7 +310,7 @@ main.admin-dashboard .quick-module-link:focus-visible{outline:3px solid rgba(36,
 
                     <div class="snapshot-metrics">
                         <div class="snapshot-metric"><strong>{{ $stats['badges_issued'] }}</strong><span>Badges issued</span></div>
-                        <div class="snapshot-metric"><strong>{{ $stats['course_score_avg'] }}%</strong><span>Avg. quiz score</span></div>
+                        <div class="snapshot-metric"><strong>{{ $stats['course_score_avg'] }}%</strong><span>Average quiz score</span></div>
                         <div class="snapshot-metric"><strong>{{ $stats['students_enrolled'] }}</strong><span>Enrollments</span></div>
                     </div>
                 </div>
@@ -619,12 +318,10 @@ main.admin-dashboard .quick-module-link:focus-visible{outline:3px solid rgba(36,
 
             {{-- ACTIVE COURSES + RECENT BADGES --}}
             <div class="two-col active-grid">
-
-                {{-- Active Courses --}}
                 <div class="card">
                     <div class="card-hd">
-                        <span class="card-title">Active Courses</span>
-                        <a href="{{ route('courses.browse') }}" class="view-all">View All</a>
+                        <span class="card-title">Active courses</span>
+                        <a href="{{ route('courses.browse') }}" class="view-all">View all</a>
                     </div>
 
                     @foreach ($activeCourses as $course)
@@ -647,38 +344,35 @@ main.admin-dashboard .quick-module-link:focus-visible{outline:3px solid rgba(36,
                     @endforeach
                 </div>
 
-                {{-- Recent Badges --}}
                 <div class="card">
                     <div class="card-hd">
-                        <span class="card-title">Recent Badges</span>
+                        <span class="card-title">Recent badges</span>
                     </div>
 
                     <div class="badges-grid" id="recent-badges-grid">
                         @foreach ($recentBadges as $badge)
                             <div class="badge-card">
                                 <div class="badge-name">{{ $badge->name }}</div>
-                                <div class="badge-count">{{ $badge->earned_count }} Earned</div>
+                                <div class="badge-count">{{ $badge->earned_count }} earned</div>
                             </div>
                         @endforeach
                     </div>
                 </div>
             </div>
 
-            {{-- ENROLLMENT + COMPLETION CHARTS --}}
+            {{-- ENROLLMENT + COMPLETION --}}
             <div class="two-col analytics-grid">
-
-                {{-- Enrollment by Courses --}}
                 <div class="card">
                     <div class="card-hd">
-                        <span class="card-title">Enrollment by Courses</span>
+                        <span class="card-title">Enrollment by course</span>
                     </div>
 
                     @foreach ($enrollmentByCourse as $row)
                         <div class="chart-row">
-                            <div class="chart-lbl">
-                                {{ $row->label }} &ndash; {{ $row->value }}
+                            <div class="chart-top">
+                                <span class="chart-lbl">{{ $row->label }}</span>
+                                <span class="chart-val">{{ $row->value }}</span>
                             </div>
-
                             <div class="bar-track">
                                 <div class="bar-fill" style="width:{{ $row->percent }}%"></div>
                             </div>
@@ -686,18 +380,17 @@ main.admin-dashboard .quick-module-link:focus-visible{outline:3px solid rgba(36,
                     @endforeach
                 </div>
 
-                {{-- Completion Rate --}}
-                <div class="card">
+                <div class="card completion">
                     <div class="card-hd">
-                        <span class="card-title">Completion Rate</span>
+                        <span class="card-title">Completion rate</span>
                     </div>
 
                     @foreach ($completionRate as $row)
                         <div class="chart-row">
-                            <div class="chart-lbl">
-                                {{ $row->label }} &ndash; {{ $row->value }}%
+                            <div class="chart-top">
+                                <span class="chart-lbl">{{ $row->label }}</span>
+                                <span class="chart-val">{{ $row->value }}%</span>
                             </div>
-
                             <div class="bar-track">
                                 <div class="bar-fill" style="width:{{ $row->percent }}%"></div>
                             </div>
@@ -705,10 +398,10 @@ main.admin-dashboard .quick-module-link:focus-visible{outline:3px solid rgba(36,
                     @endforeach
                 </div>
             </div>
-    </main>
-</div>
+        </main>
+    </div>
 
-            {{-- SCRIPTS --}}
+    {{-- SCRIPTS --}}
     <script>
         function toggleSection(id) {
             const section = document.getElementById(id);
@@ -716,73 +409,46 @@ main.admin-dashboard .quick-module-link:focus-visible{outline:3px solid rgba(36,
             section.classList.toggle('open');
         }
 
+        function esc(value) {
+            const el = document.createElement('div');
+            el.textContent = value ?? '';
+            return el.innerHTML;
+        }
+
         function refreshLiveMonitoring() {
             const liveUrl = '{{ route('monitoring.live') }}';
 
             fetch(liveUrl)
                 .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Monitoring endpoint unavailable');
-                    }
+                    if (!response.ok) throw new Error('Monitoring endpoint unavailable');
                     return response.json();
                 })
                 .then(data => {
-                    document.getElementById('live-active-users').textContent =
-                        data.stats.active_users;
-
-                    document.getElementById('live-events-today').textContent =
-                        data.stats.events_today;
-
-                    document.getElementById('live-enrollments-today').textContent =
-                        data.stats.enrollments_today;
-
-                    document.getElementById('live-badges-today').textContent =
-                        data.stats.badges_today;
-
-                    // Refresh recent badge counters
                     const badgeGrid = document.getElementById('recent-badges-grid');
 
                     if (badgeGrid && Array.isArray(data.recentBadges)) {
-                        badgeGrid.innerHTML = '';
-
-                        data.recentBadges.forEach(badge => {
-                            const card = document.createElement('div');
-                            card.className = 'badge-card';
-
-                            card.innerHTML =
-                                `<div class="badge-name">${badge.name}</div>
-                                 <div class="badge-count">${badge.earned_count} Earned</div>`;
-
-                            badgeGrid.appendChild(card);
-                        });
+                        badgeGrid.innerHTML = data.recentBadges.map(badge =>
+                            `<div class="badge-card">
+                                <div class="badge-name">${esc(badge.name)}</div>
+                                <div class="badge-count">${esc(badge.earned_count)} earned</div>
+                             </div>`
+                        ).join('');
                     }
 
-                    // Refresh live activity feed
                     const list = document.getElementById('live-activity-list');
                     if (!list) return;
 
-                    list.innerHTML = '';
-
-                    data.activity.forEach(item => {
-                        const card = document.createElement('div');
-                        card.className = 'badge-card';
-
-                        card.innerHTML =
-                            `<div class="badge-name">${item.title}</div>
-                             <div class="badge-count">${item.detail} · ${item.time}</div>`;
-
-                        list.appendChild(card);
-                    });
+                    list.innerHTML = data.activity.map(item =>
+                        `<div class="feed-item">
+                            <div class="feed-title">${esc(item.title)}</div>
+                            <div class="feed-detail">${esc(item.detail)} <span class="feed-time">&middot; ${esc(item.time)}</span></div>
+                         </div>`
+                    ).join('');
                 })
                 .catch(() => {
                     const list = document.getElementById('live-activity-list');
-
                     if (list) {
-                        list.innerHTML =
-                            '<div class="badge-card">' +
-                                '<div class="badge-name">Monitoring unavailable</div>' +
-                                '<div class="badge-count">The live feed could not be loaded.</div>' +
-                            '</div>';
+                        list.innerHTML = '<div class="feed-empty">The live feed could not be loaded. It will retry automatically.</div>';
                     }
                 });
         }
@@ -796,16 +462,13 @@ main.admin-dashboard .quick-module-link:focus-visible{outline:3px solid rgba(36,
 
             function toggleBackToTop() {
                 btn.style.display =
-                    (window.scrollY || document.documentElement.scrollTop) > 400
-                        ? 'flex'
-                        : 'none';
+                    (window.scrollY || document.documentElement.scrollTop) > 400 ? 'flex' : 'none';
             }
 
             window.addEventListener('scroll', toggleBackToTop, { passive: true });
             toggleBackToTop();
         })();
     </script>
-
 
     {{-- Shared responsiveness layer (drawer nav + grid stacking) --}}
     @include('components.responsive')

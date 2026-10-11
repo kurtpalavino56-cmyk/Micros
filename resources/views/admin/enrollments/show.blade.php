@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $student->name ?? 'Student' }} · Learning review | UPSKILL Admin</title>
+    <title>{{ $student->name ?? 'Student' }} · Learning review | UPSKILL {{ ucfirst($reviewRole ?? 'admin') }}</title>
     <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
     <style>
         :root{--record-ink:#17212b;--record-navy:#071550;--record-blue:#0b4ea2;--record-muted:#687385;--record-line:#e2e7ef;--record-bg:#f5f7fa;--record-yellow:#f4c430;--record-soft:#eaf2ff;--record-shadow:0 1px 3px rgba(9,37,95,.04);}
@@ -50,9 +50,11 @@
         .record-answers{margin:8px 0 0;padding-left:18px;color:#475467;font-size:.76rem;line-height:1.5;}
         .record-answers li{margin-top:5px;}
         .record-answers .correct{color:#166534;}.record-answers .incorrect{color:#b42318;}
-        .record-footer{display:flex;justify-content:flex-end;margin-top:16px;}
+        .record-footer{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:16px;}
         .record-button{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:8px 14px;border:1px solid var(--record-blue);border-radius:8px;background:var(--record-blue);color:#fff;font:inherit;font-size:.8rem;font-weight:700;text-decoration:none;}
         .record-button:hover{background:#093f85;}
+        .record-button.secondary{border-color:var(--record-line);background:#fff;color:var(--record-ink);}
+        .record-button.danger{border-color:#c0352d;background:#c0352d;color:#fff;}
         @media(max-width:1000px){.record-stats{grid-template-columns:repeat(2,minmax(0,1fr));}}
         @media(max-width:700px){.record-main{padding:22px 14px 40px!important;}.record-header{flex-direction:column;}.record-stats{gap:9px;}.record-section{padding:16px 14px;}}
         @media(max-width:420px){.record-stats{grid-template-columns:1fr 1fr;}.record-identity{align-items:flex-start;}.record-avatar{width:42px;height:42px;flex-basis:42px;font-size:17px;}}
@@ -60,15 +62,14 @@
 </head>
 <body>
     @include('components.authenticated-topbar', ['user' => auth()->user()])
-    <div class="layout admin-layout">
-        @include('components.admin-sidebar')
+    <div class="layout {{ ($reviewRole ?? 'admin') === 'faculty' ? 'faculty-sidebar-layout' : 'admin-layout' }}">
+        @if(($reviewRole ?? 'admin') === 'faculty')
+            @include('components.faculty-sidebar')
+        @else
+            @include('components.admin-sidebar')
+        @endif
         <main class="main record-main">
             <div class="record-content">
-                <a class="record-back" href="{{ route('admin.enrollments') }}">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"/></svg>
-                    Back to completion verification
-                </a>
-
                 <header class="record-header">
                     <div class="record-identity">
                         <div class="record-avatar" @if($student?->avatar_url) style="background-image:url('{{ $student->avatar_url }}')" @endif>@unless($student?->avatar_url){{ strtoupper(substr($student->name ?? 'S', 0, 1)) }}@endunless</div>
@@ -124,7 +125,7 @@
                                                         @if($submission->response_text)<p>{{ $submission->response_text }}</p>@endif
                                                         @if($submission->feedback)<p><strong>Feedback:</strong> {{ $submission->feedback }}</p>@endif
                                                         @if($submission->submission_path)
-                                                            <a href="{{ route('admin.enrollments.submissions.download', $submission->id) }}">Download submitted file</a>
+                                                            <a href="{{ $reviewRole === 'faculty' ? route('faculty.lesson-activities.download', $submission->id) : route('admin.enrollments.submissions.download', $submission->id) }}">Download submitted file</a>
                                                         @endif
                                                     </div>
                                                 @empty
@@ -152,7 +153,28 @@
                 </section>
 
                 <footer class="record-footer">
-                    <a class="record-button" href="{{ route('admin.enrollments') }}">Back to review queue</a>
+                    @if($reviewRole === 'faculty')
+                        <a class="record-button secondary" href="{{ route('faculty.students.course', ['id' => $course->id, 'filter' => 'needs_review']) }}">Back to verification queue</a>
+                        @if($enrollment->faculty_verification_actionable ?? false)
+                            <form method="POST" action="{{ route('faculty.enrollments.verify', $enrollment->id) }}" onsubmit="return confirm('Verify that this learner completed the course requirements?');">
+                                @csrf
+                                <button class="record-button" type="submit" name="decision" value="verified">Verify completion</button>
+                            </form>
+                            <form method="POST" action="{{ route('faculty.enrollments.verify', $enrollment->id) }}" onsubmit="return confirm('Reject this course completion for this learner?');">
+                                @csrf
+                                <button class="record-button danger" type="submit" name="decision" value="rejected">Reject</button>
+                            </form>
+                        @endif
+                    @else
+                        <a class="record-button secondary" href="{{ route('admin.enrollments') }}">Back to verification queue</a>
+                        @if($enrollment->academic_confirmation_actionable ?? false)
+                            <form method="POST" action="{{ route('admin.enrollments.academic-confirm', ['id' => $course->id, 'enrollment' => $enrollment->id]) }}">
+                                @csrf
+                                <button class="record-button" type="submit" name="decision" value="confirmed">Confirm</button>
+                                <button class="record-button danger" type="submit" name="decision" value="rejected">Reject</button>
+                            </form>
+                        @endif
+                    @endif
                 </footer>
             </div>
         </main>

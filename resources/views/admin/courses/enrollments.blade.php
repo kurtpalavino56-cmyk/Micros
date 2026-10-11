@@ -52,13 +52,8 @@
         .enrollment-button.confirm:hover{background:#093f85;}
         .enrollment-button:hover{background:#f5f7fa;}
         .enrollment-empty{padding:36px 20px;color:var(--enrollment-muted);font-size:.9rem;text-align:center;}
-        .enrollment-pagination{display:flex;align-items:center;justify-content:center;gap:7px;padding:13px 18px;border-top:1px solid var(--enrollment-line);}
-        .enrollment-page-link{display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 11px;border:1px solid var(--enrollment-line);border-radius:5px;background:#fff;color:var(--enrollment-ink);font:inherit;font-size:.78rem;text-decoration:none;white-space:nowrap;}
-        .enrollment-page-link:hover{border-color:#c8ced8;background:#f8f9fb;}
-        .enrollment-page-link.active{border-color:#111;background:#111;color:#fff;}
-        .enrollment-page-link.disabled{color:#9aa1ad;background:#fff;}
-        .enrollment-page-ellipsis{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:36px;color:var(--enrollment-ink);font-size:.8rem;}
-        @media(max-width:700px){.enrollment-main{padding:22px 14px 40px!important;}.enrollment-heading{flex-direction:column;}.enrollment-heading h1{font-size:1.35rem;}.enrollment-counts{justify-content:flex-start;}.enrollment-card-head{align-items:flex-start;flex-direction:column;}.enrollment-course-filter{width:100%;flex-wrap:wrap;}.enrollment-course-filter label{width:100%;}.enrollment-course-filter select{flex:1;min-width:0;}.enrollment-pagination{gap:4px;padding:12px 8px;flex-wrap:wrap;}.enrollment-page-link{min-width:32px;height:34px;padding:0 8px;font-size:.74rem;}}
+        .enrollment-pagination{border-top:1px solid var(--enrollment-line);}
+        @media(max-width:700px){.enrollment-main{padding:22px 14px 40px!important;}.enrollment-heading{flex-direction:column;}.enrollment-heading h1{font-size:1.35rem;}.enrollment-counts{justify-content:flex-start;}.enrollment-card-head{align-items:flex-start;flex-direction:column;}.enrollment-course-filter{width:100%;flex-wrap:wrap;}.enrollment-course-filter label{width:100%;}.enrollment-course-filter select{flex:1;min-width:0;}}
     </style>
 </head>
 <body>
@@ -75,16 +70,16 @@
                 <header class="enrollment-heading">
                     <div>
                         <h1>Completion Verification</h1>
-                        <p>{{ $course?->title ?? 'Review student enrollment status across all courses.' }}</p>
+                        <p>{{ $course?->title ?? 'Verify that learners completed all required course work across all courses.' }}</p>
                     </div>
                     <div class="enrollment-counts">
-                        <span class="enrollment-count">{{ number_format($enrollments->total()) }} {{ Illuminate\Support\Str::plural('enrollment', $enrollments->total()) }}</span>
+                        <span class="enrollment-count">{{ number_format($enrollments->total()) }} {{ Illuminate\Support\Str::plural('learner', $enrollments->total()) }}</span>
                         <span class="enrollment-count pending">{{ number_format($pendingConfirmations) }} awaiting confirmation</span>
                     </div>
                 </header>
 
-                <nav class="enrollment-tabs" aria-label="Enrollment status filters">
-                    @foreach(['all' => 'All', 'pending' => 'Pending review', 'approved' => 'Approved', 'denied' => 'Denied'] as $key => $label)
+                <nav class="enrollment-tabs" aria-label="Completion verification status filters">
+                    @foreach(['all' => 'All', 'pending' => 'Awaiting verification', 'approved' => 'Verified', 'denied' => 'Not approved'] as $key => $label)
                         @php
                             $tabRoute = $course
                                 ? route('admin.courses.enrollments', ['id' => $course->id, 'filter' => $key])
@@ -96,9 +91,9 @@
                     @endforeach
                 </nav>
 
-                <section class="enrollment-card" aria-label="Course enrollments">
+                <section class="enrollment-card" aria-label="Learner completion verification">
                     <div class="enrollment-card-head">
-                        <h2>Student completion and verification status</h2>
+                        <h2>Learner completion and verification status</h2>
                         @unless($course)
                             <form class="enrollment-course-filter" method="GET" action="{{ route('admin.enrollments') }}">
                                 <input type="hidden" name="filter" value="{{ $filter }}">
@@ -150,11 +145,6 @@
                                             <div class="enrollment-actions">
                                                 @if($enrollment->academic_confirmation_actionable)
                                                     <a class="enrollment-button review" href="{{ route('admin.enrollments.show', $enrollment->id) }}">Review</a>
-                                                    <form method="POST" action="{{ route('admin.enrollments.academic-confirm', ['id' => $enrollment->course_id, 'enrollment' => $enrollment->id]) }}">
-                                                        @csrf
-                                                        <button type="submit" name="decision" value="confirmed" class="enrollment-button confirm">Confirm</button>
-                                                        <button type="submit" name="decision" value="rejected" class="enrollment-button">Reject</button>
-                                                    </form>
                                                 @endif
                                             </div>
                                         </td>
@@ -166,48 +156,9 @@
                         </table>
                     </div>
                     @if($enrollments->hasPages())
-                        <nav class="enrollment-pagination" aria-label="Enrollment pagination">
-                            @php
-                                $currentPage = $enrollments->currentPage();
-                                $lastPage = $enrollments->lastPage();
-                                $visiblePages = $lastPage <= 5
-                                    ? range(1, $lastPage)
-                                    : collect([1, $currentPage - 1, $currentPage, $currentPage + 1, $lastPage])
-                                        ->filter(fn ($page) => $page >= 1 && $page <= $lastPage)
-                                        ->unique()
-                                        ->sort()
-                                        ->values()
-                                        ->all();
-                            @endphp
-                            @if($enrollments->onFirstPage())
-                                <span class="enrollment-page-link disabled" aria-disabled="true">« First</span>
-                                <span class="enrollment-page-link disabled" aria-disabled="true">‹ Back</span>
-                            @else
-                                <a class="enrollment-page-link" href="{{ $enrollments->url(1) }}" aria-label="First page">« First</a>
-                                <a class="enrollment-page-link" href="{{ $enrollments->previousPageUrl() }}" rel="prev">‹ Back</a>
-                            @endif
-
-                            @php $previousVisiblePage = null; @endphp
-                            @foreach($visiblePages as $page)
-                                @if($previousVisiblePage !== null && $page > $previousVisiblePage + 1)
-                                    <span class="enrollment-page-ellipsis" aria-hidden="true">…</span>
-                                @endif
-                                @if($page === $currentPage)
-                                    <span class="enrollment-page-link active" aria-current="page">{{ $page }}</span>
-                                @else
-                                    <a class="enrollment-page-link" href="{{ $enrollments->url($page) }}" aria-label="Page {{ $page }}">{{ $page }}</a>
-                                @endif
-                                @php $previousVisiblePage = $page; @endphp
-                            @endforeach
-
-                            @if($enrollments->hasMorePages())
-                                <a class="enrollment-page-link" href="{{ $enrollments->nextPageUrl() }}" rel="next">Next ›</a>
-                                <a class="enrollment-page-link" href="{{ $enrollments->url($lastPage) }}" aria-label="Last page">Last »</a>
-                            @else
-                                <span class="enrollment-page-link disabled" aria-disabled="true">Next ›</span>
-                                <span class="enrollment-page-link disabled" aria-disabled="true">Last »</span>
-                            @endif
-                        </nav>
+                        <div class="enrollment-pagination">
+                            @include('components.pagination', ['paginator' => $enrollments, 'ariaLabel' => 'Enrollment pagination'])
+                        </div>
                     @endif
                 </section>
             </div>

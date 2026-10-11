@@ -34,7 +34,7 @@
     .status.needs-review{background:#fff7ed;color:#c2410c;}.status.completed{background:#dcfce7;color:#166534;}.status.rejected{background:#fee2e2;color:#b91c1c;}
     .progress{width:96px;color:#475569;font-size:12px;font-weight:700;text-align:right;white-space:nowrap;}
     .review-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;}
-    .action{padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:var(--navy);font-size:12px;font-weight:700;}
+    .action{display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:var(--navy);font-size:12px;font-weight:700;text-decoration:none;}
     .action:hover{background:#f8fafc;}.action.verify{background:var(--navy);border-color:var(--navy);color:#fff;}.action.verify:hover{background:#20278a;}.action.reject{color:var(--red);border-color:#fecaca;}
     .empty-state{padding:32px;background:#fff;border:1px dashed var(--line);border-radius:10px;text-align:center;color:var(--muted);font-size:14px;}
     .pagination{margin-top:16px;}
@@ -57,7 +57,7 @@
                 <p class="faculty-page-subtitle">Review course progress and verify learners who have completed all requirements.</p>
                 <div class="course-summary">
                     <span><strong>{{ $totalStudents }}</strong> {{ Illuminate\Support\Str::plural('student', $totalStudents) }} enrolled</span>
-                    <span><strong>{{ $needsReviewCount }}</strong> need faculty review</span>
+                    <span><strong>{{ $needsReviewCount }}</strong> awaiting faculty verification</span>
                     @unless($course->requires_faculty_verification)<span>Faculty verification is not required for this course</span>@endunless
                 </div>
             </div>
@@ -70,8 +70,8 @@
             <div class="review-summary"><strong>{{ $needsReviewCount }}</strong> {{ Illuminate\Support\Str::plural('learner', $needsReviewCount) }} completed the course requirements and {{ $needsReviewCount === 1 ? 'is' : 'are' }} waiting for your verification.</div>
         @endif
 
-        <nav class="tabs" aria-label="Enrollment filters">
-            <a class="tab {{ $filter === 'needs_review' ? 'active' : '' }}" href="{{ route('faculty.students.course', ['id' => $course->id, 'filter' => 'needs_review']) }}">Needs review <span>({{ $needsReviewCount }})</span></a>
+        <nav class="tabs" aria-label="Completion verification filters">
+            <a class="tab {{ $filter === 'needs_review' ? 'active' : '' }}" href="{{ route('faculty.students.course', ['id' => $course->id, 'filter' => 'needs_review']) }}">Awaiting verification <span>({{ $needsReviewCount }})</span></a>
             <a class="tab {{ $filter === 'all' ? 'active' : '' }}" href="{{ route('faculty.students.course', ['id' => $course->id, 'filter' => 'all']) }}">All students <span>({{ $totalStudents }})</span></a>
         </nav>
 
@@ -100,17 +100,10 @@
                     </div>
                 </div>
                 <span class="progress">{{ (int) $enrollment->progress_percent }}% progress</span>
-                <span class="status {{ $needsReview ? 'needs-review' : ($institutionalStatus === 'Completed' ? 'completed' : ($institutionalStatus === 'Rejected' ? 'rejected' : '')) }}">{{ $needsReview ? 'Needs review' : $institutionalStatus }}</span>
+                <span class="status {{ $needsReview ? 'needs-review' : ($institutionalStatus === 'Completed' ? 'completed' : ($institutionalStatus === 'Rejected' ? 'rejected' : '')) }}">{{ $needsReview ? 'Awaiting verification' : $institutionalStatus }}</span>
                 @if($needsReview)
                     <div class="review-actions">
-                        <form method="POST" action="{{ route('faculty.enrollments.verify', $enrollment->id) }}" onsubmit="return confirm('Verify that this learner completed the course requirements?');">
-                            @csrf
-                            <button class="action verify" type="submit" name="decision" value="verified">Verify completion</button>
-                        </form>
-                        <form method="POST" action="{{ route('faculty.enrollments.verify', $enrollment->id) }}" onsubmit="return confirm('Reject this course completion for this learner?');">
-                            @csrf
-                            <button class="action reject" type="submit" name="decision" value="rejected">Reject</button>
-                        </form>
+                        <a class="action verify" href="{{ route('faculty.students.enrollments.review', ['id' => $course->id, 'enrollment' => $enrollment->id]) }}">Review</a>
                     </div>
                 @endif
             </article>
@@ -124,7 +117,11 @@
             </div>
         @endforelse
         </div>
-        @if($enrollments->hasPages())<div class="pagination">{{ $enrollments->links() }}</div>@endif
+        @if($enrollments->hasPages())
+            <div class="pagination">
+                @include('components.pagination', ['paginator' => $enrollments, 'ariaLabel' => 'Learner pages'])
+            </div>
+        @endif
     </main>
 </div>
 @include('components.responsive')
