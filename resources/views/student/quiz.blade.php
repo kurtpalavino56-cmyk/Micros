@@ -1,17 +1,5 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $quiz->title }} | UpSkill</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <style>
-        body{margin:0;background:#f4f6fb;color:#172554;font-family:inherit}.quiz-shell{max-width:900px;margin:48px auto;padding:24px}.quiz-card{background:#fff;border:1px solid #e3e8f2;border-radius:18px;padding:28px;box-shadow:0 14px 35px #17255412}.quiz-question{padding:20px 0;border-bottom:1px solid #e7ebf3}.quiz-question:last-child{border:0}.quiz-question label{display:block;font-weight:700;margin-bottom:12px}.quiz-options{display:grid;gap:9px}.quiz-option{display:flex;gap:10px;align-items:flex-start;background:#f7f9fd;padding:11px 14px;border-radius:10px}.quiz-option input{margin-top:4px}.quiz-input{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:10px;padding:12px;font:inherit}.quiz-action{display:inline-block;border:0;border-radius:10px;background:#172554;color:#fff;padding:12px 20px;font:inherit;font-weight:700;cursor:pointer}.quiz-notice{padding:14px;border-radius:10px;margin:14px 0}.quiz-pass{background:#dcfce7;color:#166534}.quiz-fail{background:#fff7ed;color:#9a3412}.quiz-error{background:#fee2e2;color:#991b1b}
-    </style>
-</head>
-<body>
-<main class="quiz-shell">
+<x-layout title="{{ $quiz->title }} | UpSkill" shell="bare" page="quiz">
+<section class="quiz-shell">
     <p><a href="{{ route('courses.learn', $quiz->course_id) }}">← Back to course</a></p>
     <section class="quiz-card">
         <p>{{ $quiz->course->title }}</p>
@@ -65,7 +53,7 @@
             </form>
         @endif
     </section>
-</main>
+</section>
 @if(($time_limit_seconds ?? 0) > 0 && ! $status['exhausted'] && ! $status['unlock'])
     <script>
         (() => {
@@ -90,5 +78,4 @@
         })();
     </script>
 @endif
-</body>
-</html>
+</x-layout>

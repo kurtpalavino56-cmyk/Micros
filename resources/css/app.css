@@ -220,6 +220,23 @@
     --onboarding-secondary-color: #394660;
     --onboarding-secondary-hover-background: #f7f8fb;
     --onboarding-secondary-hover-shadow: 0 6px 15px rgba(30, 45, 70, .08);
+
+    --assessment-page-background: #f4f6fb;
+    --assessment-ink: #172554;
+    --assessment-action-color: #fff;
+    --assessment-card-background: #fff;
+    --assessment-card-border: #e3e8f2;
+    --assessment-card-shadow: 0 14px 35px #17255412;
+    --assessment-field-border: #cbd5e1;
+    --assessment-divider: #e7ebf3;
+    --assessment-option-background: #f7f9fd;
+    --assessment-pass-background: #dcfce7;
+    --assessment-pass-color: #166534;
+    --assessment-fail-background: #fff7ed;
+    --assessment-fail-color: #9a3412;
+    --assessment-error-background: #fee2e2;
+    --assessment-error-color: #991b1b;
+    --assessment-note-background: #eff6ff;
 }
 }
 
@@ -4101,3 +4118,142 @@ body.app-shell.page-dashboard .student-dashboard .stats .stat-card.c-deep:hover 
 .rich-content .text-align-right { text-align: right; }
 .rich-content [style*="text-align:justify"],
 .rich-content .text-align-justify { text-align: justify; }
+
+@layer pages {
+body.app-shell.page-quiz,
+body.app-shell.page-lesson-activity {
+    background: var(--assessment-page-background);
+    color: var(--assessment-ink);
+}
+
+body.app-shell.page-quiz .quiz-shell,
+body.app-shell.page-lesson-activity .activity-shell {
+    max-width: 900px;
+    margin: 48px auto;
+    padding: 24px;
+}
+
+body.app-shell.page-quiz .quiz-card,
+body.app-shell.page-lesson-activity .activity-card {
+    border: 1px solid var(--assessment-card-border);
+    border-radius: 18px;
+    background: var(--assessment-card-background);
+    box-shadow: var(--assessment-card-shadow);
+    padding: 28px;
+}
+
+body.app-shell.page-quiz .quiz-question {
+    border-bottom: 1px solid var(--assessment-divider);
+    padding: 20px 0;
+}
+
+body.app-shell.page-lesson-activity .activity-row {
+    border-bottom: 1px solid var(--assessment-divider);
+    padding: 14px 0;
+}
+
+body.app-shell.page-quiz .quiz-question:last-child {
+    border: 0;
+}
+
+body.app-shell.page-quiz .quiz-question label {
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 700;
+}
+
+body.app-shell.page-quiz .quiz-options {
+    display: grid;
+    gap: 9px;
+}
+
+body.app-shell.page-quiz .quiz-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    border-radius: 10px;
+    background: var(--assessment-option-background);
+    padding: 11px 14px;
+}
+
+body.app-shell.page-quiz .quiz-option input {
+    margin-top: 4px;
+}
+
+body.app-shell.page-quiz .quiz-input,
+body.app-shell.page-lesson-activity .activity-input {
+    box-sizing: border-box;
+    width: 100%;
+    border: 1px solid var(--assessment-field-border);
+    border-radius: 10px;
+    padding: 12px;
+    font: inherit;
+}
+
+body.app-shell.page-quiz .quiz-action,
+body.app-shell.page-lesson-activity .activity-submit {
+    border: 0;
+    border-radius: 10px;
+    background: var(--assessment-ink);
+    color: var(--assessment-action-color);
+    padding: 12px 20px;
+    font: inherit;
+    font-weight: 700;
+}
+
+body.app-shell.page-quiz .quiz-action {
+    display: inline-block;
+    cursor: pointer;
+}
+
+body.app-shell.page-quiz .quiz-notice {
+    margin: 14px 0;
+    border-radius: 10px;
+    padding: 14px;
+}
+
+body.app-shell.page-quiz .quiz-pass {
+    background: var(--assessment-pass-background);
+    color: var(--assessment-pass-color);
+}
+
+body.app-shell.page-quiz .quiz-fail {
+    background: var(--assessment-fail-background);
+    color: var(--assessment-fail-color);
+}
+
+body.app-shell.page-quiz .quiz-error {
+    background: var(--assessment-error-background);
+    color: var(--assessment-error-color);
+}
+
+body.app-shell.page-lesson-activity .activity-card {
+    margin-bottom: 18px;
+}
+
+body.app-shell.page-lesson-activity .activity-note {
+    border-radius: 10px;
+    background: var(--assessment-note-background);
+    padding: 12px;
+}
+
+body.app-shell.page-lesson-activity .activity-error {
+    color: var(--assessment-error-color);
+}
+
+body.app-shell.page-lesson-activity input[type="file"] {
+    font: revert;
+}
+
+body.app-shell.page-quiz :focus-visible,
+body.app-shell.page-lesson-activity :focus-visible {
+    outline: revert;
+    outline-offset: revert;
+}
+
+body.app-shell.page-quiz #shared-back-to-top,
+body.app-shell.page-lesson-activity #shared-back-to-top {
+    visibility: hidden;
+    pointer-events: none;
+}
+}
