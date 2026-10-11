@@ -80,7 +80,12 @@ class CourseCreationService
         $badge = $course->badge ?: new Badge;
         $badge->name = $name;
         $badge->description = trim((string) $request->input('badge_description')) ?: null;
-        $badge->badge_level = null;
+        $badge->badge_level = match (strtolower(trim((string) $course->level))) {
+            'beginner' => 'Beginner',
+            'intermediate' => 'Intermediate',
+            'advanced' => 'Advanced',
+            default => 'Beginner',
+        };
         $badge->is_active = true;
         $icon = (string) $request->input('badge_icon_base64');
         if ($icon !== '' && str_starts_with($icon, 'data:image/')) {

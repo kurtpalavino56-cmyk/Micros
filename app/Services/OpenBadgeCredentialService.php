@@ -154,7 +154,7 @@ class OpenBadgeCredentialService
             ],
         ];
 
-        if ($badge->icon_url && Str::startsWith($badge->icon_url, ['https://', 'http://'])) {
+        if ($badge->icon_url && Str::startsWith($badge->icon_url, ['https://', 'http://', 'data:image/'])) {
             $data['image'] = ['id' => $badge->icon_url, 'type' => 'Image'];
         }
 
