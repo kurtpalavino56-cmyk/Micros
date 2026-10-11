@@ -4,9 +4,12 @@ namespace App\Services;
 
 use App\Models\Course;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class CourseModerationService
 {
+    public const MAX_FEATURED_COURSES = 3;
+
     public function __construct(
         private CourseReadinessService $courseReadiness,
         private UserNotificationService $userNotifications,
@@ -82,10 +85,24 @@ class CourseModerationService
 
     public function toggleFeature(Course $course): bool
     {
-        $course->is_featured = ! $course->is_featured;
-        $course->save();
+        $featured = DB::transaction(function () use ($course): bool {
+            Course::query()->orderBy('id')->lockForUpdate()->first();
+            $lockedCourse = Course::query()->lockForUpdate()->findOrFail($course->getKey());
 
-        return (bool) $course->is_featured;
+            if (! $lockedCourse->is_featured
+                && Course::where('is_featured', true)->count() >= self::MAX_FEATURED_COURSES) {
+                throw new \DomainException('Only three courses can be featured at a time. Unfeature a course before featuring another.');
+            }
+
+            $lockedCourse->is_featured = ! $lockedCourse->is_featured;
+            $lockedCourse->save();
+
+            return (bool) $lockedCourse->is_featured;
+        });
+
+        $course->is_featured = $featured;
+
+        return $featured;
     }
 
     public function delete(Course $course): string

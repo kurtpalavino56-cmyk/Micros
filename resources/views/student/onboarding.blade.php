@@ -1,189 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Student Onboarding | UpSkill PSU</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            color-scheme: light;
-            --navy: #111b3a;
-            --blue: #1736c8;
-            --gold: #ffd400;
-            --gold-soft: #fff7d2;
-            --ink: #182442;
-            --muted: #73809a;
-            --line: #e3e8f1;
-            --canvas: #f4f6fb;
-            --white: #fff;
-            --shadow: 0 18px 42px rgba(23, 41, 87, .08);
-        }
-        *, *::before, *::after { box-sizing: border-box; }
-        html { min-height:100%; background:var(--canvas); }
-        body {
-            min-height:100vh; margin:0; color:var(--ink);
-            background:
-                radial-gradient(ellipse at 2% 8%, rgba(255,244,185,.78), transparent 30rem),
-                var(--canvas);
-            font: 400 15px/1.55 'Inter', sans-serif;
-        }
-        button, input, select, textarea { font:inherit; }
-        .onboard-brand {
-            position:absolute; top:26px; left:clamp(20px,4vw,56px);
-            display:flex; align-items:center; gap:8px; color:var(--blue);
-            font:900 16px/1 'Poppins',sans-serif; letter-spacing:-.04em;
-        }
-        .onboard-brand .brand-gold { color:#efc400; }
-        .onboard-brand .brand-psu { margin-left:1px; color:#67738b; font:500 10px/1 'Inter',sans-serif; letter-spacing:.04em; }
-        .onboard-brand .brand-label { margin-left:3px; color:#102b8f; font:700 10px/1 'Inter',sans-serif; letter-spacing:.2em; }
-        .wizard-wrap { width:min(100% - 36px, 674px); margin:0 auto; padding:76px 0 48px; }
-        .wizard-progress { margin-bottom:25px; }
-        .progress-copy { display:flex; justify-content:space-between; gap:12px; margin-bottom:12px; color:#8a96aa; font-size:11px; font-weight:700; }
-        .progress-track { height:6px; overflow:hidden; border-radius:999px; background:#e0e5ed; }
-        .progress-fill { width:11.12%; height:100%; border-radius:inherit; background:var(--gold); transition:width .25s ease; }
-        .step-title { margin:0; color:#111a31; font:800 clamp(30px,5vw,46px)/1.06 'Poppins',sans-serif; letter-spacing:-.045em; }
-        .step-subtitle { margin:9px 0 21px; color:#75819a; font-size:15px; }
-        .illustration {
-            position:relative; isolation:isolate; min-height:300px; margin:0 0 21px;
-            display:flex; flex-direction:column; align-items:center; justify-content:center;
-            gap:11px; border:0; border-radius:0; background:transparent; box-shadow:none;
-            color:#25375b; font-size:13px; font-weight:600;
-        }
-        .illustration::before {
-            position:absolute; z-index:-1; top:50%; left:50%; width:min(78%, 430px); height:250px;
-            border-radius:61% 39% 43% 57% / 46% 38% 62% 54%;
-            background:linear-gradient(135deg,#fff0a6 0%,#fff7d5 52%,#e7ecff 100%);
-            content:""; transform:translate(-50%,-50%) rotate(-6deg);
-        }
-        .step-panel[data-step="1"] .illustration::before {
-            border-radius:31% 69% 48% 52% / 61% 32% 68% 39%;
-            background:linear-gradient(135deg,#fff0a6 0%,#fff7d5 52%,#e7ecff 100%);
-            transform:translate(-50%,-50%) rotate(13deg);
-        }
-        .step-panel[data-step="2"] .illustration::before {
-            border-radius:72% 28% 61% 39% / 35% 66% 34% 65%;
-            background:linear-gradient(135deg,#fff0a6 0%,#fff7d5 52%,#e7ecff 100%);
-            transform:translate(-50%,-50%) rotate(-14deg);
-        }
-        .step-panel[data-step="3"] .illustration::before {
-            border-radius:43% 57% 29% 71% / 72% 41% 59% 28%;
-            background:linear-gradient(135deg,#fff0a6 0%,#fff7d5 52%,#e7ecff 100%);
-            transform:translate(-50%,-50%) rotate(19deg);
-        }
-        .step-panel[data-step="4"] .illustration::before {
-            border-radius:26% 74% 40% 60% / 49% 72% 28% 51%;
-            background:linear-gradient(135deg,#fff0a6 0%,#fff7d5 52%,#e7ecff 100%);
-            transform:translate(-50%,-50%) rotate(-19deg);
-        }
-        .step-panel[data-step="5"] .illustration::before {
-            border-radius:64% 36% 73% 27% / 31% 58% 42% 69%;
-            background:linear-gradient(135deg,#fff0a6 0%,#fff7d5 52%,#e7ecff 100%);
-            transform:translate(-50%,-50%) rotate(23deg);
-        }
-        .step-panel[data-step="6"] .illustration::before {
-            border-radius:35% 65% 24% 76% / 63% 27% 73% 37%;
-            background:linear-gradient(135deg,#fff0a6 0%,#fff7d5 52%,#e7ecff 100%);
-            transform:translate(-50%,-50%) rotate(-24deg);
-        }
-        .step-panel[data-step="7"] .illustration::before {
-            border-radius:78% 22% 55% 45% / 43% 73% 27% 57%;
-            background:linear-gradient(135deg,#fff0a6 0%,#fff7d5 52%,#e7ecff 100%);
-            transform:translate(-50%,-50%) rotate(9deg);
-        }
-        .step-panel[data-step="8"] .illustration::before {
-            border-radius:22% 78% 67% 33% / 76% 39% 61% 24%;
-            background:linear-gradient(135deg,#fff0a6 0%,#fff7d5 52%,#e7ecff 100%);
-            transform:translate(-50%,-50%) rotate(-8deg);
-        }
-        .illustration img { position:relative; display:block; width:min(calc(100% - 24px), 420px); height:280px; object-fit:contain; }
-        .sparkle { display:grid; width:56px; height:56px; place-items:center; border-radius:50%; background:#fff3b5; color:#122dc4; }
-        .sparkle svg { width:25px; height:25px; }
-        .step-panel { min-height:250px; }
-        .step-panel[hidden] { display:none !important; }
-        .field-label { display:block; margin:0 0 9px; color:#34415b; font-size:13px; font-weight:700; }
-        .field-control {
-            display:block; width:100%; min-height:58px; padding:14px 18px;
-            border:1.5px solid #dfe5ef; border-radius:17px; outline:none;
-            background:var(--white); color:var(--ink); font-size:15px;
-            transition:border-color .18s, box-shadow .18s;
-        }
-        .field-control:focus { border-color:#4a63ff; box-shadow:0 0 0 3px rgba(74,99,255,.12); }
-        textarea.field-control { min-height:130px; resize:vertical; }
-        .field-hint { margin:9px 0 0; color:var(--muted); font-size:12px; }
-        .validation-message {
-            margin:0 0 17px; padding:12px 15px; border:1px solid #ffd8d8;
-            border-radius:13px; background:#fff4f4; color:#a33232; font-size:13px; font-weight:600;
-        }
-        .validation-message:empty { display:none; }
-        .validation-message ul { margin:0; padding-left:19px; }
-        .skills-grid { display:flex; flex-wrap:wrap; gap:10px; }
-        .skill-option { position:relative; display:inline-flex; }
-        .skill-option[hidden] { display:none !important; }
-        .skill-option input { position:absolute; width:1px; height:1px; opacity:0; }
-        .skill-bubble {
-            display:inline-flex; min-height:43px; align-items:center; justify-content:center;
-            padding:9px 16px; border:1px solid #dfe5ef; border-radius:999px;
-            background:#fff; color:#34415b; font-size:13px; font-weight:600;
-            cursor:pointer; user-select:none; transition:transform .16s,border-color .16s,background .16s,box-shadow .16s,color .16s;
-        }
-        .skill-bubble:hover { transform:translateY(-1px); border-color:#aab8ff; background:#f8f9ff; }
-        .skill-option input:checked + .skill-bubble { border-color:#263fd0; background:#e9edff; color:#172eae; box-shadow:0 0 0 2px rgba(38,63,208,.08); }
-        .skill-option input:focus-visible + .skill-bubble { outline:3px solid rgba(74,99,255,.35); outline-offset:2px; }
-        .more-skills {
-            min-height:43px; padding:9px 17px; border:1px dashed #8998e9; border-radius:999px;
-            background:#f7f8ff; color:#1835bf; font-size:13px; font-weight:800; cursor:pointer;
-            transition:background .18s,transform .18s;
-        }
-        .more-skills:hover { transform:translateY(-1px); background:#edf0ff; }
-        .skills-count { margin:13px 0 0; color:var(--muted); font-size:12px; }
-        .other-school { margin-top:14px; }
-        .other-school[hidden] { display:none; }
-        .wizard-actions {
-            display:flex; justify-content:space-between; align-items:center; gap:14px;
-            margin-top:27px;
-        }
-        .wizard-actions .right-actions { display:flex; gap:10px; margin-left:auto; }
-        .wizard-button {
-            min-height:48px; padding:12px 23px; border:0; border-radius:15px;
-            background:var(--gold); color:#10235d; font-size:13px; font-weight:800;
-            cursor:pointer; box-shadow:0 8px 16px rgba(255,212,0,.2);
-            transition:transform .16s,background .16s,box-shadow .16s;
-        }
-        .wizard-button:hover { transform:translateY(-2px); background:#ffe04d; box-shadow:0 11px 19px rgba(255,212,0,.3); }
-        .wizard-button:active { transform:translateY(0); }
-        .wizard-button.secondary { border:1px solid #dfe5ef; background:#fff; color:#394660; box-shadow:none; }
-        .wizard-button.secondary:hover { background:#f7f8fb; box-shadow:0 6px 15px rgba(30,45,70,.08); }
-        .wizard-button[hidden] { display:none; }
-        .finish-note { margin:12px 0 0; color:var(--muted); font-size:12px; text-align:right; }
-        @media (max-width:620px) {
-            .onboard-brand { top:19px; left:18px; }
-            .wizard-wrap { width:min(100% - 30px, 674px); padding-top:72px; }
-            .illustration { min-height:260px; }
-            .illustration::before { width:88%; height:210px; }
-            .illustration img { height:240px; }
-            .step-title { font-size:34px; }
-            .step-subtitle { font-size:14px; }
-            .step-panel { min-height:260px; }
-            .skill-bubble { min-height:40px; padding:8px 13px; font-size:12px; }
-            .wizard-actions { margin-top:18px; }
-            .wizard-button { min-height:46px; padding:11px 17px; }
-        }
-        @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; transition-duration:.01ms !important; } }
-    </style>
-</head>
-<body>
+<x-layout title="Student Onboarding | UpSkill PSU" shell="auth" page="onboarding">
+    @push('styles')
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
+    @endpush
+
+
+
     <div class="onboard-brand" aria-label="UpSkill PSU onboarding">
         <span>UP<span class="brand-gold">SKILL</span></span>
         <span class="brand-psu">PSU</span>
         <span class="brand-label">ONBOARDING</span>
     </div>
 
-    <main class="wizard-wrap">
+    <div class="wizard-wrap">
         <div class="wizard-progress" aria-live="polite">
             <div class="progress-copy"><span id="step-count">Step 1 of 9</span><span id="progress-percent">11% complete</span></div>
             <div class="progress-track" role="progressbar" aria-label="Onboarding progress" aria-valuemin="1" aria-valuemax="9" aria-valuenow="1">
@@ -319,7 +147,7 @@
                 <p class="step-subtitle">This is optional. You can update it later in your profile.</p>
                 <div class="illustration"><img src="{{ asset('Images/About you.png') }}" alt="About you"></div>
                 <div>
-                    <label class="field-label" for="bio">About you <span style="font-weight:400;color:#8290a7">(optional)</span></label>
+                    <label class="field-label" for="bio">About you <span style="font-weight:400;color:var(--onboarding-finish-muted)">(optional)</span></label>
                     <textarea class="field-control" id="bio" name="bio" rows="4" maxlength="2000" placeholder="Share what success looks like for you.">{{ old('bio') }}</textarea>
                 </div>
             </section>
@@ -333,7 +161,7 @@
             </div>
             <p class="finish-note" id="finish-note" hidden>Your pathway is optional and can be selected later.</p>
         </form>
-    </main>
+    </div>
 
     <script>
         (function () {
@@ -463,6 +291,4 @@
             showStep(errorStep);
         })();
     </script>
-</body>
-</html>
-
+</x-layout>

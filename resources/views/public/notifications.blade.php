@@ -104,7 +104,7 @@
                     <div style="flex:1;min-width:0;"><div class="notif-title"><strong>{{ $notification->title }}</strong>@if ($notification->unread)<span class="unread-dot" aria-hidden="true"></span>@endif</div><div class="notif-message">{{ $notification->message }}</div><div class="notif-meta">{{ $notification->time }} · {{ ucfirst($notification->type) }}</div>
                         @if ($notification->type === 'announcement')
                             <button class="notif-view" type="button" data-view-announcement="{{ $notification->entity_id }}" data-title="{{ $notification->title }}" data-time="{{ $notification->time }}">View</button>
-                            <template id="announcement-content-{{ $notification->entity_id }}"><div class="ck-content">{!! $notification->content !!}</div></template>
+                            <template id="announcement-content-{{ $notification->entity_id }}"><div class="ck-content rich-content">{!! $notification->content !!}</div></template>
                         @endif
                     </div>
                     @if (!empty($notification->url))<a href="{{ $notification->url }}" class="notif-action">View</a>@endif

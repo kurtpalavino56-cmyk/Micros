@@ -175,11 +175,52 @@ class AdminController extends Controller
 
     public function dashboard()
     {
+        $weekStart = now()->startOfWeek();
+        $previousWeekStart = $weekStart->copy()->subWeek();
+        $monthStart = now()->startOfMonth();
+        $previousMonthStart = $monthStart->copy()->subMonth();
+        $publishedCourses = fn () => Course::where('is_published', true)
+            ->where(fn (Builder $query) => $query->where('approval_status', 'approved')->orWhere('is_approved', true));
+        $learnersThisWeek = User::where('role_id', User::ROLE_STUDENT)
+            ->where('created_at', '>=', $weekStart)->count();
+        $learnersLastWeek = User::where('role_id', User::ROLE_STUDENT)
+            ->where('created_at', '>=', $previousWeekStart)->where('created_at', '<', $weekStart)->count();
+        $coursesPublishedThisWeek = $publishedCourses()->where('approved_at', '>=', $weekStart)->count();
+        $coursesPublishedLastWeek = $publishedCourses()->where('approved_at', '>=', $previousWeekStart)
+            ->where('approved_at', '<', $weekStart)->count();
+        $pendingReviewsThisWeek = Course::where('approval_status', 'pending')->where('created_at', '>=', $weekStart)->count()
+            + Enrollment::where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
+                ->where('academic_unit_confirmation_status', 'pending')->where('updated_at', '>=', $weekStart)->count();
+        $pendingReviewsLastWeek = Course::where('approval_status', 'pending')->where('created_at', '>=', $previousWeekStart)
+            ->where('created_at', '<', $weekStart)->count()
+            + Enrollment::where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
+                ->where('academic_unit_confirmation_status', 'pending')->where('updated_at', '>=', $previousWeekStart)
+                ->where('updated_at', '<', $weekStart)->count();
+        $credentialsThisMonth = DB::table('user_badges')->where('status', 'active')
+            ->where('earned_at', '>=', $monthStart)->count()
+            + Certificate::where('status', 'active')->where('issued_at', '>=', $monthStart)->count();
+        $credentialsLastMonth = DB::table('user_badges')->where('status', 'active')
+            ->where('earned_at', '>=', $previousMonthStart)->where('earned_at', '<', $monthStart)->count()
+            + Certificate::where('status', 'active')->where('issued_at', '>=', $previousMonthStart)
+                ->where('issued_at', '<', $monthStart)->count();
+
         $stats = [
             'total_students' => User::where('role_id', User::ROLE_STUDENT)->count(),
+            'learners_weekly_change' => $learnersThisWeek - $learnersLastWeek,
+            'published_courses' => Course::where('is_published', true)
+                ->where(fn (Builder $query) => $query->where('approval_status', 'approved')->orWhere('is_approved', true))
+                ->count(),
+            'courses_weekly_change' => $coursesPublishedThisWeek - $coursesPublishedLastWeek,
+            'pending_reviews' => Course::where('approval_status', 'pending')->count()
+                + Enrollment::where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
+                    ->where('academic_unit_confirmation_status', 'pending')->count(),
+            'pending_reviews_weekly_change' => $pendingReviewsThisWeek - $pendingReviewsLastWeek,
+            'credentials_earned' => DB::table('user_badges')->where('status', 'active')->count()
+                + Certificate::where('status', 'active')->count(),
             'badges_issued' => DB::table('user_badges')->count(),
             'course_score_avg' => round((float) Course::avg('passing_score'), 1),
             'students_enrolled' => DB::table('enrollments')->count(),
+            'credentials_monthly_change' => $credentialsThisMonth - $credentialsLastMonth,
         ];
 
         $quickModules = [
@@ -191,12 +232,12 @@ class AdminController extends Controller
                 'button' => 'Go to Courses & Badges',
             ],
             [
-                'title' => 'Enrollment Reviews',
-                'description' => 'Review completed learner work and confirm credential eligibility.',
+                'title' => 'Completion Verification',
+                'description' => 'Verify completed learner work and confirm credential eligibility.',
                 'info' => Enrollment::where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
                     ->where('academic_unit_confirmation_status', 'pending')->count().' learners awaiting verification',
                 'route' => 'admin.enrollments',
-                'button' => 'Go to Enrollment Reviews',
+                'button' => 'Go to Completion Verification',
             ],
             [
                 'title' => 'User Management',
@@ -733,7 +774,9 @@ class AdminController extends Controller
             ])
             ->values();
 
-        return view('admin.courses.index', compact('courses'));
+        $featuredCourseCount = Course::where('is_featured', true)->count();
+
+        return view('admin.courses.index', compact('courses', 'featuredCourseCount'));
     }
 
     /**
@@ -845,7 +888,7 @@ class AdminController extends Controller
         return view('admin.courses.show', compact('course', 'modules'));
     }
 
-    /** Show the enrollment review queue separately from course content review. */
+    /** Show the learner completion verification queue separately from course content review. */
     public function courseEnrollmentReviews(int $id, Request $request): View
     {
         $courseModel = Course::findOrFail($id);
@@ -859,7 +902,7 @@ class AdminController extends Controller
         return $this->enrollmentReviewPage($course, $courseModel->id, $request);
     }
 
-    /** Show the full enrollment review queue from the admin sidebar. */
+    /** Show the full learner completion verification queue from the admin sidebar. */
     public function enrollmentReviews(Request $request): View
     {
         return $this->enrollmentReviewPage(null, null, $request);
@@ -885,6 +928,10 @@ class AdminController extends Controller
                 && $enrollment->completion_status === MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION => 'pending',
             default => 'other',
         });
+        $enrollment->setAttribute('academic_confirmation_actionable',
+            $enrollment->academic_unit_confirmation_status === 'pending'
+            && $enrollment->completion_status === MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION
+        );
 
         $modules = $course->modules;
         $lessonIds = $modules->flatMap(fn ($module) => $module->lessons->pluck('id'))->values();
@@ -899,7 +946,12 @@ class AdminController extends Controller
             ->latest('submitted_at')
             ->get()
             ->groupBy('lesson_activity_id');
-        $quizzes = Quiz::where('course_id', $course->id)->get();
+        $quizzes = Quiz::where('course_id', $course->id)
+            ->where(function ($query) use ($course) {
+                $query->whereHas('module', fn ($moduleQuery) => $moduleQuery->where('course_id', $course->id))
+                    ->orWhereHas('lesson', fn ($lessonQuery) => $lessonQuery->where('course_id', $course->id));
+            })
+            ->get();
         $quizAttempts = QuizAttempt::with(['quiz', 'answers.question'])
             ->where('user_id', $enrollment->user_id)
             ->whereIn('quiz_id', $quizzes->pluck('id'))
@@ -929,6 +981,7 @@ class AdminController extends Controller
             'totalActivities' => $activityCount,
             'passedQuizzes' => $passedQuizzes,
             'totalQuizzes' => $quizzes->count(),
+            'reviewRole' => 'admin',
         ]);
     }
 
@@ -1088,9 +1141,10 @@ class AdminController extends Controller
             );
         }
 
-        return back()->with('success', $data['decision'] === 'confirmed'
-            ? 'Academic-unit confirmation recorded.'
-            : 'Enrollment marked as rejected.');
+        return redirect()->route('admin.enrollments')
+            ->with('success', $data['decision'] === 'confirmed'
+                ? 'Academic-unit confirmation recorded.'
+                : 'Enrollment marked as rejected.');
     }
 
     /**
@@ -1152,7 +1206,11 @@ class AdminController extends Controller
     public function toggleFeatureCourse(int $id, CourseModerationService $moderation)
     {
         $course = Course::findOrFail($id);
-        $featured = $moderation->toggleFeature($course);
+        try {
+            $featured = $moderation->toggleFeature($course);
+        } catch (\DomainException $e) {
+            return back()->withErrors(['feature' => $e->getMessage()]);
+        }
 
         if ($featured && ! $course->is_approved) {
             return back()->with('success', '"'.$course->title.'" is marked as featured. '

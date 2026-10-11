@@ -1,18 +1,11 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}"><title>{{ $activity->title }} | UpSkill</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <style>body{margin:0;background:#f4f6fb;color:#172554;font-family:inherit}.activity-shell{max-width:900px;margin:48px auto;padding:24px}.activity-card{background:#fff;border:1px solid #e3e8f2;border-radius:18px;padding:28px;margin-bottom:18px;box-shadow:0 14px 35px #17255412}.activity-input{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:10px;padding:12px;font:inherit}.activity-submit{border:0;border-radius:10px;background:#172554;color:#fff;padding:12px 20px;font:inherit;font-weight:700}.activity-row{padding:14px 0;border-bottom:1px solid #e7ebf3}.activity-note{padding:12px;border-radius:10px;background:#eff6ff}.activity-error{color:#991b1b}</style>
-</head>
-<body><main class="activity-shell">
+<x-layout title="{{ $activity->title }} | UpSkill" shell="bare" page="lesson-activity">
+<section class="activity-shell">
     <p><a href="{{ route('courses.learn', $activity->lesson->course_id) }}">← Back to course</a></p>
     <section class="activity-card">
         <p>{{ $activity->lesson->course->title }} · {{ $activity->lesson->title }}</p>
         <h1>{{ $activity->title }}</h1>
         <p>{{ Illuminate\Support\Str::headline($activity->activity_type) }}@if($activity->is_required) · Required for lesson completion @else · Optional @endif</p>
-        @if($activity->instructions)<div class="up-ckeditor-wrapper"><div class="ck-content">{!! \App\Support\RichTextSanitizer::sanitize($activity->instructions) !!}</div></div>@endif
+        @if($activity->instructions)<div class="up-ckeditor-wrapper"><div class="ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($activity->instructions) !!}</div></div>@endif
         @if($activity->activity_type === 'assignment')<div class="activity-note">Your instructor will review this submission. A passing result is required to complete this lesson activity.</div>@endif
         @if(session('activity_result'))
             @php($activityResult = session('activity_result'))
@@ -61,4 +54,5 @@
             </div>
         @empty<p>No submissions yet.</p>@endforelse
     </section>
-</main></body></html>
+</section>
+</x-layout>

@@ -12,7 +12,7 @@
     </header>
 
     @if($activity->instructions)
-        <div class="inline-assessment-instructions up-ckeditor-wrapper"><div class="ck-content">{!! \App\Support\RichTextSanitizer::sanitize($activity->instructions) !!}</div></div>
+        <div class="inline-assessment-instructions up-ckeditor-wrapper"><div class="ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($activity->instructions) !!}</div></div>
     @endif
 
     @if($lesson_completed)

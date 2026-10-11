@@ -1,13 +1,10 @@
 <?php
 
-use App\Models\CompetencyProgress;
-use App\Models\CompetencyUnit;
-use App\Models\CompetencyCategory;
+use App\Models\Badge;
 use App\Models\Course;
 use App\Models\CourseLesson;
 use App\Models\CourseModule;
 use App\Models\Enrollment;
-use App\Models\LearningOutcome;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\QuizQuestion;
@@ -124,6 +121,53 @@ test('faculty review queue includes ready enrollments when verification was enab
     expect($enrollment->fresh()->faculty_verification_status)->toBe('verified');
 });
 
+test('faculty and admin review counts only quizzes attached to course lessons or modules', function () {
+    $faculty = User::factory()->faculty()->create();
+    [$course, $enrollment, $student] = makeReadyEnrollmentFor($faculty);
+    $finalModule = CourseModule::create([
+        'course_id' => $course->id,
+        'title' => 'Final Exam',
+        'order' => 2,
+        'is_final' => true,
+    ]);
+    $finalQuiz = Quiz::create([
+        'course_id' => $course->id,
+        'module_id' => $finalModule->id,
+        'title' => 'Final Exam',
+        'passing_score' => 70,
+        'is_active' => true,
+    ]);
+    $unattachedQuiz = Quiz::create([
+        'course_id' => $course->id,
+        'title' => 'Orphaned Assessment',
+        'passing_score' => 70,
+        'is_active' => true,
+    ]);
+
+    foreach ([$finalQuiz, $unattachedQuiz] as $quiz) {
+        QuizAttempt::create([
+            'user_id' => $student->id,
+            'quiz_id' => $quiz->id,
+            'score' => 100,
+            'passed' => true,
+            'started_at' => now(),
+            'submitted_at' => now(),
+        ]);
+    }
+
+    $this->actingAs($faculty)
+        ->get(route('faculty.students.enrollments.review', [$course->id, $enrollment->id]))
+        ->assertOk()
+        ->assertSee('Quizzes passed')
+        ->assertSee('2 / 2');
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('admin.enrollments.show', $enrollment->id))
+        ->assertOk()
+        ->assertSee('Quizzes passed')
+        ->assertSee('2 / 2');
+});
+
 test('learner progress is not labeled as awaiting institutional review before completion gates are ready', function () {
     expect(CompletionStatusPresenter::institutionalLabel(
         'assessment_pending',
@@ -184,6 +228,38 @@ test('admin course review shows the confirmation action while academic-unit revi
             'enrollment' => $enrollment->id,
         ]), false)
         ->assertSee('Confirm');
+});
+
+test('admin cannot feature more than three courses at once', function () {
+    $admin = User::factory()->admin()->create();
+    $featuredCourses = collect(range(1, 3))->map(fn (int $number) => Course::create([
+        'title' => 'Featured Course '.$number,
+        'slug' => 'featured-course-'.$number,
+        'is_featured' => true,
+    ]));
+    $fourthCourse = Course::create([
+        'title' => 'Fourth Course',
+        'slug' => 'fourth-course',
+        'is_featured' => false,
+    ]);
+
+    $this->actingAs($admin)
+        ->from(route('admin.courses'))
+        ->post(route('admin.courses.feature', $fourthCourse->id))
+        ->assertRedirect(route('admin.courses'));
+
+    expect($fourthCourse->fresh()->is_featured)->toBeFalse()
+        ->and(Course::where('is_featured', true)->count())->toBe(3);
+
+    $this->get(route('admin.courses'))
+        ->assertOk()
+        ->assertSee('Only three courses can be featured at a time.')
+        ->assertSee('Featured courses: <strong>3 / 3</strong>.', false)
+        ->assertSee('Unfeature a course before featuring another.');
+
+    $this->post(route('admin.courses.feature', $featuredCourses->first()->id))
+        ->assertRedirect();
+    expect($featuredCourses->first()->fresh()->is_featured)->toBeFalse();
 });
 
 test('admin can confirm academic-unit confirmation for an enrollment', function () {
@@ -274,7 +350,7 @@ test('a single admin academic-confirmation request issues the badge and certific
     $admin = User::factory()->admin()->create();
     [$course, $enrollment] = makeReadyEnrollmentFor($faculty);
 
-    $badge = \App\Models\Badge::create(['name' => 'Admin Confirm Badge', 'is_active' => true]);
+    $badge = Badge::create(['name' => 'Admin Confirm Badge', 'is_active' => true]);
     $course->badge_id = $badge->id;
     $course->certificate_enabled = true;
     $course->save();
@@ -306,7 +382,7 @@ test('a single faculty verification request issues the badge and certificate imm
     $admin = User::factory()->admin()->create();
     [$course, $enrollment] = makeReadyEnrollmentFor($faculty, ['requires_faculty_verification' => true]);
 
-    $badge = \App\Models\Badge::create(['name' => 'Faculty Verify Badge', 'is_active' => true]);
+    $badge = Badge::create(['name' => 'Faculty Verify Badge', 'is_active' => true]);
     $course->badge_id = $badge->id;
     $course->certificate_enabled = true;
     $course->save();

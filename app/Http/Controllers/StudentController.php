@@ -2076,6 +2076,12 @@ class StudentController extends Controller
                 'pathway_name' => $ub->badge?->pathway?->name,
                 'course_names' => $ub->badge?->courses?->pluck('title')->filter()->values() ?? collect(),
                 'credential_uid' => $ub->credential_uid,
+                'verification_url' => $ub->credential_uid
+                    ? route('students.index', ['credential_id' => $ub->credential_uid])
+                    : null,
+                'verification_qr_url' => $ub->credential_uid
+                    ? CertificateBuilder::qrFor(route('students.index', ['credential_id' => $ub->credential_uid]), 180)
+                    : null,
                 'status' => $ub->status ?: 'active',
                 'revoked_at' => $ub->revoked_at,
                 'revocation_reason' => $ub->revocation_reason,

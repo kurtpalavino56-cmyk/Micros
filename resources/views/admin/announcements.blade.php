@@ -92,7 +92,7 @@
     .btn-pin{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--line);
         color:var(--navy);padding:8px 14px;border-radius:999px;font-weight:700;font-size:12.5px;}
     .btn-pin.is-pinned{background:#fff8df;border-color:#e9cf72;color:#806208;}
-    .btn-pin svg{width:14px;height:14px;}
+    .btn-pin svg{width:16px;height:16px;flex:0 0 16px;}
     @media(max-width:640px){.ann-head{flex-direction:column;}}
 </style>
 </head>
@@ -194,7 +194,7 @@
                 <div class="ann-head">
                     <div style="min-width:0;">
                         <h3 class="ann-title">{{ $a->title }}</h3>
-                        <div class="ann-body ck-content">{!! \App\Support\RichTextSanitizer::sanitize($a->body) !!}</div>
+                        <div class="ann-body ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($a->body) !!}</div>
                         <div>
                             @foreach ($a->audience as $role)
                                 <span class="pill {{ $role }}">{{ ucfirst($role) }}</span>
@@ -212,7 +212,7 @@
                             @csrf
                             <button type="submit" class="btn-pin {{ $a->is_pinned ? 'is-pinned' : '' }}"
                                 aria-label="{{ $a->is_pinned ? 'Unpin' : 'Pin' }} {{ $a->title }}">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-5 5-3-3-6 6v4H3v-4l6-6-3-3 5-5 5 5z"/></svg>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 9V4l1-1V2H7v1l1 1v5c0 1-2 2-3 3v1h6v8h2v-8h6v-1c-1-1-3-2-3-3Z"/></svg>
                                 {{ $a->is_pinned ? 'Unpin' : 'Pin' }}
                             </button>
                         </form>

@@ -10,29 +10,8 @@
     menu button (injected by the script below — no markup changes needed).
 --}}
 <style>
-    /* Student page titles use the Enrolled Courses type scale across pages. */
-    .student-page-heading h1,
-    .student-page-heading h2 {
-        margin: 0 0 6px;
-        color: #13176b;
-        font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        font-size: 30px;
-        font-weight: 700;
-        line-height: 1.2;
-        letter-spacing: -0.02em;
-    }
     .student-page-heading--inverse h1,
     .student-page-heading--inverse h2 { color:#fff; }
-    .student-page-heading > p:not(.eyebrow),
-    .student-page-heading.page-header > p:not(.eyebrow),
-    .student-page-heading > div > p:not(.eyebrow) {
-        margin: 0 0 28px;
-        color: #6b7280;
-        font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        font-size: 15px;
-        font-weight: 400;
-        line-height: 1.5;
-    }
     .student-page-heading--inverse > p:not(.eyebrow),
     .student-page-heading--inverse > div > p:not(.eyebrow) { color:rgba(255,255,255,.88); }
 
@@ -834,5 +813,3 @@
         });
     })();
 </script>
-
-

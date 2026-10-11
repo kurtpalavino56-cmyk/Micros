@@ -138,7 +138,7 @@
                                 </header>
 
                                 @if($activity->instructions)
-                                    <div class="assignment-instructions"><strong>Assignment instructions</strong><div class="up-ckeditor-wrapper"><div class="ck-content">{!! \App\Support\RichTextSanitizer::sanitize($activity->instructions) !!}</div></div></div>
+                                    <div class="assignment-instructions"><strong>Assignment instructions</strong><div class="up-ckeditor-wrapper"><div class="ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($activity->instructions) !!}</div></div></div>
                                 @endif
 
                                 <div class="submission-content">
@@ -184,7 +184,9 @@
                             </article>
                         @endforeach
                     </div>
-                    <div class="review-pagination">{{ $submissions->links() }}</div>
+                    <div class="review-pagination">
+                        @include('components.pagination', ['paginator' => $submissions, 'ariaLabel' => 'Activity submission pages'])
+                    </div>
                 @else
                     <div class="review-empty">
                         <h2>@if($status === 'pending')Nothing to review right now.@elseif($status === 'reviewed')No reviewed submissions yet.@else No submissions yet.@endif</h2>

@@ -19,8 +19,10 @@
             --surface: #f5f7fa;
             --white: #ffffff;
             --line: #e2e7ef;
+            --line-soft: #eef1f5;
             --text: #17212b;
             --muted: #687385;
+            --faint: #8b95a5;
         }
 
         body {
@@ -67,90 +69,111 @@
             background: #eaf8ef; border: 1px solid #ccebd6; color: #166534;
             border-radius: 10px; padding: 11px 16px; font-size: .86rem; font-weight: 600; margin-bottom: 18px;
         }
+        .page-head-tools { display: grid; justify-items: end; gap: 8px; }
+        .featured-limit {
+            color: var(--muted); font-size: .78rem; text-align: right;
+        }
+        .featured-limit strong { color: var(--text); }
 
-        /* Grid + card */
+        /* =========================================================
+           COURSE CARD
+           Reading order: status → title → people/stats → details
+           → progress → one action.
+        ========================================================= */
         .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: stretch; gap: 18px; }
 
         .course-card {
-            display: flex; min-width: 0; min-height: 276px; flex-direction: column; gap: 13px;
-            background: var(--white); border: 1px solid var(--line); border-radius: 14px;
-            padding: 20px; cursor: pointer;
-            transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+            display: flex; flex-direction: column; min-width: 0;
+            background: var(--white); border: 1px solid var(--line); border-radius: 12px;
+            padding: 18px 20px 20px; cursor: pointer;
+            transition: border-color .15s ease, box-shadow .15s ease;
         }
-        .course-card:hover { transform: translateY(-2px); border-color: #c6d3e8; box-shadow: 0 8px 22px rgba(17,24,39,.07); }
-        .course-card.is-pending { border-color: #e8c95a; box-shadow: inset 3px 0 0 var(--yellow); }
+        .course-card:hover { border-color: #c6d3e8; box-shadow: 0 6px 18px rgba(17,24,39,.06); }
+        .course-card.is-pending { box-shadow: inset 3px 0 0 var(--yellow); }
+        .course-card.is-pending:hover { box-shadow: inset 3px 0 0 var(--yellow), 0 6px 18px rgba(17,24,39,.06); }
         .course-card:focus-within { outline: 3px solid rgba(18,59,122,.18); outline-offset: 2px; }
 
-        .card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 28px; }
-        .card-status-group { display: flex; min-width: 0; align-items: center; flex-wrap: wrap; gap: 8px; }
-        .status { display: inline-flex; align-items: center; gap: 7px; font-size: .78rem; font-weight: 600; color: var(--muted); }
-        .status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); flex: 0 0 8px; }
+        /* 1 · Status line (quiet, small) */
+        .card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 30px; margin-bottom: 12px; }
+        .card-status-group { display: flex; min-width: 0; align-items: center; flex-wrap: wrap; gap: 6px; font-size: .76rem; color: var(--muted); }
+        .status { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--text); }
+        .status .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); flex: 0 0 7px; }
         .status-pending .dot { background: var(--yellow); }
         .status-denied .dot { background: #d64545; }
         .status-draft .dot { background: #a3adbd; }
-        .publication-status {
-            display: inline-flex; align-items: center; border: 1px solid transparent; border-radius: 999px;
-            padding: 4px 9px; font-size: .68rem;
-            font-weight: 700; letter-spacing: .02em;
-        }
-        .publication-status.is-published { background: #edf7f1; border-color: #dcefe3; color: #176b3b; }
-        .publication-status.is-unpublished { background: #fff7e5; border-color: #f3e5c3; color: #805400; }
+        .publication-status { font-weight: 500; color: var(--muted); }
+        .publication-status::before { content: "•"; margin-right: 6px; color: var(--faint); }
 
         .star-form { display: flex; }
         .star-btn {
-            display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; border: 1px solid transparent; border-radius: 8px; background: none; color: #8b95a5; cursor: pointer;
-            transition: color .15s ease, background .15s ease, border-color .15s ease;
+            display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0;
+            border: 0; border-radius: 6px; background: none; color: #a3adbd; cursor: pointer;
+            transition: color .15s ease, background .15s ease;
         }
-        .star-btn:hover { border-color: #f0dfb8; background: #fff8e7; color: #c99a00; }
+        .star-btn:hover { background: var(--surface); color: #c99a00; }
         .star-btn.is-on { color: #e0a800; }
         .star-btn.is-on svg { fill: #e0a800; }
         .star-btn svg { width: 18px; height: 18px; }
 
-        .course-title { min-height: 2.6em; font-size: 1.02rem; font-weight: 650; line-height: 1.3; color: var(--text); overflow-wrap: anywhere; }
-        .course-meta { min-height: 1.25em; font-size: .8rem; line-height: 1.5; color: var(--muted); }
-        .course-intro { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: start; gap: 13px; }
-        .course-thumb, .course-thumb-placeholder { display: flex; width: 64px; height: 64px; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: #f3f5f8; }
-        .course-thumb { object-fit: cover; }
-        .course-thumb-placeholder { color: #8791a0; }
-        .course-thumb-placeholder svg { width: 25px; height: 25px; }
-        .course-intro-copy { min-width: 0; }
-        .course-intro-copy .course-title { min-height: 0; }
-        .course-intro-copy .course-meta { margin-top: 7px; }
-
-        .chips { display: flex; min-height: 29px; flex-wrap: wrap; align-items: flex-start; gap: 7px; }
-        .chip {
-            display: inline-flex; align-items: center; gap: 7px; max-width: min(100%, 260px); min-height: 27px;
-            padding: 4px 10px 4px 5px; border: 1px solid #e7ebf0; border-radius: 8px;
-            background: #f8f9fb; color: #334155; font-size: .73rem; font-weight: 600;
+        /* 2 · Identity: thumbnail + title + byline (the focal point) */
+        .course-intro { display: grid; grid-template-columns: 56px minmax(0, 1fr); align-items: start; gap: 14px; }
+        .course-thumb, .course-thumb-placeholder {
+            display: flex; width: 56px; height: 56px; align-items: center; justify-content: center;
+            overflow: hidden; border-radius: 10px; background: var(--line-soft);
         }
-        .chip img { width: 18px; height: 18px; object-fit: contain; flex: 0 0 18px; }
-        .chip .blank { width: 18px; height: 18px; flex: 0 0 18px; border-radius: 50%; background: #e2e7ef; }
-        .chip.plain { padding-left: 10px; }
-        .chip.off { background: #f8f9fb; color: #8791a0; }
-        .chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .course-thumb { object-fit: cover; }
+        .course-thumb-placeholder { color: var(--faint); }
+        .course-thumb-placeholder svg { width: 24px; height: 24px; }
+        .course-intro-copy { min-width: 0; }
+        .course-title {
+            font-size: 1.05rem; font-weight: 700; line-height: 1.3; letter-spacing: -.01em; color: var(--navy);
+            overflow-wrap: anywhere;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .course-by { margin-top: 5px; font-size: .8rem; color: var(--muted); }
+        .course-stats { margin-top: 2px; font-size: .78rem; color: var(--faint); }
 
-        .related { min-height: 1.2em; color: var(--muted); font-size: .75rem; line-height: 1.4; }
+        /* 3 · Details: ruled list, label left / value right */
+        .details {
+            margin: 16px 0 16px; border-top: 1px solid var(--line-soft);
+        }
+        .detail-row {
+            display: grid; grid-template-columns: 84px minmax(0, 1fr); align-items: center; gap: 10px;
+            min-height: 38px; padding: 8px 0; border-bottom: 1px solid var(--line-soft);
+        }
+        .detail-label { font-size: .75rem; color: var(--faint); }
+        .detail-value {
+            display: flex; align-items: center; gap: 8px; min-width: 0;
+            font-size: .82rem; font-weight: 500; color: var(--text);
+        }
+        .detail-value span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .detail-value img { width: 20px; height: 20px; object-fit: contain; flex: 0 0 20px; }
+        .detail-value .blank { width: 20px; height: 20px; flex: 0 0 20px; border-radius: 50%; background: var(--line); }
+        .detail-value.off { color: var(--faint); font-weight: 400; }
 
-        .course-progress { margin-top: auto; }
-        .progress-track { height: 5px; border-radius: 999px; background: #edf0f4; overflow: hidden; }
-        .progress-fill { height: 100%; background: var(--blue); border-radius: 2px; }
-        .pct { margin-top: 6px; font-size: .75rem; font-weight: 600; color: var(--muted); }
+        /* 4 · Progress */
+        .course-progress { margin-top: auto; padding-bottom: 16px; }
+        .progress-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; font-size: .75rem; color: var(--faint); }
+        .progress-head strong { font-size: .85rem; font-weight: 700; color: var(--navy); }
+        .progress-track { height: 5px; border-radius: 999px; background: var(--line-soft); overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--blue); border-radius: 999px; }
 
-        /* Actions */
-        .actions { display: flex; gap: 8px; margin-top: 1px; }
+        /* 5 · One action */
+        .actions { display: flex; }
         .actions form, .actions a { flex: 1; display: flex; }
         .btn {
             flex: 1; min-height: 40px; padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line);
-            background: var(--white); color: var(--text); font: inherit; font-size: .8rem; font-weight: 650; text-align: center; text-decoration: none; cursor: pointer;
+            background: var(--white); color: var(--navy); font: inherit; font-size: .82rem; font-weight: 600;
+            text-align: center; text-decoration: none; cursor: pointer;
             transition: background .15s ease, border-color .15s ease;
         }
-        .btn:hover { border-color: #cbd5e1; background: #f5f7fa; }
-        .btn-approve { background: var(--yellow); border-color: var(--yellow); color: var(--navy); }
-        .btn-approve:hover { background: var(--yellow-dark); }
-        .btn-publish { background: #edf7f1; border-color: #cce9d7; color: #176b3b; }
-        .btn-publish:hover { background: #dff1e6; }
-        .btn-unpublish { background: #fff4dc; border-color: #f0dfb8; color: #805400; }
-        .btn-unpublish:hover { background: #ffedc2; }
+        .btn:hover { border-color: #b9c6dc; background: var(--surface); }
+        .btn-approve { background: var(--navy); border-color: var(--navy); color: #fff; }
+        .btn-approve:hover { background: #0c1f6b; border-color: #0c1f6b; }
+        .btn-publish { color: var(--blue); border-color: #c4d6f0; }
+        .btn-publish:hover { background: var(--soft); }
+        .btn-unpublish { color: var(--muted); }
+
         .empty-state {
             padding: 40px 24px; border: 1px solid var(--line); border-radius: 12px;
             background: var(--white); color: var(--muted); text-align: center; font-size: .88rem;
@@ -183,7 +206,17 @@
                 <div class="page-heading">Courses and badges</div>
                 <div class="page-sub">Review courses and manage their completion badges.</div>
             </div>
-            <input type="search" class="search" id="course-search" placeholder="Search courses" aria-label="Search courses">
+            <div class="page-head-tools">
+                <input type="search" class="search" id="course-search" placeholder="Search courses" aria-label="Search courses">
+                <div class="featured-limit">
+                    Featured courses: <strong>{{ $featuredCourseCount }} / {{ \App\Services\CourseModerationService::MAX_FEATURED_COURSES }}</strong>.
+                    @if ($featuredCourseCount >= \App\Services\CourseModerationService::MAX_FEATURED_COURSES)
+                        Unfeature a course before featuring another.
+                    @else
+                        You can feature up to {{ \App\Services\CourseModerationService::MAX_FEATURED_COURSES }} courses on the homepage.
+                    @endif
+                </div>
+            </div>
         </div>
 
         @php
@@ -197,7 +230,7 @@
             <button type="button" class="tab" data-filter="denied">Denied<span class="n">{{ $count('denied') }}</span></button>
         </div>
 
-        <x-flash-toast :message="session('success')" />
+        <x-flash-toast :message="session('success') ?? $errors->first('feature')" />
 
         @if ($courses->isEmpty())
             <div class="empty-state">No courses yet. Courses created by faculty will appear here for review.</div>
@@ -209,15 +242,14 @@
                          data-search="{{ strtolower($course->title . ' ' . ($course->instructor ?? '')) }}"
                          onclick="window.location='{{ route('admin.courses.show', $course->id) }}'">
 
+                        {{-- 1 · Status --}}
                         <div class="card-top">
                             <div class="card-status-group">
                                 <span class="status status-{{ $course->status_key }}">
                                     <span class="dot"></span>{{ $course->status_key === 'approved' ? 'Approved' : $course->status }}
                                 </span>
                                 @if ($course->can_toggle_publish)
-                                    <span class="publication-status {{ $course->is_published ? 'is-published' : 'is-unpublished' }}">
-                                        {{ $course->is_published ? 'Published' : 'Unpublished' }}
-                                    </span>
+                                    <span class="publication-status">{{ $course->is_published ? 'Published' : 'Unpublished' }}</span>
                                 @endif
                             </div>
 
@@ -232,6 +264,7 @@
                             </form>
                         </div>
 
+                        {{-- 2 · Identity --}}
                         <div class="course-intro">
                             @if ($course->thumbnail_url)
                                 <img class="course-thumb" src="{{ $course->thumbnail_url }}" alt="" loading="lazy">
@@ -242,64 +275,74 @@
                             @endif
                             <div class="course-intro-copy">
                                 <div class="course-title">{{ $course->title }}</div>
-                                <div class="course-meta">
-                                    {{ $course->students }} students · {{ $course->faculty }} faculty · By {{ $course->instructor ?? 'Faculty' }}
+                                <div class="course-by">By {{ $course->instructor ?? 'Faculty' }}</div>
+                                <div class="course-stats">{{ $course->faculty }} faculty &middot; {{ $course->students }} students</div>
+                            </div>
+                        </div>
+
+                        {{-- 3 · Details --}}
+                        <div class="details">
+                            <div class="detail-row">
+                                <span class="detail-label">Badge</span>
+                                <div class="detail-value {{ $course->badge_icon || $course->badge ? '' : 'off' }}">
+                                    @if ($course->badge_icon)
+                                        <img src="{{ $course->badge_icon }}" alt="">
+                                    @elseif ($course->badge)
+                                        <span class="blank"></span>
+                                    @endif
+                                    <span>{{ $course->badge ?: 'No badge yet' }}</span>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="chips">
-                            <div class="chip {{ $course->badge_icon ? '' : 'off' }}">
-                                @if ($course->badge_icon)
-                                    <img src="{{ $course->badge_icon }}" alt="">
-                                @else
-                                    <span class="blank"></span>
-                                @endif
-                                <span>{{ $course->badge ?: 'No badge yet' }}</span>
+                            <div class="detail-row">
+                                <span class="detail-label">Certificate</span>
+                                <div class="detail-value {{ $course->certificate_enabled ? '' : 'off' }}">
+                                    <span>
+                                        @if (! $course->certificate_enabled)
+                                            None
+                                        @else
+                                            {{ $course->certificate_mode === 'upload' ? 'Uploaded' : 'Auto-generated' }}
+                                        @endif
+                                    </span>
+                                </div>
                             </div>
 
-                            <div class="chip plain {{ $course->certificate_enabled ? '' : 'off' }}">
-                                <span>
-                                    @if (! $course->certificate_enabled)
-                                        No certificate
-                                    @else
-                                        {{ $course->certificate_mode === 'upload' ? 'Uploaded certificate' : 'Auto certificate' }}
-                                    @endif
-                                </span>
-                            </div>
-                        </div>
-
-                        {{-- "Related on": internal, faculty/admin only --}}
-                        <div class="related">
                             @if (! empty($course->related_skills))
-                                Related: {{ implode(', ', array_slice($course->related_skills, 0, 3)) }}
-                                @if (count($course->related_skills) > 3) +{{ count($course->related_skills) - 3 }} @endif
+                                <div class="detail-row">
+                                    <span class="detail-label">Related</span>
+                                    <div class="detail-value">
+                                        <span>
+                                            {{ implode(', ', array_slice($course->related_skills, 0, 3)) }}
+                                            @if (count($course->related_skills) > 3) +{{ count($course->related_skills) - 3 }} @endif
+                                        </span>
+                                    </div>
+                                </div>
                             @endif
                         </div>
 
+                        {{-- 4 · Progress --}}
                         <div class="course-progress">
+                            <div class="progress-head"><span>Completion</span><strong>{{ $course->percent }}%</strong></div>
                             <div class="progress-track"><div class="progress-fill" style="width: {{ $course->percent }}%"></div></div>
-                            <div class="pct">{{ $course->percent }}% complete</div>
                         </div>
 
+                        {{-- 5 · Action --}}
                         @if ($course->status_key === 'pending')
                             <div class="actions" onclick="event.stopPropagation();">
-                                <a href="{{ route('admin.courses.show', $course->id) }}" class="btn">Review course</a>
+                                <a href="{{ route('admin.courses.show', $course->id) }}" class="btn btn-approve">Review course</a>
                             </div>
                         @elseif ($course->can_toggle_publish)
                             <div class="actions" onclick="event.stopPropagation();">
                                 <form method="POST" action="{{ route('admin.courses.publish', $course->id) }}">
                                     @csrf
-                                    <button type="submit"
-                                            class="btn {{ $course->is_published ? 'btn-unpublish' : 'btn-publish' }}"
-                                            >
+                                    <button type="submit" class="btn {{ $course->is_published ? 'btn-unpublish' : 'btn-publish' }}">
                                         {{ $course->is_published ? 'Unpublish' : 'Publish' }}
                                     </button>
                                 </form>
                             </div>
                         @else
                             <div class="actions" onclick="event.stopPropagation();">
-                                <a href="{{ route('admin.courses.show', $course->id) }}" class="btn">View course details</a>
+                                <a href="{{ route('admin.courses.show', $course->id) }}" class="btn">View details</a>
                             </div>
                         @endif
                     </div>

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Badge;
 use App\Models\Course;
 use App\Models\User;
+use App\Support\RichTextSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -19,7 +20,7 @@ class CourseCreationService
             'heading' => null,
             'subheading' => null,
             'slug' => $this->uniqueSlug($title),
-            'description' => $this->sanitizeRichText($data['description'] ?? ''),
+            'description' => RichTextSanitizer::sanitize($data['description'] ?? ''),
             'skills' => array_values($data['competencies'] ?? []),
             'objectives' => $this->linesToArray($data['learning_objectives'] ?? null),
             'category' => $data['category'] ?? null,
@@ -67,51 +68,6 @@ class CourseCreationService
         return $course;
     }
 
-    private function sanitizeRichText(?string $html): string
-    {
-        $html = trim((string) $html);
-        if ($html === '') {
-            return '';
-        }
-        $allowed = '<p><br><strong><b><em><i><u><ul><ol><li><h2><h3><h4><blockquote><a><img>';
-        $html = strip_tags($html, $allowed);
-        $html = preg_replace_callback('/<([a-z0-9]+)\b([^>]*)>/i', function ($match) {
-            $tag = strtolower($match[1]);
-            $attrs = $match[2] ?? '';
-            $allowedAttrs = match ($tag) {
-                'a' => ['href', 'target', 'rel', 'title'],
-                'img' => ['src', 'alt', 'title', 'width', 'height'],
-                default => [],
-            };
-            if ($allowedAttrs === []) {
-                return '<'.$tag.'>';
-            }
-            preg_match_all('/([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s>]+))/u', $attrs, $parts, PREG_SET_ORDER);
-            $safe = [];
-            foreach ($parts as $part) {
-                $name = strtolower($part[1]);
-                if (! in_array($name, $allowedAttrs, true)) {
-                    continue;
-                }
-                $value = $part[2] !== '' ? $part[2] : ($part[3] !== '' ? $part[3] : $part[4]);
-                if (in_array($name, ['href', 'src'], true)) {
-                    $value = trim($value);
-                    if (preg_match('/^(javascript|vbscript|data):/i', $value)) {
-                        continue;
-                    }
-                    if ($name === 'src' && ! preg_match('/^(https?:\/\/|\/)/i', $value)) {
-                        continue;
-                    }
-                }
-                $safe[] = $name.'="'.e($value).'"';
-            }
-
-            return '<'.$tag.($safe ? ' '.implode(' ', $safe) : '').'>';
-        }, $html);
-
-        return trim($html);
-    }
-
     private function saveInlineBadge(Request $request, Course $course): ?int
     {
         if (! $request->boolean('badge_enabled')) {
@@ -124,7 +80,12 @@ class CourseCreationService
         $badge = $course->badge ?: new Badge;
         $badge->name = $name;
         $badge->description = trim((string) $request->input('badge_description')) ?: null;
-        $badge->badge_level = null;
+        $badge->badge_level = match (strtolower(trim((string) $course->level))) {
+            'beginner' => 'Beginner',
+            'intermediate' => 'Intermediate',
+            'advanced' => 'Advanced',
+            default => 'Beginner',
+        };
         $badge->is_active = true;
         $icon = (string) $request->input('badge_icon_base64');
         if ($icon !== '' && str_starts_with($icon, 'data:image/')) {
