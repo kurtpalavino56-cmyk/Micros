@@ -69,6 +69,9 @@
         .user-management-heading {
             margin-bottom: 20px;
         }
+        .user-management-heading h1 {
+            color: #000;
+        }
 
         .user-tools {
             width: 100%;
@@ -490,7 +493,7 @@
                     No users found for the current filter.
                 </div>
             @else
-                <div class="table-card">
+                <div class="table-card paginated-table-scroll">
                     <table class="um-table">
                         <thead>
                             <tr>
@@ -560,15 +563,11 @@
                     </table>
                 </div>
 
-                @if ($users->hasPages())
-                    <div class="users-pagination">
-                        @include('components.pagination', [
-                            'paginator' => $users,
-                            'summary' => $users->firstItem().'–'.$users->lastItem().' of '.$users->total().' · Page '.$users->currentPage().' of '.$users->lastPage(),
-                            'ariaLabel' => 'User list pages',
-                        ])
-                    </div>
-                @endif
+                @include('components.pagination', [
+                    'paginator' => $users,
+                    'summary' => $users->firstItem() ? $users->firstItem().'–'.$users->lastItem().' of '.$users->total().' · Page '.$users->currentPage().' of '.$users->lastPage() : null,
+                    'ariaLabel' => 'User list pages',
+                ])
             @endif
 
         </main>

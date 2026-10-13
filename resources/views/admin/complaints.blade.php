@@ -112,7 +112,7 @@
     .thread-filter-empty.is-visible{display:block;}
     .thread[hidden]{display:none;}
     .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
-    .inbox-page .page-heading{font-size:1.75rem;letter-spacing:-.035em;color:#111a3c;}
+    .inbox-page .page-heading{font-size:1.75rem;letter-spacing:-.035em;color:#000;}
     .inbox-page .page-sub{margin-bottom:0;line-height:1.55;}
     .inbox-page .grid{margin-top:22px;}
     .inbox-page .detail-hd{background:#f8faff;}

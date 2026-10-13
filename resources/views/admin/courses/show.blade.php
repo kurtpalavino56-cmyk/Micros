@@ -87,7 +87,7 @@
         .featured-tag { position: absolute; top: 8px; left: 8px; padding: 3px 10px; border-radius: 6px; background: var(--yellow); color: var(--navy); font-size: .72rem; font-weight: 700; }
 
         .hero-info { min-width: 0; padding: 4px 0; }
-        .detail-title { font-size: 1.4rem; font-weight: 700; color: var(--title); line-height: 1.25; }
+        .detail-title { font-size: 1.4rem; font-weight: 700; color: #000; line-height: 1.25; }
         .by { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: .86rem; color: var(--muted); }
         .by .ico { width: 15px; height: 15px; color: var(--blue); }
         .meta-row { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 12px; font-size: .8rem; color: var(--muted); }

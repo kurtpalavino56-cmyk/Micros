@@ -17,7 +17,7 @@
         .record-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:18px;padding:20px;border:1px solid var(--record-line);border-radius:12px;background:#fff;box-shadow:var(--record-shadow);}
         .record-identity{display:flex;align-items:center;gap:14px;min-width:0;}
         .record-avatar{display:grid;place-items:center;width:52px;height:52px;flex:0 0 52px;border-radius:50%;background:var(--record-soft);color:var(--record-blue);font-size:20px;font-weight:700;overflow:hidden;background-size:cover;background-position:center;}
-        .record-header h1{margin:0;color:var(--record-navy);font-size:1.35rem;line-height:1.3;overflow-wrap:anywhere;}
+        .record-header h1{margin:0;color:#000;font-size:1.35rem;line-height:1.3;overflow-wrap:anywhere;}
         .record-header p{margin:5px 0 0;color:var(--record-muted);font-size:.88rem;line-height:1.5;}
         .record-status{display:inline-flex;flex:0 0 auto;padding:7px 11px;border-radius:999px;background:#f1f3f7;color:#5b6678;font-size:.74rem;font-weight:700;}
         .record-status.pending{background:#fff6d6;color:#7a5b00;}.record-status.approved{background:#e3f6ea;color:#166534;}.record-status.denied{background:#fff1f0;color:#c0352d;}

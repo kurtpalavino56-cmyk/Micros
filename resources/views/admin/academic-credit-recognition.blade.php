@@ -10,7 +10,7 @@
         .recognition-main { padding:30px 32px 48px !important; box-sizing:border-box; }
         .recognition-content { max-width:1180px; margin:0 auto; }
         .recognition-head { margin-bottom:22px; }
-        .recognition-head h1 { margin:5px 0; color:#0d1b6e; font-size:32px; line-height:1.15; }
+        .recognition-head h1 { margin:5px 0; color:#000; font-size:32px; line-height:1.15; }
         .recognition-head p { margin:0; color:#68758c; font-size:14px; }
         .notice { padding:12px 14px; border-radius:10px; margin-bottom:16px; font-size:13px; }
         .ok { background:#ecfdf3; color:#067647; }

@@ -1,3 +1,7 @@
+<style>
+    .paginated-table-scroll{max-height:min(60vh,520px);overflow:auto;overscroll-behavior:auto;}
+    .paginated-table-scroll thead th{position:sticky;top:0;z-index:2;}
+</style>
 @if($paginator->hasPages())
     @php
         $currentPage = $paginator->currentPage();

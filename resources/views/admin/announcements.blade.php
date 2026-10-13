@@ -34,7 +34,7 @@
         display:inline-flex;align-items:center;justify-content:center;}
     /* Matches the padding the other admin pages use (30px 34px 44px). */
     .wrap{max-width:1080px;margin:0 auto;padding:34px 40px 52px;}
-    .page-heading{font-size:1.6rem;font-weight:800;margin:0 0 4px;}
+    .page-heading{font-size:1.6rem;font-weight:800;margin:0 0 4px;color:#000;}
     .page-sub{color:var(--muted);font-size:.92rem;margin:0 0 22px;}
     .card{background:#fff;border:1px solid var(--line);border-radius:18px;
         box-shadow:var(--shadow);padding:24px 26px;margin-bottom:22px;}
@@ -89,11 +89,31 @@
     .alert-err{background:#fff1f2;border:1px solid #fecdd3;color:#b91c1c;}
     .empty{color:var(--muted);text-align:center;padding:34px 8px;font-size:14px;}
     .actions{display:flex;gap:8px;flex-shrink:0;}
+    .btn-view{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;
+        border:1.5px solid var(--line);border-radius:999px;background:#fff;color:var(--navy);}
+    .btn-view:hover{background:#f7f9ff;border-color:#c9ccdb;}
+    .btn-view svg{width:18px;height:18px;fill:currentColor;}
     .btn-pin{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--line);
         color:var(--navy);padding:8px 14px;border-radius:999px;font-weight:700;font-size:12.5px;}
     .btn-pin.is-pinned{background:#fff8df;border-color:#e9cf72;color:#806208;}
     .btn-pin svg{width:16px;height:16px;flex:0 0 16px;}
+    .announcement-modal[hidden]{display:none;}
+    .announcement-modal{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;padding:16px;}
+    .announcement-modal-backdrop{position:absolute;inset:0;background:rgba(7,20,63,.68);backdrop-filter:blur(3px);}
+    .announcement-dialog{position:relative;width:min(100%,760px);max-height:min(85vh,820px);overflow-y:auto;
+        padding:24px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 24px 70px rgba(6,16,52,.3);}
+    .announcement-dialog-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
+        padding-bottom:16px;border-bottom:1px solid var(--line);}
+    .announcement-dialog-head h2{margin:0;color:#000;font-size:22px;line-height:1.3;overflow-wrap:anywhere;}
+    .announcement-dialog-meta{margin:6px 0 0;color:var(--muted);font-size:12px;}
+    .announcement-dialog-close{width:36px;height:36px;flex:0 0 36px;border:0;border-radius:50%;
+        background:#f1f3f8;color:var(--navy);font-size:24px;line-height:1;cursor:pointer;}
+    .announcement-dialog-content{padding-top:18px;color:#4b5563;font-size:14px;line-height:1.65;overflow-wrap:anywhere;}
+    .announcement-dialog-content > :first-child{margin-top:0;}
+    .announcement-dialog-content img{max-width:100%;height:auto;}
+    body.announcement-modal-open{overflow:hidden;}
     @media(max-width:640px){.ann-head{flex-direction:column;}}
+    @media(max-width:600px){.announcement-dialog{padding:18px;}.announcement-dialog-head h2{font-size:19px;}}
 </style>
 </head>
 <body>
@@ -195,6 +215,7 @@
                     <div style="min-width:0;">
                         <h3 class="ann-title">{{ $a->title }}</h3>
                         <div class="ann-body ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($a->body) !!}</div>
+                        <template id="announcement-content-{{ $a->id }}"><div class="ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($a->body) !!}</div></template>
                         <div>
                             @foreach ($a->audience as $role)
                                 <span class="pill {{ $role }}">{{ ucfirst($role) }}</span>
@@ -208,6 +229,13 @@
                         </div>
                     </div>
                     <div class="actions">
+                        <button type="button" class="btn-view" data-view-announcement="{{ $a->id }}"
+                                data-title="{{ $a->title }}"
+                                data-meta="By {{ $a->author }} · {{ $a->created_at?->format('M j, Y g:i A') }}"
+                                aria-label="View full announcement: {{ $a->title }}"
+                                title="View full announcement">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5C6.5 4.5 2.3 8.1.7 12c1.6 3.9 5.8 7.5 11.3 7.5s9.7-3.6 11.3-7.5C21.7 8.1 17.5 4.5 12 4.5zm0 12a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/><circle cx="12" cy="12" r="2.2" fill="#fff"/></svg>
+                        </button>
                         <form method="POST" action="{{ route('admin.announcements.pin', $a->id) }}">
                             @csrf
                             <button type="submit" class="btn-pin {{ $a->is_pinned ? 'is-pinned' : '' }}"
@@ -263,7 +291,59 @@
     </div>
 </div>
 
+<div class="announcement-modal" id="announcement-modal" hidden>
+    <div class="announcement-modal-backdrop" data-close-announcement></div>
+    <section class="announcement-dialog" role="dialog" aria-modal="true" aria-labelledby="announcement-dialog-title" tabindex="-1">
+        <header class="announcement-dialog-head">
+            <div>
+                <h2 id="announcement-dialog-title"></h2>
+                <p class="announcement-dialog-meta" id="announcement-dialog-meta"></p>
+            </div>
+            <button class="announcement-dialog-close" type="button" data-close-announcement aria-label="Close announcement">&times;</button>
+        </header>
+        <div class="announcement-dialog-content ck-content rich-content" id="announcement-dialog-content"></div>
+    </section>
+</div>
+
 <script>
+    (function () {
+        var modal = document.getElementById('announcement-modal');
+        var dialog = modal.querySelector('.announcement-dialog');
+        var title = document.getElementById('announcement-dialog-title');
+        var meta = document.getElementById('announcement-dialog-meta');
+        var content = document.getElementById('announcement-dialog-content');
+        var previousFocus = null;
+
+        function closeAnnouncement() {
+            modal.hidden = true;
+            document.body.classList.remove('announcement-modal-open');
+            content.replaceChildren();
+            if (previousFocus) previousFocus.focus();
+        }
+
+        document.querySelectorAll('[data-view-announcement]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var template = document.getElementById('announcement-content-' + button.dataset.viewAnnouncement);
+                if (!template) return;
+
+                previousFocus = button;
+                title.textContent = button.dataset.title || 'Announcement';
+                meta.textContent = button.dataset.meta || '';
+                content.replaceChildren(template.content.cloneNode(true));
+                modal.hidden = false;
+                document.body.classList.add('announcement-modal-open');
+                dialog.focus();
+            });
+        });
+
+        modal.querySelectorAll('[data-close-announcement]').forEach(function (button) {
+            button.addEventListener('click', closeAnnouncement);
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !modal.hidden) closeAnnouncement();
+        });
+    })();
+
     document.querySelectorAll('.audience-opts').forEach(function (group) {
         var publicOption = group.querySelector('input[value="public"]');
         var roleOptions = group.querySelectorAll('input[value="student"], input[value="faculty"]');

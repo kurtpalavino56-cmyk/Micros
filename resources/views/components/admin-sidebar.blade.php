@@ -17,10 +17,12 @@
         --admin-sidebar-width: 238px;
         --admin-topbar-height: 66px;
         --admin-border: #e5e7eb;
+        --admin-charcoal: #36454f;
         --admin-navy: #123b7a;
-        --admin-text: #111111;
-        --admin-muted: #6b7280;
-        --admin-hover: #f7f8fa;
+        --admin-text: #f3f4f6;
+        --admin-muted: #c5cbd0;
+        --admin-hover: #4b5962;
+        --admin-active: #fff4c7;
         --admin-font: 'Inter', sans-serif;
 
         /* Shared aliases used by page-level admin styles. */
@@ -97,9 +99,9 @@
         margin: 0 !important;
         padding: 18px 12px 24px !important;
 
-        background: #ffffff !important;
+        background: var(--admin-charcoal) !important;
         border: 0 !important;
-        border-right: 1px solid #e5e7eb !important;
+        border-right: 1px solid #46545d !important;
         border-radius: 0 !important;
         box-shadow: none !important;
 
@@ -214,7 +216,7 @@
 
     aside.shared-admin-sidebar .sb-item:hover {
         background: var(--admin-hover) !important;
-        color: var(--admin-navy) !important;
+        color: var(--admin-text) !important;
     }
 
     /* aside.shared-admin-sidebar .sb-item.active,
@@ -231,8 +233,8 @@
     aside.shared-admin-sidebar .sb-item.active:focus {
         position: relative !important;
 
-        background: #f1f2f4 !important;
-        color: #123b7a !important;
+        background: var(--admin-active) !important;
+        color: var(--admin-charcoal) !important;
         font-weight: 600 !important;
 
         border-radius: 0 !important;
@@ -325,7 +327,7 @@
     .page-wrap .page-head > div > .page-heading,
     .wrap > .page-heading {
         margin: 0 0 6px;
-        color: var(--admin-navy);
+        color: #000;
         font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
         font-size: 32px;
         font-weight: 700;

@@ -36,7 +36,7 @@
     .hero::before {
         inset: 0;
         border-radius: 0;
-        background: linear-gradient(90deg, #fff 0%, rgba(255,255,255,.96) 30%, rgba(255,255,255,.76) 54%, rgba(255,255,255,.14) 100%);
+        background: linear-gradient(90deg, #fff 0%, rgba(255,255,255,.96) 14%, rgba(255,255,255,.78) 36%, rgba(255,255,255,0) 58%);
         z-index: 0;
     }
 
@@ -79,7 +79,7 @@
 
     .hero__title {
         font-family: var(--font-display);
-        font-size: clamp(3rem, 6vw, 5.2rem);
+        font-size: clamp(2.5rem, 5vw, 4rem);
         line-height: 0.94;
         letter-spacing: -0.05em;
         color: var(--landing-navy);
@@ -109,7 +109,7 @@
 
     .hero__cta {
         padding: 0.9rem 1.8rem;
-        border-radius: 999px;
+        border-radius: 10px;
         font-size: 0.98rem;
         font-weight: 700;
     }
@@ -117,16 +117,23 @@
     .hero__stats {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 1rem;
+        column-gap: 1rem;
         max-width: 700px;
     }
 
     .hero__stat {
-        background: rgba(9,39,216,.05);
-        border: 1px solid rgba(9,39,216,.16);
-        border-radius: 18px;
-        padding: 1.1rem 0.8rem;
-        box-shadow: 0 8px 20px rgba(7,20,63,.08);
+        position: relative;
+        padding: 0.35rem 1rem;
+    }
+
+    .hero__stat:not(:first-child)::before {
+        position: absolute;
+        top: 50%;
+        left: -0.5rem;
+        height: 58%;
+        border-left: 1px solid rgba(7,20,63,.18);
+        content: "";
+        transform: translateY(-50%);
     }
 
     .hero__stat-num {
@@ -639,18 +646,36 @@
     }
 
     .why__icon {
+        display: grid;
         width: 52px;
         height: 52px;
         border-radius: 14px;
-        background: rgba(9,39,216,.08);
-        color: var(--navy);
-        display: grid;
         place-items: center;
         margin-bottom: 1rem;
-        font-size: 1.4rem;
-        font-weight: 800;
+        background: #e8edff;
     }
 
+    .why__icon svg {
+        width: 28px;
+        height: 28px;
+        color: #3155d9;
+    }
+
+    .why__card:nth-child(2) .why__icon svg {
+        color: #159a78;
+    }
+
+    .why__card:nth-child(2) .why__icon {
+        background: #e4f7f1;
+    }
+
+    .why__card:nth-child(3) .why__icon {
+        background: #fff2d8;
+    }
+
+    .why__card:nth-child(3) .why__icon svg {
+        color: #e28c16;
+    }
     .why__card h3 {
         font-family: var(--font-display);
         font-size: 1.1rem;
@@ -735,31 +760,68 @@
         padding: 5rem 0;
     }
 
+    .announcements__view-all {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: #0022ee;
+        font-size: 0.84rem;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .announcements__view-all:hover {
+        color: #001bbd;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+
+    .announcements__view-all svg {
+        width: 15px;
+        height: 15px;
+    }
+
     .announcements-list {
         display: flex;
         flex-direction: column;
         gap: 1rem;
     }
 
+    .announcements-list.has-featured {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+        align-items: stretch;
+        gap: 1.25rem;
+    }
+
+    .announcements-list.has-featured.has-only-featured {
+        grid-template-columns: 1fr;
+    }
+
+    .announcements-side-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+        min-height: 390px;
+        min-width: 0;
+    }
+
+    .announcements-side-list > .ann-card {
+        flex: 1;
+        min-height: 0;
+    }
+
     .ann-card {
         position: relative;
         display: flex;
+        align-items: stretch;
         gap: 1rem;
-        border: 1px solid #edf1f7;
-        border-left: 0;
-        background: #f9fbff;
-        border-radius: 0 18px 18px 0;
+        border: 1px solid #e3e8f3;
+        background: #fff;
+        border-radius: 16px;
         padding: 1.2rem 1.3rem;
+        cursor: pointer;
         transition: transform var(--transition), box-shadow var(--transition);
-    }
-
-    .ann-card::before {
-        content: "";
-        position: absolute;
-        inset: 0 auto 0 0;
-        width: 5px;
-        background: var(--announcement-accent, var(--navy));
-        border-radius: 0 6px 6px 0;
     }
 
     .ann-card:hover {
@@ -767,9 +829,52 @@
         box-shadow: 0 16px 30px rgba(10,31,110,0.06);
     }
 
-    .ann-card--event { --announcement-accent: var(--gold); }
-    .ann-card--urgent { --announcement-accent: #cc3b3b; }
-    .ann-card--general { --announcement-accent: var(--landing-royal-blue); }
+    .ann-card--featured {
+        min-height: 390px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.2rem;
+        padding: 1.4rem;
+        border-color: #0d0b7e;
+        border-radius: 18px;
+        background: #0d0b7e;
+        box-shadow: 0 16px 34px rgba(3, 3, 81, .3);
+    }
+
+    .ann-card__image {
+        width: 100%;
+        max-height: 220px;
+        aspect-ratio: 16 / 8;
+        border-radius: 12px;
+        object-fit: cover;
+    }
+
+    .ann-card--featured .ann-card__body {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+    }
+
+    .ann-card--featured .ann-card__title {
+        margin-bottom: 0.65rem;
+        color: #fff;
+        font-size: clamp(1.4rem, 2.3vw, 1.9rem);
+        line-height: 1.2;
+    }
+
+    .ann-card--featured .ann-card__desc {
+        color: rgba(255,255,255,.82);
+        font-size: 1rem;
+        line-height: 1.75;
+    }
+
+    .ann-card--featured .ann-card__date {
+        color: rgba(255,255,255,.72);
+    }
+
+    .ann-card--featured .ann-card__open-hint {
+        color: #fff;
+    }
 
     .ann-card__body {
         flex: 1;
@@ -783,27 +888,37 @@
         margin-bottom: 0.3rem;
     }
 
-    .ann-card__type {
-        display: inline-flex;
-        align-items: center;
-        border-radius: 999px;
-        padding: 0.2rem 0.6rem;
-        font-size: 0.68rem;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        background: rgba(10,31,110,0.08);
-        color: var(--navy);
-    }
-
-    .ann-card--event .ann-card__type { background: rgba(246,203,59,.2); color: var(--landing-navy); }
-    .ann-card--urgent .ann-card__type { background: rgba(204,59,59,0.1); color: #8a1f1f; }
-    .ann-card--general .ann-card__type { background: rgba(9,39,216,.1); color: var(--landing-royal-blue); }
-
     .ann-card__date {
         color: var(--text-muted);
         font-size: 0.74rem;
-        margin-left: auto;
+        margin-left: 0;
+    }
+
+    .ann-card__pin {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        display: inline-flex;
+        width: 22px;
+        height: 22px;
+        color: #dc2626;
+    }
+
+    .ann-card__pin svg {
+        width: 100%;
+        height: 100%;
+    }
+
+    .ann-card__sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
     }
 
     .ann-card__title {
@@ -819,19 +934,26 @@
         line-height: 1.6;
     }
 
-    .ann-card__desc .full-text {
-        white-space: pre-wrap;
+    .ann-card__open-hint {
+        display: inline-flex;
+        flex: 0 0 auto;
+        align-items: center;
+        align-self: center;
+        gap: 0.35rem;
+        margin-left: auto;
+        color: var(--landing-royal-blue);
+        font-size: 0.82rem;
+        font-weight: 700;
+        white-space: nowrap;
     }
 
-    .ann-card__more {
-        padding: 0;
-        border: 0;
-        background: transparent;
-        color: var(--navy);
-        cursor: pointer;
-        font: 700 0.82rem var(--font-body);
-        text-decoration: underline;
-        text-underline-offset: 3px;
+    .ann-card__open-hint svg {
+        width: 15px;
+        height: 15px;
+    }
+
+    .ann-card--featured .ann-card__open-hint {
+        align-self: flex-end;
     }
 
     .latest {
@@ -852,7 +974,7 @@
         position: relative;
         padding: 5rem 0;
         text-align: center;
-        background: var(--landing-gold) url('{{ asset('images/PSU_Front_Building.jpg') }}') center/cover no-repeat;
+        background: var(--landing-gold) url('{{ asset('Images/PSU_Front_Building.png') }}') center/cover no-repeat;
     }
 
     .cta-banner::before {
@@ -895,10 +1017,36 @@
     @media (max-width: 768px) {
         .hero__stats {
             grid-template-columns: repeat(2, minmax(0, 1fr));
+            column-gap: 1rem;
+        }
+
+        .hero__stat:not(:first-child)::before {
+            display: none;
+        }
+
+        .hero__stat:nth-child(even)::before {
+            display: block;
         }
 
         .hero__panel {
             max-width: 620px;
+        }
+
+        .announcements-list.has-featured {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .ann-card--featured {
+            min-height: 0;
+            padding: 1.5rem 1.3rem;
+        }
+
+        .ann-card:not(.ann-card--featured) {
+            flex-wrap: wrap;
+        }
+
+        .ann-card:not(.ann-card--featured) .ann-card__open-hint {
+            margin-left: auto;
         }
 
         .trust-bar__wrap {
@@ -1033,19 +1181,32 @@
 
         <div class="why__grid">
             <article class="why__card">
-                <div class="why__icon">01</div>
+                <div class="why__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2h4a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3h4V4Zm2 2h2V5h-2v1Zm-6 2a1 1 0 0 0-1 1v2h7v-1h2v1h7V9a1 1 0 0 0-1-1H5Zm15 5h-5v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-1H4v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5Zm-9 0v1h2v-1h-2Z"/>
+                    </svg>
+                </div>
                 <h3>Career-ready learning</h3>
                 <p>Access competency-based courses designed to build practical, job-relevant skills for today’s digital workplace.</p>
             </article>
 
             <article class="why__card">
-                <div class="why__icon">02</div>
+                <div class="why__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 3.1c-2.7-2-6.4-2.2-9.4-.7A1.1 1.1 0 0 0 2 3.4v15.1c0 .8.9 1.3 1.6.9 2.6-1.5 5.8-1.3 8.2.5l.2.1.2-.1c2.4-1.8 5.6-2 8.2-.5.7.4 1.6-.1 1.6-.9V3.4c0-.4-.2-.8-.6-1-3-1.5-6.7-1.3-9.4.7Zm-1 13.6c-2.2-1.2-4.8-1.5-7-.8V4.1c2.2-.9 4.8-.6 7 .7v11.9Zm9-.8c-2.2-.7-4.8-.4-7 .8V4.8c2.2-1.3 4.8-1.6 7-.7v11.8Z"/>
+                    </svg>
+                </div>
                 <h3>Flexible study paths</h3>
                 <p>Learn at your own pace with modular lessons, guided progress, and clear milestones from start to certification.</p>
             </article>
 
             <article class="why__card">
-                <div class="why__icon">03</div>
+                <div class="why__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="m12 2 2.7 1.8 3.2-.2.9 3.1 2.5 2-1.1 3 1.1 3-2.5 2-.9 3.1-3.2-.2L12 21l-2.7-1.8-3.2.2-.9-3.1-2.5-2 1.1-3-1.1-3 2.5-2 .9-3.1 3.2.2L12 2Zm0 4.2-1.8 3.6-4 .6 2.9 2.8-.7 4 3.6-1.9 3.6 1.9-.7-4 2.9-2.8-4-.6L12 6.2Z"/>
+                        <path d="m6.1 17.8-1 4.9 5.1-2.7-1.7-.8-2.4-1.4Zm11.8 0 1 4.9-5.1-2.7 1.7-.8 2.4-1.4Z"/>
+                    </svg>
+                </div>
                 <h3>Recognized credentials</h3>
                 <p>Earn badges and certificates that demonstrate achievement and help you stand out in academic and professional settings.</p>
             </article>
@@ -1080,32 +1241,38 @@
     <div class="container">
         <div class="section-header">
             <h2 class="section-title">Announcements</h2>
-            <span class="section-tag">Latest announcements</span>
+            <a class="announcements__view-all" href="{{ route('announcements.index') }}">
+                View All Announcements
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m6 3 5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
         </div>
 
-        @php $announcements = $announcements ?? []; @endphp
-        <div class="announcements-list" id="announcements-list">
-            @forelse($announcements as $ann)
-                <div class="ann-card ann-card--{{ $ann['type'] }}">
-                    <div class="ann-card__body">
-                        <div class="ann-card__meta">
-                            <span class="ann-card__type">{{ $ann['label'] }}</span>
-                            <span class="ann-card__date">{{ $ann['date'] }}</span>
-                        </div>
-                        <div class="ann-card__title">{{ $ann['title'] }}</div>
-                        <p class="ann-card__desc">
-                            <span class="preview-text">{{ $ann['desc'] }}</span>
-                            <div class="full-text ck-content rich-content" hidden>{!! $ann['full_body'] !!}</div>
-                        </p>
-                        @if ($ann['has_more'])
-                            <button class="ann-card__more" type="button" aria-expanded="false">More</button>
-                        @endif
+        @php
+            $announcements = collect($announcements ?? []);
+            $pinnedAnnouncement = $announcements->firstWhere('is_pinned', true);
+            $otherAnnouncements = $pinnedAnnouncement
+                ? $announcements->reject(fn ($announcement) => $announcement['id'] === $pinnedAnnouncement['id'])->values()
+                : collect();
+        @endphp
+        <div class="announcements-list {{ $pinnedAnnouncement ? 'has-featured' : '' }} {{ $pinnedAnnouncement && $otherAnnouncements->isEmpty() ? 'has-only-featured' : '' }}" id="announcements-list">
+            @if ($pinnedAnnouncement)
+                @include('public.partials.announcement-card', ['ann' => $pinnedAnnouncement, 'featured' => true])
+                @if ($otherAnnouncements->isNotEmpty())
+                    <div class="announcements-side-list">
+                        @foreach ($otherAnnouncements as $ann)
+                            @include('public.partials.announcement-card', ['ann' => $ann])
+                        @endforeach
                     </div>
-                </div>
-            @empty
+                @endif
+            @elseif ($announcements->isNotEmpty())
+                @foreach ($announcements as $ann)
+                    @include('public.partials.announcement-card', ['ann' => $ann])
+                @endforeach
+            @else
                 <p style="color:var(--muted);padding:18px 4px;">No announcements have been posted yet.</p>
-            @endforelse
+            @endif
         </div>
+        @include('public.partials.announcement-modal')
     </div>
 </section>
 
@@ -1143,22 +1310,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('.ann-card__more').forEach(function (button) {
-            button.addEventListener('click', function () {
-                const card = button.closest('.ann-card');
-                const previewText = card.querySelector('.preview-text');
-                const fullText = card.querySelector('.full-text');
-                const isExpanded = button.getAttribute('aria-expanded') === 'true';
-
-                previewText.hidden = !isExpanded;
-                fullText.hidden = isExpanded;
-                button.setAttribute('aria-expanded', String(!isExpanded));
-                button.textContent = isExpanded ? 'More' : 'Less';
-                card.classList.toggle('is-expanded', !isExpanded);
-            });
-        });
-
-        document.querySelectorAll('a[href="#announcements"], a[href*="announcements"]').forEach(function (link) {
+        document.querySelectorAll('a[href="#announcements"], a.navbar__link[data-nav-target="announcements"]').forEach(function (link) {
             link.addEventListener('click', function (e) {
                 const target = document.getElementById('announcements');
                 if (target) {

@@ -333,14 +333,11 @@
             display: block; overflow-x: auto; -webkit-overflow-scrolling: touch;
         }
 
-        /* Horizontal media cards stack rather than wrap. Wrapping scattered
-           the thumbnail, meta and buttons into an unreadable jumble on
-           Faculty_dashboard / Student_dashboard, which define no mobile rule
-           of their own. Vertical cards (Explore, Homepage) already use
-           flex-direction:column, so this is a no-op for them. */
-        .course-card { flex-direction: column; align-items: stretch; flex-wrap: wrap; }
-        .course-card > .thumb { width: 100% !important; height: 140px !important; }
-        .course-card > .course-info { width: 100%; min-width: 0; }
+        /* Stack horizontal course cards except on the student dashboard,
+           which defines its own compact mobile grid and thumbnail sizing. */
+        body:not(.app-shell.page-dashboard) .course-card { flex-direction: column; align-items: stretch; flex-wrap: wrap; }
+        body:not(.app-shell.page-dashboard) .course-card > .thumb { width: 100% !important; height: 140px !important; }
+        body:not(.app-shell.page-dashboard) .course-card > .course-info { width: 100%; min-width: 0; }
         .course-card .meta-item { text-align: left; }
     }
 

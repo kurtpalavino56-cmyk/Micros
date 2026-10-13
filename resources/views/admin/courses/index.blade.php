@@ -45,7 +45,7 @@
 
         /* Header */
         .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-        .page-heading { font-size: 1.35rem; font-weight: 700; color: var(--blue); }
+        .page-heading { font-size: 1.35rem; font-weight: 700; color: #000; }
         .page-sub { margin-top: 3px; font-size: .85rem; color: var(--muted); }
 
         .search {
@@ -230,7 +230,7 @@
             <button type="button" class="tab" data-filter="denied">Denied<span class="n">{{ $count('denied') }}</span></button>
         </div>
 
-        <x-flash-toast :message="session('success') ?? $errors->first('feature')" />
+        <x-flash-toast :message="session('success') ?? $errors->first('feature')" :type="session('success') ? 'success' : 'error'" />
 
         @if ($courses->isEmpty())
             <div class="empty-state">No courses yet. Courses created by faculty will appear here for review.</div>

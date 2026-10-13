@@ -203,6 +203,13 @@ class AdminController extends Controller
             ->where('earned_at', '>=', $previousMonthStart)->where('earned_at', '<', $monthStart)->count()
             + Certificate::where('status', 'active')->where('issued_at', '>=', $previousMonthStart)
                 ->where('issued_at', '<', $monthStart)->count();
+        $pendingCourseReviews = Course::where('approval_status', 'pending')->count();
+        $pendingCompletionVerifications = Enrollment::where(
+            'completion_status',
+            MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION
+        )
+            ->where('academic_unit_confirmation_status', 'pending')
+            ->count();
 
         $stats = [
             'total_students' => User::where('role_id', User::ROLE_STUDENT)->count(),
@@ -211,9 +218,9 @@ class AdminController extends Controller
                 ->where(fn (Builder $query) => $query->where('approval_status', 'approved')->orWhere('is_approved', true))
                 ->count(),
             'courses_weekly_change' => $coursesPublishedThisWeek - $coursesPublishedLastWeek,
-            'pending_reviews' => Course::where('approval_status', 'pending')->count()
-                + Enrollment::where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
-                    ->where('academic_unit_confirmation_status', 'pending')->count(),
+            'pending_reviews' => $pendingCourseReviews + $pendingCompletionVerifications,
+            'pending_course_reviews' => $pendingCourseReviews,
+            'pending_completion_verifications' => $pendingCompletionVerifications,
             'pending_reviews_weekly_change' => $pendingReviewsThisWeek - $pendingReviewsLastWeek,
             'credentials_earned' => DB::table('user_badges')->where('status', 'active')->count()
                 + Certificate::where('status', 'active')->count(),
@@ -227,15 +234,14 @@ class AdminController extends Controller
             [
                 'title' => 'Courses & Badges',
                 'description' => 'Review course submissions, manage publishing, and maintain badges.',
-                'info' => Course::where('approval_status', 'pending')->count().' courses awaiting review',
+                'info' => $pendingCourseReviews.' courses awaiting review',
                 'route' => 'admin.courses',
                 'button' => 'Go to Courses & Badges',
             ],
             [
                 'title' => 'Completion Verification',
                 'description' => 'Verify completed learner work and confirm credential eligibility.',
-                'info' => Enrollment::where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
-                    ->where('academic_unit_confirmation_status', 'pending')->count().' learners awaiting verification',
+                'info' => $pendingCompletionVerifications.' learners awaiting verification',
                 'route' => 'admin.enrollments',
                 'button' => 'Go to Completion Verification',
             ],
@@ -269,31 +275,27 @@ class AdminController extends Controller
             ],
         ];
 
-        [$enrollmentByCourse, $completionRate] = $this->courseCharts();
+        $coursePerformance = $this->courseCharts();
+        $courseCount = $coursePerformance->count();
+        $chartMaximumEnrollments = max(1, (int) $coursePerformance->max('enrollments'));
+        $chartPoints = $coursePerformance->values()->map(function ($course, $index) use ($courseCount, $chartMaximumEnrollments) {
+            $x = $courseCount > 1 ? 62 + ($index * 516 / ($courseCount - 1)) : 320;
+            $enrollmentY = 202 - ($course->enrollments / $chartMaximumEnrollments * 160);
+            $completionY = 202 - (max(0, min(100, $course->completion_rate)) / 100 * 160);
 
-        $activeCourseModels = Course::query()
-            ->where('approval_status', '!=', 'draft')   // drafts are faculty-private
-            ->withCount('enrollments')
-            ->orderByDesc('enrollments_count')
-            ->limit(4)
-            ->get();
-
-        // N+1 fix: average progress was queried per course. One grouped
-        // query covers all four rows.
-        $avgProgressByCourse = DB::table('enrollments')
-            ->whereIn('course_id', $activeCourseModels->pluck('id')->all() ?: [0])
-            ->select('course_id', DB::raw('AVG(progress_percent) as avg_progress'))
-            ->groupBy('course_id')
-            ->pluck('avg_progress', 'course_id');
-
-        $activeCourses = $activeCourseModels
-            ->map(fn (Course $c) => (object) [
-                'title' => $c->title,
-                'meta' => $c->enrollments_count.' Students · 1 Faculty',
-                'thumbnail_url' => $c->thumbnail_url,
-                'percent' => (int) round((float) ($avgProgressByCourse[$c->id] ?? 0)),
-            ])
-            ->values();
+            return (object) [
+                'course' => $course,
+                'x' => round($x, 2),
+                'enrollment_y' => round($enrollmentY, 2),
+                'completion_y' => round($completionY, 2),
+            ];
+        });
+        $chartTicks = collect(range(0, 4))->map(fn ($tick) => (object) [
+            'y' => 202 - ($tick * 40),
+            'enrollments' => (int) round($chartMaximumEnrollments * $tick / 4),
+            'completion_rate' => $tick * 25,
+        ]);
+        $activeCourseCount = Course::query()->where('approval_status', '!=', 'draft')->count();
 
         // All badges are listed — even ones nobody has earned yet — so the
         // panel shows "0 Earned" counters that climb in real time.
@@ -310,10 +312,13 @@ class AdminController extends Controller
 
         return view('admin.dashboard', [
             'stats' => $stats,
-            'activeCourses' => $activeCourses,
+            'activeCourseCount' => $activeCourseCount,
             'recentBadges' => $recentBadges,
-            'enrollmentByCourse' => $enrollmentByCourse,
-            'completionRate' => $completionRate,
+            'coursePerformance' => $coursePerformance,
+            'courseCount' => $courseCount,
+            'chartMaximumEnrollments' => $chartMaximumEnrollments,
+            'chartPoints' => $chartPoints,
+            'chartTicks' => $chartTicks,
             'quickModules' => $quickModules,
         ]);
     }
@@ -337,10 +342,8 @@ class AdminController extends Controller
             'last_name' => ['required', 'string', 'max:100'],
             'suffix' => ['nullable', 'string', 'max:50'],
             'username' => ['required', 'string', 'max:60', 'alpha_dash', 'unique:users,username,'.$auth->id],
-            'email' => ['required', 'email', 'max:120', 'unique:users,email,'.$auth->id],
             'phone' => ['nullable', 'string', 'max:40'],
             'location' => ['nullable', 'string', 'max:120'],
-            'role' => ['nullable', 'string', 'max:80'],
             'about' => ['nullable', 'string', 'max:600'],
             'bio' => ['nullable', 'string', 'max:600'],
 
@@ -375,15 +378,10 @@ class AdminController extends Controller
         $auth->last_name = $data['last_name'];
         $auth->suffix = $data['suffix'] ?? null;
         $auth->username = $data['username'];
-        $auth->email = $data['email'];
         $auth->phone = $data['phone'] ?? null;
         $auth->location = $data['location'] ?? null;
         $auth->about = $data['about'] ?? null;
         $auth->bio = $data['bio'] ?? null;
-
-        if (! empty($data['role'])) {
-            $auth->role_label = $data['role'];
-        }
 
         // ── Profile photo ────────────────────────────────────────────────
         // users.avatar_url is LONGTEXT (see 2026_07_25_000001), so the data
@@ -1571,9 +1569,9 @@ class AdminController extends Controller
     // ── Shared chart data ─────────────────────────────────────────────────
 
     /**
-     * @return array{0: Collection, 1: Collection}
+     * @return Collection<int, object{label: string, enrollments: int, completion_rate: int}>
      */
-    private function courseCharts(): array
+    private function courseCharts(): Collection
     {
         $rows = DB::table('enrollments')
             ->join('courses', 'courses.id', '=', 'enrollments.course_id')
@@ -1587,21 +1585,11 @@ class AdminController extends Controller
             ->limit(4)
             ->get();
 
-        $max = max(1, (int) $rows->max('learners'));
-
-        $enrollmentByCourse = $rows->map(fn ($row) => (object) [
+        return $rows->map(fn ($row) => (object) [
             'label' => Str::limit($row->title, 14, ''),
-            'value' => (int) $row->learners,
-            'percent' => (int) round($row->learners / $max * 100),
+            'enrollments' => (int) $row->learners,
+            'completion_rate' => (int) round($row->avg_progress),
         ])->values();
-
-        $completionRate = $rows->map(fn ($row) => (object) [
-            'label' => Str::limit($row->title, 14, ''),
-            'value' => (int) round($row->avg_progress),
-            'percent' => (int) round($row->avg_progress),
-        ])->values();
-
-        return [$enrollmentByCourse, $completionRate];
     }
 
     // ══════════════════════════════════════════════════════════════════

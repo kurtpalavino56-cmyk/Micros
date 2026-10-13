@@ -20,7 +20,6 @@
         'missing_prerequisite_titles' => $missing,
         'is_enrolled'       => $isEnrolled,
         'is_completed'      => $isCompleted,
-        'completion_ready'  => $completionReady,
         'progress_percent'  => $progressPercent,    // int 0-100
     ]);
 
@@ -87,25 +86,25 @@
                     @if($course->instructor)
                         <span>
                             <span class="material-symbols-rounded" aria-hidden="true">person</span>
-                            {{ $course->instructor }}
+                            <span class="hero-meta__label">{{ $course->instructor }}</span>
                         </span>
                     @endif
                     @if($course->learning_hours || $course->duration)
                         <span>
                             <span class="material-symbols-rounded" aria-hidden="true">schedule</span>
-                            {{ $course->learning_hours ? $course->learning_hours.' '.Str::plural('hour', $course->learning_hours) : $course->duration }}
+                            <span class="hero-meta__label">{{ $course->learning_hours ? $course->learning_hours.' '.Str::plural('hour', $course->learning_hours) : $course->duration }}</span>
                         </span>
                     @endif
                     @if($modules->isNotEmpty())
                         <span>
                             <span class="material-symbols-rounded" aria-hidden="true">menu_book</span>
-                            {{ $modules->count() }} {{ Str::plural('module', $modules->count()) }}
+                            <span class="hero-meta__label">{{ $modules->count() }} {{ Str::plural('module', $modules->count()) }}</span>
                         </span>
                     @endif
                     @if($course->enrolled_count ?? false)
                         <span>
                             <span class="material-symbols-rounded" aria-hidden="true">groups</span>
-                            {{ $course->enrolled_count }} enrolled
+                            <span class="hero-meta__label">{{ $course->enrolled_count }} enrolled</span>
                         </span>
                     @endif
                 </div>
@@ -151,12 +150,6 @@
                             <a href="{{ route('courses.learn', $course->id) }}" class="btn-continue ui-button ui-button--primary">
                                 {{ ($progress_percent ?? 0) > 0 ? 'Continue learning' : 'Start course' }}
                             </a>
-                            <button class="btn-complete ui-button" id="complete-course-btn" type="button" {{ ($completion_ready ?? false) ? '' : 'disabled' }}>
-                                {{ ($completion_ready ?? false) ? 'Mark course complete' : 'Complete the course first' }}
-                            </button>
-                            @unless($completion_ready ?? false)
-                                <small class="completion-help">Finish the required lessons and quizzes to unlock completion.</small>
-                            @endunless
                         </div>
                     @elseif(!($prerequisites_met ?? true))
                         <div class="enroll-actions">
@@ -353,49 +346,6 @@
 </button>
 
 <script>
-    (function () {
-        var completeButton = document.getElementById('complete-course-btn');
-        if (!completeButton || completeButton.disabled) return;
-        completeButton.addEventListener('click', function () {
-            completeButton.disabled = true;
-            completeButton.textContent = 'Saving completion…';
-            fetch('{{ route('courses.complete', $course->id) }}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                }
-            })
-            .then(function (response) {
-                return response.json().then(function (data) {
-                    return { ok: response.ok, data: data };
-                });
-            })
-            .then(function (result) {
-                if (!result.ok || !result.data.completed) {
-                    throw new Error(result.data.message || 'Completion could not be saved.');
-                }
-                var actions = completeButton.closest('.enroll-actions');
-                var done = document.createElement('div');
-                done.className = 'completion-state';
-                done.setAttribute('role', 'status');
-                done.textContent = 'Course completed ✓';
-                if (actions) { actions.replaceWith(done); } else { completeButton.replaceWith(done); }
-
-                var progressPercent = Math.max(0, Math.min(100, Number(result.data.progress_percent) || 0));
-                var progressLabel = document.querySelector('.progress-label span:last-child');
-                var progressFill = document.querySelector('.progress-fill');
-                if (progressLabel) progressLabel.textContent = progressPercent + '%';
-                if (progressFill) progressFill.style.width = progressPercent + '%';
-            })
-            .catch(function (error) {
-                completeButton.disabled = false;
-                completeButton.textContent = 'Mark course complete';
-                window.alert(error.message);
-            });
-        });
-    })();
-
     (function () {
         var btn = document.getElementById('back-to-top-btn');
         if (!btn) return;

@@ -497,7 +497,6 @@
                         </span>
                         <span class="set-value">{{ $user->email ?? '-' }}</span>
                         {{-- âœ… Functioning â€” opens the drawer on Account Settings --}}
-                        <button class="btn-change" type="button" onclick="openEditModal('settings')">Change</button>
                     </div>
                     <div class="set-row">
                         <span class="set-label">
@@ -640,9 +639,9 @@
 
                     <div class="form-group">
                         <label for="edit_role">Role / Title</label>
-                        <input type="text" id="edit_role" name="role"
+                        <input class="profile-readonly-field" type="text" id="edit_role" name="role"
                             value="{{ old('role', $user->role ?? '') }}"
-                            placeholder="e.g. Faculty, Professor">
+                            placeholder="e.g. Faculty, Professor" readonly>
                     </div>
                 </div>
 
@@ -703,10 +702,10 @@
 
                     <div class="form-group">
                         <label for="edit_email">Email</label>
-                        <input type="email" id="edit_email" name="email"
+                        <input class="profile-readonly-field" type="email" id="edit_email" name="email"
                             value="{{ old('email', $user->email ?? '') }}"
-                            placeholder="you@example.com">
-                        <p class="hint">This is used to log in and receive notifications.</p>
+                            placeholder="you@example.com" readonly>
+                        <p class="hint">Email changes are managed by an administrator.</p>
                     </div>
 
                     <hr class="form-divider">

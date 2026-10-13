@@ -41,7 +41,7 @@
 
 <style>
 .footer {
-    background: var(--navy-dark);
+    background: #0d0b7e;
     color: rgba(255,255,255,0.7);
     padding: 3.5rem 0 2.5rem;
     font-size: 0.88rem;

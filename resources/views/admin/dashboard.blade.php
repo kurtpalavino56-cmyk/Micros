@@ -56,26 +56,40 @@
 
         /* HEADER */
         .page-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
-        .page-heading { margin: 0; font-size: 1.6rem; font-weight: 700; letter-spacing: -.03em; color: #000; }
+        .page-heading { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -.03em; color: #000; }
         .page-sub { margin: 4px 0 0; font-size: .9rem; color: var(--muted); }
         .today-chip { display: inline-flex; align-items: center; gap: 7px; font-size: .82rem; color: var(--muted); }
         .today-chip svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
         /* STAT CARDS */
         .stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-        .stat-card { position: relative; overflow: hidden; padding: 18px 20px 18px 24px; background: var(--white); border: 1px solid var(--line); border-radius: var(--r); }
-        .stat-card::before { position: absolute; inset: 8px auto 8px 0; width: 4px; border-radius: 0 4px 4px 0; background: var(--yellow); content: ""; }
+        .stat-card { position: relative; overflow: hidden; padding: 18px 20px; background: var(--white); border: 1px solid var(--line); border-radius: var(--r); }
+        .stat-card::before { display: none; }
         .stat-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-direction: row-reverse; }
-        .stat-icon { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; color: #8a6900; }
+        .stat-icon { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; color: var(--muted); }
         .stat-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
         .stat-lbl { font-size: .84rem; font-weight: 500; color: var(--muted); }
-        .stat-val { margin: 12px 0 8px; font-size: 2rem; font-weight: 700; letter-spacing: -.03em; line-height: 1; color: var(--navy); font-variant-numeric: tabular-nums; }
+        .stat-val { margin: 12px 0 8px; font-size: 2rem; font-weight: 700; letter-spacing: -.03em; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
         .stat-context { display: flex; align-items: center; gap: 6px; font-size: .78rem; color: #000; }
         .stat-trend { display: inline-flex; align-items: center; gap: 3px; font-weight: 600; }
         .stat-trend svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
         .stat-trend-up { color: var(--green); }
         .stat-trend-down { color: var(--red); }
         .stat-trend-neutral { color: #000; }
+
+        /* REQUIRED ATTENTION */
+        .attention-strip { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 16px; padding: 16px 18px; background: #fff8db; border: 1px solid #f0dda0; border-radius: var(--r); }
+        .attention-copy { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .attention-indicator { width: 10px; height: 10px; flex: 0 0 10px; border-radius: 50%; background: #c28a00; }
+        .attention-strip.is-clear { background: var(--white); border-color: var(--line); }
+        .attention-strip.is-clear .attention-indicator { background: var(--green); }
+        .attention-title { margin: 0; font-size: .92rem; font-weight: 700; color: var(--ink); }
+        .attention-message { margin: 3px 0 0; font-size: .8rem; color: var(--muted); }
+        .attention-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+        .attention-link { display: inline-flex; align-items: center; gap: 6px; padding: 8px 11px; border: 1px solid rgba(15, 37, 87, .16); border-radius: 7px; background: var(--white); color: var(--navy); font-size: .78rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
+        .attention-link:hover { background: #f6f7f9; }
+        .attention-link strong { font-variant-numeric: tabular-nums; }
+        .attention-clear-label { color: var(--green); font-size: .8rem; font-weight: 600; }
 
         /* SECTION HEADINGS */
         .section-hd { margin: 30px 0 12px; }
@@ -107,8 +121,7 @@
 
         /* CARDS + GRIDS */
         .two-col { display: grid; gap: 16px; margin-top: 16px; }
-        .monitor-grid, .active-grid { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
-        .analytics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .monitor-grid, .insights-grid { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
         .card { min-width: 0; padding: 0 20px 12px; background: var(--white); border: 1px solid var(--line); border-radius: var(--r); }
         .card-hd { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 54px; margin: 0 -20px 4px; padding: 0 20px; border-bottom: 1px solid var(--line-soft); }
         .card-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: .92rem; font-weight: 700; color: #000; }
@@ -119,7 +132,8 @@
         .live-dot::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 
         /* LIVE FEED */
-        #live-activity-list { max-height: 320px; overflow-y: auto; padding-left: 22px; }
+        .monitor-grid > .card { display: flex; height: 280px; flex-direction: column; }
+        #live-activity-list { min-height: 0; flex: 1; overflow-y: auto; padding-left: 22px; }
         #live-activity-list:empty::before { content: "Waiting for live activity…"; display: block; padding: 28px 4px; text-align: center; font-size: .82rem; color: var(--soft); }
         .feed-item { position: relative; padding: 12px 0 12px 4px; }
         .feed-item::before { position: absolute; top: 0; bottom: -1px; left: -17px; width: 1px; background: var(--line); content: ""; }
@@ -132,23 +146,14 @@
         .feed-empty { padding: 22px 4px; font-size: .82rem; color: var(--red); }
 
         /* SNAPSHOT */
-        .snapshot-hero { padding: 16px 0; border-bottom: 1px solid var(--line-soft); }
-        .snapshot-hero span { font-size: .82rem; color: var(--muted); }
-        .snapshot-hero strong { display: block; margin: 6px 0 4px; font: 700 2.2rem/1 'Plus Jakarta Sans', sans-serif; letter-spacing: -.03em; color: var(--navy); }
-        .snapshot-hero small { font-size: .78rem; color: #000; }
-        .snapshot-metric { display: flex; align-items: baseline; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
-        .snapshot-metric:last-child { border-bottom: 0; }
-        .snapshot-metric span { order: 1; font-size: .84rem; color: var(--muted); }
-        .snapshot-metric strong { order: 2; font: 600 1rem 'Plus Jakarta Sans', sans-serif; color: var(--ink); }
-
-        /* COURSES */
-        .course-item { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
-        .course-item:last-child { border-bottom: 0; }
-        .course-thumb { width: 44px; height: 44px; flex: 0 0 44px; overflow: hidden; border-radius: 8px; background: var(--line-soft); }
-        .course-body { flex: 1; min-width: 0; }
-        .course-name { font-size: .88rem; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .course-meta { margin-top: 3px; font-size: .76rem; color: var(--muted); }
-        .course-pct { flex-shrink: 0; font: 600 .86rem 'Plus Jakarta Sans', sans-serif; color: var(--navy); }
+        .snapshot-card { min-height: 0; }
+        .snapshot-metrics { display: grid; width: 100%; max-width: 380px; min-height: 0; flex: 1; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); margin: 0 auto; padding-top: 4px; }
+        .snapshot-metric { display: flex; min-width: 0; min-height: 0; flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; padding: 12px; }
+        .snapshot-metric:nth-child(odd) { border-right: 1px solid var(--line-soft); }
+        .snapshot-metric:nth-child(-n+2) { border-bottom: 1px solid var(--line-soft); }
+        .snapshot-metric span { font-size: .82rem; color: var(--muted); }
+        .snapshot-metric strong { font: 700 1.75rem/1 'Plus Jakarta Sans', sans-serif; letter-spacing: -.03em; color: #000; font-variant-numeric: tabular-nums; }
+        .snapshot-metric small { font-size: .72rem; line-height: 1.4; color: var(--muted); }
 
         /* BADGES */
         .badges-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding-top: 10px; }
@@ -156,13 +161,22 @@
         .badge-name { font-size: .84rem; font-weight: 600; color: var(--ink); }
         .badge-count { margin-top: 3px; font-size: .76rem; color: var(--muted); }
 
-        /* BAR CHARTS */
-        .chart-row { padding: 11px 0; }
-        .chart-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 7px; }
-        .chart-lbl { min-width: 0; font-size: .84rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .chart-val { flex-shrink: 0; font-size: .84rem; font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; }
-        .bar-track { height: 6px; border-radius: 999px; background: var(--line-soft); overflow: hidden; }
-        .bar-fill { height: 100%; border-radius: 999px; background: var(--blue); transition: width .6s ease; }
+        /* COURSE PERFORMANCE LINE CHART */
+        .performance-legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 0 4px; }
+        .performance-legend-item { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: .76rem; }
+        .performance-legend-swatch { width: 18px; height: 3px; border-radius: 999px; background: var(--blue); }
+        .performance-legend-swatch.is-completion { background: var(--green); }
+        .performance-chart { display: block; width: 100%; height: auto; overflow: visible; }
+        .performance-gridline { stroke: var(--line-soft); stroke-width: 1; }
+        .performance-axis-label, .performance-course-label { fill: var(--muted); font-family: 'Inter', sans-serif; font-size: 11px; }
+        .performance-course-label { font-size: 10px; }
+        .performance-line { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+        .performance-line.is-enrollment { stroke: var(--blue); }
+        .performance-line.is-completion { stroke: var(--green); }
+        .performance-point { stroke: var(--white); stroke-width: 2; }
+        .performance-point.is-enrollment { fill: var(--blue); }
+        .performance-point.is-completion { fill: var(--green); }
+        .performance-empty { padding: 38px 12px; text-align: center; color: var(--muted); font-size: .84rem; }
 
         /* RESPONSIVE */
         @media (max-width: 1100px) {
@@ -170,13 +184,13 @@
             .quick-modules-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media (max-width: 900px) {
-            .monitor-grid, .active-grid, .analytics-grid { grid-template-columns: 1fr; }
+            .monitor-grid, .insights-grid { grid-template-columns: 1fr; }
+            .attention-strip { align-items: flex-start; flex-direction: column; }
         }
         @media (max-width: 600px) {
             main.admin-dashboard { padding: 22px 14px 40px; }
             .stats-grid, .quick-modules-grid, .badges-grid { grid-template-columns: 1fr; }
         }
-        @media (prefers-reduced-motion: reduce) { .bar-fill { transition: none; } }
 
     </style>
 </head>
@@ -244,6 +258,34 @@
                 </div>
             </div>
 
+            @php($pendingReviews = $stats['pending_reviews'])
+            <section class="attention-strip {{ $pendingReviews === 0 ? 'is-clear' : '' }}" aria-labelledby="attention-title">
+                <div class="attention-copy">
+                    <span class="attention-indicator" aria-hidden="true"></span>
+                    <div>
+                        <h2 class="attention-title" id="attention-title">Required attention</h2>
+                        <p class="attention-message">
+                            {{ $pendingReviews > 0 ? $pendingReviews.' items are waiting for review.' : 'You are all caught up on reviews.' }}
+                        </p>
+                    </div>
+                </div>
+                <div class="attention-actions">
+                    @if ($stats['pending_course_reviews'] > 0)
+                        <a class="attention-link" href="{{ route('admin.courses') }}">
+                            <strong>{{ $stats['pending_course_reviews'] }}</strong> course submissions
+                        </a>
+                    @endif
+                    @if ($stats['pending_completion_verifications'] > 0)
+                        <a class="attention-link" href="{{ route('admin.enrollments') }}">
+                            <strong>{{ $stats['pending_completion_verifications'] }}</strong> completion verifications
+                        </a>
+                    @endif
+                    @if ($pendingReviews === 0)
+                        <span class="attention-clear-label">No pending items</span>
+                    @endif
+                </div>
+            </section>
+
             {{-- QUICK ACCESS --}}
             <section class="quick-modules" aria-labelledby="quick-modules-title">
                 <header class="section-hd">
@@ -297,51 +339,69 @@
                     <div id="live-activity-list" aria-live="polite"></div>
                 </div>
 
-                <div class="card">
+                <div class="card snapshot-card">
                     <div class="card-hd">
                         <span class="card-title">Current platform snapshot</span>
                     </div>
 
-                    <div class="snapshot-hero">
-                        <span>Students on platform</span>
-                        <strong>{{ $stats['total_students'] }}</strong>
-                        <small>Learning across {{ count($activeCourses ?? []) }} active courses</small>
-                    </div>
-
                     <div class="snapshot-metrics">
-                        <div class="snapshot-metric"><strong>{{ $stats['badges_issued'] }}</strong><span>Badges issued</span></div>
-                        <div class="snapshot-metric"><strong>{{ $stats['course_score_avg'] }}%</strong><span>Average quiz score</span></div>
-                        <div class="snapshot-metric"><strong>{{ $stats['students_enrolled'] }}</strong><span>Enrollments</span></div>
+                        <div class="snapshot-metric">
+                            <span>Students on platform</span>
+                            <strong>{{ $stats['total_students'] }}</strong>
+                            <small>Across {{ $activeCourseCount }} active courses</small>
+                        </div>
+                        <div class="snapshot-metric">
+                            <span>Badges issued</span>
+                            <strong>{{ $stats['badges_issued'] }}</strong>
+                        </div>
+                        <div class="snapshot-metric">
+                            <span>Average quiz score</span>
+                            <strong>{{ $stats['course_score_avg'] }}%</strong>
+                        </div>
+                        <div class="snapshot-metric">
+                            <span>Enrollments</span>
+                            <strong>{{ $stats['students_enrolled'] }}</strong>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {{-- ACTIVE COURSES + RECENT BADGES --}}
-            <div class="two-col active-grid">
+            {{-- COURSE PERFORMANCE + RECENT BADGES --}}
+            <div class="two-col insights-grid">
                 <div class="card">
                     <div class="card-hd">
-                        <span class="card-title">Active courses</span>
-                        <a href="{{ route('courses.browse') }}" class="view-all">View all</a>
+                        <span class="card-title">Enrollment and completion by course</span>
                     </div>
 
-                    @foreach ($activeCourses as $course)
-                        <div class="course-item">
-                            <div class="course-thumb">
-                                @if ($course->thumbnail_url)
-                                    <img src="{{ $course->thumbnail_url }}"
-                                         alt="{{ $course->title }}"
-                                         style="width:100%;height:100%;object-fit:cover;">
-                                @endif
-                            </div>
-
-                            <div class="course-body">
-                                <div class="course-name">{{ $course->title }}</div>
-                                <div class="course-meta">{{ $course->meta }}</div>
-                            </div>
-
-                            <div class="course-pct">{{ $course->percent }}%</div>
+                    @if ($courseCount > 0)
+                        <div class="performance-legend" aria-hidden="true">
+                            <span class="performance-legend-item"><span class="performance-legend-swatch"></span>Enrollments (left axis)</span>
+                            <span class="performance-legend-item"><span class="performance-legend-swatch is-completion"></span>Completion rate (right axis)</span>
                         </div>
-                    @endforeach
+
+                        <svg class="performance-chart" viewBox="0 0 640 250" role="img" aria-labelledby="performance-chart-title performance-chart-description">
+                            <title id="performance-chart-title">Enrollments and completion rate by course</title>
+                            <desc id="performance-chart-description">The blue line shows enrollment counts using the left axis. The green line shows average completion percentages using the right axis.</desc>
+                            @foreach ($chartTicks as $tick)
+                                <line class="performance-gridline" x1="62" y1="{{ $tick->y }}" x2="578" y2="{{ $tick->y }}" />
+                                <text class="performance-axis-label" x="54" y="{{ $tick->y + 4 }}" text-anchor="end">{{ $tick->enrollments }}</text>
+                                <text class="performance-axis-label" x="586" y="{{ $tick->y + 4 }}">{{ $tick->completion_rate }}%</text>
+                            @endforeach
+                            <polyline class="performance-line is-enrollment" points="{{ $chartPoints->map(fn ($point) => $point->x.','.$point->enrollment_y)->implode(' ') }}" />
+                            <polyline class="performance-line is-completion" points="{{ $chartPoints->map(fn ($point) => $point->x.','.$point->completion_y)->implode(' ') }}" />
+                            @foreach ($chartPoints as $point)
+                                <circle class="performance-point is-enrollment" cx="{{ $point->x }}" cy="{{ $point->enrollment_y }}" r="5">
+                                    <title>{{ $point->course->label }}: {{ $point->course->enrollments }} enrollments</title>
+                                </circle>
+                                <circle class="performance-point is-completion" cx="{{ $point->x }}" cy="{{ $point->completion_y }}" r="5">
+                                    <title>{{ $point->course->label }}: {{ $point->course->completion_rate }}% completion</title>
+                                </circle>
+                                <text class="performance-course-label" x="{{ $point->x }}" y="228" text-anchor="middle">{{ $point->course->label }}</text>
+                            @endforeach
+                        </svg>
+                    @else
+                        <p class="performance-empty">No course enrollment data is available yet.</p>
+                    @endif
                 </div>
 
                 <div class="card">
@@ -360,44 +420,6 @@
                 </div>
             </div>
 
-            {{-- ENROLLMENT + COMPLETION --}}
-            <div class="two-col analytics-grid">
-                <div class="card">
-                    <div class="card-hd">
-                        <span class="card-title">Enrollment by course</span>
-                    </div>
-
-                    @foreach ($enrollmentByCourse as $row)
-                        <div class="chart-row">
-                            <div class="chart-top">
-                                <span class="chart-lbl">{{ $row->label }}</span>
-                                <span class="chart-val">{{ $row->value }}</span>
-                            </div>
-                            <div class="bar-track">
-                                <div class="bar-fill" style="width:{{ $row->percent }}%"></div>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-
-                <div class="card completion">
-                    <div class="card-hd">
-                        <span class="card-title">Completion rate</span>
-                    </div>
-
-                    @foreach ($completionRate as $row)
-                        <div class="chart-row">
-                            <div class="chart-top">
-                                <span class="chart-lbl">{{ $row->label }}</span>
-                                <span class="chart-val">{{ $row->value }}%</span>
-                            </div>
-                            <div class="bar-track">
-                                <div class="bar-fill" style="width:{{ $row->percent }}%"></div>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
         </main>
     </div>
 

@@ -309,7 +309,7 @@
 
                     <div class="field-row">
                         <label for="email">Email</label>
-                        <input id="email" name="email" type="email" value="{{ old('email', $user->email ?? '') }}" required>
+                        <input class="profile-readonly-field" id="email" name="email" type="email" value="{{ old('email', $user->email ?? '') }}" readonly>
                     </div>
 
                     <div class="field-row">
@@ -324,7 +324,7 @@
 
                     <div class="field-row">
                         <label for="role">Role</label>
-                        <input id="role" name="role" value="{{ old('role', $user->role ?? 'Faculty') }}">
+                        <input class="profile-readonly-field" id="role" name="role" value="{{ old('role', $user->role ?? 'Faculty') }}" readonly>
                     </div>
 
                     <div class="field-row">

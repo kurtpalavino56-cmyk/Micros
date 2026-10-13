@@ -51,7 +51,7 @@
         </div>
 
         @if($courses->total())
-            <div class="course-table-wrap">
+            <div class="course-table-wrap paginated-table-scroll">
                 <table class="course-table" aria-label="Courses and learner verification status">
                     <thead>
                         <tr>

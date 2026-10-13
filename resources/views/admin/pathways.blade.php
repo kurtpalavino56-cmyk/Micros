@@ -12,7 +12,7 @@
     .main{padding:36px 32px 60px;min-width:0;}
     .pathway-page{max-width:1180px;margin:0 auto;}
     .page-head{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:28px;flex-wrap:wrap;}
-    h1{font-size:32px;margin:0 0 7px;}
+    h1{font-size:32px;margin:0 0 7px;color:#000;}
     .lead{color:var(--muted);margin:0;font-size:14px;}
     .alert{padding:12px 14px;border-radius:10px;margin-bottom:18px;font-size:13px;}
     .alert.success{background:#ecfdf3;color:#067647;}
@@ -112,7 +112,7 @@
                 @if($pathways->isEmpty())
                     <div class="empty-state">No pathways yet. Create one above to get started.</div>
                 @else
-                    <div class="table-wrap">
+                    <div class="table-wrap paginated-table-scroll">
                         <table class="pathway-table">
                             <thead><tr><th>Pathway</th><th>Courses</th><th>Status</th><th>Actions</th></tr></thead>
                             <tbody>

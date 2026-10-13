@@ -75,7 +75,7 @@
     .profile-card > *{min-width:0;}
     .panel{min-width:0;}
     .page-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:28px;}
-    .page-head h2{font-size:30px;margin:0 0 6px;color:var(--navy);}
+    .page-head h2{font-size:30px;margin:0 0 6px;color:#000;}
     .page-head p{margin:0;color:var(--muted);font-size:15px;font-weight:600;}
     .page-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
     .btn-edit-profile{background:#fff;border:1.5px solid var(--line);color:var(--navy);font-weight:800;padding:12px 28px;border-radius:12px;font-size:15px;box-shadow:var(--shadow);transition:border-color .2s;}
@@ -620,7 +620,7 @@
 
                     <div class="form-group">
                         <label for="role">Role / Title</label>
-                        <input id="role" name="role" value="{{ old('role', $user->role ?? 'Administrator') }}">
+                        <input class="profile-readonly-field" id="role" name="role" value="{{ old('role', $user->role ?? 'Administrator') }}" readonly>
                     </div>
                 </div>
 
@@ -650,8 +650,7 @@
 
                     <div class="form-group">
                         <label for="email">Email</label>
-                        <input id="email" name="email" type="email" value="{{ old('email', $user->email ?? '') }}" required>
-                        @error('email')<div class="field-err">{{ $message }}</div>@enderror
+                        <input class="profile-readonly-field" id="email" name="email" type="email" value="{{ old('email', $user->email ?? '') }}" readonly>
                     </div>
 
                     <div class="form-divider"></div>

@@ -48,7 +48,7 @@
     .main{flex:1;margin-left:var(--sidebar-w);padding:28px;display:flex;flex-direction:column;gap:18px;}
 
     .page-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
-    .page-title{font-size:1.35rem;font-weight:800;margin:0;}
+    .page-title{font-size:1.35rem;font-weight:800;margin:0;color:#000;}
     .page-sub{font-size:0.85rem;color:var(--text-muted);margin:4px 0 0;}
 
     .btn-generate{display:inline-flex;align-items:center;gap:8px;background:var(--navy);color:#fff;border:none;border-radius:10px;padding:11px 20px;font-weight:700;font-size:0.9rem;transition:background 0.2s, transform 0.2s;}
@@ -184,7 +184,7 @@
             <p>Click "Generate New Code" above to create the first one.</p>
         </div>
     @else
-        <div class="table-card">
+        <div class="table-card paginated-table-scroll">
             <table class="um-table">
                 <thead>
                     <tr>

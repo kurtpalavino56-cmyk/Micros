@@ -96,8 +96,8 @@ Route::middleware(['auth', RoleBasedAccess::class.':student'])
     ->get('/student/badges/{credentialUid}/download', [OpenBadgeCredentialController::class, 'download'])
     ->whereUuid('credentialUid')->name('openbadges.credentials.download');
 
-// Navbar section links → smooth-scroll targets on the homepage.
-Route::get('/announcements', [PageController::class, 'announcementsRedirect']);
+// Navbar section links → public announcement and microcredential pages.
+Route::get('/announcements', [PageController::class, 'announcementsIndex'])->name('announcements.index');
 Route::get('/microcredentials', [PageController::class, 'microcredentialsRedirect']);
 
 // Public course catalog — "View all Courses" on the homepage.
@@ -253,6 +253,8 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':admin', R
     // #3 — Announcements (sidebar item under Analytics)
     Route::get('/Admin-announcements', [AdminController::class, 'announcements'])->name('admin.announcements');
     Route::post('/Admin-announcements', [AdminController::class, 'storeAnnouncement'])->name('admin.announcements.store');
+    Route::post('/Admin-editor/upload', [FacultyController::class, 'uploadEditorAsset'])
+        ->name('admin.announcements.upload-image');
     Route::patch('/Admin-announcements/{id}', [AdminController::class, 'updateAnnouncement'])
         ->whereNumber('id')->name('admin.announcements.update');
     Route::post('/Admin-announcements/{id}/pin', [AdminController::class, 'toggleAnnouncementPin'])

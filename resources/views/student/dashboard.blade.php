@@ -15,6 +15,8 @@
         ],
         'courses'  => $enrolledCourses,     // collection of Course models
         'badges'   => $earnedBadges,        // collection for the "Badges" side panel
+        'activityWeeks' => $weeklyActivityGrid,
+        'activityTotal' => $activityCount,
     ]);
 
     Each $course is expected to expose:
@@ -26,21 +28,19 @@
 
 <div class="page-content student-dashboard">
         @php
-            $featuredCourse = $inProgressCourses->first() ?? $completedCourses->first();
             $greetingHour = now('Asia/Manila')->hour;
             $timeGreeting = $greetingHour < 12
                 ? 'Good morning'
                 : ($greetingHour < 17 ? 'Good afternoon' : 'Good evening');
         @endphp
-        <section class="hero" style="--dashboard-hero-image: url('{{ asset('Images/PSU_Front_Building.jpg') }}')">
-            <div class="hero-copy student-page-heading">
+        <header class="page-header ui-page-header student-page-heading">
+            <div class="ui-page-header__content">
                 <h2 class="ui-page-title">{{ $timeGreeting }}, {{ $user->name ?? 'Student' }}!</h2>
-                <p class="ui-page-subtitle">Build in-demand skills, earn microcredentials, and take the next step in your Penn State journey.</p>
-                <p class="eyebrow">Continue your learning</p>
-                <div class="hero-meta"><span>Student ID: {{ $user->student_id ?? '—' }}</span></div>
+                <p class="ui-page-subtitle">Build in-demand skills, earn microcredentials, and take the next step in your Microcredential journey.</p>
+                <p class="student-dashboard__student-id">Student ID: {{ $user->student_id ?? '—' }}</p>
             </div>
-            <a href="{{ route('courses.browse') }}" class="hero-action ui-button ui-button--primary">Explore courses</a>
-        </section>
+            <a href="{{ route('courses.browse') }}" class="ui-button ui-button--primary">Explore courses</a>
+        </header>
 
         <section class="stats" aria-label="Learning summary">
             <!-- <div class="stat-card c-navy"><div class="stat-top"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h12v20l-6-4-6 4V2z"/></svg><span class="num">{{ $stats['active_courses'] ?? 0 }}</span></div><div class="label">Courses in progress</div></div>
@@ -61,19 +61,82 @@
                     <div class="empty-state ui-empty-state">You haven't enrolled in any courses yet.<br><a href="{{ route('courses.browse') }}" class="enroll-more">Browse courses to get started</a></div>
                 @else
                     @forelse ($inProgressCourses as $course)
-                    <div class="course-card ui-card-surface"><div class="thumb">@if($course->thumbnail_url)<img src="{{ $course->thumbnail_url }}" alt="{{ $course->title }} course thumbnail" loading="lazy" onerror="this.remove()">@endif</div><div class="course-info"><h4>{{ $course->title }}</h4>@if($course->category)<div class="cat">{{ $course->category }}</div>@endif @include('components.course-rating', ['rating' => $course->rating_average, 'count' => $course->review_count])<div class="progress-track ui-progress-track"><div class="progress-fill progress-in-progress ui-progress-fill" style="width:{{ $course->progress_percent ?? 0 }}%"></div></div><div class="pct">{{ $course->progress_percent ?? 0 }}% complete</div></div><a class="btn-start ui-button ui-button--primary" href="{{ route('courses.show', $course->id) }}">{{ ($course->progress_percent ?? 0) > 0 ? 'Continue' : 'Start' }}</a></div>
+                    <div class="course-card ui-card-surface"><div class="thumb">@if($course->thumbnail_url)<img src="{{ $course->thumbnail_url }}" alt="{{ $course->title }} course thumbnail" loading="lazy" onerror="this.remove()">@endif</div><div class="course-info"><h4>{{ $course->title }}</h4>@if($course->category)<div class="cat">{{ $course->category }}</div>@endif<div class="progress-track ui-progress-track"><div class="progress-fill progress-in-progress ui-progress-fill" style="width:{{ $course->progress_percent ?? 0 }}%"></div></div><div class="pct">{{ $course->progress_percent ?? 0 }}% complete</div></div><a class="btn-start {{ ($course->progress_percent ?? 0) > 0 ? 'btn-start--continue' : '' }} ui-button ui-button--primary" href="{{ route('courses.show', $course->id) }}">{{ ($course->progress_percent ?? 0) > 0 ? 'Continue' : 'Start' }}</a></div>
                     @empty <div class="empty-state empty-state-slim ui-empty-state">Nothing in progress right now.</div> @endforelse
                     @if($completedCourses->isNotEmpty())<h4 class="courses-area-title">Completed courses</h4>@endif
                     @foreach ($completedCourses as $course)
-                    <div class="course-card ui-card-surface"><div class="thumb">@if($course->thumbnail_url)<img src="{{ $course->thumbnail_url }}" alt="{{ $course->title }} course thumbnail" loading="lazy" onerror="this.remove()">@endif</div><div class="course-info"><h4>{{ $course->title }}</h4>@if($course->category)<div class="cat">{{ $course->category }}</div>@endif @include('components.course-rating', ['rating' => $course->rating_average, 'count' => $course->review_count])<div class="progress-track ui-progress-track"><div class="progress-fill progress-completed ui-progress-fill" style="width:100%"></div></div><div class="pct">Completed</div></div><a class="btn-start btn-completed ui-button ui-button--secondary" href="{{ route('courses.show', $course->id) }}">View</a></div>
+                    <div class="course-card ui-card-surface"><div class="thumb">@if($course->thumbnail_url)<img src="{{ $course->thumbnail_url }}" alt="{{ $course->title }} course thumbnail" loading="lazy" onerror="this.remove()">@endif</div><div class="course-info"><h4>{{ $course->title }}</h4>@if($course->category)<div class="cat">{{ $course->category }}</div>@endif<div class="progress-track ui-progress-track"><div class="progress-fill progress-completed ui-progress-fill" style="width:100%"></div></div><div class="pct">Completed</div></div><a class="btn-start btn-completed ui-button ui-button--secondary" href="{{ route('courses.show', $course->id) }}">View</a></div>
                     @endforeach
                 @endif
             </section>
 
             <aside class="side-col">
-                @if($featuredCourse)
-                <div class="featured-course"><small>Featured course</small><h4>{{ \Illuminate\Support\Str::limit($featuredCourse->title, 46) }}</h4><p>Keep building practical skills and move closer to your next microcredential.</p><a class="ui-button ui-button--primary" href="{{ route('courses.show', $featuredCourse->id) }}">Continue course <span class="dashboard-chevron">&rsaquo;</span></a></div>
-                @endif
+                <section class="learning-activity panel ui-card-surface" aria-labelledby="learning-activity-title">
+                    <div class="panel-head ui-card-header">
+                        <div>
+                            <h3 id="learning-activity-title" class="ui-card-header__title">Your learning actions</h3>
+                            <p class="learning-activity__period">Past 12 months</p>
+                        </div>
+                        <span class="learning-activity__year">{{ $activityMonths[array_key_last($activityMonths ?? [])]['year'] ?? '' }}</span>
+                    </div>
+                    <div class="learning-activity__summary">
+                        <strong>{{ number_format($activityTotal ?? 0) }}</strong>
+                        <span>logged learning actions in the past 12 months</span>
+                    </div>
+                    <div class="learning-activity__navigation">
+                        <button class="learning-activity__arrow" type="button" data-activity-scroll="left" aria-label="Scroll to older months">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 4.5-5 5 5 5"/></svg>
+                        </button>
+                        <div class="learning-activity__timeline">
+                            <div class="learning-activity__weekdays" aria-hidden="true">
+                                <span></span>
+                                @foreach (['Mon', '', 'Wed', '', 'Fri', '', ''] as $weekday)
+                                    <span>{{ $weekday }}</span>
+                                @endforeach
+                            </div>
+                            <div class="learning-activity__scroll" data-activity-months tabindex="0" aria-label="Scrollable learning activity by month">
+                                <div class="learning-activity__months">
+                                    @foreach ($activityMonths ?? [] as $month)
+                                        <section class="learning-activity__month" aria-label="{{ $month['label'] }} {{ $month['year'] }}: {{ $month['total'] }} {{ \Illuminate\Support\Str::plural('activity', $month['total']) }}">
+                                            <div class="learning-activity__month-heading">
+                                                <strong>{{ $month['label'] }}</strong>
+                                                <span>{{ $month['total'] }}</span>
+                                            </div>
+                                            <div class="learning-activity__weeks" role="grid" aria-label="Learning actions for {{ $month['label'] }} {{ $month['year'] }}">
+                                                @foreach ($month['weeks'] as $week)
+                                                    <div class="learning-activity__week" role="row">
+                                                        @foreach ($week as $day)
+                                                            @if ($day['placeholder'])
+                                                                <span class="learning-activity__placeholder" aria-hidden="true"></span>
+                                                            @else
+                                                                <span
+                                                                    class="learning-activity__day learning-activity__day--{{ $day['level'] }}"
+                                                                    role="gridcell"
+                                                                    aria-label="{{ $day['count'] }} activities on {{ $day['date'] }}"
+                                                                    title="{{ $day['count'] }} {{ \Illuminate\Support\Str::plural('activity', $day['count']) }} on {{ $day['date'] }}"
+                                                                ></span>
+                                                            @endif
+                                                        @endforeach
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </section>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                        <button class="learning-activity__arrow" type="button" data-activity-scroll="right" aria-label="Scroll to newer months">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 4.5 5 5-5 5"/></svg>
+                        </button>
+                    </div>
+                    <div class="learning-activity__legend" aria-hidden="true">
+                        <span>0</span>
+                        @foreach (range(0, 4) as $level)
+                            <span class="learning-activity__day learning-activity__day--{{ $level }}"></span>
+                        @endforeach
+                        <span>5+</span>
+                    </div>
+                </section>
                 @if(($stackingFrameworks ?? collect())->isNotEmpty())
                     <div class="panel ui-card-surface"><div class="panel-head ui-card-header"><span class="ui-card-header__title">Stacking progress</span><a href="{{ route('stacking.progress') }}">View all <span class="dashboard-chevron">&rsaquo;</span></a></div><div class="panel-body">
                         @foreach($stackingFrameworks->take(2) as $stacking)
@@ -82,7 +145,7 @@
                         @endforeach
                     </div></div>
                 @endif
-                <div class="panel ui-card-surface"><div class="panel-head ui-card-header"><span class="ui-card-header__title">Badges earned</span><a href="{{ route('badges.index') }}">View all <span class="dashboard-chevron">&rsaquo;</span></a></div><div class="panel-body badges-earned-list">@forelse ($badges ?? [] as $badge)<div class="earned-badge-row"><span class="earned-badge-icon" aria-hidden="true">✦</span><span>{{ $badge->name ?? $badge }}</span></div>@empty<p>No badges earned yet.</p>@endforelse</div></div>
+                <div class="panel ui-card-surface"><div class="panel-head ui-card-header"><span class="ui-card-header__title">Badges earned</span><a href="{{ route('badges.index') }}">View all <span class="dashboard-chevron">&rsaquo;</span></a></div><div class="panel-body badges-earned-list">@forelse ($badges ?? [] as $badge)<div class="earned-badge-row"><span class="earned-badge-icon" aria-hidden="true">@if($badge->icon_url ?? null)<img src="{{ $badge->icon_url }}" alt="" loading="lazy">@else<span>✦</span>@endif</span><span>{{ $badge->name ?? $badge }}</span></div>@empty<p>No badges earned yet.</p>@endforelse</div></div>
             </aside>
         </div>
     </div>

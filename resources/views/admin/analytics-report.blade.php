@@ -58,13 +58,14 @@
         .main { margin-left: var(--sidebar-w); flex: 1; padding: 28px 30px 44px; }
         .analytics-page { max-width: 1480px; margin: 0 auto; }
         .page-header { display:flex; justify-content:space-between; align-items:flex-start; gap:24px; margin-bottom:20px; }
-        .page-title { color:#101d42; font-size:1.55rem; line-height:1.2; font-weight:800; letter-spacing:-.02em; }
+        .page-title { color:#000; font-size:1.55rem; line-height:1.2; font-weight:800; letter-spacing:-.02em; }
         .page-subtitle { color:#69758c; font-size:.86rem; margin-top:7px; }
-        .header-actions { display:flex; flex-direction:column; align-items:flex-end; gap:10px; width:min(100%, 583px); }
+        .header-actions { display:grid; grid-template-columns:1fr; gap:10px; width:min(100%, 583px); }
         .download-report { display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid #1b317f;border-radius:7px;background:#fff;color:#173b99;font:700 .74rem 'Segoe UI',sans-serif;text-decoration:none; }
         .download-report:hover { background:#edf2ff; }
-        .segmented, .filter-row { display:flex; gap:5px; }
-        .filter-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); width:100%; }
+        .segmented { display:flex; gap:5px; }
+        .segmented { justify-self:end; }
+        .filter-actions { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto; align-items:center; gap:5px; width:100%; }
         .segmented { background:#e9eef9; border:1px solid #dce4f3; border-radius:8px; padding:3px; }
         .segment, .filter-select { border:0; background:transparent; color:#5c6880; font:600 .73rem 'Segoe UI',sans-serif; cursor:pointer; }
         .segment { padding:7px 11px; border-radius:6px; }
@@ -74,9 +75,9 @@
         .stat-card, .card { background:#fff; border:1px solid #e0e6f0; border-radius:12px; box-shadow:0 2px 8px rgba(25,47,96,.04); }
         .stat-card { padding:15px; min-width:0; }
         .stat-top { display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:14px; }
-        .stat-icon { width:30px; height:30px; border-radius:8px; display:grid; place-items:center; color:#1f4bb7; background:#e9efff; }
-        .stat-icon.yellow { color:#866508; background:#fff5cf; }
-        .stat-icon svg { width:16px; height:16px; }
+        .stat-icon { width:30px; height:30px; display:grid; place-items:center; color:#1f4bb7; }
+        .stat-icon.yellow { color:#866508; }
+        .stat-icon svg { width:20px; height:20px; fill:currentColor; }
         .stat-label { color:#68758c; font-size:.73rem; line-height:1.25; min-height:30px; }
         .stat-value { color:#142653; font-size:1.42rem; line-height:1.1; font-weight:800; margin:5px 0 6px; }
         .stat-trend { color:#26815a; font-size:.68rem; font-weight:700; white-space:nowrap; }
@@ -127,8 +128,8 @@
         .credential-chart { width:100%; height:90px; display:block; } .credential-heading { color:#59677f; font-size:.73rem; font-weight:700; margin-bottom:3px; }
         .attention { background:#fffbea; border:1px solid #f3e7b1; border-radius:12px; padding:18px 19px; } .attention .card-title { color:#3d3821; } .attention-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:15px; } .attention-item { display:flex; gap:10px; align-items:center; border-left:1px solid #eee2ad; padding-left:13px; } .warning-icon { width:28px; height:28px; flex:none; border-radius:7px; display:grid; place-items:center; color:#886a08; background:#fff1b7; } .warning-icon svg { width:15px; height:15px; } .attention-number { color:#26385e; font-size:1.3rem; font-weight:800; line-height:1; } .attention-label { color:#6c684f; font-size:.69rem; line-height:1.25; margin-top:3px; }
         @media (max-width:1200px) { .stats-grid { grid-template-columns:repeat(3,1fr); } }
-        @media (max-width:900px) { .main { padding:22px 18px 35px; } .page-header { flex-direction:column; } .header-actions { align-items:flex-start; width:100%; } .dashboard-grid, .dashboard-grid.equal { grid-template-columns:1fr; } .attention-grid { grid-template-columns:repeat(2,1fr); } }
-        @media (max-width:600px) { .stats-grid { grid-template-columns:repeat(2,1fr); } .filter-row, .segmented { flex-wrap:wrap; } .filter-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); } .card-heading { flex-direction:column; } .activity-tabs { align-self:flex-start; } .donut-wrap { gap:12px; } .donut { width:125px; height:125px; } .data-table { min-width:620px; } .table-card { overflow-x:auto; } .attention-grid { grid-template-columns:1fr; } .credential-grid { grid-template-columns:repeat(2,1fr); } .credential-metric:nth-child(2) { border-right:0; } }
+        @media (max-width:900px) { .main { padding:22px 18px 35px; } .page-header { flex-direction:column; } .header-actions { width:100%; } .segmented { justify-self:start; } .dashboard-grid, .dashboard-grid.equal { grid-template-columns:1fr; } .attention-grid { grid-template-columns:repeat(2,1fr); } }
+        @media (max-width:600px) { .stats-grid { grid-template-columns:repeat(2,1fr); } .segmented { flex-wrap:wrap; } .filter-actions { grid-template-columns:repeat(2,minmax(0,1fr)); } .download-report { grid-column:1 / -1; justify-content:center; } .card-heading { flex-direction:column; } .activity-tabs { align-self:flex-start; } .donut-wrap { gap:12px; } .donut { width:125px; height:125px; } .data-table { min-width:620px; } .table-card { overflow-x:auto; } .attention-grid { grid-template-columns:1fr; } .credential-grid { grid-template-columns:repeat(2,1fr); } .credential-metric:nth-child(2) { border-right:0; } }
     </style>
     @include('components.analytics-design')
 </head>
@@ -154,14 +155,14 @@
                     <button class="segment {{ $period === 'month' ? 'active' : '' }}" type="submit" name="period" value="month">This Month</button>
                     <button class="segment {{ $period === 'week' ? 'active' : '' }}" type="submit" name="period" value="week">This Week</button>
                 </div>
-                <div class="filter-row">
+                <div class="filter-actions">
                     <select class="filter-select" name="category" aria-label="Category" onchange="this.form.submit()"><option value="">All Categories</option>@foreach ($categoryNames as $categoryName)<option value="{{ $categoryName }}" @selected($filters['category'] === $categoryName)>{{ $categoryName }}</option>@endforeach</select>
                     <select class="filter-select" name="course" aria-label="Course" onchange="this.form.submit()"><option value="">All Courses</option>@foreach ($courseOptions as $courseOption)<option value="{{ $courseOption->id }}" @selected((string) $filters['course'] === (string) $courseOption->id)>{{ $courseOption->title }}</option>@endforeach</select>
+                    <a class="download-report" href="{{ route('admin.report.download', request()->only(['period', 'activity', 'category', 'course'])) }}" title="Download this filtered platform analytics report as a PDF">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 21h16"/></svg>
+                        Download Report (PDF)
+                    </a>
                 </div>
-                <a class="download-report" href="{{ route('admin.report.download', request()->only(['period', 'activity', 'category', 'course'])) }}" title="Download this filtered platform analytics report as a PDF">
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 21h16"/></svg>
-                    Download Report (PDF)
-                </a>
             </form>
         </header>
 
@@ -180,19 +181,19 @@
                 <article class="stat-card">
                     <div class="stat-top">
                     <div class="stat-icon {{ !empty($kpi['yellow']) ? 'yellow' : '' }}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
                                 @if ($kpi['icon'] === 'users')
-                                    <circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.4-3.4 2.7-5.4 6.5-5.4s6.1 2 6.5 5.4M16 5.2a3.5 3.5 0 0 1 0 6.8M17 14.8c2.6.5 4 2.2 4.5 5.2"/>
+                                    <circle cx="8" cy="7.5" r="3.5"/><path d="M1.5 20c.35-3.7 2.65-5.7 6.5-5.7s6.15 2 6.5 5.7zM16 4.4a3.5 3.5 0 0 1 0 6.2M17 14.5c2.75.5 4.25 2.3 4.6 5.5h-5.3c-.12-2.2-.85-4-2.2-5.2.85-.3 1.8-.4 2.9-.3z"/>
                                 @elseif ($kpi['icon'] === 'activity')
-                                    <path d="M3 12h4l3-7 4 14 3-7h4"/>
+                                    <path d="M2 13h4.2l2.2-5.8a1 1 0 0 1 1.9.05l3 8 2-5.1a1 1 0 0 1 1-.63H22v2h-5l-2.8 7.1a1 1 0 0 1-1.9-.04l-3-8-1.8 4.5a1 1 0 0 1-.93.63H2z"/>
                                 @elseif ($kpi['icon'] === 'book')
-                                    <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22zM4 4.5v15A2.5 2.5 0 0 1 6.5 17H20"/>
+                                    <path d="M5 3h14a2 2 0 0 1 2 2v15H7a3 3 0 0 0-3 3V5a2 2 0 0 1 1-2zm1 2a1 1 0 0 0-1 1v12.2A4.9 4.9 0 0 1 7 17h12V5z"/>
                                 @elseif ($kpi['icon'] === 'check')
-                                    <circle cx="12" cy="12" r="9"/><path d="m7.5 12 3 3 6-6"/>
+                                    <circle cx="12" cy="12" r="10"/><path d="m7 12.2 3.2 3.2L17.5 8" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                                 @elseif ($kpi['icon'] === 'award')
-                                    <circle cx="12" cy="8" r="5"/><path d="m8.5 12-1 9 4.5-2.5 4.5 2.5-1-9"/>
+                                    <path d="m7.1 13.5-1 8 5.9-3.1 5.9 3.1-1-8A7 7 0 1 0 7.1 13.5zM12 3.5a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"/>
                                 @else
-                                    <path d="M4 19V5m0 14h16M7 15l4-4 3 2 6-7"/>
+                                    <path d="M3 19h4v-6H3zm7 0h4V8h-4zm7 0h4V4h-4z"/>
                                 @endif
                             </svg>
                         </div>

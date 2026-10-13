@@ -326,7 +326,7 @@
                 <span>Course Outcomes</span>
                 <span class="range">Your courses</span>
             </div>
-            <div class="panel-body course-outcomes-wrap">
+            <div class="panel-body course-outcomes-wrap paginated-table-scroll">
                 <table class="course-outcomes">
                     <thead><tr><th>Course</th><th>Enrolled</th><th>Completed</th><th>Completion</th><th>Avg. Quiz</th><th>Quiz Pass Rate (learners)</th><th>Avg. Rating</th><th>Reviews</th><th>Reviews to Grade</th></tr></thead>
                     <tbody>

@@ -18,6 +18,7 @@ use App\Support\RichTextSanitizer;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -105,6 +106,25 @@ class PageController extends Controller
     /** Build the homepage feed from published, audience-visible announcements. */
     private function buildAnnouncements()
     {
+        return $this->visiblePublishedAnnouncements()
+            ->take(4)
+            ->map(fn (Announcement $announcement): array => $this->presentAnnouncement($announcement))
+            ->values();
+    }
+
+    /** Show the complete feed of published announcements visible to this visitor. */
+    public function announcementsIndex()
+    {
+        $announcements = $this->visiblePublishedAnnouncements()
+            ->map(fn (Announcement $announcement): array => $this->presentAnnouncement($announcement))
+            ->values();
+
+        return view('public.announcements', compact('announcements'));
+    }
+
+    /** @return Collection<int, Announcement> */
+    private function visiblePublishedAnnouncements(): Collection
+    {
         // 1) Manually published announcements (if any exist).
         //    Each announcement carries an audience (student / faculty), set by
         //    the admin on Admin › Announcements. Guests on the public homepage
@@ -127,25 +147,34 @@ class PageController extends Controller
                 // Targeted announcements are only for that role — a guest on
                 // the public homepage is not one of them.
                 return $viewerRole !== null && in_array($viewerRole, $audience, true);
-            })
-            ->take(3)
-            ->map(function (Announcement $a): array {
-                $plainBody = trim(html_entity_decode(strip_tags(preg_replace('/<\/(?:p|h[1-6]|li|blockquote)>/i', ' ', (string) $a->body) ?? '')));
-
-                return [
-                    'id' => $a->id,
-                    'type' => 'general',
-                    'label' => 'Announcement',
-                    'date' => ($a->published_at ?? $a->created_at)?->format('F j, Y') ?? '',
-                    'title' => $a->title,
-                    'desc' => Str::limit($plainBody, 160),
-                    'full_body' => RichTextSanitizer::sanitize((string) $a->body),
-                    'has_more' => Str::length($plainBody) > 160,
-                ];
-            })
-            ->values();
+            });
 
         return $manual;
+    }
+
+    /** @return array{id: int, is_pinned: bool, type: string, label: string, date: string, title: string, desc: string, full_body: string, has_more: bool, image: ?string} */
+    private function presentAnnouncement(Announcement $announcement): array
+    {
+        $fullBody = RichTextSanitizer::sanitize((string) $announcement->body);
+        $plainBody = trim(html_entity_decode(strip_tags(preg_replace('/<\/(?:p|h[1-6]|li|blockquote)>/i', ' ', $fullBody) ?? '')));
+        $image = null;
+
+        if (preg_match('/<img\b[^>]*\bsrc=(["\'])(.*?)\1/i', $fullBody, $imageMatch)) {
+            $image = html_entity_decode($imageMatch[2], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
+
+        return [
+            'id' => $announcement->id,
+            'is_pinned' => (bool) $announcement->is_pinned,
+            'type' => 'general',
+            'label' => 'Announcement',
+            'date' => ($announcement->published_at ?? $announcement->created_at)?->format('F j, Y') ?? '',
+            'title' => $announcement->title,
+            'desc' => Str::limit($plainBody, 160),
+            'full_body' => $fullBody,
+            'has_more' => Str::length($plainBody) > 160,
+            'image' => $image,
+        ];
     }
 
     /**
