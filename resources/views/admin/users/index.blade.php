@@ -211,6 +211,7 @@
         .um-table thead th {
             padding: 14px 16px;
             border-bottom: 1px solid var(--border);
+            background: #f7f9fc;
             text-align: left;
             font-size: .7rem;
             font-weight: 600;

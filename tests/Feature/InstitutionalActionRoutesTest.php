@@ -279,6 +279,36 @@ test('admin can confirm academic-unit confirmation for an enrollment', function 
         ->and($enrollment->fresh()->completion_status)->toBe(MicrocredentialCompletionService::STATUS_COMPLETED);
 });
 
+test('stale academic confirmation action returns to the review page and refreshes enrollment status', function () {
+    $faculty = User::factory()->faculty()->create();
+    $admin = User::factory()->admin()->create();
+    [$course, $enrollment] = makeReadyEnrollmentFor($faculty);
+
+    DB::table('lesson_completions')
+        ->where('user_id', $enrollment->user_id)
+        ->delete();
+    $enrollment->completion_status = MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION;
+    $enrollment->save();
+
+    $detailUrl = route('admin.enrollments.show', $enrollment->id);
+    $response = $this->actingAs($admin)
+        ->from($detailUrl)
+        ->post(
+            route('admin.enrollments.academic-confirm', ['id' => $course->id, 'enrollment' => $enrollment->id]),
+            ['decision' => 'confirmed']
+        );
+
+    $response->assertRedirect($detailUrl)
+        ->assertSessionHasErrors('decision');
+
+    expect($enrollment->fresh()->completion_status)->toBe(MicrocredentialCompletionService::STATUS_IN_PROGRESS)
+        ->and($enrollment->fresh()->academic_unit_confirmation_status)->toBe('pending');
+
+    $this->get($detailUrl)
+        ->assertOk()
+        ->assertDontSee('name="decision" value="confirmed"', false);
+});
+
 test('admin rejection reaches rejected completion status', function () {
     $faculty = User::factory()->faculty()->create();
     $admin = User::factory()->admin()->create();

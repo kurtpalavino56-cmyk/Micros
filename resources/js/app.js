@@ -779,13 +779,21 @@ function getEditorConfig(element) {
     };
 }
 
-function initializeEditors() {
-    document.querySelectorAll('[data-ckeditor]').forEach((element) => {
+function initializeEditors(root = document) {
+    const elements = root instanceof Element && root.matches('[data-ckeditor]')
+        ? [root]
+        : root.querySelectorAll('[data-ckeditor]');
+
+    elements.forEach((element) => {
         if (editorInstances.has(element)) {
             return;
         }
 
         const target = element;
+
+        if (target.closest('[data-ckeditor-deferred]')) {
+            return;
+        }
 
         ClassicEditor
             .create(target, getEditorConfig(target))

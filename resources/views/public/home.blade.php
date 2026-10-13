@@ -36,7 +36,7 @@
     .hero::before {
         inset: 0;
         border-radius: 0;
-        background: linear-gradient(90deg, #fff 0%, rgba(255,255,255,.96) 14%, rgba(255,255,255,.78) 36%, rgba(255,255,255,0) 58%);
+        background: linear-gradient(90deg, #fff 0%, rgba(255,255,255,.96) 35%, rgba(255,255,255,.78) 45%, rgba(255,255,255,0) 58%);
         z-index: 0;
     }
 
