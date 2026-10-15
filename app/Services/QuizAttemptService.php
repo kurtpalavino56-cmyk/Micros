@@ -56,8 +56,8 @@ class QuizAttemptService
             $submittedAt = $lastAttempt->submitted_at ?? $lastAttempt->created_at;
             $editedAt = $this->lastEditedAt($quiz);
             $stale = $editedAt && $submittedAt && $submittedAt->lt($editedAt);
-            if (! $stale && $submittedAt && $submittedAt->copy()->addHours(24)->isFuture()) {
-                $unlock = $submittedAt->copy()->addHours(24)->getTimestamp() * 1000;
+            if (! $stale && $submittedAt && $submittedAt->copy()->addMinutes(5)->isFuture()) {
+                $unlock = $submittedAt->copy()->addMinutes(5)->getTimestamp() * 1000;
             }
         }
 
@@ -119,7 +119,7 @@ class QuizAttemptService
             'correct' => $grade['correct'],
             'total' => $grade['total'],
             'answers' => $grade['answers'],
-            'unlock' => $passed ? null : now()->addHours(24)->getTimestamp() * 1000,
+            'unlock' => $passed ? null : now()->addMinutes(5)->getTimestamp() * 1000,
         ];
     }
 

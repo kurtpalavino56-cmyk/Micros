@@ -797,6 +797,7 @@ class AdminController extends Controller
         $course = (object) [
             'id' => $c->id,
             'title' => $c->title,
+            'short_description' => $c->short_description,
             'description' => $c->description,
             'category' => $c->category,
             'program' => $c->program,
@@ -1109,10 +1110,7 @@ class AdminController extends Controller
         try {
             $updatedEnrollment = $completionService->recordAcademicUnitConfirmation($enrollment, Auth::id(), $data['decision']);
         } catch (\DomainException $e) {
-            // The enrollment is not awaiting institutional sign-off (not
-            // yet at mastery, or already completed/rejected/revoked).
-            // Enforced by the service; the Blade button is only a courtesy.
-            abort(422, $e->getMessage());
+            return redirect()->back()->withErrors(['decision' => $e->getMessage()]);
         }
 
         if (! $alreadyRecorded) {
@@ -1474,6 +1472,60 @@ class AdminController extends Controller
             ->count();
         $courseOptionQuery = Course::query()
             ->when($filters['category'], fn ($query, $value) => $query->where('category', $value));
+        $courseOptions = $courseOptionQuery->orderBy('title')->get(['id', 'title']);
+        $ageBands = ['Under 18', '18–24', '25–34', '35–44', '45–54', '55+', 'Not specified'];
+        $genderGroups = ['Female', 'Male', 'Other', 'Prefer not to say', 'Not specified'];
+        $demographics = [
+            'total' => 0,
+            'age' => array_fill_keys($ageBands, 0),
+            'gender' => array_fill_keys($genderGroups, 0),
+        ];
+        $demographicEnrollments = DB::table('enrollments')
+            ->join('courses', 'courses.id', '=', 'enrollments.course_id')
+            ->join('users', 'users.id', '=', 'enrollments.user_id')
+            ->where('users.role_id', $studentRole)
+            ->tap($applyCourseFilters)
+            ->when($periodStart, fn ($query) => $query->where('enrollments.enrolled_at', '>=', $periodStart))
+            ->select('courses.id as course_id', 'users.id as learner_id', 'users.date_of_birth', 'users.gender')
+            ->distinct()
+            ->get();
+
+        foreach ($demographicEnrollments as $enrollment) {
+            $demographics['total']++;
+            $ageBand = 'Not specified';
+            $birthDateValue = trim((string) $enrollment->date_of_birth);
+
+            if ($birthDateValue !== '') {
+                $birthDate = \DateTimeImmutable::createFromFormat('!Y-m-d', $birthDateValue);
+                $dateErrors = \DateTimeImmutable::getLastErrors();
+
+                if ($birthDate !== false
+                    && $birthDate->format('Y-m-d') === $birthDateValue
+                    && ($dateErrors === false || ($dateErrors['warning_count'] === 0 && $dateErrors['error_count'] === 0))
+                    && $birthDate <= new \DateTimeImmutable('today')) {
+                    $age = $birthDate->diff(new \DateTimeImmutable('today'))->y;
+                    $ageBand = match (true) {
+                        $age < 18 => 'Under 18',
+                        $age <= 24 => '18–24',
+                        $age <= 34 => '25–34',
+                        $age <= 44 => '35–44',
+                        $age <= 54 => '45–54',
+                        default => '55+',
+                    };
+                }
+            }
+
+            $demographics['age'][$ageBand]++;
+            $gender = strtolower(trim((string) $enrollment->gender));
+            $genderGroup = match ($gender) {
+                'female' => 'Female',
+                'male' => 'Male',
+                'prefer not to say' => 'Prefer not to say',
+                '' => 'Not specified',
+                default => 'Other',
+            };
+            $demographics['gender'][$genderGroup]++;
+        }
 
         return view('admin.analytics-report', [
             'stats' => $stats,
@@ -1481,6 +1533,7 @@ class AdminController extends Controller
             'progress' => $progress,
             'activity' => $activity,
             'credentialActivity' => $credentialActivity,
+            'competencies' => $competencies,
             'assessment' => [
                 'total' => $assessmentCount,
                 'average' => $assessmentScores->count() ? (int) round((float) $assessmentScores->avg()) : null,
@@ -1488,9 +1541,11 @@ class AdminController extends Controller
                 'highest' => $assessmentScores->max() !== null ? (int) $assessmentScores->max() : null,
                 'lowest' => $assessmentScores->min() !== null ? (int) $assessmentScores->min() : null,
             ],
-            'competencies' => $competencies,
+            'demographics' => $demographics,
+            'ageBands' => $ageBands,
+            'genderGroups' => $genderGroups,
             'categoryNames' => CourseCategory::activeNames(),
-            'courseOptions' => $courseOptionQuery->orderBy('title')->get(['id', 'title']),
+            'courseOptions' => $courseOptions,
             'filters' => $filters + ['period' => $period, 'activity' => $activityMode],
             'period' => $period,
             'activityMode' => $activityMode,
@@ -1500,12 +1555,6 @@ class AdminController extends Controller
                 'verified' => (clone $certificateQuery)->where('certificates.status', 'active')->whereNotNull('certificates.serial')->count(),
                 'pending' => Course::query()->tap($applyCourseFilters)->where('approval_status', 'pending')->count(),
             ],
-            'totalCompetencies' => DB::table('competency_units')->whereExists(function ($outcomes) use ($applyCourseFilters) {
-                $outcomes->selectRaw('1')->from('learning_outcomes')
-                    ->join('courses', 'courses.id', '=', 'learning_outcomes.course_id')
-                    ->whereColumn('learning_outcomes.competency_unit_id', 'competency_units.id');
-                $applyCourseFilters($outcomes);
-            })->count(),
             'attention' => [
                 $lowProgressCourseCount,
                 $lowMasteryCompetencyCount,

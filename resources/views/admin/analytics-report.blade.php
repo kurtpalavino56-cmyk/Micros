@@ -122,14 +122,29 @@
         .assessment-bar-head strong { color:#244da9; } .assessment-bar .progress-track { height:9px; }
         .metric-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
         .metric-box { border-left:2px solid #dfe7f6; padding-left:10px; } .metric-box strong { display:block; color:#172d5a; font-size:1.1rem; } .metric-box span { color:#8590a0; font-size:.67rem; }
-        .competency-list { display:grid; gap:15px; margin:5px 0 18px; } .competency-row { display:grid; grid-template-columns:145px 1fr 35px; align-items:center; gap:12px; color:#50617d; font-size:.74rem; } .competency-row strong { color:#294da5; text-align:right; }
-        .card-footer { border-top:1px solid #edf0f5; padding-top:12px; display:flex; justify-content:space-between; gap:12px; color:#78859a; font-size:.71rem; } .card-footer strong { color:#344b78; }
+        .analytics-overview { display:grid; grid-template-columns:minmax(0,1fr) minmax(300px,1fr); align-items:stretch; gap:16px; margin-bottom:16px; }
+        .analytics-side-stack { display:grid; grid-template-rows:repeat(2,minmax(0,1fr)); gap:16px; min-width:0; }
+        .course-performance-grid { grid-template-columns:1fr; }
+        .demographics-total { display:inline-block; flex:none; margin:0 0 0 auto; padding:7px 12px; border-radius:999px; background:#f1f4f8; color:#68758c; font-size:.74rem; }
+        .demographics-grid { display:grid; grid-template-columns:1fr; gap:10px; }
+        .demographics-group { min-width:0; padding:10px 12px; border:1px solid #e0e6f0; border-radius:9px; }
+        .demographics-group h3 { margin:0 0 8px; color:#142653; font-size:.82rem; }
+        .demographics-visual { display:flex; align-items:center; justify-content:flex-start; gap:12px; min-width:0; min-height:200px; padding-left:24px; }
+        .demographics-pie { width:190px; height:190px; flex:0 0 190px; margin-left:0; border-radius:50%; background:#edf1f7; }
+        .demographics-legend { display:grid; flex:0 1 auto; width:max-content; max-width:100%; gap:0; min-width:0; }
+        .demographics-row { display:grid; grid-template-columns:120px 40px 40px; align-items:center; gap:12px; min-height:42px; border-bottom:1px solid #edf0f5; color:#58657b; font-size:.76rem; }
+        .demographics-label { display:flex; align-items:center; gap:8px; white-space:nowrap; }
+        .demographics-row:last-child { border-bottom:0; }
+        .demographics-swatch { width:11px; height:11px; border-radius:50%; }
+        .demographics-value, .demographics-percent { color:#334466; font-weight:700; text-align:right; white-space:nowrap; }
+        .demographics-percent { color:#68758c; font-weight:500; }
+        .demographics-empty { padding:16px 0; color:#7b879a; font-size:.75rem; }
         .credential-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:18px; } .credential-metric { padding:8px 5px; text-align:center; border-right:1px solid #edf0f5; } .credential-metric:last-child { border-right:0; } .credential-metric strong { display:block; color:#18346e; font-size:1.2rem; } .credential-metric span { color:#7e8999; font-size:.67rem; }
         .credential-chart { width:100%; height:90px; display:block; } .credential-heading { color:#59677f; font-size:.73rem; font-weight:700; margin-bottom:3px; }
         .attention { background:#fffbea; border:1px solid #f3e7b1; border-radius:12px; padding:18px 19px; } .attention .card-title { color:#3d3821; } .attention-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:15px; } .attention-item { display:flex; gap:10px; align-items:center; border-left:1px solid #eee2ad; padding-left:13px; } .warning-icon { width:28px; height:28px; flex:none; border-radius:7px; display:grid; place-items:center; color:#886a08; background:#fff1b7; } .warning-icon svg { width:15px; height:15px; } .attention-number { color:#26385e; font-size:1.3rem; font-weight:800; line-height:1; } .attention-label { color:#6c684f; font-size:.69rem; line-height:1.25; margin-top:3px; }
         @media (max-width:1200px) { .stats-grid { grid-template-columns:repeat(3,1fr); } }
-        @media (max-width:900px) { .main { padding:22px 18px 35px; } .page-header { flex-direction:column; } .header-actions { width:100%; } .segmented { justify-self:start; } .dashboard-grid, .dashboard-grid.equal { grid-template-columns:1fr; } .attention-grid { grid-template-columns:repeat(2,1fr); } }
-        @media (max-width:600px) { .stats-grid { grid-template-columns:repeat(2,1fr); } .segmented { flex-wrap:wrap; } .filter-actions { grid-template-columns:repeat(2,minmax(0,1fr)); } .download-report { grid-column:1 / -1; justify-content:center; } .card-heading { flex-direction:column; } .activity-tabs { align-self:flex-start; } .donut-wrap { gap:12px; } .donut { width:125px; height:125px; } .data-table { min-width:620px; } .table-card { overflow-x:auto; } .attention-grid { grid-template-columns:1fr; } .credential-grid { grid-template-columns:repeat(2,1fr); } .credential-metric:nth-child(2) { border-right:0; } }
+        @media (max-width:900px) { .main { padding:22px 18px 35px; } .page-header { flex-direction:column; } .header-actions { width:100%; } .segmented { justify-self:start; } .dashboard-grid, .dashboard-grid.equal, .analytics-overview { grid-template-columns:1fr; } .analytics-side-stack { grid-template-rows:none; } .attention-grid { grid-template-columns:repeat(2,1fr); } }
+        @media (max-width:600px) { .stats-grid { grid-template-columns:repeat(2,1fr); } .segmented { flex-wrap:wrap; } .filter-actions { grid-template-columns:repeat(2,minmax(0,1fr)); } .download-report { grid-column:1 / -1; justify-content:center; } .card-heading { flex-direction:column; } .demographics-total { margin-left:0; } .demographics-grid { grid-template-columns:1fr; gap:12px; } .demographics-group { padding:12px; } .demographics-visual { gap:8px; min-height:170px; padding-left:12px; } .demographics-pie { width:160px; height:160px; flex-basis:160px; margin-left:0; } .demographics-row { grid-template-columns:110px 30px 30px; gap:8px; font-size:.67rem; } .demographics-swatch { width:8px; height:8px; } .activity-tabs { align-self:flex-start; } .donut-wrap { gap:12px; } .donut { width:125px; height:125px; } .data-table { min-width:620px; } .table-card { overflow-x:auto; } .attention-grid { grid-template-columns:1fr; } .credential-grid { grid-template-columns:repeat(2,1fr); } .credential-metric:nth-child(2) { border-right:0; } }
     </style>
     @include('components.analytics-design')
 </head>
@@ -146,7 +161,7 @@
         <header class="page-header">
             <div>
                 <h1 class="page-title">Platform Analytics</h1>
-                <p class="page-subtitle">Monitor learner engagement, course performance, competencies, and credential outcomes.</p>
+                <p class="page-subtitle">Monitor learner engagement, course performance, demographics, and credential outcomes.</p>
             </div>
             <form class="header-actions analytics-filters" action="{{ route('admin.report') }}" method="GET">
                 <div class="segmented" role="group" aria-label="Time period">
@@ -228,7 +243,74 @@
             </article>
         </section>
 
-        <section class="dashboard-grid equal" aria-label="Performance analytics">
+        <section class="analytics-overview" aria-label="Demographics and performance analytics">
+            <article class="card">
+                <div class="card-heading"><div><h2 class="card-title">Learner Demographics</h2><p class="card-subtitle">Age and gender distribution for the selected filters</p></div><p class="demographics-total">Course enrollments in scope: <strong>{{ number_format($demographics['total']) }}</strong></p></div>
+                @if($demographics['total'] > 0)
+                    @php
+                        $demographicCharts = [
+                            ['title' => 'Age distribution', 'values' => $demographics['age'], 'colors' => ['#e07048', '#2c9a68', '#f0bd3b', '#9b59b6', '#4b9ca8', '#d7785b', '#8994a5']],
+                            ['title' => 'Gender distribution', 'values' => $demographics['gender'], 'colors' => ['#e07048', '#2c9a68', '#d9b72c', '#9b59b6', '#e07048']],
+                        ];
+                    @endphp
+                    <div class="demographics-grid">
+                        @foreach($demographicCharts as $chart)
+                            @php
+                                $chartTotal = array_sum($chart['values']);
+                                $chartAngle = 0;
+                                $chartSlices = [];
+                                foreach (array_values($chart['values']) as $index => $count) {
+                                    if ($count === 0) {
+                                        continue;
+                                    }
+                                    $nextAngle = $chartAngle + ($count / $chartTotal * 360);
+                                    $chartSlices[] = $chart['colors'][$index]." {$chartAngle}deg {$nextAngle}deg";
+                                    $chartAngle = $nextAngle;
+                                }
+                                $pieBackground = implode(', ', $chartSlices);
+                                $chartDescription = collect($chart['values'])
+                                    ->filter(fn (int $count): bool => $count > 0)
+                                    ->map(fn (int $count, string $label): string => $label.': '.number_format($count).' ('.(int) round($count / $chartTotal * 100).'%)')
+                                    ->implode(', ');
+                            @endphp
+                            <section class="demographics-group" aria-label="{{ $chart['title'] }}">
+                                <h3>{{ $chart['title'] }}</h3>
+                                <div class="demographics-visual">
+                                    <div class="demographics-pie" role="img" aria-label="{{ $chart['title'] }}: {{ $chartDescription }}" style="background:conic-gradient({{ $pieBackground }})"></div>
+                                    <div class="demographics-legend">
+                                        @foreach($chart['values'] as $label => $count)
+                                            @if($count > 0)
+                                                <div class="demographics-row">
+                                                    <span class="demographics-label"><span class="demographics-swatch" style="background:{{ $chart['colors'][$loop->index] }}"></span>{{ $label }}</span>
+                                                    <span class="demographics-value">{{ number_format($count) }}</span>
+                                                    <span class="demographics-percent">{{ (int) round($count / $chartTotal * 100) }}%</span>
+                                                </div>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </section>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="demographics-empty">No enrolled learner demographics are available for the selected filters.</p>
+                @endif
+            </article>
+            <div class="analytics-side-stack">
+                <article class="card">
+                    <div class="card-heading"><div><h2 class="card-title">Assessment Performance</h2><p class="card-subtitle">Quiz attempt scores in the selected scope</p></div><div class="assessment-metric"><small>Pass Rate</small><strong>{{ $assessment['pass_rate'] === null ? '—' : $assessment['pass_rate'] . '%' }}</strong></div></div>
+                    <div class="assessment-bar"><div class="assessment-bar-head"><span>Average quiz score</span><strong>{{ $assessment['average'] === null ? 'No attempts' : $assessment['average'] . '%' }}</strong></div><div class="progress-track"><div class="progress-fill" style="width:{{ $assessment['average'] ?? 0 }}%"></div></div></div>
+                    <div class="metric-grid"><div class="metric-box"><strong>{{ number_format($assessment['total']) }}</strong><span>Scored Attempts</span></div><div class="metric-box"><strong>{{ $assessment['highest'] === null ? '—' : $assessment['highest'] . '%' }}</strong><span>Highest Score</span></div><div class="metric-box"><strong>{{ $assessment['lowest'] === null ? '—' : $assessment['lowest'] . '%' }}</strong><span>Lowest Score</span></div></div>
+                </article>
+                <article class="card">
+                <div class="card-heading"><div><h2 class="card-title">Credential &amp; Badge Analytics</h2><p class="card-subtitle">Credential outcomes across the platform</p></div></div>
+                <div class="credential-grid"><div class="credential-metric"><strong>{{ number_format($credentialMetrics['certificates']) }}</strong><span>Active Certificates</span></div><div class="credential-metric"><strong>{{ number_format($credentialMetrics['badges']) }}</strong><span>Badges Issued</span></div><div class="credential-metric"><strong>{{ number_format($credentialMetrics['verified']) }}</strong><span>Verifiable Certificates</span></div><div class="credential-metric"><strong>{{ number_format($credentialMetrics['pending']) }}</strong><span>Courses Awaiting Approval</span></div></div>
+                <div class="credential-heading">Credentials Issued Over Time</div><svg class="credential-chart" viewBox="0 0 760 230" preserveAspectRatio="none" aria-label="Credentials issued line chart"><path class="grid-line" d="M48 72H744M48 42H744"/><polygon class="chart-area" points="48,90 {{ $credentialActivity['points'] }} 744,90"/><polyline class="chart-line" points="{{ $credentialActivity['points'] }}"/></svg>
+                </article>
+            </div>
+        </section>
+
+        <section class="dashboard-grid course-performance-grid" aria-label="Course performance">
             <article class="card table-card">
                 <div class="card-heading"><div><h2 class="card-title">Course Performance</h2><p class="card-subtitle">Average learner progress and quiz score by course</p></div></div>
                 <table class="data-table"><thead><tr><th>Course</th><th>Enrolled</th><th>Avg. Progress</th><th>Avg. Score</th></tr></thead><tbody>
@@ -236,24 +318,6 @@
                         <tr><td class="course-name">{{ $course->title }}</td><td>{{ $course->enrolled }}</td><td><div class="progress-cell"><div class="progress-track"><div class="progress-fill" style="width:{{ $course->completion }}%"></div></div><span>{{ $course->completion }}%</span></div></td><td class="score">{{ $course->score === null ? '—' : $course->score . '%' }}</td></tr>
                     @endforeach
                 </tbody></table>
-            </article>
-            <article class="card">
-                <div class="card-heading"><div><h2 class="card-title">Assessment Performance</h2><p class="card-subtitle">Quiz attempt scores in the selected scope</p></div><div class="assessment-metric"><small>Pass Rate</small><strong>{{ $assessment['pass_rate'] === null ? '—' : $assessment['pass_rate'] . '%' }}</strong></div></div>
-                <div class="assessment-bar"><div class="assessment-bar-head"><span>Average quiz score</span><strong>{{ $assessment['average'] === null ? 'No attempts' : $assessment['average'] . '%' }}</strong></div><div class="progress-track"><div class="progress-fill" style="width:{{ $assessment['average'] ?? 0 }}%"></div></div></div>
-                <div class="metric-grid"><div class="metric-box"><strong>{{ number_format($assessment['total']) }}</strong><span>Scored Attempts</span></div><div class="metric-box"><strong>{{ $assessment['highest'] === null ? '—' : $assessment['highest'] . '%' }}</strong><span>Highest Score</span></div><div class="metric-box"><strong>{{ $assessment['lowest'] === null ? '—' : $assessment['lowest'] . '%' }}</strong><span>Lowest Score</span></div></div>
-            </article>
-        </section>
-
-        <section class="dashboard-grid equal" aria-label="Competency and credential analytics">
-            <article class="card">
-                <div class="card-heading"><div><h2 class="card-title">Competency Achievement</h2><p class="card-subtitle">Mastery rate by competency area</p></div></div>
-                <div class="competency-list">@foreach ($competencies as $competency)<div class="competency-row"><span>{{ $competency->name }}</span><div class="progress-track"><div class="progress-fill" style="width:{{ $competency->mastery }}%"></div></div><strong>{{ $competency->mastery }}%</strong></div>@endforeach</div>
-                <div class="card-footer"><span>Linked Competencies: <strong>{{ $totalCompetencies }}</strong></span><span>Highest mastery: <strong>{{ optional($competencies->first())->name ?? 'No data' }}{{ $competencies->isNotEmpty() ? ' (' . $competencies->first()->mastery . '%)' : '' }}</strong></span></div>
-            </article>
-            <article class="card">
-                <div class="card-heading"><div><h2 class="card-title">Credential &amp; Badge Analytics</h2><p class="card-subtitle">Credential outcomes across the platform</p></div></div>
-                <div class="credential-grid"><div class="credential-metric"><strong>{{ number_format($credentialMetrics['certificates']) }}</strong><span>Active Certificates</span></div><div class="credential-metric"><strong>{{ number_format($credentialMetrics['badges']) }}</strong><span>Badges Issued</span></div><div class="credential-metric"><strong>{{ number_format($credentialMetrics['verified']) }}</strong><span>Verifiable Certificates</span></div><div class="credential-metric"><strong>{{ number_format($credentialMetrics['pending']) }}</strong><span>Courses Awaiting Approval</span></div></div>
-                <div class="credential-heading">Credentials Issued Over Time</div><svg class="credential-chart" viewBox="0 0 760 230" preserveAspectRatio="none" aria-label="Credentials issued line chart"><path class="grid-line" d="M48 72H744M48 42H744"/><polygon class="chart-area" points="48,90 {{ $credentialActivity['points'] }} 744,90"/><polyline class="chart-line" points="{{ $credentialActivity['points'] }}"/></svg>
             </article>
         </section>
 
@@ -272,6 +336,7 @@
             window.location.assign(url.toString());
         });
     });
+
 </script>
 
 

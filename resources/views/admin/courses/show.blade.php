@@ -353,10 +353,7 @@
 
         {{-- ── Hero ── --}}
         @php
-            $plainDesc = str_replace(['</p>', '</div>', '</li>', '<br>', '<br/>', '<br />'], ' ', (string) ($course->description ?? ''));
-            $plainDesc = html_entity_decode(strip_tags($plainDesc), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            $plainDesc = trim(preg_replace('/[\s\x{00A0}]+/u', ' ', $plainDesc));
-            $shortDesc = \Illuminate\Support\Str::limit($plainDesc, 170);
+            $shortDesc = \Illuminate\Support\Str::limit(trim((string) ($course->short_description ?? '')), 170);
         @endphp
         <section class="card hero">
             <div class="thumb">
@@ -374,8 +371,6 @@
                 <div class="detail-title">{{ $course->title }}</div>
                 <div class="by"><svg class="ico"><use href="#i-user"/></svg>By {{ $course->instructor ?? 'Faculty' }}</div>
                 <div class="meta-row">
-                    @if ($course->level)<span><svg class="ico"><use href="#i-bars"/></svg>{{ $course->level }}</span>@endif
-                    @if ($course->duration)<span><svg class="ico"><use href="#i-clock"/></svg>{{ $course->duration }}</span>@endif
                     @if ($course->category)<span><svg class="ico"><use href="#i-tag"/></svg>{{ $course->category }}</span>@endif
                     @if ($course->created_at)<span><svg class="ico"><use href="#i-cal"/></svg>Created {{ $course->created_at->format('M j, Y') }}</span>@endif
                 </div>

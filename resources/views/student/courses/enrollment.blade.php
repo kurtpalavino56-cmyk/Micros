@@ -2055,8 +2055,8 @@ function unlockModule(modIdx) {
     if (group.dataset.finalExam === '1') checkQuizUnlock(modIdx);
 }
 
-/* â”€â”€ Retake quiz 24-hour cooldown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-const RETAKE_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
+/* Retake quiz 5-minute cooldown */
+const RETAKE_COOLDOWN_MS = 5 * 60 * 1000;
 const RETAKE_KEY_PREFIX  = 'quizRetakeUnlockAt_{{ $course->id ?? ($course->title ?? "course") }}_';
 var _cooldownTimerId = null;
 
@@ -2064,7 +2064,7 @@ function retakeKey(modIdx) {
     return RETAKE_KEY_PREFIX + modIdx;
 }
 
-/* Called when the student FAILS â†’ start (or restart) the 24h clock */
+/* Called when the student fails to start or restart the 5-minute clock */
 function startRetakeCooldown(modIdx) {
     try {
         localStorage.setItem(retakeKey(modIdx), String(Date.now() + RETAKE_COOLDOWN_MS));
@@ -2160,7 +2160,7 @@ function retakeQuiz() {
         return;
     }
 
-    // Hard guard: ignore clicks while the 24h cooldown is still running
+    // Hard guard: ignore clicks while the 5-minute cooldown is still running
     if (retakeMsRemaining(_curModIdx) > 0) {
         showRetakeButton(_curModIdx);   // re-render the countdown
         return;

@@ -798,7 +798,7 @@ class StudentController extends Controller
         // exactly where they left off (completed lessons + quiz scores).
         $state = $enrollment?->progress_state ?? [];
 
-        // Server-side retake cooldowns: a failed quiz locks for 24 hours
+        // Server-side retake cooldowns: a failed quiz locks for five minutes
         // based on quiz_attempts, so it survives page changes, new devices
         // and cleared browser storage.
         $quizUnlocks = [];
@@ -852,8 +852,8 @@ class StudentController extends Controller
                 // so the lock no longer applies.
                 $editedAt = $this->quizLastEditedAt($m->quiz);
                 $stale = $editedAt && $at && $at->lt($editedAt);
-                if (! $stale && $at && $at->copy()->addHours(24)->isFuture()) {
-                    $quizUnlocks[(string) $mIdx] = $at->copy()->addHours(24)->getTimestamp() * 1000;
+                if (! $stale && $at && $at->copy()->addMinutes(5)->isFuture()) {
+                    $quizUnlocks[(string) $mIdx] = $at->copy()->addMinutes(5)->getTimestamp() * 1000;
                 }
             }
         }
