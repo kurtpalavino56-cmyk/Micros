@@ -55,14 +55,29 @@
         <tr><th>Scored quiz attempts</th><td>{{ number_format($assessment['total']) }}</td><th>Average score</th><td>{{ $assessment['average'] === null ? 'No attempts' : $assessment['average'] . '%' }}</td></tr>
         <tr><th>Pass rate</th><td>{{ $assessment['pass_rate'] === null ? 'No attempts' : $assessment['pass_rate'] . '%' }}</td><th>Score range</th><td>{{ $assessment['lowest'] === null ? '—' : $assessment['lowest'] . '%–' . $assessment['highest'] . '%' }}</td></tr>
     </tbody></table>
-    <h2>Competency mastery</h2>
-    <table class="data"><thead><tr><th>Competency category</th><th class="right">Average mastery</th></tr></thead><tbody>
-        @forelse($competencies as $competency)
-            <tr><td>{{ $competency->name }}</td><td class="right">{{ $competency->mastery }}%</td></tr>
-        @empty
-            <tr><td colspan="2">No competency data is linked to these courses.</td></tr>
-        @endforelse
-    </tbody></table>
+    <h2>Learner demographics</h2>
+    @if($demographics['total'] > 0)
+        <p>Course enrollments in selected scope: {{ number_format($demographics['total']) }}</p>
+        <table class="data"><thead><tr><th>Age group</th><th class="right">Learners</th><th class="right">Share</th><th>Gender</th><th class="right">Learners</th><th class="right">Share</th></tr></thead><tbody>
+            @foreach($ageBands as $index => $ageBand)
+                @php
+                    $ageCount = $demographics['age'][$ageBand];
+                    $genderGroup = $genderGroups[$index] ?? null;
+                    $genderCount = $genderGroup ? $demographics['gender'][$genderGroup] : 0;
+                @endphp
+                <tr>
+                    <td>{{ $ageBand }}</td>
+                    <td class="right">{{ number_format($ageCount) }}</td>
+                    <td class="right">{{ (int) round($ageCount / $demographics['total'] * 100) }}%</td>
+                    <td>{{ $genderGroup ?? '' }}</td>
+                    <td class="right">{{ $genderGroup ? number_format($genderCount) : '' }}</td>
+                    <td class="right">{{ $genderGroup ? (int) round($genderCount / $demographics['total'] * 100).'%' : '' }}</td>
+                </tr>
+            @endforeach
+        </tbody></table>
+    @else
+        <p>No enrolled learner demographic data is available for the selected filters.</p>
+    @endif
     <h2>Credential outcomes</h2>
     <table class="data"><tbody>
         <tr><th>Active certificates</th><td>{{ number_format($credentialMetrics['certificates']) }}</td><th>Badges issued</th><td>{{ number_format($credentialMetrics['badges']) }}</td></tr>

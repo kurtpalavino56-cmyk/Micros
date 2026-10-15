@@ -113,35 +113,42 @@ test('a passing quiz submission is graded, persisted, and emits a quiz-passed ev
     expect(AnalyticsEvent::where('user_id', $student->id)->where('event_type', 'quiz_passed')->count())->toBe(1);
 });
 
-test('a failed quiz submission is persisted and receives a 24-hour unlock timestamp', function () {
+test('a failed quiz submission is persisted and receives a five-minute unlock timestamp', function () {
+    Carbon::setTestNow('2026-09-16 12:00:00');
     $student = User::factory()->create();
     [$course, $module] = makeCourseWithModule();
     $quiz = addQuiz($course, $module, ['passing_score' => 70], 3);
 
-    Carbon::setTestNow('2026-09-16 12:00:00');
-    $result = app(QuizAttemptService::class)->submit($student, $quiz, ['score' => 1]);
+    $result = app(QuizAttemptService::class)->submit($student, $quiz, [
+        'answers' => [(string) $quiz->questions->first()->id => 'A'],
+    ]);
 
     expect($result['blocked'])->toBeFalse()
         ->and($result['score'])->toBe(33)
         ->and($result['passed'])->toBeFalse()
-        ->and($result['unlock'])->toBe(Carbon::now()->addHours(24)->getTimestamp() * 1000);
+        ->and($result['unlock'])->toBe(Carbon::now()->addMinutes(5)->getTimestamp() * 1000);
     expect(QuizAttempt::where('user_id', $student->id)->count())->toBe(1);
     Carbon::setTestNow();
 });
 
 test('a failed quiz cannot be resubmitted during its cooldown', function () {
+    Carbon::setTestNow('2026-09-16 12:00:00');
     $student = User::factory()->create();
     [$course, $module] = makeCourseWithModule();
     $quiz = addQuiz($course, $module, ['attempts' => '3'], 3);
     $service = app(QuizAttemptService::class);
 
-    Carbon::setTestNow('2026-09-16 12:00:00');
-    $service->submit($student, $quiz, ['score' => 0]);
-    $blocked = $service->submit($student, $quiz, ['score' => 3]);
+    $failedAnswers = ['answers' => [(string) $quiz->questions->first()->id => 'B']];
+    $service->submit($student, $quiz, $failedAnswers);
+    $blocked = $service->submit($student, $quiz, $failedAnswers);
 
     expect($blocked['blocked'])->toBeTrue()
-        ->and($blocked['unlock'])->toBe(Carbon::now()->addHours(24)->getTimestamp() * 1000);
+        ->and($blocked['unlock'])->toBe(Carbon::now()->addMinutes(5)->getTimestamp() * 1000);
     expect(QuizAttempt::where('user_id', $student->id)->count())->toBe(1);
+
+    Carbon::setTestNow(Carbon::now()->addMinutes(5));
+    expect($service->submit($student, $quiz, $failedAnswers)['blocked'])->toBeFalse();
+    expect(QuizAttempt::where('user_id', $student->id)->count())->toBe(2);
     Carbon::setTestNow();
 });
 

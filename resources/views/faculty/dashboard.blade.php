@@ -198,8 +198,9 @@ main.faculty-dashboard .enrollment-bars.is-empty span:nth-child(5){height:45%}
 main.faculty-dashboard .enrollment-bars.is-empty span:nth-child(6){height:60%}
 main.faculty-dashboard .enrollment-empty-note{display:flex;align-items:center;min-height:54px;margin-top:17px;padding:12px 14px;border-radius:13px;background:rgba(255,245,209,.72);color:rgba(11,27,69,.8);font-size:11px;line-height:1.55}
 main.faculty-dashboard .attention-list{display:flex;flex-direction:column;gap:9px}
-main.faculty-dashboard .attention-item{display:flex;flex-direction:column;gap:5px;padding:11px 12px;border:1px solid var(--dash-line);border-radius:12px;background:#fff;color:var(--dash-ink);text-decoration:none}
-main.faculty-dashboard .attention-item:hover{border-color:var(--dash-royal);background:var(--dash-canvas)}
+main.faculty-dashboard .attention-item{display:flex;flex-direction:column;gap:5px;padding:11px 12px;border:1px solid #F0E4BF;border-radius:12px;background:#FFFCF3;color:var(--dash-ink);text-decoration:none;transition:border-color .18s ease,background-color .18s ease}
+main.faculty-dashboard .attention-item:hover{border-color:#E8C85A;background:#FFF8DF}
+main.faculty-dashboard .attention-item:focus-visible{outline:2px solid var(--dash-royal);outline-offset:2px}
 main.faculty-dashboard .attention-course{font-size:11px;font-weight:700;color:var(--dash-ink)}
 main.faculty-dashboard .attention-label{font-size:11px;color:var(--dash-muted);line-height:1.4}
 main.faculty-dashboard .attention-feedback{font-size:10px;color:var(--dash-muted);line-height:1.45}

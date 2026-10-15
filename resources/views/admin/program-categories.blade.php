@@ -37,6 +37,7 @@
     body {
         margin: 0;
         font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-weight: 400;
         color: var(--navy);
         background: var(--bg);
     }
@@ -78,6 +79,8 @@
     .page-head h1 {
         margin: 0 0 5px;
         font-size: 26px;
+        font-weight: 700;
+        color: #000;
     }
 
     .page-head p {
@@ -94,7 +97,7 @@
         border-radius: 999px;
         padding: 7px 16px;
         font-size: 13px;
-        font-weight: 800;
+        font-weight: 700;
         white-space: nowrap;
     }
 
@@ -148,7 +151,7 @@
     .card-hd {
         padding: 16px 20px;
         border-bottom: 1px solid var(--line);
-        font-weight: 800;
+        font-weight: 700;
         font-size: 15px;
     }
 
@@ -166,6 +169,7 @@
     th {
         text-align: left;
         font-size: 11px;
+        font-weight: 600;
         text-transform: uppercase;
         letter-spacing: .5px;
         color: var(--muted);
@@ -186,7 +190,7 @@
     }
 
     .cat-name {
-        font-weight: 800;
+        font-weight: 600;
     }
 
     .cat-desc {
@@ -200,7 +204,7 @@
         border-radius: 999px;
         padding: 4px 12px;
         font-size: 11.5px;
-        font-weight: 800;
+        font-weight: 600;
     }
 
     .pill-on {
@@ -231,7 +235,7 @@
         border-radius: 9px;
         padding: 7px 13px;
         font-size: 12.5px;
-        font-weight: 700;
+        font-weight: 600;
         color: var(--navy);
         transition: background .15s, color .15s;
     }
@@ -271,7 +275,7 @@
     label {
         display: block;
         font-size: 12.5px;
-        font-weight: 800;
+        font-weight: 600;
         margin-bottom: 6px;
     }
 
@@ -324,7 +328,7 @@
         align-items: center;
         gap: 7px;
         font-size: 13px;
-        font-weight: 700;
+        font-weight: 600;
     }
 
     /* ── Responsive ────────────────────────────────────────── */
@@ -434,6 +438,7 @@
 
                 @else
 
+                    <div class="paginated-table-scroll">
                     <table>
                         <thead>
                             <tr>
@@ -584,6 +589,7 @@
 
                         </tbody>
                     </table>
+                    </div>
                     @include('components.pagination', ['paginator' => $categories])
 
                 @endif

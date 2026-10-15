@@ -19,7 +19,7 @@
         display: flex;
         flex-direction: column;
         min-height: calc(100vh - 150px);
-        background: linear-gradient(170deg, var(--navy) 0%, var(--navy-dark) 55%, #0e2b8e 100%);
+        background: #f8fafc;
     }
 
     .students-hero {
@@ -41,7 +41,7 @@
 
     .credential-lookup h1 {
         margin: 0;
-        color: var(--white);
+        color: #172f94;
         font-family: var(--font-display);
         font-size: 2.4rem;
         font-weight: 800;
@@ -50,7 +50,7 @@
 
     .credential-lookup__intro {
         margin: 0 0 2rem;
-        color: rgba(255,255,255,.75);
+        color: #64748b;
         font-size: .98rem;
     }
 
@@ -63,12 +63,12 @@
         border: 0;
         border-radius: 50px;
         background: #fff;
-        box-shadow: 0 10px 30px rgba(0,0,0,.22);
+        box-shadow: 0 8px 24px rgba(15,23,42,.08);
         text-align: left;
     }
 
     .credential-search:focus-within {
-        box-shadow: 0 0 0 3px rgba(255, 213, 1, .45), 0 10px 30px rgba(0, 0, 0, .22);
+        box-shadow: 0 0 0 3px rgba(23,47,148,.16), 0 8px 24px rgba(15,23,42,.08);
     }
 
     .credential-search__icon {
@@ -139,21 +139,21 @@
         justify-content: center;
         gap: 10px;
         margin-top: 8px;
-        color: rgba(255,255,255,.72);
+        color: #64748b;
         font-size: 12px;
     }
 
     .students-hero__hint {
         margin: .85rem 0 0;
-        color: rgba(255,255,255,.55);
+        color: #64748b;
         font-size: .8rem;
     }
 
     .students-hero__hint code {
         padding: .1rem .45rem;
         border-radius: 6px;
-        background: rgba(255,255,255,.12);
-        color: var(--gold-light);
+        background: #e8edf8;
+        color: #172f94;
         font-size: .78rem;
     }
 
@@ -166,10 +166,10 @@
         gap: 12px;
         margin: 1.1rem auto 0;
         padding: 14px 18px;
-        border: 1px dashed rgba(255,255,255,.5);
+        border: 1px dashed #b8c3d8;
         border-radius: 12px;
-        background: rgba(255,255,255,.06);
-        color: rgba(255,255,255,.9);
+        background: #fff;
+        color: #344054;
         cursor: pointer;
         text-align: left;
         transition: background var(--transition), border-color var(--transition);
@@ -177,12 +177,12 @@
 
     .credential-dropzone:hover,
     .credential-dropzone.is-dragging {
-        border-color: var(--gold-light);
-        background: rgba(255,255,255,.12);
+        border-color: #172f94;
+        background: #f1f5fb;
     }
 
     .credential-dropzone:focus-within {
-        outline: 2px solid var(--gold-light);
+        outline: 2px solid #172f94;
         outline-offset: 3px;
     }
 
@@ -190,12 +190,12 @@
         width: 25px;
         height: 25px;
         flex: 0 0 auto;
-        color: var(--gold-light);
+        color: #172f94;
     }
 
     .credential-dropzone__copy { display: grid; gap: 3px; }
-    .credential-dropzone__copy strong { color: #fff; font-size: .9rem; }
-    .credential-dropzone__copy span { color: rgba(255,255,255,.68); font-size: .78rem; }
+    .credential-dropzone__copy strong { color: #182230; font-size: .9rem; }
+    .credential-dropzone__copy span { color: #64748b; font-size: .78rem; }
 
     .credential-dropzone input {
         position: absolute;

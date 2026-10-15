@@ -7,7 +7,7 @@
     </header>
 
     @if ($certificates->total())
-        <div class="certificate-table-wrap ui-table-wrap">
+        <div class="certificate-table-wrap ui-table-wrap paginated-table-scroll">
             <table class="certificate-table ui-table" aria-label="Earned certificates">
                 <thead>
                     <tr>

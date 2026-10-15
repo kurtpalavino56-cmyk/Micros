@@ -29,7 +29,7 @@
                 <span class="material-symbols-rounded" aria-hidden="true">menu</span>
             </button>
         @elseif ($hasStudentSidebar)
-            <button class="student-sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Collapse sidebar" aria-expanded="true" title="Collapse sidebar">
+            <button class="student-sidebar-toggle" id="sidebar-toggle" type="button" aria-controls="student-sidebar" aria-label="Open navigation menu" aria-expanded="false" title="Open navigation menu">
                 <span class="material-symbols-rounded" aria-hidden="true">menu</span>
             </button>
         @endif
@@ -90,7 +90,7 @@
     .auth-topbar,.auth-topbar *{box-sizing:border-box;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-style:normal;}
     .auth-topbar .material-symbols-rounded{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;display:inline-block;line-height:1;text-transform:none;letter-spacing:normal;white-space:nowrap;direction:ltr;font-feature-settings:"liga";-webkit-font-smoothing:antialiased;}
     .auth-topbar{--navy:#0d1b6e;--gold:#dba617;--gold-light:#ffd84a;background:linear-gradient(115deg, #001B33 0%,#071550 0%,#0d1b6e 58%,#102b83 100%);display:flex;align-items:center;justify-content:space-between;padding:12px 28px;gap:20px;position:sticky;top:0;z-index:1000;border-bottom:1px solid rgba(255,255,255,.1);box-shadow:0 8px 24px rgba(7,21,80,.2);}
-    .auth-topbar.admin-auth-topbar{--navy:#111111;--gold:#f9c21b;--gold-light:#f9c21b;background:#111111;border-bottom:1px solid #262626;box-shadow:0 8px 24px rgba(0,0,0,.18);}
+    .auth-topbar.admin-auth-topbar{--navy:#2b373e;--gold:#f9c21b;--gold-light:#f9c21b;background:#2b373e;border-bottom:1px solid #202a30;box-shadow:0 8px 24px rgba(0,0,0,.18);}
     .admin-auth-topbar .auth-topbar-brand strong>span:first-child{color:#f9c21b;}
     .admin-auth-topbar .admin-brand-skill{color:#fff;}
     .admin-auth-topbar .auth-topbar-inbox.is-active{color:var(--gold-light);background:rgba(255,255,255,.12);}
@@ -166,12 +166,32 @@
         .auth-topbar-brand strong{font-size:18px;}
         .auth-topbar-logo{width:36px;height:36px;flex-basis:36px;}
         .faculty-auth-topbar .faculty-sidebar-toggle{flex-basis:36px;width:36px;height:36px;}
-        .student-auth-topbar .student-sidebar-toggle{flex-basis:36px;width:36px;height:36px;}
+        .student-auth-topbar .student-sidebar-toggle{left:0;margin-right:0;flex-basis:36px;width:36px;height:36px;}
+        .student-auth-topbar .auth-topbar-brand{gap:6px;}
         .auth-topbar-nav{display:none;}
         .auth-topbar-actions{margin-left:auto;gap:12px;}
         .auth-profile-name{max-width:100px;}
         .auth-profile-role{max-width:100px;}
         .auth-notifications-panel{position:fixed;top:64px;right:12px;left:12px;width:auto;}
+    }
+    @media (max-width:480px){
+        .student-auth-topbar{gap:6px;padding:10px 12px;}
+        .student-auth-topbar .auth-topbar-brand strong{font-size:16px;}
+        .student-auth-topbar .auth-topbar-logo{width:32px;height:32px;flex-basis:32px;}
+        .student-auth-topbar .student-sidebar-toggle{flex-basis:32px;width:32px;height:32px;}
+        .student-auth-topbar .auth-topbar-actions{gap:5px;}
+        .student-auth-topbar .auth-topbar-icon{width:34px;height:34px;flex-basis:34px;}
+        .student-auth-topbar .auth-profile{margin-left:0;padding-left:0;}
+        .student-auth-topbar .auth-profile::before,
+        .student-auth-topbar .auth-profile-copy,
+        .student-auth-topbar .auth-profile-chevron{display:none;}
+        .student-auth-topbar .auth-profile-avatar{width:32px;height:32px;}
+        .student-auth-topbar .auth-notifications-panel{top:58px;right:8px;left:8px;}
+    }
+    @media (max-width:360px){
+        .student-auth-topbar{padding-right:8px;padding-left:8px;}
+        .student-auth-topbar .auth-topbar-brand strong{font-size:14px;}
+        .student-auth-topbar .auth-topbar-actions{gap:3px;}
     }
 </style>
 

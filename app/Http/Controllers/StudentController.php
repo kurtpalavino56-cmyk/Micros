@@ -130,7 +130,10 @@ class StudentController extends Controller
             ->where('user_id', $auth->id)
             ->latest('earned_at')
             ->get()
-            ->map(fn (UserBadge $ub) => (object) ['name' => $ub->badge->name ?? 'Badge'])
+            ->map(fn (UserBadge $ub) => (object) [
+                'name' => $ub->badge->name ?? 'Badge',
+                'icon_url' => $ub->badge->icon_url ?? null,
+            ])
             ->values();
 
         $progress = $enrollments
@@ -143,6 +146,7 @@ class StudentController extends Controller
                 'is_completed' => $e->completion_status === MicrocredentialCompletionService::STATUS_COMPLETED,
                 'completed_lessons' => count((array) ($e->progress_state['completed_lessons'] ?? [])),
             ])->values();
+        [$activityMonths, $activityTotal] = $this->dashboardActivity((int) $auth->id);
 
         return view('student.dashboard', [
             'user' => UserPresenter::student($auth),
@@ -161,7 +165,91 @@ class StudentController extends Controller
             'skill_options' => SkillCatalog::all(),
             'skill_groups' => SkillCatalog::groups(),
             'stackingFrameworks' => $stackingFrameworks,
+            'activityMonths' => $activityMonths,
+            'activityTotal' => $activityTotal,
         ]);
+    }
+
+    /**
+     * @return array{0: array<int, array{label: string, year: string, total: int, weeks: array<int, array<int, array{date: string, count: int, level: int, placeholder: bool}>>}>, 1: int}
+     */
+    private function dashboardActivity(int $userId): array
+    {
+        $timezone = 'Asia/Manila';
+        $today = Carbon::now($timezone)->startOfDay();
+        $firstMonth = $today->copy()->startOfMonth()->subMonths(11);
+        $lastActivityDate = $today->copy()->endOfDay();
+        $dailyCounts = [];
+
+        $activityEvents = DB::table('analytics_events')
+            ->where('user_id', $userId)
+            ->whereBetween('occurred_at', [
+                $firstMonth->copy()->utc(),
+                $lastActivityDate->copy()->utc(),
+            ])
+            ->get(['occurred_at']);
+
+        foreach ($activityEvents as $activityEvent) {
+            $activityDate = Carbon::parse($activityEvent->occurred_at, 'UTC')
+                ->timezone($timezone)
+                ->toDateString();
+            $dailyCounts[$activityDate] = ($dailyCounts[$activityDate] ?? 0) + 1;
+        }
+
+        $months = [];
+        $total = 0;
+        for ($monthOffset = 0; $monthOffset < 12; $monthOffset++) {
+            $month = $firstMonth->copy()->addMonths($monthOffset);
+            $monthEnd = $month->copy()->endOfMonth();
+            $days = [];
+            $monthTotal = 0;
+
+            for ($dayOfMonth = 1; $dayOfMonth <= $monthEnd->day; $dayOfMonth++) {
+                $date = $month->copy()->addDays($dayOfMonth - 1);
+                $count = $date->lte($today) ? ($dailyCounts[$date->toDateString()] ?? 0) : 0;
+                $level = match (true) {
+                    $count === 0 => 0,
+                    $count === 1 => 1,
+                    $count <= 3 => 2,
+                    $count <= 5 => 3,
+                    default => 4,
+                };
+
+                $days[] = [
+                    'date' => $date->format('F j, Y'),
+                    'count' => $count,
+                    'level' => $level,
+                    'placeholder' => false,
+                ];
+                $monthTotal += $count;
+            }
+
+            array_unshift($days, ...array_fill(0, $month->dayOfWeekIso - 1, [
+                'date' => '',
+                'count' => 0,
+                'level' => 0,
+                'placeholder' => true,
+            ]));
+
+            while (count($days) % 7 !== 0) {
+                $days[] = [
+                    'date' => '',
+                    'count' => 0,
+                    'level' => 0,
+                    'placeholder' => true,
+                ];
+            }
+
+            $months[] = [
+                'label' => $month->format('M'),
+                'year' => $month->format('Y'),
+                'total' => $monthTotal,
+                'weeks' => array_chunk($days, 7),
+            ];
+            $total += $monthTotal;
+        }
+
+        return [$months, $total];
     }
 
     // ── Enrolled Courses page ────────────────────────────────────────────
@@ -469,9 +557,6 @@ class StudentController extends Controller
         ])->values();
 
         $progressPercent = $this->syncEnrollmentProgress($course, $enrollment);
-        $completionReady = $enrollment
-            ? $this->courseCompletion->isReady($course, $enrollment)
-            : false;
 
         $prerequisiteIds = collect($course->prerequisite_ids ?? [])
             ->map(fn ($id) => (int) $id)
@@ -546,7 +631,6 @@ class StudentController extends Controller
             'finalExam' => $finalExam,
             'is_enrolled' => (bool) $enrollment,
             'is_completed' => $enrollment?->completion_status === MicrocredentialCompletionService::STATUS_COMPLETED,
-            'completion_ready' => $completionReady,
             'progress_percent' => $progressPercent,
             'prerequisites' => $prerequisites,
             'prerequisites_met' => $prerequisitesMet,
@@ -714,7 +798,7 @@ class StudentController extends Controller
         // exactly where they left off (completed lessons + quiz scores).
         $state = $enrollment?->progress_state ?? [];
 
-        // Server-side retake cooldowns: a failed quiz locks for 24 hours
+        // Server-side retake cooldowns: a failed quiz locks for five minutes
         // based on quiz_attempts, so it survives page changes, new devices
         // and cleared browser storage.
         $quizUnlocks = [];
@@ -768,8 +852,8 @@ class StudentController extends Controller
                 // so the lock no longer applies.
                 $editedAt = $this->quizLastEditedAt($m->quiz);
                 $stale = $editedAt && $at && $at->lt($editedAt);
-                if (! $stale && $at && $at->copy()->addHours(24)->isFuture()) {
-                    $quizUnlocks[(string) $mIdx] = $at->copy()->addHours(24)->getTimestamp() * 1000;
+                if (! $stale && $at && $at->copy()->addMinutes(5)->isFuture()) {
+                    $quizUnlocks[(string) $mIdx] = $at->copy()->addMinutes(5)->getTimestamp() * 1000;
                 }
             }
         }
@@ -2210,7 +2294,6 @@ class StudentController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
-            'role' => ['nullable', 'string', 'max:80'],
             'phone' => ['nullable', 'string', 'max:40'],
             'location' => ['nullable', 'string', 'max:120'],
             'about' => ['nullable', 'string', 'max:600'],
@@ -2227,7 +2310,6 @@ class StudentController extends Controller
             'skills_have.*' => ['string', 'max:60'],
             'skills_want' => ['nullable', 'array'],
             'skills_want.*' => ['string', 'max:60'],
-            'email' => ['required', 'email', 'max:120', 'unique:users,email,'.$auth->id],
             'language' => ['nullable', 'string', 'max:40'],
             'timezone' => ['nullable', 'string', 'max:60'],
             'avatar_base64' => ['nullable', 'string'],
@@ -2249,7 +2331,6 @@ class StudentController extends Controller
         $parts = preg_split('/\s+/', trim($data['name']), 2);
         $auth->first_name = $parts[0];
         $auth->last_name = $parts[1] ?? $auth->last_name;
-        $auth->email = $data['email'];
         $auth->phone = $data['phone'] ?? null;
         $auth->location = $data['location'] ?? null;
         $auth->about = $data['about'] ?? null;
@@ -2285,10 +2366,6 @@ class StudentController extends Controller
         }
         $auth->language = $data['language'] ?? null;
         $auth->timezone = $data['timezone'] ?? null;
-
-        if (! empty($data['role'])) {
-            $auth->role_label = $data['role'];
-        }
 
         if (! empty($data['date_of_birth'])) {
             try {

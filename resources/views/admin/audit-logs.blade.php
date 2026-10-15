@@ -12,7 +12,7 @@
         .audit-main{padding:30px 32px 48px!important;}
         .audit-content{max-width:1440px;margin:0 auto;}
         .audit-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:20px;}
-        .audit-heading h1{margin:0 0 6px;color:var(--navy);font-size:30px;}
+        .audit-heading h1{margin:0 0 6px;color:#000;font-size:30px;}
         .audit-heading p{margin:0;color:var(--muted);font-size:14px;line-height:1.5;}
         .audit-count{flex:none;padding:8px 13px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--muted);font-size:13px;font-weight:700;}
         .audit-card{margin-bottom:18px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:var(--shadow);}
@@ -82,6 +82,7 @@
 
                 <div class="audit-layout">
                 <section class="audit-card audit-table-wrap" aria-label="System activity audit log entries">
+                    <div class="paginated-table-scroll audit-table-scroll">
                     <table class="audit-table">
                         <thead>
                             <tr><th>Date and time</th><th>User</th><th>Action</th><th>Target</th><th>Technical details</th></tr>
@@ -105,11 +106,8 @@
                             @endforelse
                         </tbody>
                     </table>
-                    @if($logs->hasPages())
-                        <div class="audit-pagination">
-                            @include('components.pagination', ['paginator' => $logs, 'ariaLabel' => 'Audit log pages'])
-                        </div>
-                    @endif
+                    </div>
+                    @include('components.pagination', ['paginator' => $logs, 'ariaLabel' => 'Audit log pages'])
                 </section>
                 <aside class="audit-card" aria-label="Audit log filters">
                     <form class="audit-filters" method="GET" action="{{ route('admin.audit-logs') }}">

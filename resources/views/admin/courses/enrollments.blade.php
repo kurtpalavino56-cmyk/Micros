@@ -12,7 +12,7 @@
         .enrollment-main{min-width:0;padding:28px 30px 56px!important;}
         .enrollment-content{max-width:1180px;margin:0 auto;}
         .enrollment-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:18px;}
-        .enrollment-heading h1{margin:0;color:var(--enrollment-navy);font-size:1.6rem;line-height:1.25;overflow-wrap:anywhere;}
+        .enrollment-heading h1{margin:0;color:#000;font-size:1.6rem;line-height:1.25;overflow-wrap:anywhere;}
         .enrollment-heading p{margin:6px 0 0;color:var(--enrollment-muted);font-size:.9rem;}
         .enrollment-counts{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;}
         .enrollment-count{display:inline-flex;align-items:center;padding:7px 12px;border:1px solid var(--enrollment-line);border-radius:999px;background:#fff;color:var(--enrollment-muted);font-size:.78rem;font-weight:700;white-space:nowrap;}
@@ -108,7 +108,7 @@
                             </form>
                         @endunless
                     </div>
-                    <div class="enrollment-table-wrap">
+                    <div class="enrollment-table-wrap paginated-table-scroll">
                         <table class="enrollment-table {{ $course ? '' : 'global' }}">
                             <thead>
                                 <tr>
@@ -155,11 +155,7 @@
                             </tbody>
                         </table>
                     </div>
-                    @if($enrollments->hasPages())
-                        <div class="enrollment-pagination">
-                            @include('components.pagination', ['paginator' => $enrollments, 'ariaLabel' => 'Enrollment pagination'])
-                        </div>
-                    @endif
+                    @include('components.pagination', ['paginator' => $enrollments, 'ariaLabel' => 'Enrollment pagination'])
                 </section>
             </div>
         </main>

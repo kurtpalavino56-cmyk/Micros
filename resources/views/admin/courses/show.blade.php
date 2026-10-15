@@ -87,7 +87,7 @@
         .featured-tag { position: absolute; top: 8px; left: 8px; padding: 3px 10px; border-radius: 6px; background: var(--yellow); color: var(--navy); font-size: .72rem; font-weight: 700; }
 
         .hero-info { min-width: 0; padding: 4px 0; }
-        .detail-title { font-size: 1.4rem; font-weight: 700; color: var(--title); line-height: 1.25; }
+        .detail-title { font-size: 1.4rem; font-weight: 700; color: #000; line-height: 1.25; }
         .by { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: .86rem; color: var(--muted); }
         .by .ico { width: 15px; height: 15px; color: var(--blue); }
         .meta-row { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 12px; font-size: .8rem; color: var(--muted); }
@@ -353,10 +353,7 @@
 
         {{-- ── Hero ── --}}
         @php
-            $plainDesc = str_replace(['</p>', '</div>', '</li>', '<br>', '<br/>', '<br />'], ' ', (string) ($course->description ?? ''));
-            $plainDesc = html_entity_decode(strip_tags($plainDesc), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            $plainDesc = trim(preg_replace('/[\s\x{00A0}]+/u', ' ', $plainDesc));
-            $shortDesc = \Illuminate\Support\Str::limit($plainDesc, 170);
+            $shortDesc = \Illuminate\Support\Str::limit(trim((string) ($course->short_description ?? '')), 170);
         @endphp
         <section class="card hero">
             <div class="thumb">
@@ -374,8 +371,6 @@
                 <div class="detail-title">{{ $course->title }}</div>
                 <div class="by"><svg class="ico"><use href="#i-user"/></svg>By {{ $course->instructor ?? 'Faculty' }}</div>
                 <div class="meta-row">
-                    @if ($course->level)<span><svg class="ico"><use href="#i-bars"/></svg>{{ $course->level }}</span>@endif
-                    @if ($course->duration)<span><svg class="ico"><use href="#i-clock"/></svg>{{ $course->duration }}</span>@endif
                     @if ($course->category)<span><svg class="ico"><use href="#i-tag"/></svg>{{ $course->category }}</span>@endif
                     @if ($course->created_at)<span><svg class="ico"><use href="#i-cal"/></svg>Created {{ $course->created_at->format('M j, Y') }}</span>@endif
                 </div>

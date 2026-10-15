@@ -171,62 +171,6 @@
                     </div>
                 </div>
 
-                {{-- Settings card --}}
-                <div class="card-block ui-card-surface">
-                    <div class="ui-card-header">
-                        <h4 class="section-title ui-section-title">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                            Settings
-                        </h4>
-                    </div>
-                    <div class="settings-row">
-                        <span class="label">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>
-                            Email
-                        </span>
-                        <span class="value-text">{{ $user->email ?? '' }}</span>
-                        <button class="btn-change ui-button ui-button--secondary" type="button" onclick="openEditModal('settings')">Change</button>
-                    </div>
-                    <div class="settings-row">
-                        <span class="label">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                            Password
-                        </span>
-                        <span class="value-text">************</span>
-                        <button class="btn-change ui-button ui-button--secondary" type="button" onclick="openEditModal('settings')">Change</button>
-                    </div>
-                    <div class="settings-row">
-                        <span class="label">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></svg>
-                            Language
-                        </span>
-                        <select class="settings-select ui-select" name="language" aria-label="Language">
-                            <option @selected(($user->language ?? 'English') === 'English')>English</option>
-                            <option @selected(($user->language ?? '') === 'Filipino')>Filipino</option>
-                        </select>
-                    </div>
-                    <div class="settings-row">
-                        <span class="label">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-                            Time zone
-                        </span>
-                        <select class="settings-select ui-select" name="timezone" aria-label="Time zone">
-                            @php
-                                $tzLabels = [
-                                    'Asia/Manila'      => '(GMT+8:00) Asia/Manila',
-                                    'UTC'              => 'UTC',
-                                    'America/New_York' => '(GMT-5:00) New York',
-                                    'Europe/London'    => '(GMT+0:00) London',
-                                ];
-                                $currentTz = $user->timezone ?? 'Asia/Manila';
-                            @endphp
-                            @foreach($tzLabels as $val => $label)
-                                <option value="{{ $val }}" @selected($currentTz === $val)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-
             </div>
 
             {{-- Right column --}}
@@ -403,9 +347,9 @@
 
                     <div class="form-group">
                         <label for="edit_role">Role / Title</label>
-                        <input class="ui-input" type="text" id="edit_role" name="role"
+                        <input class="ui-input profile-readonly-field" type="text" id="edit_role" name="role"
                             value="{{ old('role', $user->role ?? '') }}"
-                            placeholder="e.g. Student, Developer">
+                            placeholder="e.g. Student, Developer" readonly>
                     </div>
                 </div>
 
@@ -583,10 +527,10 @@
 
                     <div class="form-group">
                         <label for="edit_email">Email</label>
-                        <input class="ui-input" type="email" id="edit_email" name="email"
+                        <input class="ui-input profile-readonly-field" type="email" id="edit_email" name="email"
                             value="{{ old('email', $user->email ?? '') }}"
-                            placeholder="you@example.com">
-                        <p class="hint">This is used to log in and receive notifications.</p>
+                            placeholder="you@example.com" readonly>
+                        <p class="hint">Email changes are managed by an administrator.</p>
                     </div>
 
                     <hr class="form-divider">

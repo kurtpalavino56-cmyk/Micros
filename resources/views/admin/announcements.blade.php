@@ -34,8 +34,9 @@
         display:inline-flex;align-items:center;justify-content:center;}
     /* Matches the padding the other admin pages use (30px 34px 44px). */
     .wrap{max-width:1080px;margin:0 auto;padding:34px 40px 52px;}
-    .page-heading{font-size:1.6rem;font-weight:800;margin:0 0 4px;}
-    .page-sub{color:var(--muted);font-size:.92rem;margin:0 0 22px;}
+    .page-intro{margin-bottom:32px;}
+    .page-heading{font-size:1.6rem;font-weight:800;margin:0 0 4px;color:#000;}
+    .page-sub{color:var(--muted);font-size:.92rem;margin:0;}
     .card{background:#fff;border:1px solid var(--line);border-radius:18px;
         box-shadow:var(--shadow);padding:24px 26px;margin-bottom:22px;}
     .card h2{margin:0 0 16px;font-size:1.05rem;}
@@ -59,22 +60,15 @@
     .audience-opts input{width:16px;height:16px;accent-color:var(--navy);cursor:pointer;}
     .btn{border:none;border-radius:999px;padding:11px 22px;font-weight:800;font-size:13.5px;}
     .btn-navy{background:var(--navy);color:#fff;}
-    /* Home pill — same treatment as the Complaint Inbox page. */
-    .btn-home{display:inline-flex;align-items:center;gap:7px;background:#fff;
-        border:1px solid var(--line);color:var(--navy);font-weight:700;font-size:13.5px;
-        padding:9px 18px 9px 14px;border-radius:999px;box-shadow:var(--shadow);
-        margin-bottom:20px;transition:background .18s ease,color .18s ease,
-        border-color .18s ease,transform .18s ease;}
-    .btn-home:hover{background:var(--navy);color:#fff;border-color:var(--navy);transform:translateY(-1px);}
-    .btn-home svg{width:16px;height:16px;}
     .btn-ghost{background:#fff;border:1.5px solid var(--line);color:var(--navy);padding:8px 16px;
         border-radius:999px;font-weight:700;font-size:12.5px;}
     .btn-danger{background:#fff1f2;border:1px solid #fecdd3;color:#b91c1c;padding:8px 16px;
         border-radius:999px;font-weight:700;font-size:12.5px;}
-    .ann{border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px;}
+    .ann{border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-bottom:10px;background:#fff;}
     .ann:last-child{margin-bottom:0;}
-    .ann-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;}
-    .ann-title{font-size:16px;font-weight:800;margin:0 0 6px;}
+    .ann-head{display:flex;justify-content:space-between;align-items:center;gap:18px;}
+    .ann-title{font-size:15px;font-weight:800;margin:0 0 8px;color:#17212b;}
+    .ann-copy{min-width:0;}
     .ann-body{color:#4b5563;font-size:14px;line-height:1.55;margin:0 0 10px;overflow-wrap:anywhere;}
     .ann-body p{margin:0 0 8px;}
     .ann-body p:last-child{margin-bottom:0;}
@@ -89,11 +83,43 @@
     .alert-err{background:#fff1f2;border:1px solid #fecdd3;color:#b91c1c;}
     .empty{color:var(--muted);text-align:center;padding:34px 8px;font-size:14px;}
     .actions{display:flex;gap:8px;flex-shrink:0;}
+    .btn-view{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;
+        border:1.5px solid var(--line);border-radius:999px;background:#fff;color:var(--navy);}
+    .btn-view:hover{background:#f7f9ff;border-color:#c9ccdb;}
+    .btn-view svg{width:18px;height:18px;fill:currentColor;}
+    .btn-view:focus-visible,.btn-ghost:focus-visible,.btn-pin:focus-visible,.btn-danger:focus-visible,
+    .announcement-dialog-close:focus-visible{outline:3px solid rgba(11,78,162,.28);outline-offset:2px;}
     .btn-pin{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--line);
         color:var(--navy);padding:8px 14px;border-radius:999px;font-weight:700;font-size:12.5px;}
     .btn-pin.is-pinned{background:#fff8df;border-color:#e9cf72;color:#806208;}
     .btn-pin svg{width:16px;height:16px;flex:0 0 16px;}
-    @media(max-width:640px){.ann-head{flex-direction:column;}}
+    .announcement-modal[hidden]{display:none;}
+    .announcement-modal{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;padding:16px;}
+    .announcement-modal-backdrop{position:absolute;inset:0;background:rgba(7,20,63,.68);backdrop-filter:blur(3px);}
+    .announcement-dialog{position:relative;width:min(100%,760px);max-height:min(85vh,820px);overflow-y:auto;
+        padding:24px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 24px 70px rgba(6,16,52,.3);}
+    .announcement-dialog-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
+        padding-bottom:16px;border-bottom:1px solid var(--line);}
+    .announcement-dialog-head h2{margin:0;color:#000;font-size:22px;line-height:1.3;overflow-wrap:anywhere;}
+    .announcement-dialog-meta{margin:6px 0 0;color:var(--muted);font-size:12px;}
+    .announcement-dialog-close{width:36px;height:36px;flex:0 0 36px;border:0;border-radius:50%;
+        background:#f1f3f8;color:var(--navy);font-size:24px;line-height:1;cursor:pointer;}
+    .announcement-dialog-content{padding-top:18px;color:#4b5563;font-size:14px;line-height:1.65;overflow-wrap:anywhere;}
+    .announcement-dialog-content > :first-child{margin-top:0;}
+    .announcement-dialog-content img{max-width:100%;height:auto;}
+    .announcement-edit-modal[hidden]{display:none;}
+    .announcement-edit-modal{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;padding:16px;}
+    .announcement-edit-dialog{position:relative;width:min(100%,760px);max-height:min(90vh,900px);overflow-y:auto;
+        padding:24px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 24px 70px rgba(6,16,52,.3);}
+    .announcement-edit-dialog .announcement-dialog-head{align-items:center;}
+    .announcement-edit-dialog .field{margin-top:18px;}
+    .announcement-edit-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;}
+    .btn-cancel{background:#fff;border:1.5px solid var(--line);color:var(--navy);padding:10px 18px;
+        border-radius:999px;font-weight:700;font-size:13px;}
+    .btn-cancel:hover{background:#f7f9ff;}
+    body.announcement-modal-open{overflow:hidden;}
+    @media(max-width:640px){.ann-head{align-items:flex-start;flex-direction:column;}.actions{flex-wrap:wrap;}.announcement-edit-actions{flex-direction:column-reverse;}.announcement-edit-actions button{width:100%;}}
+    @media(max-width:600px){.announcement-dialog,.announcement-edit-dialog{padding:18px;}.announcement-dialog-head h2{font-size:19px;}}
 </style>
 </head>
 <body>
@@ -135,15 +161,10 @@
 @endif
 
 <div class="wrap">
-    <h1 class="page-heading">Announcements</h1>
-    <p class="page-sub">Post an announcement and choose who is allowed to see it.</p>
-
-    <a href="{{ route('admin.dashboard') }}" class="btn-home">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.8V20h14V9.8"/>
-        </svg>
-        Home
-    </a>
+    <div class="page-intro">
+        <h1 class="page-heading">Announcements</h1>
+        <p class="page-sub">Post an announcement and choose who is allowed to see it.</p>
+    </div>
 
     <x-flash-toast :message="session('success')" />
     @if ($errors->any())
@@ -192,9 +213,9 @@
         @forelse ($announcements as $a)
             <div class="ann">
                 <div class="ann-head">
-                    <div style="min-width:0;">
+                    <div class="ann-copy">
                         <h3 class="ann-title">{{ $a->title }}</h3>
-                        <div class="ann-body ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($a->body) !!}</div>
+                        <template id="announcement-content-{{ $a->id }}"><div class="ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($a->body) !!}</div></template>
                         <div>
                             @foreach ($a->audience as $role)
                                 <span class="pill {{ $role }}">{{ ucfirst($role) }}</span>
@@ -208,6 +229,13 @@
                         </div>
                     </div>
                     <div class="actions">
+                        <button type="button" class="btn-view" data-view-announcement="{{ $a->id }}"
+                                data-title="{{ $a->title }}"
+                                data-meta="By {{ $a->author }} · {{ $a->created_at?->format('M j, Y g:i A') }}"
+                                aria-label="View full announcement: {{ $a->title }}"
+                                title="View full announcement">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5C6.5 4.5 2.3 8.1.7 12c1.6 3.9 5.8 7.5 11.3 7.5s9.7-3.6 11.3-7.5C21.7 8.1 17.5 4.5 12 4.5zm0 12a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/><circle cx="12" cy="12" r="2.2" fill="#fff"/></svg>
+                        </button>
                         <form method="POST" action="{{ route('admin.announcements.pin', $a->id) }}">
                             @csrf
                             <button type="submit" class="btn-pin {{ $a->is_pinned ? 'is-pinned' : '' }}"
@@ -216,8 +244,8 @@
                                 {{ $a->is_pinned ? 'Unpin' : 'Pin' }}
                             </button>
                         </form>
-                        <button type="button" class="btn-ghost"
-                                onclick="toggleEdit({{ $a->id }})">Edit</button>
+                        <button type="button" class="btn-ghost" data-edit-announcement="{{ $a->id }}"
+                                aria-label="Edit announcement: {{ $a->title }}">Edit</button>
                         <form method="POST" action="{{ route('admin.announcements.destroy', $a->id) }}"
                               onsubmit="return confirm('Delete this announcement?');">
                             @csrf
@@ -226,36 +254,49 @@
                     </div>
                 </div>
 
-                {{-- Inline edit --}}
-                <form method="POST" action="{{ route('admin.announcements.update', $a->id) }}"
-                      id="edit-{{ $a->id }}" style="display:none;margin-top:16px;">
-                    @csrf
-                    @method('PATCH')
-                    <div class="field">
-                        <label>Title</label>
-                        <input type="text" name="title" value="{{ $a->title }}" required>
-                    </div>
-                    <div class="field">
-                        <label>Description</label>
-                        <div class="announcement-editor">
-                            <x-rich-text-editor :id="'announcement-body-'.$a->id" name="body" :value="$a->body" placeholder="What do you want to announce?" preset="announcement" />
-                        </div>
-                    </div>
-                    <div class="field">
-                        <div class="audience-row">
-                            <span class="audience-label">Who Can See Your Announcement</span>
-                            <div class="audience-opts">
-                                <label><input type="checkbox" name="audience[]" value="public"
-                                    @checked(in_array('public', $a->audience, true))> Public</label>
-                                <label><input type="checkbox" name="audience[]" value="student"
-                                    @checked(in_array('student', $a->audience, true))> Student</label>
-                                <label><input type="checkbox" name="audience[]" value="faculty"
-                                    @checked(in_array('faculty', $a->audience, true))> Faculty</label>
+                <div class="announcement-edit-modal" id="edit-modal-{{ $a->id }}" hidden>
+                    <div class="announcement-modal-backdrop" data-close-edit></div>
+                    <section class="announcement-edit-dialog" role="dialog" aria-modal="true"
+                             aria-labelledby="edit-dialog-title-{{ $a->id }}" tabindex="-1">
+                        <header class="announcement-dialog-head">
+                            <h2 id="edit-dialog-title-{{ $a->id }}">Edit Announcement</h2>
+                            <button class="announcement-dialog-close" type="button" data-close-edit
+                                    aria-label="Close edit announcement form">&times;</button>
+                        </header>
+                        <form method="POST" action="{{ route('admin.announcements.update', $a->id) }}"
+                              id="edit-{{ $a->id }}" data-ckeditor-deferred>
+                            @csrf
+                            @method('PATCH')
+                            <div class="field">
+                                <label for="edit-title-{{ $a->id }}">Title</label>
+                                <input type="text" id="edit-title-{{ $a->id }}" name="title" value="{{ $a->title }}" required>
                             </div>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-navy">Save Changes</button>
-                </form>
+                            <div class="field">
+                                <label for="announcement-body-{{ $a->id }}">Description</label>
+                                <div class="announcement-editor">
+                                    <x-rich-text-editor :id="'announcement-body-'.$a->id" name="body" :value="$a->body" placeholder="What do you want to announce?" preset="announcement" />
+                                </div>
+                            </div>
+                            <div class="field">
+                                <div class="audience-row">
+                                    <span class="audience-label">Who Can See Your Announcement</span>
+                                    <div class="audience-opts">
+                                        <label><input type="checkbox" name="audience[]" value="public"
+                                            @checked(in_array('public', $a->audience, true))> Public</label>
+                                        <label><input type="checkbox" name="audience[]" value="student"
+                                            @checked(in_array('student', $a->audience, true))> Student</label>
+                                        <label><input type="checkbox" name="audience[]" value="faculty"
+                                            @checked(in_array('faculty', $a->audience, true))> Faculty</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="announcement-edit-actions">
+                                <button type="button" class="btn-cancel" data-close-edit>Cancel</button>
+                                <button type="submit" class="btn btn-navy">Save Changes</button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
             </div>
         @empty
             <div class="empty">No announcements yet.</div>
@@ -263,7 +304,108 @@
     </div>
 </div>
 
+<div class="announcement-modal" id="announcement-modal" hidden>
+    <div class="announcement-modal-backdrop" data-close-announcement></div>
+    <section class="announcement-dialog" role="dialog" aria-modal="true" aria-labelledby="announcement-dialog-title" tabindex="-1">
+        <header class="announcement-dialog-head">
+            <div>
+                <h2 id="announcement-dialog-title"></h2>
+                <p class="announcement-dialog-meta" id="announcement-dialog-meta"></p>
+            </div>
+            <button class="announcement-dialog-close" type="button" data-close-announcement aria-label="Close announcement">&times;</button>
+        </header>
+        <div class="announcement-dialog-content ck-content rich-content" id="announcement-dialog-content"></div>
+    </section>
+</div>
+
 <script>
+    (function () {
+        var modal = document.getElementById('announcement-modal');
+        var dialog = modal.querySelector('.announcement-dialog');
+        var title = document.getElementById('announcement-dialog-title');
+        var meta = document.getElementById('announcement-dialog-meta');
+        var content = document.getElementById('announcement-dialog-content');
+        var previousFocus = null;
+        var activeEditModal = null;
+
+        function closeEditModal(modal) {
+            if (!modal || modal.hidden) return;
+
+            modal.hidden = true;
+            document.body.classList.remove('announcement-modal-open');
+            if (previousFocus) previousFocus.focus();
+            activeEditModal = null;
+        }
+
+        function closeAnnouncement() {
+            modal.hidden = true;
+            document.body.classList.remove('announcement-modal-open');
+            content.replaceChildren();
+            if (previousFocus) previousFocus.focus();
+        }
+
+        document.querySelectorAll('[data-view-announcement]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var template = document.getElementById('announcement-content-' + button.dataset.viewAnnouncement);
+                if (!template) return;
+
+                previousFocus = button;
+                title.textContent = button.dataset.title || 'Announcement';
+                meta.textContent = button.dataset.meta || '';
+                content.replaceChildren(template.content.cloneNode(true));
+                modal.hidden = false;
+                document.body.classList.add('announcement-modal-open');
+                dialog.focus();
+            });
+        });
+
+        modal.querySelectorAll('[data-close-announcement]').forEach(function (button) {
+            button.addEventListener('click', closeAnnouncement);
+        });
+
+        document.querySelectorAll('[data-edit-announcement]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var editModal = document.getElementById('edit-modal-' + button.dataset.editAnnouncement);
+                var form = editModal && editModal.querySelector('form');
+                var editDialog = editModal && editModal.querySelector('[role="dialog"]');
+
+                if (!editModal || !form || !editDialog) return;
+
+                previousFocus = button;
+                activeEditModal = editModal;
+                editModal.hidden = false;
+                document.body.classList.add('announcement-modal-open');
+                form.removeAttribute('data-ckeditor-deferred');
+                window.initializeUpskillEditors(form);
+                editDialog.focus();
+            });
+        });
+
+        document.querySelectorAll('[data-close-edit]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                closeEditModal(button.closest('.announcement-edit-modal'));
+            });
+        });
+
+        document.querySelectorAll('.announcement-edit-modal').forEach(function (editModal) {
+            editModal.addEventListener('click', function (event) {
+                if (event.target === editModal.querySelector('.announcement-modal-backdrop')) {
+                    closeEditModal(editModal);
+                }
+            });
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key !== 'Escape') return;
+
+            if (activeEditModal) {
+                closeEditModal(activeEditModal);
+            } else if (!modal.hidden) {
+                closeAnnouncement();
+            }
+        });
+    })();
+
     document.querySelectorAll('.audience-opts').forEach(function (group) {
         var publicOption = group.querySelector('input[value="public"]');
         var roleOptions = group.querySelectorAll('input[value="student"], input[value="faculty"]');
@@ -283,10 +425,6 @@
         });
     });
 
-    function toggleEdit(id) {
-        var f = document.getElementById('edit-' + id);
-        if (f) f.style.display = f.style.display === 'none' ? 'block' : 'none';
-    }
 </script>
 
 {{-- Shared Admin sidebar styling (floating card + section pills) --}}

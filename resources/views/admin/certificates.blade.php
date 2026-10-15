@@ -12,13 +12,13 @@
         .cert-main { padding:26px 28px 42px!important; }
         .cert-content { max-width:1320px; margin:0 auto; }
         .cert-heading { margin-bottom:18px; }
-        .cert-heading h1 { margin:0 0 5px; color:var(--navy); font-size:30px; }
+        .cert-heading h1 { margin:0 0 5px; color:#000; font-size:30px; }
         .cert-heading p { margin:0; color:var(--muted); font-size:14px; }
         .credential-tabs{display:flex;gap:22px;margin:0 0 16px;border-bottom:1px solid var(--line);}
         .credential-tab{display:inline-flex;align-items:center;padding:11px 4px;border-bottom:3px solid transparent;color:var(--muted);font-size:14px;font-weight:700;text-decoration:none;}
         .credential-tab:hover{color:var(--navy);}
         .credential-tab.active{border-bottom-color:var(--navy);color:var(--navy);}
-        .credential-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:13px;background:#fff;border:1px solid var(--line);border-radius:12px;}
+        .credential-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:0;background:transparent;border:0;border-radius:0;}
         .credential-filters input,.credential-filters select{min-height:40px;padding:8px 11px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:var(--text);font:inherit;font-size:13px;}
         .credential-filters input{flex:1 1 280px;min-width:200px;}
         .credential-filters select{flex:0 1 170px;}
@@ -99,7 +99,7 @@
                     @endif
                 </form>
 
-                <div class="table-wrap">
+                <div class="table-wrap paginated-table-scroll">
                     <table>
                         <thead>
                             @if($credentialType === 'certificates')
@@ -153,10 +153,8 @@
                             @endif
                         </tbody>
                     </table>
-                    @if($credentials->hasPages())
-                        @include('components.pagination', ['paginator' => $credentials])
-                    @endif
                 </div>
+                @include('components.pagination', ['paginator' => $credentials])
             </div>
         </main>
     </div>

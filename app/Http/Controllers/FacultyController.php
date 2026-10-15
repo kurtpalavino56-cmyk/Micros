@@ -449,13 +449,11 @@ class FacultyController extends Controller
             'name' => ['required', 'string', 'max:100'],
             'phone' => ['nullable', 'string', 'max:30'],
             'location' => ['nullable', 'string', 'max:120'],
-            'role' => ['nullable', 'string', 'max:60'],
             'about' => ['nullable', 'string', 'max:600'],
             'date_of_birth' => ['nullable', 'date'],
             'gender' => ['nullable', 'string', 'max:30'],
             'education' => ['nullable', 'string', 'max:120'],
             'bio' => ['nullable', 'string', 'max:600'],
-            'email' => ['required', 'email', 'max:120', 'unique:users,email,'.$auth->id],
             'current_password' => ['nullable', 'string'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'language' => ['nullable', 'string', 'max:40'],
@@ -476,7 +474,6 @@ class FacultyController extends Controller
         $parts = preg_split('/\s+/', trim($data['name']), 2);
         $auth->first_name = $parts[0];
         $auth->last_name = $parts[1] ?? $auth->last_name;
-        $auth->email = $data['email'];
         $auth->phone = $data['phone'] ?? null;
         $auth->location = $data['location'] ?? null;
         $auth->about = $data['about'] ?? null;
@@ -486,9 +483,6 @@ class FacultyController extends Controller
         $auth->language = $data['language'] ?? null;
         $auth->timezone = $data['timezone'] ?? null;
 
-        if (! empty($data['role'])) {
-            $auth->role_label = $data['role'];
-        }
         if (! empty($data['date_of_birth'])) {
             $auth->date_of_birth = Carbon::parse($data['date_of_birth'])->format('Y-m-d');
         }

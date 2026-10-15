@@ -21,21 +21,24 @@
         <div class="navbar__mobile-panel" id="navPanel"><ul class="navbar__links" id="navLinks">
             <li><a href="{{ url('/') }}"                  class="navbar__link {{ request()->is('/') ? 'active' : '' }}">Home</a></li>
             <li class="navbar__item--categories">
-                <a href="{{ route('explore') }}" class="navbar__link {{ request()->routeIs('explore', 'public.courses.show') ? 'active' : '' }}">
+                <button type="button" class="navbar__link navbar__categories-toggle {{ request()->routeIs('explore', 'public.courses.show') ? 'active' : '' }}"
+                        aria-expanded="false" aria-controls="navbarCategoryMenu">
                     Microcredentials<span class="navbar__dropdown-indicator" aria-hidden="true"></span>
-                </a>
-                @if(count($publicCourseCategories ?? []))
-                    <ul class="navbar__category-menu" aria-label="Microcredential categories">
-                        @foreach($publicCourseCategories as $categoryItem)
-                            <li>
-                                <a class="navbar__category-link {{ request()->routeIs('explore') && request('category') === $categoryItem ? 'active' : '' }}"
-                                   href="{{ route('explore', ['category' => $categoryItem]) }}">
-                                    {{ $categoryItem }}
-                                </a>
-                            </li>
-                        @endforeach
-                    </ul>
-                @endif
+                </button>
+                <ul class="navbar__category-menu" id="navbarCategoryMenu" aria-label="Microcredential categories">
+                    <li>
+                        <a class="navbar__category-link {{ request()->routeIs('explore') && !request('category') ? 'active' : '' }}"
+                           href="{{ route('explore') }}">All</a>
+                    </li>
+                    @foreach($publicCourseCategories ?? [] as $categoryItem)
+                        <li>
+                            <a class="navbar__category-link {{ request()->routeIs('explore') && request('category') === $categoryItem ? 'active' : '' }}"
+                               href="{{ route('explore', ['category' => $categoryItem]) }}">
+                                {{ $categoryItem }}
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
             </li>
             <li><a href="{{ request()->is('/') ? '#how-it-works' : url('/#how-it-works') }}" data-nav-target="how-it-works" class="navbar__link">How it works</a></li>
             <li><a href="{{ url('/announcements') }}" data-nav-target="announcements" class="navbar__link {{ request()->is('announcements') ? 'active' : '' }}">Announcements</a></li>
@@ -86,9 +89,9 @@
     backdrop-filter: blur(14px);
 }
 .navbar--public {
-    background: linear-gradient(180deg, #041aa0 0%, #030351 100%);
+    background: #0d0b7e;
     border-bottom-color: rgba(255,255,255,.16);
-    box-shadow: 0 8px 24px rgba(3,3,81,.28);
+    box-shadow: 0 8px 24px rgba(3,3,81,.54);
 }
 .navbar--public .navbar__brand-name,
 .navbar--public .navbar__brand-tagline,
@@ -186,6 +189,7 @@
 
 .navbar__links {
     display: flex;
+    align-items: center;
     list-style: none;
     gap: clamp(0.6rem, 1.6vw, 1.6rem);
     margin: 0 auto;
@@ -193,14 +197,29 @@
     justify-content: center;
     flex: 1 1 auto;
 }
+.navbar__links > li {
+    display: flex;
+    align-items: center;
+}
 .navbar__link {
+    display: inline-flex;
+    align-items: center;
     color: rgba(255,255,255,0.82);
     font-size: 1rem;
     font-weight: 500;
     padding: 0.42rem 0.8rem;
     border-radius: 10px;
+    line-height: 1.2;
     transition: color var(--transition), background var(--transition);
     white-space: nowrap;
+}
+.navbar__categories-toggle {
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    appearance: none;
 }
 .navbar__link:hover {
     color: var(--gold-light);
@@ -221,8 +240,7 @@
     transform: rotate(45deg);
     transition: transform var(--transition);
 }
-.navbar__item--categories:hover .navbar__dropdown-indicator,
-.navbar__item--categories:focus-within .navbar__dropdown-indicator {
+.navbar__item--categories.open .navbar__dropdown-indicator {
     transform: translateY(3px) rotate(225deg);
 }
 .navbar__category-menu {
@@ -249,8 +267,7 @@
     transform: translateY(6px);
     transition: opacity .18s ease, transform .18s ease, visibility .18s;
 }
-.navbar__item--categories:hover .navbar__category-menu,
-.navbar__item--categories:focus-within .navbar__category-menu {
+.navbar__item--categories.open .navbar__category-menu {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
@@ -337,7 +354,7 @@
     .navbar__link { font-size: 0.9rem; padding: 0.4rem 0.6rem; }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 960px) {
     .landing-announcement-bar { flex-wrap: wrap; gap: 0.1rem 0.35rem; padding: 0.4rem 0.75rem; }
     .navbar__links   { display: none; }
     .navbar__actions { display: none; }
@@ -386,9 +403,16 @@
         border-radius: 0;
         background: transparent;
         box-shadow: none;
+        transform: none;
+    }
+    .navbar__mobile-panel .navbar__item--categories.open .navbar__category-menu {
         opacity: 1;
         visibility: visible;
-        transform: none;
+    }
+    .navbar__mobile-panel .navbar__categories-toggle {
+        width: 100%;
+        justify-content: flex-start;
+        text-align: left;
     }
     .navbar__mobile-panel .navbar__category-link {
         padding: 0.55rem 0.75rem;
@@ -424,6 +448,8 @@
 <script>
     const hamburger = document.getElementById('hamburger');
     const navPanel  = document.getElementById('navPanel');
+    const categoriesItem = document.querySelector('.navbar__item--categories');
+    const categoriesToggle = categoriesItem?.querySelector('.navbar__categories-toggle');
 
     hamburger.addEventListener('click', () => {
         const isOpen = navPanel.classList.toggle('open');
@@ -431,9 +457,31 @@
         hamburger.setAttribute('aria-expanded', isOpen);
     });
 
+    categoriesToggle?.addEventListener('click', () => {
+        const isOpen = categoriesItem.classList.toggle('open');
+        categoriesToggle.setAttribute('aria-expanded', isOpen);
+    });
+
+    document.addEventListener('click', (event) => {
+        if (categoriesItem && !categoriesItem.contains(event.target)) {
+            categoriesItem.classList.remove('open');
+            categoriesToggle?.setAttribute('aria-expanded', 'false');
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && categoriesItem?.classList.contains('open')) {
+            categoriesItem.classList.remove('open');
+            categoriesToggle?.setAttribute('aria-expanded', 'false');
+            categoriesToggle?.focus();
+        }
+    });
+
     // Close the floating panel when a link inside it is tapped
     navPanel.querySelectorAll('a').forEach((a) => {
         a.addEventListener('click', () => {
+            categoriesItem?.classList.remove('open');
+            categoriesToggle?.setAttribute('aria-expanded', 'false');
             navPanel.classList.remove('open');
             hamburger.classList.remove('open');
             hamburger.setAttribute('aria-expanded', 'false');

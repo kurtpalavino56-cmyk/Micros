@@ -684,6 +684,7 @@ function getEditorConfig(element) {
             'alignment',
             '|',
             'link',
+            'imageUpload',
             'removeFormat',
         ] : [
             'undo',
@@ -729,7 +730,9 @@ function getEditorConfig(element) {
 },
 
         simpleUpload: {
-            uploadUrl: '/Faculty-editor/upload?kind=image',
+            uploadUrl: isAnnouncementEditor
+                ? '/Admin-editor/upload?kind=image'
+                : '/Faculty-editor/upload?kind=image',
             headers: {
                 'X-CSRF-TOKEN': document
                    .querySelector('meta[name="csrf-token"]')
@@ -776,13 +779,21 @@ function getEditorConfig(element) {
     };
 }
 
-function initializeEditors() {
-    document.querySelectorAll('[data-ckeditor]').forEach((element) => {
+function initializeEditors(root = document) {
+    const elements = root instanceof Element && root.matches('[data-ckeditor]')
+        ? [root]
+        : root.querySelectorAll('[data-ckeditor]');
+
+    elements.forEach((element) => {
         if (editorInstances.has(element)) {
             return;
         }
 
         const target = element;
+
+        if (target.closest('[data-ckeditor-deferred]')) {
+            return;
+        }
 
         ClassicEditor
             .create(target, getEditorConfig(target))
@@ -817,10 +828,51 @@ function initializeEditors() {
     });
 }
 
+function initializeLearningActivityNavigation() {
+    document.querySelectorAll('[data-activity-months]').forEach((scroller) => {
+        const container = scroller.closest('.learning-activity__navigation');
+        const leftButton = container?.querySelector('[data-activity-scroll="left"]');
+        const rightButton = container?.querySelector('[data-activity-scroll="right"]');
+
+        if (!leftButton || !rightButton || scroller.dataset.navigationReady === 'true') {
+            return;
+        }
+
+        scroller.dataset.navigationReady = 'true';
+
+        const updateButtons = () => {
+            const maxScrollLeft = scroller.scrollWidth - scroller.clientWidth;
+            leftButton.disabled = scroller.scrollLeft <= 1;
+            rightButton.disabled = scroller.scrollLeft >= maxScrollLeft - 1;
+        };
+
+        const scrollMonths = (direction) => {
+            const month = scroller.querySelector('.learning-activity__month');
+            const distance = month?.getBoundingClientRect().width ?? scroller.clientWidth;
+
+            scroller.scrollBy({ left: direction * distance, behavior: 'smooth' });
+        };
+
+        leftButton.addEventListener('click', () => scrollMonths(-1));
+        rightButton.addEventListener('click', () => scrollMonths(1));
+        scroller.addEventListener('scroll', updateButtons, { passive: true });
+        window.addEventListener('resize', updateButtons);
+
+        requestAnimationFrame(() => {
+            scroller.scrollLeft = scroller.scrollWidth;
+            updateButtons();
+        });
+    });
+}
+
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeEditors);
+    document.addEventListener('DOMContentLoaded', () => {
+        initializeEditors();
+        initializeLearningActivityNavigation();
+    });
 } else {
     initializeEditors();
+    initializeLearningActivityNavigation();
 }
 
 window.initializeUpskillEditors = initializeEditors;

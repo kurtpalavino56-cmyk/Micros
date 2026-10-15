@@ -96,7 +96,7 @@
     .meta-item{text-align:center;font-size:11px;color:var(--muted);line-height:1.3;}
     .meta-item .meta-num{display:block;font-weight:800;font-size:14px;color:var(--ink);}
     .card-actions{display:flex;flex-direction:column;gap:12px;flex-shrink:0;}
-    .btn-action{background:#fff;border:1.5px solid var(--navy);color:var(--navy);font-weight:700;padding:10px 30px;border-radius:999px;font-size:15px;min-width:150px;display:block;width:100%;text-align:center;transition:background .15s ease,color .15s ease;}
+    .btn-action{background:#fff;border:1.5px solid var(--navy);color:var(--navy);font-weight:700;padding:10px 30px;border-radius:10px;font-size:15px;min-width:150px;display:block;width:100%;text-align:center;transition:background .15s ease,color .15s ease;}
     .btn-action:hover{background:#eef1ff;}
     .btn-action.primary{background:var(--navy);color:#fff;}
     .btn-action.primary:hover{background:#1a2fa0;}

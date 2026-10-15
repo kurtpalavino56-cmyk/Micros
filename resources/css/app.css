@@ -476,6 +476,12 @@
     outline-offset: 1px;
 }
 
+.profile-readonly-field {
+    color: #6b7280 !important;
+    background-color: #f3f4f6 !important;
+    cursor: not-allowed;
+}
+
 /* =========================================================
    Tables and tabs
    ========================================================= */
@@ -1778,6 +1784,10 @@ body.app-shell.page-certificate-view .main.app-main > .wrap {
     line-height: 1.5rem;
 }
 
+body.app-shell.page-badges .app-main > .ui-section-title {
+    margin-bottom: var(--ui-space-5);
+}
+
 .ui-card-header {
     display: flex;
     min-height: 4rem;
@@ -2631,12 +2641,23 @@ body.app-shell.page-dashboard {
     body.app-shell.page-dashboard .prog-bar-fill.prog-bar-done { background: linear-gradient(90deg, var(--ui-success), var(--ui-success)); }
     body.app-shell.page-dashboard .prog-item-sub { color: var(--pm-muted); font-size: var(--text-xs); }
 
-    body.app-shell.page-dashboard .featured-course { margin-bottom: 14px; padding: 18px; min-height: 205px; border-radius: var(--ui-radius-md); color: var(--ui-surface); background: linear-gradient(145deg, var(--ui-brand-dark), var(--ui-brand-blue)); box-shadow: var(--pm-shadow); position: relative; overflow: hidden; }
-    body.app-shell.page-dashboard .featured-course::after { content: ''; position: absolute; right: -35px; top: -40px; width: 145px; height: 145px; border: 18px solid rgba(229,180,60,.78); transform: rotate(32deg); }
-    body.app-shell.page-dashboard .featured-course small { color: var(--ui-accent-yellow); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
-    body.app-shell.page-dashboard .featured-course h4 { position: relative; z-index: 1; margin: 24px 0 7px; color: var(--ui-surface); font-size: var(--text-lg); line-height: 1.12; }
-    body.app-shell.page-dashboard .featured-course p { position: relative; z-index: 1; max-width: 280px; margin: 0 0 14px; color: rgba(255,255,255,.75); font-size: var(--text-xs); }
-    body.app-shell.page-dashboard .featured-course a { position: relative; z-index: 1; display: inline-block; border-radius: var(--ui-radius-pill); padding: 9px 14px; background: var(--pm-gold); color: var(--pm-navy); font-size: var(--text-xs); font-weight: 800; }
+    body.app-shell.page-dashboard .learning-activity { margin-bottom: 14px; overflow: hidden; border: 0; background: var(--dashboard-featured-gradient); box-shadow: var(--dashboard-featured-shadow); color: var(--dashboard-featured-color); }
+    body.app-shell.page-dashboard .learning-activity .panel-head { justify-content: flex-start; border-color: rgb(255 255 255 / 18%); background: transparent; }
+    body.app-shell.page-dashboard .learning-activity .ui-card-header__title { color: var(--dashboard-featured-color); }
+    body.app-shell.page-dashboard .learning-activity__period { margin: 4px 0 0; color: var(--dashboard-featured-muted); font-size: var(--text-xs); font-weight: 400; }
+    body.app-shell.page-dashboard .learning-activity__summary { display: flex; align-items: baseline; gap: 6px; padding: 14px 16px 8px; color: var(--dashboard-featured-muted); font-size: var(--text-xs); }
+    body.app-shell.page-dashboard .learning-activity__summary strong { color: var(--dashboard-featured-color); font-size: var(--text-lg); font-weight: 800; }
+    body.app-shell.page-dashboard .learning-activity__description { margin: 0; padding: 0 16px 8px; color: var(--dashboard-featured-muted); font-size: 10px; line-height: 1.45; }
+    body.app-shell.page-dashboard .learning-activity__scroll { overflow-x: auto; padding: 8px 16px 12px; scrollbar-width: thin; scrollbar-color: rgb(255 255 255 / 35%) transparent; }
+    body.app-shell.page-dashboard .learning-activity__grid { display: grid; grid-template-columns: repeat(7, 28px); grid-auto-rows: 28px; gap: 6px; width: max-content; margin-inline: auto; }
+    body.app-shell.page-dashboard .learning-activity__weekday { align-self: end; padding-bottom: 4px; color: var(--dashboard-featured-muted); font-size: 9px; text-align: center; }
+    body.app-shell.page-dashboard .learning-activity__day { display: block; width: 28px; height: 28px; border: 1px solid rgb(255 255 255 / 22%); border-radius: 5px; background: rgb(255 255 255 / 22%); }
+    body.app-shell.page-dashboard .learning-activity__day--1 { background: #fff4c7; }
+    body.app-shell.page-dashboard .learning-activity__day--2 { background: #ffe78a; }
+    body.app-shell.page-dashboard .learning-activity__day--3 { background: #f6cb3b; }
+    body.app-shell.page-dashboard .learning-activity__day--4 { background: #e8b829; }
+    body.app-shell.page-dashboard .learning-activity__legend { display: flex; align-items: center; justify-content: flex-end; gap: 4px; padding: 0 16px 14px; color: var(--dashboard-featured-muted); font-size: 10px; }
+    body.app-shell.page-dashboard .learning-activity__legend .learning-activity__day { width: 9px; height: 9px; flex-basis: 9px; border-radius: 2px; }
 
     @media (max-width: 1120px) { body.app-shell.page-dashboard .top-search { width: 220px; } body.app-shell.page-dashboard .stats { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 980px) { body.app-shell.page-dashboard .layout { grid-template-columns: 1fr; }   body.app-shell.page-dashboard .content-grid { grid-template-columns: 1fr; } body.app-shell.page-dashboard .hero-action { position: static; display: inline-block; margin-top: 16px; } }
@@ -2649,7 +2670,7 @@ body.app-shell.page-dashboard .student-dashboard {
   --dash-gold:var(--ui-accent-yellow); --dash-gold-soft:var(--ui-accent-yellow-soft); --dash-canvas:var(--ui-surface-subtle);
   --dash-ink:var(--ui-text-strong); --dash-muted:var(--ui-text-body); --dash-line:var(--ui-border);
   color:var(--dash-ink);font-family:'Inter',ui-sans-serif,system-ui,sans-serif;
-  padding:28px clamp(18px,3vw,42px) 56px;min-width:0;
+  padding:0;min-width:0;
 }
 body.app-shell.page-dashboard .layout:has(.student-dashboard){background:var(--dash-canvas);}
 body.app-shell.page-dashboard .student-dashboard h1, body.app-shell.page-dashboard .student-dashboard h2, body.app-shell.page-dashboard .student-dashboard h3, body.app-shell.page-dashboard .student-dashboard h4, body.app-shell.page-dashboard .student-dashboard .num, body.app-shell.page-dashboard .student-dashboard .meta-num{font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif}
@@ -2660,6 +2681,7 @@ body.app-shell.page-dashboard .student-dashboard .hero-copy .hero-meta{margin-to
 body.app-shell.page-dashboard .student-dashboard .hero h2{font-size:var(--text-3xl);font-weight:800;letter-spacing:-.04em}
 body.app-shell.page-dashboard .student-dashboard .hero p{color:rgba(255,255,255,.72)}
 body.app-shell.page-dashboard .student-dashboard .hero .eyebrow{color:var(--ui-accent-yellow);font-weight:700}
+body.app-shell.page-dashboard .student-dashboard__student-id{margin:8px 0 0;color:var(--ui-text-strong);font-size:var(--text-sm);font-weight:700}
 body.app-shell.page-dashboard .student-dashboard .featured-course{padding:22px;border-radius:var(--ui-radius-lg);background:linear-gradient(145deg,var(--ui-text-strong),var(--ui-brand-blue));box-shadow:0 14px 30px rgba(11,27,69,.14)}
 body.app-shell.page-dashboard .student-dashboard .featured-course small{color:var(--ui-accent-yellow)}
 body.app-shell.page-dashboard .student-dashboard .featured-course a{background:var(--ui-accent-yellow);color:var(--ui-text-strong)}
@@ -2667,7 +2689,9 @@ body.app-shell.page-dashboard .student-dashboard .badges-earned-list{padding:10p
 body.app-shell.page-dashboard .student-dashboard .earned-badge-row{display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:var(--ui-radius-md);color:var(--dash-ink);font-size:var(--text-xs);font-weight:600}
 body.app-shell.page-dashboard .student-dashboard .earned-badge-row:hover{background:var(--dash-canvas)}
 body.app-shell.page-dashboard .student-dashboard .earned-badge-icon{display:grid;width:38px;height:38px;flex:none;place-items:center;border-radius:50%;background:var(--ui-accent-yellow);color:var(--ui-text-strong);font-size:var(--text-lg)}
-body.app-shell.page-dashboard .student-dashboard .stats{gap:15px;margin:22px 0 30px}
+body.app-shell.page-dashboard .student-dashboard .earned-badge-icon:has(img){background:transparent}
+body.app-shell.page-dashboard .student-dashboard .earned-badge-icon img{display:block;width:100%;height:100%;border-radius:inherit;object-fit:contain}
+body.app-shell.page-dashboard .student-dashboard .stats{gap:15px;margin:0 0 30px}
 body.app-shell.page-dashboard .student-dashboard .stat-card{position:relative;min-height:176px;padding:20px 22px;align-items:stretch;text-align:left;border:0;border-radius:var(--ui-radius-lg);color:var(--ui-surface);box-shadow:0 12px 26px rgba(11,27,69,.12)}
 body.app-shell.page-dashboard .student-dashboard .stat-card{position:relative;min-height:176px;padding:20px 22px;align-items:stretch;text-align:left;border:0;border-radius:var(--ui-radius-lg);color:var(--ui-surface);box-shadow:0 12px 26px rgba(11,27,69,.12);transition:transform .2s ease,box-shadow .2s ease}
 body.app-shell.page-dashboard .student-dashboard .stat-card:hover{transform:translateY(-4px);box-shadow:0 18px 32px rgba(11,27,69,.2)}
@@ -2695,8 +2719,10 @@ body.app-shell.page-dashboard .student-dashboard .progress-track{height:7px;back
 body.app-shell.page-dashboard .student-dashboard .course-card .progress-fill.progress-in-progress{background:var(--ui-brand-blue)}
 body.app-shell.page-dashboard .student-dashboard .course-card .progress-fill.progress-completed{background:var(--ui-success)}
 body.app-shell.page-dashboard .student-dashboard .pct{font-size:var(--text-xs);color:var(--dash-muted)}
-body.app-shell.page-dashboard .student-dashboard .btn-start{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:var(--ui-radius-pill);background:var(--color-psu-blue-300);padding:9px 15px;color:var(--ui-text-strong);font-size:var(--text-xs);font-weight:700;transition:transform .18s ease,background-color .18s ease}
+body.app-shell.page-dashboard .student-dashboard .btn-start{display:inline-flex;align-items:center;justify-content:center;width:clamp(84px,10vw,104px);flex:0 0 clamp(84px,10vw,104px);box-sizing:border-box;border:0;border-radius:var(--ui-radius-pill);background:var(--color-psu-blue-300);padding:9px 10px;color:var(--ui-text-strong);font-size:var(--text-xs);font-weight:700;transition:transform .18s ease,background-color .18s ease}
 body.app-shell.page-dashboard .student-dashboard .btn-start:hover{transform:translateY(-1px);background:var(--ui-accent-yellow);color:var(--ui-text-strong)}
+body.app-shell.page-dashboard .student-dashboard .btn-start.btn-start--continue{background:var(--ui-accent-yellow);color:var(--ui-text-strong)}
+body.app-shell.page-dashboard .student-dashboard .btn-start.btn-start--continue:hover{background:var(--ui-accent-yellow-soft);color:var(--ui-text-strong)}
 body.app-shell.page-dashboard .student-dashboard .btn-start.btn-completed{background:var(--ui-success);color:var(--ui-surface)}
 body.app-shell.page-dashboard .student-dashboard .btn-start.btn-completed:hover{background:var(--ui-success);color:var(--ui-surface)}
 body.app-shell.page-dashboard .student-dashboard .courses-area-title{color:var(--dash-muted);font-size:var(--text-xs);letter-spacing:.12em;text-transform:uppercase}
@@ -2738,9 +2764,52 @@ body.app-shell.page-dashboard .student-dashboard .panel-body, body.app-shell.pag
   body.app-shell.page-dashboard .student-dashboard .stat-top .num{font-size:var(--dash-type-heading)}
 }
 
+@media(max-width:980px){
+  body.app-shell.page-dashboard .student-dashboard .content-grid{grid-template-columns:minmax(0,1fr);gap:18px}
+}
+
+@media(max-width:700px){
+  body.app-shell.page-dashboard .main.app-main{padding:24px 16px 36px}
+  body.app-shell.page-dashboard .student-dashboard{padding:0}
+  body.app-shell.page-dashboard .student-dashboard > .ui-page-header{align-items:flex-start;flex-direction:column;gap:14px;margin-bottom:22px}
+  body.app-shell.page-dashboard .student-dashboard .ui-page-header__content{width:100%}
+  body.app-shell.page-dashboard .student-dashboard .ui-page-title{font-size:clamp(1.5rem,6vw,2rem);line-height:1.2;overflow-wrap:anywhere}
+  body.app-shell.page-dashboard .student-dashboard .ui-page-subtitle{max-width:65ch;line-height:1.5}
+  body.app-shell.page-dashboard .student-dashboard .ui-page-header > .ui-button{align-self:flex-start}
+  body.app-shell.page-dashboard .student-dashboard .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 22px}
+  body.app-shell.page-dashboard .student-dashboard .stat-card{min-width:0;min-height:132px;padding:14px}
+  body.app-shell.page-dashboard .student-dashboard .stat-card .label{line-height:1.35}
+  body.app-shell.page-dashboard .student-dashboard .content-grid{grid-template-columns:minmax(0,1fr);gap:18px}
+  body.app-shell.page-dashboard .student-dashboard .courses-col,
+  body.app-shell.page-dashboard .student-dashboard .side-col{min-width:0}
+  body.app-shell.page-dashboard .student-dashboard .courses-head{align-items:flex-start;gap:8px;flex-wrap:wrap}
+  body.app-shell.page-dashboard .student-dashboard .course-card{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:10px;padding:12px}
+  body.app-shell.page-dashboard .student-dashboard .course-card .thumb{grid-column:1;grid-row:1;width:44px;height:44px;min-height:0;align-self:center;aspect-ratio:1}
+  body.app-shell.page-dashboard .student-dashboard .course-info{grid-column:2;min-width:0}
+  body.app-shell.page-dashboard .student-dashboard .course-info h4{overflow-wrap:anywhere}
+  body.app-shell.page-dashboard .student-dashboard .course-card .btn-start{grid-column:3;grid-row:1;justify-self:end;align-self:center;height:auto;min-height:38px;margin:0;padding:6px 11px;font-size:var(--text-xs);line-height:1.2;white-space:nowrap}
+  body.app-shell.page-dashboard .student-dashboard .featured-course{min-height:0;padding:18px}
+  body.app-shell.page-dashboard .student-dashboard .panel-head{gap:10px;padding:13px 14px}
+  body.app-shell.page-dashboard .student-dashboard .panel-body{padding:12px}
+  body.app-shell.page-dashboard .student-dashboard .earned-badge-row{min-width:0}
+  body.app-shell.page-dashboard .student-dashboard .earned-badge-row > span:last-child{overflow-wrap:anywhere}
+}
+
+@media(max-width:420px){
+  body.app-shell.page-dashboard .main.app-main{padding:20px 12px 30px}
+  body.app-shell.page-dashboard .student-dashboard .stats{gap:8px}
+  body.app-shell.page-dashboard .student-dashboard .stat-card{min-height:120px;padding:12px 10px}
+  body.app-shell.page-dashboard .student-dashboard .stat-top svg{width:30px;height:30px;margin-bottom:10px}
+  body.app-shell.page-dashboard .student-dashboard .stat-top .num{font-size:var(--text-2xl)}
+  body.app-shell.page-dashboard .student-dashboard .course-card{grid-template-columns:44px minmax(0,1fr);gap:9px;padding:11px}
+  body.app-shell.page-dashboard .student-dashboard .course-card .thumb{grid-column:1;grid-row:1;align-self:center;width:44px;height:44px;min-width:44px;min-height:44px;aspect-ratio:1;overflow:hidden}
+  body.app-shell.page-dashboard .student-dashboard .course-card .btn-start{grid-column:2;grid-row:2;justify-self:start;margin-top:2px}
+  body.app-shell.page-dashboard .student-dashboard .courses-head h3{font-size:var(--text-base)}
+}
+
 /* resources/views/student/dashboard.blade.php styles 4 */
-body.app-shell.page-dashboard #back-to-top-btn{position:fixed;right:26px;bottom:26px;z-index:2000;width:48px;height:48px;border-radius:50%;border:none;background:var(--ui-brand-blue);color:var(--ui-surface);display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 22px rgba(19,23,107,.35);transition:transform .15s ease,background .2s ease;}
-    body.app-shell.page-dashboard #back-to-top-btn:hover{background:var(--color-psu-gold-500);transform:translateY(-3px);}
+body.app-shell.page-dashboard #back-to-top-btn{position:fixed;right:26px;bottom:26px;z-index:2000;width:48px;height:48px;border-radius:50%;border:none;background:#13176b;color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 22px rgba(19,23,107,.35);transition:transform .15s ease,background .2s ease;}
+    body.app-shell.page-dashboard #back-to-top-btn:hover{background:#dba617;transform:translateY(-3px);}
     body.app-shell.page-dashboard #back-to-top-btn svg{width:22px;height:22px;}
 
 /* resources/views/student/courses/browse.blade.php styles 1 */
@@ -3263,8 +3332,9 @@ body.app-shell.page-course-description{
     body.app-shell.page-course-description .skill-tag{padding:5px 12px;border-radius:var(--ui-radius-sm);background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:var(--ui-surface);font-size:var(--text-sm);font-weight:500;line-height:1.4;}
 
     body.app-shell.page-course-description .hero-meta{display:flex;align-items:center;gap:8px 24px;flex-wrap:wrap;margin-top:24px;padding-top:18px;border-top:1px solid rgba(255,255,255,.18);font-size:var(--text-sm);font-weight:500;color:rgba(255,255,255,.9);}
-    body.app-shell.page-course-description .hero-meta span{display:inline-flex;align-items:center;gap:7px;}
-    body.app-shell.page-course-description .hero-meta .material-symbols-rounded{width:18px;height:18px;font-size:var(--text-lg);flex-shrink:0;opacity:.85;}
+    body.app-shell.page-course-description .hero-meta > span{display:inline-flex;align-items:center;gap:7px;line-height:1.25;white-space:nowrap;}
+    body.app-shell.page-course-description .hero-meta__label{display:inline-flex;align-items:center;min-height:20px;line-height:20px;}
+    body.app-shell.page-course-description .hero-meta .material-symbols-rounded{display:inline-grid;width:20px;height:20px;place-items:center;font-size:20px;line-height:1;flex:0 0 20px;opacity:.85;}
 
     /* ── Enroll card ─────────────────────────────────────────── */
     body.app-shell.page-course-description .enroll-card{position:sticky;top:82px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--ui-radius-lg);box-shadow:0 8px 24px rgba(16,24,40,.08);overflow:hidden;}
@@ -3276,7 +3346,7 @@ body.app-shell.page-course-description{
 
     body.app-shell.page-course-description .enroll-actions{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
     body.app-shell.page-course-description .enroll-form{display:block;width:100%;margin:0;}
-    body.app-shell.page-course-description .btn-enroll, body.app-shell.page-course-description .btn-continue, body.app-shell.page-course-description .btn-complete{
+    body.app-shell.page-course-description .btn-enroll, body.app-shell.page-course-description .btn-continue{
         display:flex;align-items:center;justify-content:center;width:100%;min-height:46px;padding:11px 16px;
         border:1px solid transparent;border-radius:var(--ui-radius-md);
         font-size:var(--text-sm);font-weight:600;line-height:1.2;text-align:center;cursor:pointer;
@@ -3287,10 +3357,7 @@ body.app-shell.page-course-description{
     body.app-shell.page-course-description .btn-enroll:disabled{background:var(--ui-border);color:var(--ui-text-muted);cursor:not-allowed;}
     body.app-shell.page-course-description .btn-continue{background:var(--gold);color:var(--navy);}
     body.app-shell.page-course-description .btn-continue:hover{background:var(--gold-dark);}
-    body.app-shell.page-course-description .btn-complete{background:var(--ui-surface);color:var(--c-good);border-color:var(--ui-success-surface);}
-    body.app-shell.page-course-description .btn-complete:hover{background:var(--c-good-bg);}
-    body.app-shell.page-course-description .btn-complete:disabled{background:var(--c-surface-alt);border-color:var(--c-border);color:var(--ui-text-muted);cursor:not-allowed;}
-    body.app-shell.page-course-description .btn-enroll:focus-visible, body.app-shell.page-course-description .btn-continue:focus-visible, body.app-shell.page-course-description .btn-complete:focus-visible{outline:none;box-shadow:0 0 0 3px var(--c-focus);}
+    body.app-shell.page-course-description .btn-enroll:focus-visible, body.app-shell.page-course-description .btn-continue:focus-visible{outline:none;box-shadow:0 0 0 3px var(--c-focus);}
     body.app-shell.page-course-description .completion-state{display:flex;align-items:center;justify-content:center;margin-bottom:18px;padding:12px;border-radius:var(--ui-radius-md);background:var(--c-good-bg);color:var(--c-good);font-size:var(--text-sm);font-weight:600;text-align:center;}
     body.app-shell.page-course-description .completion-help{display:block;margin:0;color:var(--c-muted);font-size:var(--text-xs);line-height:1.5;text-align:center;}
 
@@ -3797,7 +3864,7 @@ body.app-shell.page-course-description .skill-tag {
     }
 }
 
-body.app-shell:is(.page-dashboard, .page-courses-browse, .page-courses-enrolled, .page-profile, .page-course-description) #back-to-top-btn {
+body.app-shell:is(.page-courses-browse, .page-courses-enrolled, .page-profile, .page-course-description) #back-to-top-btn {
     border-radius: var(--ui-radius-sm);
 }
 }
@@ -3813,6 +3880,159 @@ body.app-shell.page-dashboard .panel-head {
     color: var(--ui-text-strong);
     font-size: var(--text-base);
     font-weight: 600;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface {
+    background: var(--dashboard-featured-gradient);
+    color: var(--dashboard-featured-color);
+    min-height: 0;
+    margin-bottom: 14px;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface > .panel-head.ui-card-header {
+    justify-content: space-between;
+    border-bottom-color: rgb(255 255 255 / 18%);
+    background: transparent;
+    color: var(--dashboard-featured-color);
+    padding: 10px 14px;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .ui-card-header__title {
+    color: var(--dashboard-featured-color);
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__year {
+    align-self: flex-start;
+    margin-left: auto;
+    color: var(--dashboard-featured-color);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__period {
+    margin-top: 2px;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__summary {
+    gap: 5px;
+    padding: 9px 14px 4px;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__scroll {
+    min-width: 0;
+    overflow-x: auto;
+    padding: 4px 10px 8px;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__scroll::-webkit-scrollbar {
+    display: none;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__navigation {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 6px;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__arrow {
+    display: grid;
+    width: 25px;
+    height: 30px;
+    flex: 0 0 25px;
+    place-items: center;
+    padding: 0;
+    border: 1px solid rgb(255 255 255 / 20%);
+    border-radius: 6px;
+    background: rgb(255 255 255 / 8%);
+    color: var(--dashboard-featured-color);
+    cursor: pointer;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__arrow:hover:not(:disabled) {
+    background: rgb(255 255 255 / 18%);
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__arrow:disabled {
+    opacity: .35;
+    cursor: default;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__arrow svg {
+    width: 17px;
+    height: 17px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8px;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__months {
+    display: flex;
+    width: max-content;
+    min-width: 100%;
+    align-items: stretch;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__month {
+    box-sizing: border-box;
+    flex: 0 0 100%;
+    padding: 0 8px;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__month + .learning-activity__month {
+    border-left: 1px solid rgb(255 255 255 / 18%);
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__month-heading {
+    display: flex;
+    min-height: 25px;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+    color: var(--dashboard-featured-color);
+    white-space: nowrap;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__month-heading strong {
+    font-size: 10px;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__month-heading span {
+    color: var(--dashboard-featured-muted);
+    font-size: 9px;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__grid {
+    grid-template-columns: repeat(7, 15px);
+    grid-auto-rows: 15px;
+    gap: 4px;
+    margin: 0;
+    justify-content: center;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__weekday {
+    align-self: end;
+    padding-bottom: 2px;
+    font-size: 7px;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__day,
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__placeholder {
+    width: 15px;
+    height: 15px;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__day {
+    border-radius: 3px;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__legend {
+    padding: 0 14px 10px;
 }
 
 body.app-shell.page-profile .card-block > .ui-card-header {
@@ -3917,6 +4137,13 @@ body.app-shell.page-dashboard .student-dashboard .hero-action.ui-button--primary
 body.app-shell.page-dashboard .student-dashboard .featured-course a.ui-button--primary,
 body.app-shell.page-dashboard .student-dashboard .featured-course a.ui-button--primary:hover {
     border-color: var(--dashboard-featured-action-color);
+}
+
+body.app-shell.page-dashboard .student-dashboard .btn-start--continue.ui-button--primary,
+body.app-shell.page-dashboard .student-dashboard .btn-start--continue.ui-button--primary:hover {
+    border-color: var(--ui-accent-yellow);
+    background: var(--ui-accent-yellow);
+    color: var(--ui-text-strong);
 }
 
 body.app-shell.page-dashboard .student-dashboard .stats {
@@ -5135,4 +5362,83 @@ body.page-course-player video {
     width: revert;
     max-width: revert;
     height: revert;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__grid {
+    display: grid;
+    grid-template-columns: repeat(7, 13px);
+    grid-auto-rows: 13px;
+    gap: 3px;
+    width: max-content;
+    margin: 0 auto;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__day,
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__placeholder {
+    display: block;
+    width: 13px;
+    height: 13px;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__month {
+    flex: 0 0 100%;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__timeline {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    align-items: stretch;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__scroll {
+    flex: 1;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__weekdays {
+    display: grid;
+    grid-template-rows: 16px repeat(7, 13px);
+    gap: 3px;
+    width: 23px;
+    flex: 0 0 23px;
+    padding-top: 4px;
+    color: var(--dashboard-featured-muted);
+    font-size: 8px;
+    line-height: 13px;
+    text-align: left;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__months {
+    min-width: 0;
+    min-width: max-content;
+    align-items: flex-start;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__month {
+    flex: 0 0 auto;
+    padding: 0 7px;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__month-heading {
+    min-height: 16px;
+    justify-content: flex-start;
+    margin-bottom: 3px;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__weeks {
+    display: flex;
+    gap: 3px;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__week {
+    display: grid;
+    grid-template-rows: repeat(7, 13px);
+    gap: 3px;
+}
+
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__day,
+body.app-shell.page-dashboard .learning-activity.panel.ui-card-surface .learning-activity__placeholder {
+    display: block;
+    width: 13px;
+    height: 13px;
 }
