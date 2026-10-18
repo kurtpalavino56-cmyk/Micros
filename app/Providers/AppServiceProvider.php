@@ -8,6 +8,7 @@ use App\Services\UserNotificationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +25,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (app()->environment('production')) {
+        URL::forceScheme('https');
+
         View::composer('components.navbar', function ($view): void {
             $view->with(
                 'publicCourseCategories',
@@ -76,4 +80,5 @@ class AppServiceProvider extends ServiceProvider
             $view->with('unreadInboxCount', $counts['inbox']);
         });
     }
+}
 }
