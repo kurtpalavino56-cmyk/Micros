@@ -371,6 +371,19 @@
             padding: 24px 22px 42px;
         }
     }
+
+    /* Phones and tablets: the links move into the floating circle menu
+       (built by components/responsive), so the horizontal bar is hidden.
+       Hiding it also removes the empty band it left above the page title. */
+    @media (max-width: 1024px) {
+        .layout.student-sidebar-layout .student-sidebar {
+            display: none !important;
+        }
+
+        .layout.student-sidebar-layout {
+            align-content: start;
+        }
+    }
 </style>
 
 <aside class="student-sidebar" id="student-sidebar">

@@ -174,6 +174,12 @@
         .auth-profile-role{max-width:100px;}
         .auth-notifications-panel{position:fixed;top:64px;right:12px;left:12px;width:auto;}
     }
+    /* Under 1024px the sidebar lives in the floating circle menu, so the
+       header's sidebar toggle has nothing to open. */
+    @media (max-width:1024px){
+        .faculty-auth-topbar .faculty-sidebar-toggle,
+        .student-auth-topbar .student-sidebar-toggle{display:none;}
+    }
     /* Every role gets the compact header on phones. Only the student
        header collapsed before, so the admin and faculty header (logo,
        name, role and chevron) ran wider than a 360-480px screen. */

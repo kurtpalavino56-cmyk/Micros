@@ -124,7 +124,25 @@
     .nav-panel a:hover { background: rgba(255, 255, 255, .09); color: #fff; }
     .nav-panel a.active, .nav-panel a.is-active { background: var(--gold, #dba617); color: #0c0f4d; }
     .nav-panel a svg { width: 22px; height: 22px; flex-shrink: 0; }
-    .nav-panel .side-icon-box { width: 34px; height: 34px; }
+    .nav-panel .side-icon-box { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 34px; }
+    /* Student and faculty links carry Material Symbols icons; their font
+       rules are scoped to the sidebar, so repeat them for the menu copy. */
+    .nav-panel .material-symbols-rounded {
+        font-family: "Material Symbols Rounded"; font-weight: normal; font-style: normal;
+        font-size: 22px; line-height: 1; letter-spacing: normal; text-transform: none;
+        white-space: nowrap; direction: ltr; font-feature-settings: "liga";
+        -webkit-font-smoothing: antialiased; color: inherit;
+        /* Clip to the icon box so a slow font load never spills the
+           icon's name (e.g. "dashboard") over the label. */
+        display: inline-block; width: 24px; height: 24px; overflow: hidden;
+    }
+    .nav-panel .side-label { min-width: 0; }
+    .nav-panel-label {
+        margin: 12px 13px 4px; color: rgba(255, 255, 255, .55);
+        font-size: 10.5px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase;
+    }
+    .nav-panel-label:first-child { margin-top: 2px; }
+    .nav-toggle[aria-expanded="true"] { background: var(--gold, #dba617); color: #0c0f4d; }
     /* Admin sidebar sections inside the pill */
     .nav-panel .sb-section-hd { display: none; }
     .nav-panel .sb-section > div { display: block !important; }
@@ -520,14 +538,11 @@
         // own class names. All three feed the floating menu on small screens.
         var sidebar = document.querySelector('aside.sidebar, aside.student-sidebar, aside.faculty-sidebar');
 
-        // Student and faculty sidebars use their topbar hamburger on every
-        // page. Do not create a second floating menu for those sidebars.
-        if (sidebar && (
-            (sidebar.matches('aside.student-sidebar') && document.getElementById('sidebar-toggle')) ||
-            (sidebar.matches('aside.faculty-sidebar') && document.getElementById('faculty-sidebar-toggle'))
-        )) {
-            return;
-        }
+        // Student and faculty pages also use the floating circle menu on
+        // phones and tablets; their horizontal bar and topbar toggle are
+        // hidden below 1024px. The quiz editor embedded inside Manage Course
+        // (body.inline-quiz) is a frame, so it gets no menu of its own.
+        if (document.body.classList.contains('inline-quiz')) return;
 
         // Pages without a sidebar (Admin_Profile, Faculty_Students,
         // Student_Course_Enrollment, Explore_Courses, ...) previously got no
@@ -546,6 +561,8 @@
         btn.type = 'button';
         btn.className = 'nav-toggle';
         btn.setAttribute('aria-label', 'Open menu');
+        btn.setAttribute('aria-haspopup', 'true');
+        btn.setAttribute('aria-expanded', 'false');
         btn.innerHTML = '&#9776;';
 
         var panel = document.createElement('nav');
@@ -555,8 +572,22 @@
         // Clone the links into the pill (forms are skipped: a cloned logout
         // form would lose its CSRF token context). Anything without a text
         // label is an icon button, not a menu entry, so it is left out.
-        Array.prototype.forEach.call(links, function (el) {
+        // Keep the sidebar's section headings (Overview, Learning, ...) so
+        // the menu reads the same as the sidebar it replaces.
+        var entries = sidebar
+            ? sidebar.querySelectorAll('a, .sidebar-section-label, .sb-section-label')
+            : links;
+
+        Array.prototype.forEach.call(entries, function (el) {
             if (!el.textContent.trim()) return;
+
+            if (el.tagName !== 'A') {
+                var heading = document.createElement('div');
+                heading.className = 'nav-panel-label';
+                heading.textContent = el.textContent.trim();
+                panel.appendChild(heading);
+                return;
+            }
 
             var clone = el.cloneNode(true);
             clone.removeAttribute('id');
@@ -571,12 +602,16 @@
         function closeNav() {
             panel.classList.remove('show');
             btn.innerHTML = '&#9776;';
+            btn.setAttribute('aria-expanded', 'false');
+            btn.setAttribute('aria-label', 'Open menu');
         }
 
         btn.addEventListener('click', function (e) {
             e.stopPropagation();
             var open = panel.classList.toggle('show');
             btn.innerHTML = open ? '&times;' : '&#9776;';
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            btn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
         });
         panel.querySelectorAll('a').forEach(function (a) {
             a.addEventListener('click', closeNav);
@@ -589,6 +624,12 @@
         });
         window.addEventListener('resize', function () {
             if (window.innerWidth > 1024) closeNav();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && panel.classList.contains('show')) {
+                closeNav();
+                btn.focus();
+            }
         });
     }
 </script>

@@ -42,6 +42,12 @@ html,body{scrollbar-width:none;-ms-overflow-style:none;}
         .faculty-sidebar-layout.sidebar-collapsed .side-link{justify-content:flex-start;gap:15px;padding:10px 14px;}
         .faculty-sidebar-layout > .main{padding:24px 22px 42px;}
     }
+    /* Phones and tablets: the links move into the floating circle menu
+       (built by components/responsive), so the horizontal bar is hidden. */
+    @media (max-width:1024px){
+        .layout.faculty-sidebar-layout .faculty-sidebar{display:none !important;}
+        .layout.faculty-sidebar-layout{align-content:start;}
+    }
 </style>
 
 <aside class="faculty-sidebar" id="faculty-sidebar">
