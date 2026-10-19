@@ -454,6 +454,86 @@
     .navbar__brand-tagline { display: none; }
     .landing-announcement-bar { font-size: 0.68rem; }
 }
+
+/* ── Mobile menu layout ──
+   Each item is a full-width, left-aligned row. The closed Microcredentials
+   list takes no space (it used to leave a large empty gap), and Login and
+   Enroll Now sit side by side as two equal buttons. */
+@media (max-width: 960px) {
+    .navbar__mobile-panel {
+        padding: 0.75rem;
+        gap: 0;
+        text-align: left;
+    }
+    .navbar__mobile-panel .navbar__links {
+        align-items: stretch;
+        gap: 0.2rem;
+    }
+    .navbar__mobile-panel .navbar__links > li {
+        display: block;
+        width: 100%;
+    }
+    .navbar__mobile-panel .navbar__link,
+    .navbar__mobile-panel .navbar__categories-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        width: 100%;
+        min-height: 48px;
+        padding: 0.7rem 0.95rem;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        text-align: left;
+    }
+    .navbar--public .navbar__mobile-panel .navbar__link::after { display: none; }
+    .navbar__mobile-panel .navbar__link:hover {
+        background: rgba(255,255,255,.07);
+        color: var(--gold-light);
+    }
+    .navbar__mobile-panel .navbar__link.active {
+        background: rgba(246,203,59,.14);
+        color: var(--gold-light);
+        box-shadow: inset 3px 0 0 var(--gold);
+    }
+    .navbar__mobile-panel .navbar__dropdown-indicator { margin-left: auto; }
+
+    .navbar__mobile-panel .navbar__category-menu {
+        display: none;
+        margin: 0.2rem 0 0.35rem 1.1rem;
+        padding: 0 0 0 0.6rem;
+    }
+    .navbar__mobile-panel .navbar__item--categories.open .navbar__category-menu { display: grid; }
+    .navbar__mobile-panel .navbar__category-link { white-space: normal; }
+
+    .navbar__panel-divider { margin: 0.6rem 0.2rem; }
+    .navbar__mobile-panel .navbar__actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.6rem;
+        margin-left: 0;
+        padding-top: 0.2rem;
+    }
+    .navbar__mobile-panel .navbar__action-link,
+    .navbar__mobile-panel .navbar__enroll-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 0.6rem 1rem;
+        border-radius: 12px;
+        font-size: 0.98rem;
+        font-weight: 700;
+    }
+    .navbar__mobile-panel .navbar__action-link {
+        border: 1px solid rgba(255,255,255,.28);
+        color: #fff;
+    }
+    .navbar__mobile-panel .navbar__action-link:hover {
+        border-color: var(--gold-light);
+        color: var(--gold-light);
+    }
+}
 </style>
 
 <script>
