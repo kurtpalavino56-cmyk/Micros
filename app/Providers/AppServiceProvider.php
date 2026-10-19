@@ -6,9 +6,12 @@ use App\Models\Complaint;
 use App\Models\Course;
 use App\Services\UserNotificationService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\URL;
+use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory;
+use Symfony\Component\Mailer\Transport\Dsn;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,7 +29,16 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         if (app()->environment('production')) {
-        URL::forceScheme('https');
+            URL::forceScheme('https');
+        }
+
+        // Send mail through Brevo's HTTP API (port 443), because Railway
+        // blocks outbound SMTP on most plans.
+        Mail::extend('brevo', function () {
+            return (new BrevoTransportFactory)->create(
+                new Dsn('brevo+api', 'default', config('services.brevo.key'))
+            );
+        });
 
         View::composer('components.navbar', function ($view): void {
             $view->with(
@@ -80,5 +92,4 @@ class AppServiceProvider extends ServiceProvider
             $view->with('unreadInboxCount', $counts['inbox']);
         });
     }
-}
 }
