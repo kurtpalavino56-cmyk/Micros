@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login – UpSkill PSU</title>
     {{-- Browser tab icon (favicon) --}}
-    <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700;800;900&display=swap" rel="stylesheet">
@@ -330,16 +330,16 @@
 
             <div class="slider__seals">
                 <div class="slider__seal">
-                    <img src="{{ asset('images/PSU-Logo.png') }}" alt="PSU">
+                    <img src="{{ asset('Images/PSU-Logo.png') }}" alt="PSU">
                 </div>
                 <div class="slider__seal">
-                    <img src="{{ asset('images/CCS-Logo.png') }}" alt="CCS">
+                    <img src="{{ asset('Images/CCS-Logo.png') }}" alt="CCS">
                 </div>
             </div>
 
-            <div class="slide slide-1 active" style="background-image: url('{{ asset('images/Level-Up-Your-Skills.jpg') }}')"></div>
-            <div class="slide slide-2" style="background-image: url('{{ asset('images/Learn-at-your-own-pace.jpg') }}')"></div>
-            <div class="slide slide-3" style="background-image: url('{{ asset('images/Earn-Credentials.jpg') }}')"></div>
+            <div class="slide slide-1 active" style="background-image: url('{{ asset('Images/Level-Up-Your-Skills.jpg') }}')"></div>
+            <div class="slide slide-2" style="background-image: url('{{ asset('Images/Learn-at-your-own-pace.jpg') }}')"></div>
+            <div class="slide slide-3" style="background-image: url('{{ asset('Images/Earn-Credentials.jpg') }}')"></div>
 
             <div class="slider__caption" id="sliderCaption">
                 <div class="slider__caption-title" id="captionTitle">Level Up Your Skills</div>

@@ -691,7 +691,7 @@
 
     .how-it-works {
         position: relative;
-        background: var(--navy) url('{{ asset('images/Green_field_PSU.jpg') }}') center/cover no-repeat;
+        background: var(--navy) url('{{ asset('Images/Green_field_PSU.jpg') }}') center/cover no-repeat;
         padding: 5rem 0;
     }
 

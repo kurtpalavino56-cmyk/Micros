@@ -10,8 +10,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inbox | UPSKILL Admin</title>
     {{-- Browser tab icon (favicon) --}}
-    <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
     @vite('resources/css/inbox-reply.css')
 <style>
     :root{--navy:#13176b;--gold:#dba617;--muted:#6b7280;--line:#e5e7eb;--green:#15803d;

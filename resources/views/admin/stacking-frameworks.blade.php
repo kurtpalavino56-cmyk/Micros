@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stacking Frameworks | UPSKILL</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
     <style>
         :root {
             --framework-navy: #0d1b6e;

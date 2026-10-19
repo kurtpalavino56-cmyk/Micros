@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Completion verification · {{ $course?->title ?? 'All courses' }} | UPSKILL Admin</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
     <style>
         :root{--enrollment-ink:#17212b;--enrollment-muted:#687385;--enrollment-line:#e2e7ef;--enrollment-bg:#f5f7fa;--enrollment-blue:#0b4ea2;--enrollment-navy:#071550;--enrollment-yellow:#f4c430;--enrollment-soft:#eaf2ff;--enrollment-shadow:0 1px 3px rgba(9,37,95,.04);}
         *{box-sizing:border-box;}

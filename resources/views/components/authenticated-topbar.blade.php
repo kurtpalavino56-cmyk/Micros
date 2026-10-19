@@ -33,7 +33,7 @@
                 <span class="material-symbols-rounded" aria-hidden="true">menu</span>
             </button>
         @endif
-        <span class="auth-topbar-logo"><img src="{{ asset('images/PSU-Logo.png') }}" alt="PSU Logo"></span>
+        <span class="auth-topbar-logo"><img src="{{ asset('Images/PSU-Logo.png') }}" alt="PSU Logo"></span>
         <strong>@if ($isFaculty)<span class="faculty-brand-up">UP</span><span>SKILL</span>@elseif ($isStudent)<span>UP</span><span class="student-brand-skill">SKILL</span>@elseif ($isAdmin)<span>UP</span><span class="admin-brand-skill">SKILL</span>@else UPSKILL @endif</strong>
     </div>
 

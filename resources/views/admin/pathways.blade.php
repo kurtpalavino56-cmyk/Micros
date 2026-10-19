@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Learning Pathways | Upskill Admin</title>
-<link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
+<link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
 <style>
     :root{--navy:#0d1b6e;--gold:#dba617;--text:#101b49;--muted:#68758c;--line:#e2e8f3;}
     *{box-sizing:border-box;}

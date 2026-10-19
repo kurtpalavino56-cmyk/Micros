@@ -24,8 +24,8 @@
     <meta name="description" content="UpSkill – The Official Platform for PSU Microcredentials">
     <title>{{ $title }}</title>
 
-    <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">

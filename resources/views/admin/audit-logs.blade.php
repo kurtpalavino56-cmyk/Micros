@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audit Logs | UPSKILL Admin</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
     <style>
         :root{--navy:#0d1b6e;--ink:#18213d;--muted:#68758c;--line:#e2e7f0;--bg:#f6f8fc;--gold:#f4c430;--shadow:0 8px 24px rgba(13,27,110,.06);}
         *{box-sizing:border-box;}

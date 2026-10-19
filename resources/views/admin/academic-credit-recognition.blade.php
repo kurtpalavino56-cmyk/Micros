@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Academic Credit Recognition | UPSKILL</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
     <style>
         body { margin:0; background:#f6f8fc; color:#17233c; font-family:"Segoe UI",system-ui,-apple-system,sans-serif; }
         .recognition-main { padding:30px 32px 48px !important; box-sizing:border-box; }

@@ -38,8 +38,8 @@
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-<link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
-<link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
+<link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
+<link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
 <style>
     :root{
         /* Shared with the topbar / sidebar components */

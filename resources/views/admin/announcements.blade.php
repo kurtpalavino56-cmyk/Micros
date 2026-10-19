@@ -10,8 +10,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Announcements | UPSKILL Admin</title>
     {{-- Browser tab icon (favicon) --}}
-    <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/PSU-Logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @vite(['resources/js/app.js'])
 <style>
@@ -128,7 +128,7 @@
 @if(false)
 <nav class="topbar" hidden aria-hidden="true">
     <a href="{{ route('admin.dashboard') }}" class="topbar-brand">
-        <span class="brand-logo"><img src="{{ asset('images/PSU-Logo.png') }}" alt="PSU Logo"></span>
+        <span class="brand-logo"><img src="{{ asset('Images/PSU-Logo.png') }}" alt="PSU Logo"></span>
         UPSKILL
     </a>
     <div class="topbar-right">

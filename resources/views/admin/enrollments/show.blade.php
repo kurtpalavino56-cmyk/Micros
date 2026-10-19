@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $student->name ?? 'Student' }} · Learning review | UPSKILL {{ ucfirst($reviewRole ?? 'admin') }}</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/PSU-Logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
     <style>
         :root{--record-ink:#17212b;--record-navy:#071550;--record-blue:#0b4ea2;--record-muted:#687385;--record-line:#e2e7ef;--record-bg:#f5f7fa;--record-yellow:#f4c430;--record-soft:#eaf2ff;--record-shadow:0 1px 3px rgba(9,37,95,.04);}
         *{box-sizing:border-box;}

@@ -10,7 +10,7 @@
 
         {{-- Brand --}}
         <a href="{{ url('/') }}" class="navbar__brand">
-            <span class="navbar__brand-logo"><img src="{{ asset('images/PSU-Logo.png') }}" alt="PSU Logo"></span>
+            <span class="navbar__brand-logo"><img src="{{ asset('Images/PSU-Logo.png') }}" alt="PSU Logo"></span>
             <span class="navbar__brand-copy">
                 <span class="navbar__brand-name"><span class="navbar__brand-up">UP</span><span class="navbar__brand-skill">Skill</span></span>
                 <span class="navbar__brand-tagline">PSU Microcredentials</span>
