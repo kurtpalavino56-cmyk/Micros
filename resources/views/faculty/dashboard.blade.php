@@ -1,4 +1,4 @@
-﻿{{--
+{{--
     resources/views/faculty/dashboard.blade.php
 
     Faculty Dashboard â€” single self-contained Blade view (no layout file).

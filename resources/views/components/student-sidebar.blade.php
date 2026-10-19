@@ -317,7 +317,13 @@
             padding: 10px 14px;
 
             border-right: 0;
-            border-bottom: 1px solid var(--line);
+            border-bottom: 1px solid var(--line, #e5e7eb);
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .layout.student-sidebar-layout .student-sidebar::-webkit-scrollbar {
+            display: none;
         }
 
         .student-sidebar-layout.sidebar-collapsed .student-sidebar {

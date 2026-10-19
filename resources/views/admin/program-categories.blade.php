@@ -375,6 +375,28 @@
         .row-actions {
             justify-content: flex-start;
         }
+
+        /* Rows become cards here, so label each value. */
+        td[data-label]::before {
+            content: attr(data-label);
+            display: block;
+            margin-bottom: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        /* An opened inline editor must be a block once rows are cards. */
+        .edit-row.open {
+            display: block;
+        }
+
+        /* Cards are tall; let the page scroll rather than a nested box. */
+        .card .paginated-table-scroll {
+            max-height: none;
+        }
     }
 </style>
 </head>
@@ -467,13 +489,13 @@
                                     @endif
                                 </td>
 
-                                <td>
+                                <td data-label="Status">
                                     <span class="pill {{ $category->is_active ? 'pill-on' : 'pill-off' }}">
                                         {{ $category->is_active ? 'Visible' : 'Hidden' }}
                                     </span>
                                 </td>
 
-                                <td>
+                                <td data-label="Courses">
                                     <span class="pill pill-use">
                                         {{ $category->courses_using }}
                                     </span>

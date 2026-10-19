@@ -96,6 +96,20 @@
     .empty-state{width:100%;max-width:980px;padding:32px 24px;border-radius:var(--radius-card);background:var(--white);border:1.5px solid var(--border);color:var(--text-muted);text-align:center;}
     .empty-state h4{margin:0 0 6px;color:var(--ink);}
     .empty-state p{margin:0;font-size:0.88rem;}
+
+    @media (max-width:768px){
+        .main{padding-top:22px;padding-bottom:40px;}
+        .page-head{align-items:stretch;}
+        .page-head form,.btn-generate{width:100%;justify-content:center;}
+        .code-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+        .code-stat{min-width:0;padding:12px 14px;}
+        .code-stat .num{font-size:1.3rem;}
+        /* The table scrolls inside its card instead of squeezing columns. */
+        .um-table{min-width:620px;}
+    }
+    @media (max-width:420px){
+        .code-stats{grid-template-columns:1fr;}
+    }
 </style>
 </head>
 <body>

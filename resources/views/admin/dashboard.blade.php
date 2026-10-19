@@ -190,6 +190,10 @@
         @media (max-width: 600px) {
             main.admin-dashboard { padding: 22px 14px 40px; }
             .stats-grid, .quick-modules-grid, .badges-grid { grid-template-columns: 1fr; }
+            .attention-actions { width: 100%; }
+            .attention-link { flex: 1 1 100%; white-space: normal; }
+            .stat-val { font-size: 1.7rem; }
+            .snapshot-metric strong { font-size: 1.45rem; }
         }
 
     </style>

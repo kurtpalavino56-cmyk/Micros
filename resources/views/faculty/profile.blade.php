@@ -1,4 +1,4 @@
-﻿{{--
+{{--
     resources/views/faculty/Profile.blade.php
 
     Faculty â€º My Profile â€” single self-contained Blade view (no layout file).

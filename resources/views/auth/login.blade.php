@@ -312,9 +312,18 @@
 
         /* ── Responsive ── */
         @media (max-width: 700px) {
-            .login-card { grid-template-columns: 1fr; }
+            .login-wrapper { padding: 1rem; align-items: flex-start; }
+            .login-card { grid-template-columns: 1fr; min-height: 0; border-radius: 20px; }
             .slider { min-height: 220px; position: relative; }
-            .login-form-panel { padding: 2rem 1.6rem; }
+            /* Extra top padding keeps the back arrow clear of the heading. */
+            .login-form-panel { padding: 3.6rem 1.4rem 2rem; }
+            .login-back { top: 1.2rem; left: 1.2rem; }
+            .login-form-panel__heading { font-size: 1.6rem; }
+            .slider__caption-title { font-size: 1.25rem; }
+        }
+        @media (max-width: 380px) {
+            .slider__seal { width: 42px; height: 42px; }
+            .slider__caption { left: 1.2rem; right: 1.2rem; }
         }
     </style>
 </head>

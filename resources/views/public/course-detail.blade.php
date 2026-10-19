@@ -33,7 +33,7 @@
     .public-course__meta-row strong{color:#14254b;text-align:right}
     .public-course__note{margin-top:1rem;padding:.9rem 1rem;border-radius:12px;background:#fff5d8;color:#765b10;font-size:.85rem;line-height:1.5}
     @media(max-width:860px){.public-course__grid{grid-template-columns:1fr}.public-course__hero{grid-template-columns:minmax(0,1fr) minmax(180px,.6fr)}}
-    @media(max-width:640px){.public-course__hero{grid-template-columns:1fr;padding:1.25rem}.public-course__thumb{min-height:160px;grid-row:1}.public-course{padding:1rem 0 2.5rem}.public-course__panel{padding:0 1rem 1rem}.public-course__panel > h2{margin-right:-1rem;margin-left:-1rem;padding:.75rem 1rem}}
+    @media(max-width:640px){.public-course__meta-row{flex-wrap:wrap;gap:.2rem 1rem}.public-course__meta-row strong{overflow-wrap:anywhere}.public-course__actions .public-course__button{flex:1 1 auto}.public-course__hero{grid-template-columns:1fr;padding:1.25rem}.public-course__thumb{min-height:160px;grid-row:1}.public-course{padding:1rem 0 2.5rem}.public-course__panel{padding:0 1rem 1rem}.public-course__panel > h2{margin-right:-1rem;margin-left:-1rem;padding:.75rem 1rem}}
 </style>
 @endpush
 

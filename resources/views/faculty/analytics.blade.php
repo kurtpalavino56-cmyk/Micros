@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -51,7 +51,7 @@
 
     /* Gradient stat cards */
     .stat-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px;margin-bottom:32px;}
-    .course-filter{display:flex;align-items:center;gap:9px;margin-top:12px;}
+    .course-filter{display:flex;align-items:center;gap:9px;margin-top:12px;flex-wrap:wrap;}
     .course-filter label{color:var(--muted);font-size:12px;font-weight:700;}
     .course-filter select{min-height:38px;max-width:min(100%,360px);padding:8px 34px 8px 11px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font:600 12px Inter,"Segoe UI",sans-serif;}
     .g-card{position:relative;border-radius:18px;box-shadow:var(--shadow);padding:30px 26px;color:#fff;overflow:hidden;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
@@ -99,6 +99,9 @@
     }
     @media (max-width:520px){
         .stat-cards{grid-template-columns:1fr;}
+        .download-report-btn{width:100%;justify-content:center;}
+        .course-filter select{flex:1 1 100%;}
+        .panel-head{flex-wrap:wrap;}
     }
 </style>
 @include('components.analytics-design')
@@ -356,7 +359,7 @@
             <div class="panel-body">
                 @forelse($recentCourseComments as $review)
                     <article style="padding:12px 0;border-bottom:1px solid #e5e7eb;">
-                        <div style="display:flex;justify-content:space-between;gap:16px;align-items:center;">
+                        <div style="display:flex;justify-content:space-between;gap:6px 16px;align-items:center;flex-wrap:wrap;">
                             <strong>{{ $review->course?->title ?? 'Course' }}</strong>
                             <span aria-label="{{ $review->rating }} out of 5">★ {{ $review->rating }}/5</span>
                         </div>

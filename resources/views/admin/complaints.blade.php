@@ -121,7 +121,11 @@
     .inbox-page .btn-navy:hover{background:#20278a;transform:translateY(-1px);}
     @media(max-width:1000px){.inbox-page .grid{grid-template-columns:1fr;}}
     @media(max-width:680px){
-        .wrap{padding:20px 14px 32px;}
+        .wrap{padding:20px 0 32px;}
+        .msg .bubble{max-width:88%;}
+        .attach img{max-width:100%;}
+        .reply-actions .btn-navy,.reply-box .btn-ghost{width:100%;}
+        .detail-hd h2{font-size:16px;}
         .page-heading{font-size:1.45rem;}
         .thread-filter-row{grid-template-columns:1fr;}
         .msgs{min-height:180px;max-height:55vh;padding:17px 15px;}

@@ -355,6 +355,23 @@
     main.main.admin-dashboard .page-heading {
         margin-bottom: 6px;
     }
+
+    /* 32px page titles took two or three lines on a phone. */
+    @media (max-width: 600px) {
+        main.main .framework-header h1,
+        main.main .recognition-head h1,
+        main.main .cert-heading h1,
+        main.main .page-head > div > h1,
+        main.main .page-head > div > h2,
+        main.main .page-header .page-title,
+        main.main .admin-dashboard .page-heading,
+        main.main.admin-dashboard .page-heading,
+        .page-wrap .page-head > div > .page-heading,
+        .wrap > .page-heading {
+            font-size: 24px;
+            line-height: 1.2;
+        }
+    }
 </style>
 
 <aside class="sidebar shared-admin-sidebar" aria-label="Admin navigation">

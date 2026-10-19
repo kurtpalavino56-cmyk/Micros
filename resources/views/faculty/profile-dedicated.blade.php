@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -255,6 +255,16 @@
 
         @media (max-width: 900px) {
             .grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 600px) {
+            .page-shell { padding: 18px 14px 40px; }
+            .page-header { flex-wrap: wrap; }
+            .card { padding: 18px; border-radius: 16px; }
+            .avatar-row { flex-wrap: wrap; }
+            .info-item { flex-wrap: wrap; }
+            .info-item span { overflow-wrap: anywhere; }
+            .btn-row .btn-save { width: 100%; }
         }
     </style>
 </head>

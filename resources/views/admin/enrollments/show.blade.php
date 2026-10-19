@@ -56,7 +56,11 @@
         .record-button.secondary{border-color:var(--record-line);background:#fff;color:var(--record-ink);}
         .record-button.danger{border-color:#c0352d;background:#c0352d;color:#fff;}
         @media(max-width:1000px){.record-stats{grid-template-columns:repeat(2,minmax(0,1fr));}}
-        @media(max-width:700px){.record-main{padding:22px 14px 40px!important;}.record-header{flex-direction:column;}.record-stats{gap:9px;}.record-section{padding:16px 14px;}}
+        @media(max-width:700px){.record-main{padding:22px 14px 40px!important;}.record-header{flex-direction:column;}.record-stats{gap:9px;}.record-section{padding:16px 14px;}
+            .record-lesson-head,.record-module-head{flex-wrap:wrap;}
+            .record-footer{flex-direction:column;align-items:stretch;}
+            .record-footer form{display:flex;flex-wrap:wrap;gap:8px;}
+            .record-footer .record-button{flex:1 1 auto;width:100%;}}
         @media(max-width:420px){.record-stats{grid-template-columns:1fr 1fr;}.record-identity{align-items:flex-start;}.record-avatar{width:42px;height:42px;flex-basis:42px;font-size:17px;}}
     </style>
 </head>

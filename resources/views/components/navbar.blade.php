@@ -371,6 +371,11 @@
         padding: 0.9rem 1.1rem 1.1rem;
         box-shadow: 0 18px 44px rgba(2, 6, 32, 0.55), 0 2px 8px rgba(2, 6, 32, 0.4);
         gap: 0.15rem;
+        /* A long category list could run off the bottom of the screen. */
+        max-height: calc(100vh - 110px);
+        max-height: calc(100dvh - 110px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
 
         opacity: 0; visibility: hidden;
         transform: translateY(-14px) scale(0.97);
@@ -442,6 +447,12 @@
     }
     .navbar__mobile-panel .navbar__action-link { font-size: 1rem; font-weight: 600; }
     .navbar__mobile-panel .navbar__enroll-btn { padding: 0.6rem 1.6rem; }
+}
+
+@media (max-width: 380px) {
+    .navbar .container { padding-left: 12px; padding-right: 12px; }
+    .navbar__brand-tagline { display: none; }
+    .landing-announcement-bar { font-size: 0.68rem; }
 }
 </style>
 

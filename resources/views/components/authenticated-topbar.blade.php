@@ -174,6 +174,29 @@
         .auth-profile-role{max-width:100px;}
         .auth-notifications-panel{position:fixed;top:64px;right:12px;left:12px;width:auto;}
     }
+    /* Every role gets the compact header on phones. Only the student
+       header collapsed before, so the admin and faculty header (logo,
+       name, role and chevron) ran wider than a 360-480px screen. */
+    @media (max-width:560px){
+        .auth-topbar{gap:8px;padding:10px 12px;}
+        .auth-topbar-brand{gap:6px;min-width:0;}
+        .auth-topbar-brand strong{font-size:16px;}
+        .auth-topbar-logo{width:32px;height:32px;flex-basis:32px;}
+        .faculty-auth-topbar .faculty-sidebar-toggle,
+        .student-auth-topbar .student-sidebar-toggle{left:0;margin-right:0;flex-basis:32px;width:32px;height:32px;}
+        .auth-topbar-actions{gap:6px;}
+        .auth-topbar-icon{width:34px;height:34px;flex-basis:34px;}
+        .auth-profile{margin-left:0;padding-left:0;}
+        .auth-profile::before,.auth-profile-copy,.auth-profile-chevron{display:none;}
+        .auth-profile-avatar{width:32px;height:32px;}
+        .auth-notifications-panel{top:58px;right:8px;left:8px;}
+        .auth-profile-dropdown{width:min(240px,calc(100vw - 24px));}
+    }
+    @media (max-width:360px){
+        .auth-topbar{padding-right:8px;padding-left:8px;}
+        .auth-topbar-brand strong{font-size:14px;}
+        .auth-topbar-actions{gap:3px;}
+    }
     @media (max-width:480px){
         .student-auth-topbar{gap:6px;padding:10px 12px;}
         .student-auth-topbar .auth-topbar-brand strong{font-size:16px;}

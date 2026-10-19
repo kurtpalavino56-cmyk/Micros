@@ -61,7 +61,15 @@
         .revocation-details dt { color:var(--muted); font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
         .revocation-details dd { margin:0; color:var(--text); font-size:13px; line-height:1.5; overflow-wrap:anywhere; }
         @media(max-width:1024px) { .cert-main { padding:24px 18px 40px!important; } }
-        @media(max-width:600px) { .cert-heading h1 { font-size:26px; } .cert-modal-actions>* { flex:1; } }
+        @media(max-width:600px) {
+            .cert-heading h1 { font-size:26px; }
+            .cert-modal-actions>* { flex:1; }
+            .credential-tabs { gap:16px; }
+            .credential-filters input,
+            .credential-filters select,
+            .credential-filter-submit,
+            .credential-filter-clear { flex:1 1 100%; width:100%; min-width:0; }
+        }
     </style>
 </head>
 <body>

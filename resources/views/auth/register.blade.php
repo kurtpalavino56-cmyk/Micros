@@ -303,9 +303,18 @@
 
         /* ── Responsive ── */
         @media (max-width: 700px) {
-            .register-card { grid-template-columns: 1fr; }
+            .register-wrapper { padding: 1rem; align-items: flex-start; }
+            .register-card { grid-template-columns: 1fr; min-height: 0; border-radius: 20px; }
             .slider { min-height: 200px; order: -1; }
-            .register-form-panel { padding: 2rem 1.6rem; }
+            /* Extra top padding keeps the back arrow clear of the heading. */
+            .register-form-panel { padding: 3.6rem 1.4rem 2rem; }
+            .register-back { top: 1.2rem; left: 1.2rem; }
+            .register-form-panel__heading { font-size: 1.35rem; margin-bottom: 1.4rem; }
+            .slider__caption-title { font-size: 1.25rem; }
+        }
+        @media (max-width: 380px) {
+            .slider__seal { width: 42px; height: 42px; }
+            .slider__caption { left: 1.2rem; right: 1.2rem; }
         }
         @media (max-width: 400px) {
             .field-row { grid-template-columns: 1fr; }

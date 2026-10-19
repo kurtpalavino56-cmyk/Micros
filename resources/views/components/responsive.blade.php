@@ -52,6 +52,11 @@
     /* Inputs and selects must never be wider than the card holding them. */
     input, select, textarea { max-width: 100%; }
 
+    /* Stop iOS from inflating text after rotation, and let long words
+       (emails, serials, URLs) wrap instead of widening the page. */
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    :where(main, .main, .wrap, .page) :where(h1, h2, h3, h4, p, dd, li) { overflow-wrap: break-word; }
+
     /* ── iPhone-style floating menu pill (hidden on desktop) ────────── */
     .nav-toggle {
         display: none; position: fixed; right: 16px; bottom: 16px; z-index: 1600;
@@ -328,10 +333,16 @@
         }
         .skillpick-btn { flex: 1 1 0; padding: 10px 12px !important; }
 
-        /* Wide tables scroll sideways instead of breaking the page */
-        main table, .main table, .page table {
-            display: block; overflow-x: auto; -webkit-overflow-scrolling: touch;
+        /* Wide tables scroll sideways instead of breaking the page.
+           Tables that already sit inside a scroll wrapper stay real tables
+           (the wrapper scrolls them), so their columns no longer collapse
+           and pages that turn rows into cards keep their own layout. */
+        main table:not(:where(.paginated-table-scroll, .table-card, .table-wrap, [class*="table-wrap"], .course-outcomes-wrap) > table),
+        .main table:not(:where(.paginated-table-scroll, .table-card, .table-wrap, [class*="table-wrap"], .course-outcomes-wrap) > table),
+        .page table:not(:where(.paginated-table-scroll, .table-card, .table-wrap, [class*="table-wrap"], .course-outcomes-wrap) > table) {
+            display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
         }
+        :where(.table-wrap, [class*="table-wrap"]) { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
         /* Stack horizontal course cards except on the student dashboard,
            which defines its own compact mobile grid and thumbnail sizing. */
@@ -367,6 +378,26 @@
             font-size: 13px !important;
             line-height: 1.25 !important;
         }
+    }
+
+    /* ── Edit-profile drawers (admin, faculty, student) on phones ───── */
+    @media (max-width: 768px) {
+        /* Three tabs did not fit across a 360px drawer and pushed it wider
+           than the screen; let the tab row scroll instead. */
+        .modal-tabs {
+            overflow-x: auto; overflow-y: hidden;
+            scrollbar-width: none; -ms-overflow-style: none;
+            padding-left: 12px; padding-right: 12px;
+        }
+        .modal-tabs::-webkit-scrollbar { display: none; }
+        .modal-tabs .tab-btn { flex: 0 0 auto; padding-left: 10px; padding-right: 10px; }
+        .modal-header { padding: 16px 16px 12px; gap: 12px; }
+        .modal-footer { padding: 12px 16px; }
+        .avatar-upload-area { flex-wrap: wrap; padding: 14px; gap: 14px; }
+    }
+    @media (max-width: 420px) {
+        .modal-footer { flex-wrap: wrap; }
+        .modal-footer > button, .modal-footer > a { flex: 1 1 auto; justify-content: center; }
     }
 </style>
 <script>

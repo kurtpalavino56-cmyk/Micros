@@ -105,7 +105,20 @@
         }
         @media (max-width:560px) {
             .framework-info { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-            .framework-modal .requirement-row { grid-template-columns:1fr 80px 100px 32px; }
+            .framework-info-item { min-width:0; }
+            .framework-info-item strong { overflow-wrap:anywhere; }
+            .framework-section-title { flex-wrap:wrap; gap:4px 12px; }
+            /* Modal opens as a bottom sheet with room for the form. */
+            .framework-modal { padding:0; align-items:flex-end; }
+            .framework-modal-card { max-height:94vh; border-radius:16px 16px 0 0; }
+            .framework-modal-head { padding:14px 16px; }
+            .framework-modal-body { padding:16px; }
+            .framework-modal .requirement-header { flex-direction:column; align-items:stretch; }
+            /* Four columns left the course picker about 60px wide; the
+               picker now gets its own line above Required / Order / remove. */
+            .framework-modal .requirement-row { grid-template-columns:minmax(0,1fr) 90px 32px; padding:10px; border:1px solid #edf0f5; border-radius:10px; }
+            .framework-modal .requirement-row select { grid-column:1 / -1; }
+            .framework-modal .actions .framework-button { flex:1 1 auto; }
         }
     </style>
 </head>

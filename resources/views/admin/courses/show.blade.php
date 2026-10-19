@@ -279,6 +279,16 @@
             .main { padding: 18px 12px 40px; }
             .card { padding: 18px 16px; }
             .stat { border-right: 0; }
+            .file-embed embed { height: 320px; }
+            .cert-box embed { height: 200px; }
+            .deny-actions { flex-wrap: wrap; }
+            .deny-actions .btn { flex: 1 1 auto; }
+            .lesson-row, .quiz-row { flex-wrap: wrap; }
+            .quiz-question-head { flex-direction: column; gap: 2px; }
+            .lesson-detail, .quiz-detail { padding-left: 16px; }
+            .rich figure.image-style-side,
+            .rich figure.image-style-align-right,
+            .rich figure.image-style-align-left { float: none; max-width: 100%; margin-left: 0; margin-right: 0; }
         }
     </style>
 </head>

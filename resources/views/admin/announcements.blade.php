@@ -120,6 +120,16 @@
     body.announcement-modal-open{overflow:hidden;}
     @media(max-width:640px){.ann-head{align-items:flex-start;flex-direction:column;}.actions{flex-wrap:wrap;}.announcement-edit-actions{flex-direction:column-reverse;}.announcement-edit-actions button{width:100%;}}
     @media(max-width:600px){.announcement-dialog,.announcement-edit-dialog{padding:18px;}.announcement-dialog-head h2{font-size:19px;}}
+    /* The shared sidebar already gives .wrap a 16px side margin on phones;
+       the 40px page padding on top of it left a very narrow column. */
+    @media(max-width:768px){
+        .wrap{padding:22px 0 40px;}
+        .page-intro{margin-bottom:22px;}
+        .card{padding:18px 16px;border-radius:14px;}
+        .audience-row{gap:10px;padding:12px;}
+        .ann{padding:12px 14px;}
+        .actions .btn-ghost,.actions .btn-danger,.actions .btn-pin{padding:8px 12px;}
+    }
 </style>
 </head>
 <body>

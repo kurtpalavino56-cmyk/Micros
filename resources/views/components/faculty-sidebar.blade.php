@@ -30,7 +30,8 @@ html,body{scrollbar-width:none;-ms-overflow-style:none;}
     .faculty-sidebar-layout .page-head p{font-size:14px;}
     @media (max-width:1024px){
         .layout.faculty-sidebar-layout,.layout.faculty-sidebar-layout.sidebar-collapsed{grid-template-columns:1fr;}
-        .layout.faculty-sidebar-layout .faculty-sidebar{flex-direction:row;align-items:center;overflow-x:auto;position:static;height:auto;padding:10px 14px;border-right:0;border-bottom:1px solid var(--line);}
+        .layout.faculty-sidebar-layout .faculty-sidebar{flex-direction:row;align-items:center;overflow-x:auto;position:static;height:auto;padding:10px 14px;border-right:0;border-bottom:1px solid var(--line, #e5e7eb);scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+        .layout.faculty-sidebar-layout .faculty-sidebar::-webkit-scrollbar{display:none;}
         .faculty-sidebar-layout.sidebar-collapsed .faculty-sidebar{display:none;}
         .faculty-sidebar .side-link{flex:0 0 auto;min-height:48px;}
         .faculty-sidebar .side-link.active{min-height:42px;margin-left:0;padding:6px 14px;border-radius:0 9px 9px 0;}

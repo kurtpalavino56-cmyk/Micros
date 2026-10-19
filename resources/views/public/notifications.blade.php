@@ -41,8 +41,26 @@
         .announcement-dialog-content a{color:var(--navy);text-decoration:underline;}
         .announcement-dialog-footer{display:flex;justify-content:flex-end;padding:14px 22px;border-top:1px solid var(--line);}
         .announcement-dialog-footer button{padding:8px 16px;border:0;border-radius:8px;background:var(--navy);color:#fff;font-size:13px;font-weight:700;}
-        @media (max-width:900px){.content-grid{grid-template-columns:1fr;}}
-        @media (max-width:700px){.page{padding:28px 16px 48px;}.list-card{padding:20px 16px;}.notif-action{display:none;}}
+        @media (max-width:900px){
+            .content-grid{grid-template-columns:1fr;gap:16px;}
+            /* The filter list becomes one scrollable row of chips. */
+            .sidebar-card{display:flex;align-items:center;gap:8px;padding:12px;overflow-x:auto;scrollbar-width:none;}
+            .sidebar-card::-webkit-scrollbar{display:none;}
+            .sidebar-card h3{flex:0 0 auto;margin:0 4px 0 0;font-size:15px;}
+            .filter-item{flex:0 0 auto;gap:8px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;white-space:nowrap;}
+            .filter-item:last-child{border-bottom:1px solid var(--line);}
+            .filter-item.active{border-color:var(--navy);}
+        }
+        @media (max-width:700px){
+            .page{padding:28px 16px 48px;}
+            .list-card{padding:20px 16px;min-height:0;}
+            .notif-action{display:none;}
+            .hero{padding:18px;border-radius:18px;}
+            .hero h2{font-size:22px;}
+            .list-card-head{flex-wrap:wrap;}
+            .notif-icon{flex-basis:38px;width:38px;height:38px;}
+            .announcement-dialog-head,.announcement-dialog-content{padding:16px;}
+        }
     </style>
 </head>
 <body>

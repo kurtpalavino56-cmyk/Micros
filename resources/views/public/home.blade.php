@@ -1004,6 +1004,16 @@
     }
 
     @media (max-width: 980px) {
+        .hero {
+            padding: 3.5rem 0 3rem;
+        }
+
+        /* In one column the copy spans the full width, so the white fade
+           must cover the whole photo or the text sits on the building. */
+        .hero::before {
+            background: linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.9) 60%, rgba(255,255,255,.82) 100%);
+        }
+
         .hero__inner {
             grid-template-columns: 1fr;
         }
@@ -1036,6 +1046,10 @@
             grid-template-columns: minmax(0, 1fr);
         }
 
+        .announcements-side-list {
+            min-height: 0;
+        }
+
         .ann-card--featured {
             min-height: 0;
             padding: 1.5rem 1.3rem;
@@ -1059,6 +1073,66 @@
 
         .ann-card__date {
             margin-left: 0;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .hero__eyebrow {
+            padding-left: 0;
+            padding-right: 0;
+            font-size: .78rem;
+            letter-spacing: .08em;
+        }
+
+        .hero__actions .hero__cta {
+            flex: 1 1 auto;
+            text-align: center;
+        }
+
+        /* The 3-card carousel left a 200px-wide card on a phone. */
+        .hero__carousel {
+            min-height: 360px;
+            aspect-ratio: auto;
+        }
+
+        .hero__slide {
+            width: 78%;
+        }
+
+        .hero__slide.is-prev {
+            left: 0;
+        }
+
+        .hero__slide.is-next {
+            right: 0;
+        }
+
+        .hero-course-visual {
+            padding: 1rem 1.1rem;
+        }
+
+        .hero-course-content {
+            padding: 1rem 1.1rem 1.1rem;
+        }
+
+        .hero-course-footer {
+            flex-wrap: wrap;
+            gap: .5rem;
+        }
+
+        .section-header {
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+        }
+
+        .featured,
+        .why,
+        .how-it-works,
+        .announcements,
+        .latest,
+        .cta-banner {
+            padding-top: 3.25rem;
+            padding-bottom: 3.25rem;
         }
     }
 </style>
