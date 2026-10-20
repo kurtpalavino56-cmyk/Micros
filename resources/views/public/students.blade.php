@@ -56,6 +56,8 @@
 
     .credential-search {
         display: flex;
+        width: min(100%, 620px);
+        margin: 0 auto;
         align-items: center;
         gap: .6rem;
         padding: .45rem;
@@ -159,7 +161,7 @@
 
     .credential-dropzone {
         display: flex;
-        width: min(100%, 520px);
+        width: min(100%, 620px);
         min-height: 76px;
         align-items: center;
         justify-content: center;
@@ -378,10 +380,15 @@
     @media (max-width: 600px) {
         .students-hero { padding: 2.5rem 16px; }
         .credential-lookup h1 { font-size: 1.8rem; }
-        .credential-search { flex-wrap: wrap; }
-        .credential-search__icon { margin-left: 2px; }
-        .credential-search__input { flex: 1 1 calc(100% - 40px); }
-        .credential-search__button { flex: 1 1 0; }
+        .credential-search {
+            flex-wrap: wrap;
+            gap: .35rem .6rem;
+            padding: .5rem;
+            border-radius: 20px;
+        }
+        .credential-search__icon { margin-left: .75rem; }
+        .credential-search__input { flex: 1 1 0; height: 44px; }
+        .credential-search__button { flex: 1 0 100%; min-height: 44px; border-radius: 14px; }
         .credential-dropzone { min-height: 72px; padding: 12px; }
         .certfloat { padding: 14px; }
         .certfloat__verified { margin-bottom: 10px; }
