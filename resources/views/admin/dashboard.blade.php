@@ -161,21 +161,17 @@
         .badge-name { font-size: .84rem; font-weight: 600; color: var(--ink); }
         .badge-count { margin-top: 3px; font-size: .76rem; color: var(--muted); }
 
-        /* COURSE PERFORMANCE LINE CHART */
+        /* COURSE PERFORMANCE BAR CHART */
         .performance-legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 0 4px; }
         .performance-legend-item { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: .76rem; }
-        .performance-legend-swatch { width: 18px; height: 3px; border-radius: 999px; background: var(--blue); }
+        .performance-legend-swatch { width: 10px; height: 10px; border-radius: 2px; background: var(--blue); }
         .performance-legend-swatch.is-completion { background: var(--green); }
         .performance-chart { display: block; width: 100%; height: auto; overflow: visible; }
         .performance-gridline { stroke: var(--line-soft); stroke-width: 1; }
         .performance-axis-label, .performance-course-label { fill: var(--muted); font-family: 'Inter', sans-serif; font-size: 11px; }
         .performance-course-label { font-size: 10px; }
-        .performance-line { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-        .performance-line.is-enrollment { stroke: var(--blue); }
-        .performance-line.is-completion { stroke: var(--green); }
-        .performance-point { stroke: var(--white); stroke-width: 2; }
-        .performance-point.is-enrollment { fill: var(--blue); }
-        .performance-point.is-completion { fill: var(--green); }
+        .performance-bar.is-enrollment { fill: var(--blue); }
+        .performance-bar.is-completion { fill: var(--green); }
         .performance-empty { padding: 38px 12px; text-align: center; color: var(--muted); font-size: .84rem; }
 
         /* RESPONSIVE */
@@ -221,6 +217,7 @@
 
             {{-- STAT CARDS --}}
             <div class="stats-grid">
+                @if ($dashboardAccess['user-management'])
                 <div class="stat-card">
                     <div class="stat-heading">
                         <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 20v-1.5A4.5 4.5 0 0 1 8 14h2a4.5 4.5 0 0 1 4.5 4.5V20zM16 5.5a3 3 0 0 1 0 5.8M17 14h1a3 3 0 0 1 3 3v3h-4"/></svg></span>
@@ -230,7 +227,9 @@
                     @php($trend = $stats['learners_weekly_change'])
                     <div class="stat-footer"><div class="stat-context"><span class="stat-trend {{ $trend > 0 ? 'stat-trend-up' : ($trend < 0 ? 'stat-trend-down' : 'stat-trend-neutral') }}">@if($trend !== 0)<svg viewBox="0 0 16 16" aria-hidden="true"><path d="{{ $trend > 0 ? 'M8 13V3m-4 4 4-4 4 4' : 'M8 3v10m-4-4 4 4 4-4' }}"/></svg>@endif{{ $trend > 0 ? '+' : '' }}{{ number_format($trend) }}</span> vs last week</div></div>
                 </div>
+                @endif
 
+                @if ($dashboardAccess['courses'])
                 <div class="stat-card">
                     <div class="stat-heading">
                         <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21z"/><path d="M4 5.5v13A2.5 2.5 0 0 1 6.5 16H20"/></svg></span>
@@ -240,7 +239,9 @@
                     @php($trend = $stats['courses_weekly_change'])
                     <div class="stat-footer"><div class="stat-context"><span class="stat-trend {{ $trend > 0 ? 'stat-trend-up' : ($trend < 0 ? 'stat-trend-down' : 'stat-trend-neutral') }}">@if($trend !== 0)<svg viewBox="0 0 16 16" aria-hidden="true"><path d="{{ $trend > 0 ? 'M8 13V3m-4 4 4-4 4 4' : 'M8 3v10m-4-4 4 4 4-4' }}"/></svg>@endif{{ $trend > 0 ? '+' : '' }}{{ number_format($trend) }}</span> vs last week</div></div>
                 </div>
+                @endif  
 
+                @if ($dashboardAccess['courses'] || $dashboardAccess['completion-verification'])
                 <div class="stat-card">
                     <div class="stat-heading">
                         <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
@@ -250,7 +251,9 @@
                     @php($trend = $stats['pending_reviews_weekly_change'])
                     <div class="stat-footer"><div class="stat-context"><span class="stat-trend {{ $trend > 0 ? 'stat-trend-up' : ($trend < 0 ? 'stat-trend-down' : 'stat-trend-neutral') }}">@if($trend !== 0)<svg viewBox="0 0 16 16" aria-hidden="true"><path d="{{ $trend > 0 ? 'M8 13V3m-4 4 4-4 4 4' : 'M8 3v10m-4-4 4 4 4-4' }}"/></svg>@endif{{ $trend > 0 ? '+' : '' }}{{ number_format($trend) }}</span> vs last week</div></div>
                 </div>
+                @endif
 
+                @if ($dashboardAccess['credentials'])
                 <div class="stat-card">
                     <div class="stat-heading">
                         <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="m8.5 12-1 9 4.5-2.5 4.5 2.5-1-9M9.5 8l1.6 1.6L14.5 6"/></svg></span>
@@ -260,9 +263,11 @@
                     @php($trend = $stats['credentials_monthly_change'])
                     <div class="stat-footer"><div class="stat-context"><span class="stat-trend {{ $trend > 0 ? 'stat-trend-up' : ($trend < 0 ? 'stat-trend-down' : 'stat-trend-neutral') }}">@if($trend !== 0)<svg viewBox="0 0 16 16" aria-hidden="true"><path d="{{ $trend > 0 ? 'M8 13V3m-4 4 4-4 4 4' : 'M8 3v10m-4-4 4 4 4-4' }}"/></svg>@endif{{ $trend > 0 ? '+' : '' }}{{ number_format($trend) }}</span> vs last month</div></div>
                 </div>
+                @endif
             </div>
 
             @php($pendingReviews = $stats['pending_reviews'])
+            @if ($dashboardAccess['courses'] || $dashboardAccess['completion-verification'])
             <section class="attention-strip {{ $pendingReviews === 0 ? 'is-clear' : '' }}" aria-labelledby="attention-title">
                 <div class="attention-copy">
                     <span class="attention-indicator" aria-hidden="true"></span>
@@ -274,12 +279,12 @@
                     </div>
                 </div>
                 <div class="attention-actions">
-                    @if ($stats['pending_course_reviews'] > 0)
+                    @if ($dashboardAccess['courses'] && $stats['pending_course_reviews'] > 0)
                         <a class="attention-link" href="{{ route('admin.courses') }}">
                             <strong>{{ $stats['pending_course_reviews'] }}</strong> course submissions
                         </a>
                     @endif
-                    @if ($stats['pending_completion_verifications'] > 0)
+                    @if ($dashboardAccess['completion-verification'] && $stats['pending_completion_verifications'] > 0)
                         <a class="attention-link" href="{{ route('admin.enrollments') }}">
                             <strong>{{ $stats['pending_completion_verifications'] }}</strong> completion verifications
                         </a>
@@ -289,8 +294,10 @@
                     @endif
                 </div>
             </section>
+            @endif
 
             {{-- QUICK ACCESS --}}
+            @if (count($quickModules) > 0)
             <section class="quick-modules" aria-labelledby="quick-modules-title">
                 <header class="section-hd">
                     <h2 id="quick-modules-title">Quick access</h2>
@@ -332,9 +339,11 @@
                     @endforeach
                 </div>
             </section>
+            @endif
 
             {{-- LIVE MONITORING + PLATFORM SNAPSHOT --}}
             <div class="two-col monitor-grid">
+                @if ($dashboardAccess['audit-logs'])
                 <div class="card">
                     <div class="card-hd">
                         <span class="card-title">Live monitoring feed</span>
@@ -342,36 +351,53 @@
                     </div>
                     <div id="live-activity-list" aria-live="polite"></div>
                 </div>
+                @endif
 
+                @if ($dashboardAccess['user-management'] || $dashboardAccess['courses'] || $dashboardAccess['credentials'] || $dashboardAccess['reports'] || $dashboardAccess['completion-verification'])
                 <div class="card snapshot-card">
                     <div class="card-hd">
                         <span class="card-title">Current platform snapshot</span>
                     </div>
 
                     <div class="snapshot-metrics">
+                        @if ($dashboardAccess['user-management'])
                         <div class="snapshot-metric">
                             <span>Students on platform</span>
                             <strong>{{ $stats['total_students'] }}</strong>
-                            <small>Across {{ $activeCourseCount }} active courses</small>
                         </div>
+                        @endif
+                        @if ($dashboardAccess['courses'])
+                        <div class="snapshot-metric">
+                            <span>Active courses</span>
+                            <strong>{{ $activeCourseCount }}</strong>
+                        </div>
+                        @endif
+                        @if ($dashboardAccess['credentials'])
                         <div class="snapshot-metric">
                             <span>Badges issued</span>
                             <strong>{{ $stats['badges_issued'] }}</strong>
                         </div>
+                        @endif
+                        @if ($dashboardAccess['reports'])
                         <div class="snapshot-metric">
                             <span>Average quiz score</span>
                             <strong>{{ $stats['course_score_avg'] }}%</strong>
                         </div>
+                        @endif
+                        @if ($dashboardAccess['completion-verification'])
                         <div class="snapshot-metric">
                             <span>Enrollments</span>
                             <strong>{{ $stats['students_enrolled'] }}</strong>
                         </div>
+                        @endif
                     </div>
                 </div>
+                @endif
             </div>
 
             {{-- COURSE PERFORMANCE + RECENT BADGES --}}
             <div class="two-col insights-grid">
+                @if ($dashboardAccess['courses'])
                 <div class="card">
                     <div class="card-hd">
                         <span class="card-title">Enrollment and completion by course</span>
@@ -379,27 +405,25 @@
 
                     @if ($courseCount > 0)
                         <div class="performance-legend" aria-hidden="true">
-                            <span class="performance-legend-item"><span class="performance-legend-swatch"></span>Enrollments (left axis)</span>
-                            <span class="performance-legend-item"><span class="performance-legend-swatch is-completion"></span>Completion rate (right axis)</span>
+                            <span class="performance-legend-item"><span class="performance-legend-swatch"></span>Enrollments</span>
+                            <span class="performance-legend-item"><span class="performance-legend-swatch is-completion"></span>Completion rate</span>
                         </div>
 
                         <svg class="performance-chart" viewBox="0 0 640 250" role="img" aria-labelledby="performance-chart-title performance-chart-description">
                             <title id="performance-chart-title">Enrollments and completion rate by course</title>
-                            <desc id="performance-chart-description">The blue line shows enrollment counts using the left axis. The green line shows average completion percentages using the right axis.</desc>
+                            <desc id="performance-chart-description">Grouped bars compare enrollment counts using the left axis and average completion percentages using the right axis.</desc>
                             @foreach ($chartTicks as $tick)
                                 <line class="performance-gridline" x1="62" y1="{{ $tick->y }}" x2="578" y2="{{ $tick->y }}" />
                                 <text class="performance-axis-label" x="54" y="{{ $tick->y + 4 }}" text-anchor="end">{{ $tick->enrollments }}</text>
                                 <text class="performance-axis-label" x="586" y="{{ $tick->y + 4 }}">{{ $tick->completion_rate }}%</text>
                             @endforeach
-                            <polyline class="performance-line is-enrollment" points="{{ $chartPoints->map(fn ($point) => $point->x.','.$point->enrollment_y)->implode(' ') }}" />
-                            <polyline class="performance-line is-completion" points="{{ $chartPoints->map(fn ($point) => $point->x.','.$point->completion_y)->implode(' ') }}" />
                             @foreach ($chartPoints as $point)
-                                <circle class="performance-point is-enrollment" cx="{{ $point->x }}" cy="{{ $point->enrollment_y }}" r="5">
+                                <rect class="performance-bar is-enrollment" x="{{ $point->enrollment_x }}" y="{{ $point->enrollment_y }}" width="24" height="{{ 202 - $point->enrollment_y }}" rx="3">
                                     <title>{{ $point->course->label }}: {{ $point->course->enrollments }} enrollments</title>
-                                </circle>
-                                <circle class="performance-point is-completion" cx="{{ $point->x }}" cy="{{ $point->completion_y }}" r="5">
+                                </rect>
+                                <rect class="performance-bar is-completion" x="{{ $point->completion_x }}" y="{{ $point->completion_y }}" width="24" height="{{ 202 - $point->completion_y }}" rx="3">
                                     <title>{{ $point->course->label }}: {{ $point->course->completion_rate }}% completion</title>
-                                </circle>
+                                </rect>
                                 <text class="performance-course-label" x="{{ $point->x }}" y="228" text-anchor="middle">{{ $point->course->label }}</text>
                             @endforeach
                         </svg>
@@ -407,7 +431,9 @@
                         <p class="performance-empty">No course enrollment data is available yet.</p>
                     @endif
                 </div>
+                @endif
 
+                @if ($dashboardAccess['credentials'])
                 <div class="card">
                     <div class="card-hd">
                         <span class="card-title">Recent badges</span>
@@ -421,6 +447,7 @@
                             </div>
                         @endforeach
                     </div>
+                    @endif
                 </div>
             </div>
 
@@ -435,6 +462,7 @@
             section.classList.toggle('open');
         }
 
+        @if ($dashboardAccess['audit-logs'])
         function esc(value) {
             const el = document.createElement('div');
             el.textContent = value ?? '';
@@ -481,7 +509,7 @@
 
         refreshLiveMonitoring();
         setInterval(refreshLiveMonitoring, 15000);
-
+        @endif
         (function () {
             var btn = document.getElementById('back-to-top-btn');
             if (!btn) return;

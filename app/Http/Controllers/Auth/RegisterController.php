@@ -41,7 +41,7 @@ class RegisterController extends Controller
             'suffix' => ['nullable', 'string', 'max:50'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'username' => ['required', 'string', 'max:255', 'unique:users,username'],
-            'password' => ['required', 'confirmed', Password::defaults()],
+            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
         ]);
 
         $code = $userCodes->generateForRole(User::ROLE_STUDENT);
@@ -98,7 +98,7 @@ class RegisterController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'username' => ['required', 'string', 'max:255', 'unique:users,username'],
             'faculty_code' => ['required', 'string', 'max:20'],
-            'password' => ['required', 'confirmed', Password::defaults()],
+            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
         ]);
 
         $facultyCodeValue = strtoupper(trim($validated['faculty_code']));
@@ -149,4 +149,3 @@ class RegisterController extends Controller
             ->with('success', 'Welcome to UPSKILL, Prof. '.$user->last_name.'! Your faculty account is ready.');
     }
 }
-

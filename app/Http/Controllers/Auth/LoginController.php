@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AdminPageAccessService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -70,6 +71,10 @@ class LoginController extends Controller
 
     private function dashboardRouteFor(User $user): string
     {
+        if ($user->isSubAdmin()) {
+            return app(AdminPageAccessService::class)->firstRouteFor($user) ?? 'admin.dashboard';
+        }
+
         return match ($user->roleName()) {
             'admin' => 'admin.dashboard',
             'faculty' => 'faculty.dashboard',

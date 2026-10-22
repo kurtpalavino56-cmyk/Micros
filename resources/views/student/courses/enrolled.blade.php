@@ -32,9 +32,14 @@
         @endphp
 
         @if ($inProgressCourses->isEmpty() && $completedCourses->isEmpty())
-            <div class="empty-state ui-empty-state">
-                You haven't enrolled in any courses yet.
-                <br>
+            <div class="empty-state ui-empty-state enrolled-empty-state">
+                <img
+                    src="{{ asset('Images/Enrolled courses.png') }}"
+                    alt=""
+                    aria-hidden="true"
+                    class="enrolled-empty-state__illustration"
+                >
+                <p class="enrolled-empty-state__message">You haven't enrolled in any courses yet.</p>
                 <a href="{{ route('courses.browse') }}" class="enroll-more">Browse courses to get started</a>
             </div>
         @else

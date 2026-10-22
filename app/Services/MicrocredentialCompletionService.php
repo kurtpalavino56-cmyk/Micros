@@ -239,7 +239,7 @@ class MicrocredentialCompletionService
                 );
             } elseif ($enrollment->faculty_verification_status === self::NOT_REQUIRED) {
                 $this->userNotifications->createForRole(
-                    User::ROLE_ADMIN,
+                    User::FULL_ADMIN_NOTIFICATION_ROLE_IDS,
                     'Completion awaiting confirmation',
                     'A learner completed "'.$course->title.'" and is awaiting institutional confirmation.',
                     'enrollment',

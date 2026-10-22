@@ -24,6 +24,17 @@
     .tabs{display:flex;gap:8px;border-bottom:1px solid var(--line);margin-bottom:14px;}
     .tab{padding:10px 13px;color:#64748b;border-bottom:2px solid transparent;font-size:13px;font-weight:700;}
     .tab.active{color:var(--navy);border-bottom-color:var(--navy);}
+    .course-head-actions{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
+    .course-head-actions>.action,.course-head-actions .export-dropdown{width:172px;}
+    .course-head-actions>.action,.course-head-actions .export-dropdown summary{min-height:44px;padding:10px 14px;font-size:13px;}
+    .course-head-actions>.action{background:#fef3c7;border-color:#fcd34d;color:#92400e;}
+    .course-head-actions>.action:hover{background:#fde68a;}
+    .export-dropdown{position:relative;}
+    .export-dropdown summary{display:flex;align-items:center;justify-content:center;list-style:none;cursor:pointer;}
+    .export-dropdown summary::-webkit-details-marker{display:none;}
+    .export-dropdown summary::after{content:"";width:7px;height:7px;margin:0 0 3px 9px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;display:inline-block;transform:rotate(45deg);}
+    .export-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:10;display:grid;gap:5px;width:100%;min-width:0;padding:7px;background:#fff;border:1px solid var(--line);border-radius:9px;box-shadow:0 8px 22px rgba(19,23,107,.12);}
+    .export-menu .action{justify-content:flex-start;}
     .student-list{display:grid;gap:10px;}
     .student-row{display:flex;align-items:center;gap:13px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow);}
     .avatar{width:42px;height:42px;flex:0 0 42px;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#e8edfb;color:var(--navy);font-weight:800;background-size:cover;background-position:center;}
@@ -36,6 +47,9 @@
     .review-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;}
     .action{display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:var(--navy);font-size:12px;font-weight:700;text-decoration:none;}
     .action:hover{background:#f8fafc;}.action.verify{background:var(--navy);border-color:var(--navy);color:#fff;}.action.verify:hover{background:#20278a;}.action.reject{color:var(--red);border-color:#fecaca;}
+    .action.export-pdf{background:#fff1f2;border-color:#fecdd3;color:#be123c;}
+    .action.export-word{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;}
+    .action.export-excel{background:#f0fdf4;border-color:#bbf7d0;color:#15803d;}
     .empty-state{padding:32px;background:#fff;border:1px dashed var(--line);border-radius:10px;text-align:center;color:var(--muted);font-size:14px;}
     .pagination{margin-top:16px;}
     .flash{padding:11px 14px;margin-bottom:14px;border-radius:8px;background:#ecfdf3;color:#166534;font-size:13px;font-weight:600;}
@@ -61,7 +75,19 @@
                     @unless($course->requires_faculty_verification)<span>Faculty verification is not required for this course</span>@endunless
                 </div>
             </div>
-            <a class="action" href="{{ route('faculty.courses.manage', $course->id) }}">Manage Course</a>
+            <div class="course-head-actions">
+                <a class="action" href="{{ route('faculty.courses.manage', $course->id) }}">Manage Course</a>
+                @if($filter === 'all')
+                    <details class="export-dropdown">
+                        <summary class="action">Download</summary>
+                        <div class="export-menu">
+                            <a class="action export-pdf" href="{{ route('faculty.students.course.export', ['id' => $course->id, 'format' => 'pdf']) }}">PDF</a>
+                            <a class="action export-word" href="{{ route('faculty.students.course.export', ['id' => $course->id, 'format' => 'word']) }}">Word (.doc)</a>
+                            <a class="action export-excel" href="{{ route('faculty.students.course.export', ['id' => $course->id, 'format' => 'excel']) }}">Excel (.csv)</a>
+                        </div>
+                    </details>
+                @endif
+            </div>
         </div>
 
         <x-flash-toast :message="session('success')" />

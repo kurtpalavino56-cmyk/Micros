@@ -17,6 +17,8 @@ use Illuminate\View\View;
 
 Route::get('/complaints/{id}/attachment', [PageController::class, 'complaintAttachment'])
     ->whereNumber('id')->middleware('auth')->name('complaints.attachment');
+Route::get('/complaint-replies/{id}/attachment', [PageController::class, 'complaintReplyAttachment'])
+    ->whereNumber('id')->middleware('auth')->name('complaint-replies.attachment');
 
 // ══════════════════════════════════════════════════════════════════════════
 // UPSKILL — route map
@@ -116,6 +118,12 @@ Route::middleware(['auth', PreventBackHistory::class])
 Route::middleware(['auth', PreventBackHistory::class])
     ->get('/notifications/preview', [PageController::class, 'notificationPreview'])
     ->name('notifications.preview');
+Route::middleware(['auth', PreventBackHistory::class])
+    ->post('/notifications/{notification}/read', [PageController::class, 'markNotificationRead'])
+    ->whereNumber('notification')->name('notifications.read');
+Route::middleware(['auth', PreventBackHistory::class])
+    ->post('/notifications/announcements/{announcement}/read', [PageController::class, 'markAnnouncementRead'])
+    ->whereNumber('announcement')->name('notifications.announcements.read');
 Route::get('/search', [PageController::class, 'search'])->name('search');
 
 // Help Center — the footer has always linked to /help, but nothing was
@@ -179,6 +187,8 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':admin', R
     Route::get('/Admin-usermanagement', [AdminController::class, 'userManagement'])->name('admin.usermanagement');
     Route::post('/Admin-usermanagement/users', [AdminController::class, 'storeUser'])->name('admin.users.store');
     Route::get('/Admin-usermanagement/users/{id}', [AdminController::class, 'showUser'])->whereNumber('id')->name('admin.users.show');
+    Route::patch('/Admin-usermanagement/users/{id}/access', [AdminController::class, 'updateSubAdminAccess'])
+        ->whereNumber('id')->name('admin.users.access.update');
     // #2 — delete a student / faculty account
     Route::post('/Admin-usermanagement/users/{id}/delete', [AdminController::class, 'destroyUser'])
         ->whereNumber('id')->name('admin.users.destroy');
@@ -355,6 +365,8 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty',
     Route::get('/Faculty-students', [FacultyController::class, 'students'])->name('faculty.students');
     Route::get('/Faculty-students/{id}', [FacultyController::class, 'courseStudents'])
         ->whereNumber('id')->name('faculty.students.course');
+    Route::get('/Faculty-students/{id}/export/{format}', [FacultyController::class, 'exportCourseStudents'])
+        ->whereNumber('id')->whereIn('format', ['pdf', 'word', 'excel'])->name('faculty.students.course.export');
     Route::get('/Faculty-students/{id}/enrollments/{enrollment}/review', [FacultyController::class, 'reviewEnrollment'])
         ->whereNumber(['id', 'enrollment'])->name('faculty.students.enrollments.review');
 

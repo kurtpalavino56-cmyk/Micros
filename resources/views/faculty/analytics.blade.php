@@ -4,107 +4,139 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Analytics | Upskill</title>
-    {{-- Browser tab icon (favicon) --}}
     <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
-    :root{
-        --navy:#13176b;
-        --navy-deep:#0c0f4d;
-        --gold:#dba617;
-        --gold-dark:#c4930f;
-        --cyan:#7fe9e3;
-        --cyan-deep:#2fb3ab;
-        --thumb:#d8e3f8;
-        --ink:#13176b;
-        --muted:#6b7280;
-        --line:#e5e7eb;
-        --shadow: 0 10px 25px rgba(19,23,107,0.08);
-    }
+    :root{--navy:#13176b;--gold:#dba617;--gold-dark:#b8860b;--teal:#2fb3ab;--ink:#101010;--muted:#7b8494;--line:#e6e8f0;--bg:#f5f6fa;--good:#157f5b;--bad:#b42318;--warn:#9a6700;}
     *{box-sizing:border-box;}
-    body{font-family:"Segoe UI", Roboto, Helvetica, Arial, sans-serif;color:var(--ink);margin:0;background:#fff;}
-    a{text-decoration:none;color:inherit;}
-    button{font-family:inherit;cursor:pointer;}
-    .search-box{display:flex;align-items:center;gap:10px;background:#fff;border-radius:999px;padding:10px 18px;min-width:240px;color:var(--muted);}
-    .search-box input{border:none;outline:none;font-size:15px;width:100%;color:var(--ink);background:transparent;}
-
-    /* Layout */
+    body{font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);margin:0;background:var(--bg);}
+    a{text-decoration:none;color:inherit;} button{font-family:inherit;cursor:pointer;}
+    :focus-visible{outline:3px solid var(--gold);outline-offset:2px;border-radius:6px;}
     .layout{display:grid;grid-template-columns:264px 1fr;min-height:calc(100vh - 74px);align-items:start;}
-    .side-divider{border:none;border-top:1px solid rgba(255,255,255,0.25);margin:18px 6px;}
+    .main{padding:28px 32px 64px;min-width:0;}
+    .faculty-analytics-page{max-width:1320px;margin:0 auto;display:grid;gap:20px;}
+    h2,h3{font-family:"Plus Jakarta Sans",Inter,sans-serif;color:var(--ink);margin:0;}
+    .num,.tnum{font-variant-numeric:tabular-nums;}
 
-    /* Main */
-    .main{padding:32px 36px 60px;}
-    .page-head{margin-bottom:26px;}
-    .page-head h2{font-size:30px;margin:0 0 8px;color:var(--navy);}
-    .page-head .live-line{margin:0 0 6px;color:var(--ink);font-size:16px;font-weight:800;}
-    .page-head .live-line .count{color:var(--gold-dark);text-decoration:underline;}
-    .page-head .sub-line{margin:0;color:var(--muted);font-size:14px;font-weight:600;}
-    .page-head .sub-line b{color:var(--navy);}
+    /* Toolbar */
+    .page-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+    .page-head h2{font-size:28px;}
+    .live-line{display:flex;align-items:center;gap:9px;margin:6px 0 0;color:var(--muted);font-size:13px;}
+    .live-line b{color:var(--ink);}
+    .dot{position:relative;width:8px;height:8px;border-radius:50%;background:var(--good);flex-shrink:0;}
+    .dot::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--good);animation:ping 2s ease-out infinite;}
+    @keyframes ping{from{transform:scale(1);opacity:.6}to{transform:scale(2.6);opacity:0}}
+    .head-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+    .course-filter{display:flex;align-items:center;gap:8px;}
+    .course-filter label{font-size:12px;font-weight:600;color:var(--muted);}
+    .course-filter select{min-height:40px;max-width:min(100%,320px);padding:0 32px 0 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font:600 13px Inter,sans-serif;}
+    .download-report-btn{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px;border-radius:10px;background:var(--navy);color:#fff;font-weight:600;font-size:13px;transition:background .15s,color .15s;}
+    .download-report-btn:hover{background:var(--gold);color:var(--navy);}
+    .download-report-btn svg{width:16px;height:16px;}
 
-    /* Download Report button — streams the whole analytics page as a PDF */
-    .download-report-btn{display:inline-flex;align-items:center;gap:10px;background:var(--navy);color:#fff;font-weight:800;font-size:15px;padding:12px 22px;border-radius:12px;box-shadow:0 8px 18px rgba(19,23,107,0.25);transition:background .15s ease, transform .15s ease;white-space:nowrap;}
-    .download-report-btn:hover{background:var(--gold);color:var(--navy);transform:translateY(-2px);}
-    .download-report-btn svg{width:18px;height:18px;flex-shrink:0;}
+    /* Cards */
+    .card{background:#fff;border:1px solid var(--line);border-radius:14px;min-width:0;}
+    .card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);background:#f9fafb;flex-wrap:wrap;}
+    .card-head h3{font-size:15px;}
+    .card-head .sub{font-size:12px;color:var(--muted);}
+    .card-body{padding:20px;}
 
-    /* Gradient stat cards */
-    .stat-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px;margin-bottom:32px;}
-    .course-filter{display:flex;align-items:center;gap:9px;margin-top:12px;flex-wrap:wrap;}
-    .course-filter label{color:var(--muted);font-size:12px;font-weight:700;}
-    .course-filter select{min-height:38px;max-width:min(100%,360px);padding:8px 34px 8px 11px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font:600 12px Inter,"Segoe UI",sans-serif;}
-    .g-card{position:relative;border-radius:18px;box-shadow:var(--shadow);padding:30px 26px;color:#fff;overflow:hidden;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
-    .g-card.navy{background:linear-gradient(135deg,var(--navy) 0%,#2a30b0 100%);}
-    .g-card.gold{background:linear-gradient(135deg,var(--gold-dark) 0%,#f0c14b 100%);}
-    .g-card.cyan{background:linear-gradient(135deg,var(--cyan-deep) 0%,var(--cyan) 100%);}
-    .g-card .num{font-size:44px;font-weight:800;line-height:1;margin-bottom:8px;position:relative;z-index:1;}
-    .g-card .label{font-size:17px;font-weight:800;position:relative;z-index:1;}
-    .g-card .watermark{position:absolute;left:-14px;top:50%;transform:translateY(-50%) rotate(-8deg);opacity:.18;z-index:0;}
-    .g-card .watermark svg{width:130px;height:130px;color:#fff;}
+    /* KPIs */
+    .stat-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;}
+    .kpi{padding:18px 20px;}
+    .kpi .label{font-size:12px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:8px;}
+    .kpi .num{display:block;margin-top:8px;font-family:"Plus Jakarta Sans",Inter,sans-serif;font-size:32px;font-weight:800;line-height:1;color:var(--ink);}
+    .kpi .note{margin-top:8px;font-size:12px;color:var(--muted);}
+    .kpi .note b{color:var(--ink);}
+    .kpi.live{border-top:3px solid var(--good);} .kpi.a{border-top:3px solid var(--navy);} .kpi.b{border-top:3px solid var(--gold);} .kpi.c{border-top:3px solid var(--teal);}
 
-    /* Chart panels (gold heads like the rest of the faculty pages) */
-    .charts-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:28px;}
-    .panel{border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;background:#fff;}
-    .panel-head{background:var(--gold);color:var(--navy);font-weight:800;font-size:20px;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
-    .panel-head .range{font-size:12px;font-weight:700;background:rgba(255,255,255,0.55);padding:6px 14px;border-radius:999px;}
-    .panel-body{padding:22px;}
+    .split{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:20px;}
 
-    .area-chart-wrap{width:100%;overflow-x:auto;}
-    .area-chart-wrap svg{display:block;width:100%;height:auto;min-width:520px;}
+    /* Chart + summary stats */
+    .mini-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+    .mini-stats div{background:var(--bg);border-radius:10px;padding:10px 12px;}
+    .mini-stats span{display:block;font-size:11px;color:var(--muted);font-weight:600;}
+    .mini-stats b{display:block;margin-top:2px;font-size:18px;color:var(--ink);}
+    .up{color:var(--good)!important;} .down{color:var(--bad)!important;}
+    .chart-wrap{position:relative;overflow-x:auto;}
+    .chart-wrap svg{display:block;width:100%;height:auto;min-width:480px;}
+    .hit{cursor:crosshair;fill:transparent;}
+    .tip{position:absolute;pointer-events:none;background:var(--navy);color:#fff;border-radius:8px;padding:7px 10px;font-size:12px;line-height:1.35;transform:translate(-50%,-100%);margin-top:-10px;opacity:0;transition:opacity .1s;white-space:nowrap;z-index:3;}
+    .tip.show{opacity:1;} .tip b{display:block;font-size:14px;}
 
-    /* Donut + legend */
-    .donut-flex{display:flex;align-items:center;gap:22px;flex-wrap:wrap;justify-content:center;}
-    .donut-wrap{flex-shrink:0;}
-    .legend-box{background:#fafbff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;min-width:200px;flex:1;}
-    .legend-item{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px dashed var(--line);}
-    .legend-item:last-child{border-bottom:none;}
-    .legend-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;margin-top:4px;}
-    .legend-item .l-num{font-size:18px;font-weight:800;color:var(--navy);line-height:1.2;}
-    .legend-item .l-text{font-size:12px;color:var(--muted);font-weight:700;line-height:1.4;}
-    .empty-state{border:1px dashed var(--line);border-radius:16px;padding:30px;text-align:center;color:var(--muted);font-size:14px;}
-    .course-outcomes-wrap{overflow-x:auto;}
-    .course-outcomes{width:100%;min-width:760px;border-collapse:collapse;font-size:13px;}
-    .course-outcomes th{padding:0 10px 11px;color:var(--muted);font-size:11px;letter-spacing:.04em;text-align:left;text-transform:uppercase;white-space:nowrap;}
-    .course-outcomes td{padding:12px 10px;border-top:1px solid var(--line);color:#344054;}
-    .course-outcomes td:first-child{font-weight:700;color:var(--navy);}
-    .course-outcomes th:not(:first-child),.course-outcomes td:not(:first-child){text-align:right;}
+    /* Learner demographics */
+    .demographics-groups{display:grid;gap:20px;}
+    .demographics-group h4{margin:0 0 12px;color:var(--ink);font-size:13px;}
+    .demographics-bars{display:grid;gap:11px;}
+    .demographic-row{display:grid;grid-template-columns:minmax(86px,1fr) minmax(60px,1.5fr) 82px;align-items:center;gap:9px;}
+    .demographic-label,.demographic-value{font-size:11px;color:var(--muted);}
+    .demographic-value{min-width:36px;color:var(--ink);font-weight:700;text-align:right;}
+    .demographic-track{height:9px;overflow:hidden;border-radius:999px;background:#edf0f6;}
+    .demographic-fill{height:100%;min-width:0;border-radius:inherit;background:linear-gradient(90deg,var(--navy),#7b80d6);}
+    .demographics-empty{padding:16px 0;color:var(--muted);font-size:13px;text-align:center;}
 
-    @media (max-width:1180px){
-        .charts-grid{grid-template-columns:1fr;}
-    }
-    @media (max-width:980px){
-        .layout{grid-template-columns:1fr;}
-        .stat-cards{grid-template-columns:repeat(2,minmax(0,1fr));}
-    }
-    @media (max-width:520px){
-        .stat-cards{grid-template-columns:1fr;}
-        .download-report-btn{width:100%;justify-content:center;}
-        .course-filter select{flex:1 1 100%;}
-        .panel-head{flex-wrap:wrap;}
-    }
+    /* Learner success */
+    .success-bar{display:flex;height:14px;border-radius:99px;overflow:hidden;gap:2px;background:var(--line);}
+    .success-bar span{display:block;height:100%;}
+    .success-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:16px;}
+    .s-item{display:flex;gap:10px;align-items:flex-start;}
+    .s-swatch{width:10px;height:10px;border-radius:3px;margin-top:6px;flex-shrink:0;}
+    .s-num{font-size:20px;font-weight:700;color:var(--ink);} .s-num small{font-size:12px;font-weight:600;color:var(--muted);margin-left:6px;}
+    .s-label{font-size:12px;color:var(--muted);}
+
+    /* Table */
+    .toolbar{display:flex;align-items:center;gap:10px;}
+    .toolbar input{min-height:36px;width:220px;max-width:100%;padding:0 12px;border:1px solid var(--line);border-radius:8px;font:500 13px Inter,sans-serif;color:var(--ink);}
+    .table-scroll{overflow-x:auto;}
+    .course-outcomes{width:100%;min-width:960px;border-collapse:separate;border-spacing:0;font-size:13px;}
+    .course-outcomes th{position:sticky;top:0;background:#fafbfd;padding:0;border-bottom:1px solid var(--line);text-align:right;}
+    .course-outcomes th button{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:flex-end;gap:4px;width:100%;padding:12px 14px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap;}
+    .course-outcomes th button:hover{color:var(--navy);}
+    .course-outcomes th button:focus-visible{outline:3px solid var(--gold);outline-offset:-3px;}
+    .course-outcomes th.text button{justify-content:flex-start;}
+    .course-outcomes th[aria-sort="ascending"] button::after{content:"▲";font-size:9px;color:var(--navy);}
+    .course-outcomes th[aria-sort="descending"] button::after{content:"▼";font-size:9px;color:var(--navy);}
+    .course-outcomes td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:right;color:var(--ink);font-variant-numeric:tabular-nums;}
+    .course-outcomes th:first-child,.course-outcomes td:first-child{position:sticky;left:0;text-align:left;min-width:220px;z-index:1;}
+    .course-outcomes td:first-child{background:#fff;font-weight:600;color:var(--ink);}
+    .course-outcomes th:first-child{background:#fafbfd;z-index:2;}
+    .course-outcomes tbody tr:hover td{background:#f8f9ff;}
+    .course-outcomes tfoot td{font-weight:700;color:var(--ink);background:#fafbfd;border-bottom:none;}
+    .course-outcomes tfoot td:first-child{background:#fafbfd;}
+    .cell{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+    .cell i{display:block;height:4px;width:70px;border-radius:99px;background:linear-gradient(90deg,var(--c,var(--navy)) var(--w),var(--line) var(--w));}
+    .pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:700;}
+    .pill.warn{background:#fff3d1;color:var(--warn);} .pill.ok{background:#e4f6ee;color:var(--good);} .pill.new{background:#e8e9fb;color:var(--navy);}
+    .star{color:var(--gold-dark);} .na{color:#a3a9bb;}
+    .table-note{padding:10px 20px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);}
+
+    /* Comments */
+    .comments{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;}
+    .comment{border:1px solid var(--line);border-radius:12px;padding:14px;}
+    .comment-top{display:flex;justify-content:space-between;gap:6px 12px;flex-wrap:wrap;font-size:13px;}
+    .comment-top strong{color:var(--ink);}
+    .comment p{margin:6px 0 0;color:var(--ink);font-size:14px;line-height:1.55;}
+    .empty-state{border:1px dashed #cfd3e2;border-radius:12px;padding:24px 16px;text-align:center;color:var(--muted);font-size:13px;line-height:1.5;}
+    .empty-state button{margin-top:8px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;font-weight:600;color:var(--navy);}
+
+    @media (max-width:1100px){.split{grid-template-columns:1fr;}}
+    @media (max-width:980px){.layout{grid-template-columns:1fr;} .main{padding:20px 16px 56px;} .stat-cards{grid-template-columns:repeat(2,minmax(0,1fr));} .mini-stats{grid-template-columns:repeat(2,1fr);}}
+    @media (max-width:520px){.stat-cards{grid-template-columns:1fr;} .head-actions,.course-filter,.course-filter select,.download-report-btn,.toolbar,.toolbar input{width:100%;} .course-filter{flex-direction:column;align-items:flex-start;} .download-report-btn{justify-content:center;}}
+    @media (prefers-reduced-motion:reduce){.dot::after,.skeleton{animation:none;}}
 </style>
 @include('components.analytics-design')
+<style>
+    .analytics-shell .faculty-analytics-page .page-head.faculty-page-heading h2.faculty-page-title {
+        color: #101010;
+        font-family: 'Plus Jakarta Sans', Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 27px;
+        font-weight: 800;
+        letter-spacing: -.04em;
+    }
+</style>
 </head>
 <body class="analytics-shell">
 
@@ -112,17 +144,18 @@
 
 <div class="layout faculty-sidebar-layout">
 
-    {{-- Sidebar â€” Analytics is this page; everything else connected --}}
     @include('components.faculty-sidebar')
 
-    {{-- Main content --}}
     <main class="main">
         <div class="faculty-analytics-page">
 
-        <div class="page-head faculty-page-heading" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        {{-- Toolbar --}}
+        <header class="page-head faculty-page-heading">
             <div>
                 <h2 class="faculty-page-title">Analytics</h2>
-                <p class="live-line faculty-page-subtitle">Last 5 minutes · <span class="count">{{ $onlineNow ?? 0 }}</span> of your learners online</p>
+                <p class="live-line faculty-page-subtitle"><span class="dot" aria-hidden="true"></span><span><b class="count">{{ $onlineNow ?? 0 }}</b> of your learners active in the last 5 minutes</span></p>
+            </div>
+            <div class="head-actions">
                 <form class="course-filter" action="{{ route('faculty.analytics') }}" method="GET">
                     <label for="course_id">Course</label>
                     <select id="course_id" name="course_id" onchange="this.form.submit()">
@@ -131,243 +164,241 @@
                             <option value="{{ $facultyCourse->id }}" @selected($selectedCourseId === $facultyCourse->id)>{{ $facultyCourse->title }}</option>
                         @endforeach
                     </select>
+                    <noscript><button type="submit">Apply</button></noscript>
                 </form>
+                <a href="{{ route('faculty.analytics.report', request()->only(['course_id', 'page'])) }}" class="download-report-btn" title="Download the full analytics report as a PDF">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+                    Download report
+                </a>
             </div>
-            <a href="{{ route('faculty.analytics.report', $selectedCourseId ? ['course_id' => $selectedCourseId] : []) }}" class="download-report-btn" title="Download the full analytics report as a PDF">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
-                Download Report
-            </a>
-        </div>
+        </header>
 
-        {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â• GRADIENT STAT CARDS â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-        <section class="stat-cards">
-            <div class="g-card navy">
-                <span class="watermark">
-                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="8" r="4"/><path d="M1 21c0-4 3.5-7 8-7s8 3 8 7"/><circle cx="17" cy="9" r="3"/><path d="M17 14c3.3 0 6 2.2 6 5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-                </span>
-                <span class="num" id="faculty-live-active-users">{{ $onlineNow ?? 0 }}</span>
-                <span class="label">Live Learners</span>
-            </div>
-            <div class="g-card cyan">
-                <span class="watermark">
-                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="8" r="4"/><path d="M1 21c0-4 3.5-7 8-7s8 3 8 7"/><circle cx="17" cy="9" r="3"/><path d="M17 14c3.3 0 6 2.2 6 5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-                </span>
-                <span class="num">{{ $stats['total_learners'] ?? 0 }}</span>
-                <span class="label">Total Learners</span>
-            </div>
-            <div class="g-card gold">
-                <span class="watermark">
-                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12z"/><path d="M8.2 13.9 7 23l5-3 5 3-1.2-9.1"/></svg>
-                </span>
-                <span class="num">{{ $stats['certificates'] ?? 0 }}</span>
-                <span class="label">Certificates Issued</span>
-            </div>
-            <div class="g-card cyan">
-                <span class="watermark">
-                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                </span>
-                <span class="num">{{ $stats['lessons_done'] ?? 0 }}</span>
-                <span class="label">Lessons Completed</span>
-            </div>
+        {{-- KPIs with derived ratios --}}
+        @php
+            $tl = (int) ($stats['total_learners'] ?? 0);
+            $certs = (int) ($stats['certificates'] ?? 0);
+            $lessons = (int) ($stats['lessons_done'] ?? 0);
+        @endphp
+        <section class="stat-cards" aria-label="Key numbers">
+            <div class="card kpi live"><div class="label"><span class="dot" aria-hidden="true"></span>Live learners</div><span class="num" id="faculty-live-active-users">{{ $onlineNow ?? 0 }}</span><div class="note">{{ $tl > 0 ? number_format(($onlineNow ?? 0) / $tl * 100, 1) : '0' }}% of <b>{{ $tl }}</b> learners online</div></div>
+            <div class="card kpi a"><div class="label">Total learners</div><span class="num">{{ $tl }}</span><div class="note">Across your selected courses</div></div>
+            <div class="card kpi b"><div class="label">Certificates issued</div><span class="num">{{ $certs }}</span><div class="note"><b>{{ $tl > 0 ? number_format($certs / $tl * 100, 1) : '0' }}</b> per 100 learners</div></div>
+            <div class="card kpi c"><div class="label">Lessons completed</div><span class="num">{{ $lessons }}</span><div class="note"><b>{{ $tl > 0 ? number_format($lessons / $tl, 1) : '0' }}</b> per learner</div></div>
         </section>
 
-        <section class="panel" style="margin-bottom: 24px;">
-            <div class="panel-head">
-                <span>Live Monitoring Feed</span>
-                <span class="range">Auto-refreshing</span>
-            </div>
-            <div class="panel-body">
-                <div id="faculty-live-activity" class="legend-box" style="min-width: unset;"></div>
-            </div>
-        </section>
-
-        {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â• CHARTS â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-        <div class="charts-grid">
-
-            {{-- Total Academy Statistics â€” SVG area chart --}}
-            <section class="panel">
-                <div class="panel-head">
-                    <span>Enrolled Learner Growth</span>
-                    <span class="range">Last 12 months</span>
-                </div>
-                <div class="panel-body">
+        {{-- Growth + learner demographics --}}
+        <div class="split">
+            <section class="card">
+                <div class="card-head"><h3>Enrolled learner growth</h3><span class="sub">Last 12 months</span></div>
+                <div class="card-body">
                     @php
                         $points = collect($academyStats ?? []);
-                        // Chart geometry
-                        $W = 720;  $H = 260;
-                        $padL = 40; $padR = 30; $padT = 34; $padB = 44;
-                        $plotW = $W - $padL - $padR;
-                        $plotH = $H - $padT - $padB;
-                        $maxV  = max(30, (int) ceil(($points->max('value') ?? 0) / 10) * 10);
-                        $n     = max($points->count() - 1, 1);
+                        $W = 720; $H = 260; $padL = 40; $padR = 20; $padT = 20; $padB = 44;
+                        $plotW = $W - $padL - $padR; $plotH = $H - $padT - $padB;
+                        $rawMax = (int) ($points->max('value') ?? 0);
+                        $step = max(10, (int) (ceil($rawMax / 4 / 10) * 10));
+                        $maxV = max($step * 3, (int) (ceil($rawMax / $step) * $step));
+                        $n = max($points->count(), 1);
                         $coords = $points->values()->map(function ($p, $i) use ($padL, $padT, $plotW, $plotH, $maxV, $n) {
                             $val = is_array($p) ? ($p['value'] ?? 0) : ($p->value ?? 0);
                             $label = is_array($p) ? ($p['label'] ?? '') : ($p->label ?? '');
-                            return [
-                                'x' => $padL + ($plotW * $i / $n),
-                                'y' => $padT + $plotH - ($plotH * ($val) / $maxV),
-                                'label' => $label,
-                                'value' => $val,
-                            ];
+                            return ['x' => $padL + ($plotW * ($i + 0.5) / $n), 'y' => $padT + $plotH - ($plotH * $val / $maxV), 'label' => str_replace("\n", ' ', $label), 'raw' => $label, 'value' => $val];
                         });
-                        $lineStr = $coords->map(fn ($c) => round($c['x'], 1).','.round($c['y'], 1))->implode(' ');
-                        $areaStr = $lineStr.' '.round($padL + $plotW, 1).','.($padT + $plotH).' '.$padL.','.($padT + $plotH);
                         $peak = $coords->sortByDesc('value')->first();
+                        $vals = $coords->pluck('value');
+                        $latest = (int) ($vals->last() ?? 0);
+                        $prev = $vals->count() > 1 ? (int) $vals->slice(-2, 1)->first() : $latest;
+                        $delta = $latest - $prev;
+                        $avgV = $vals->isNotEmpty() ? round($vals->avg(), 1) : 0;
                     @endphp
-
                     @if($points->isNotEmpty())
-                        <div class="area-chart-wrap">
-                        <svg viewBox="0 0 {{ $W }} {{ $H }}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Total academy statistics over time">
-                            {{-- horizontal gridlines + y labels --}}
-                            @for($v = 0; $v <= $maxV; $v += 10)
+                        <div class="mini-stats">
+                            <div><span>Latest</span><b class="tnum">{{ $latest }}</b></div>
+                            <div><span>Change vs. previous</span><b class="tnum {{ $delta > 0 ? 'up' : ($delta < 0 ? 'down' : '') }}">{{ $delta > 0 ? '+' : '' }}{{ $delta }}{{ $prev > 0 ? ' ('.($delta > 0 ? '+' : '').number_format($delta / $prev * 100, 0).'%)' : '' }}</b></div>
+                            <div><span>Peak</span><b class="tnum">{{ $peak['value'] }}</b></div>
+                            <div><span>12-month average</span><b class="tnum">{{ $avgV }}</b></div>
+                        </div>
+                        <div class="chart-wrap" id="growth-chart">
+                        <svg viewBox="0 0 {{ $W }} {{ $H }}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Enrolled learners per month, last 12 months">
+                            @for($v = 0; $v <= $maxV; $v += $step)
                                 @php $gy = $padT + $plotH - ($plotH * $v / $maxV); @endphp
-                                <line x1="{{ $padL }}" y1="{{ $gy }}" x2="{{ $padL + $plotW }}" y2="{{ $gy }}" stroke="#e5e7eb" stroke-width="1"/>
-                                <text x="{{ $padL - 10 }}" y="{{ $gy + 4 }}" text-anchor="end" font-size="11" font-weight="700" fill="#6b7280">{{ $v }}</text>
+                                <line x1="{{ $padL }}" y1="{{ $gy }}" x2="{{ $padL + $plotW }}" y2="{{ $gy }}" stroke="#e6e8f0"/>
+                                <text x="{{ $padL - 8 }}" y="{{ $gy + 4 }}" text-anchor="end" font-size="11" fill="#667085">{{ $v }}</text>
                             @endfor
-
-                            {{-- filled area --}}
-                            <polygon points="{{ $areaStr }}" fill="#13176b" opacity="0.12"/>
-                            {{-- line --}}
-                            <polyline points="{{ $lineStr }}" fill="none" stroke="#13176b" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-
-                            {{-- dots + x labels --}}
                             @foreach($coords as $c)
-                                <circle cx="{{ round($c['x'],1) }}" cy="{{ round($c['y'],1) }}" r="3.5" fill="#fff" stroke="#13176b" stroke-width="2"/>
-                                <text x="{{ round($c['x'],1) }}" y="{{ $padT + $plotH + 18 }}" text-anchor="middle" font-size="10" font-weight="700" fill="#6b7280">
-                                    @foreach(explode("\n", $c['label']) as $li => $lineTxt)
-                                        <tspan x="{{ round($c['x'],1) }}" dy="{{ $li === 0 ? 0 : 12 }}">{{ $lineTxt }}</tspan>
-                                    @endforeach
-                                </text>
-                            @endforeach
-
-                            {{-- gold highlight + callout on the peak point --}}
-                            @if($peak)
-                                <circle cx="{{ round($peak['x'],1) }}" cy="{{ round($peak['y'],1) }}" r="5" fill="#dba617" stroke="#fff" stroke-width="2"/>
                                 @php
-                                    $bxW = 120; $bxH = 40;
-                                    $bx = min(max($peak['x'] - $bxW - 14, $padL), $padL + $plotW - $bxW);
-                                    $by = max($peak['y'] - $bxH - 6, 4);
+                                    $isPeak = $c['x'] === $peak['x'] && $c['value'] === $peak['value'];
+                                    $barWidth = $plotW / $n * 0.58;
+                                    $barHeight = $padT + $plotH - $c['y'];
+                                    $barColor = $isPeak ? '#dba617' : '#13176b';
                                 @endphp
-                                <rect x="{{ round($bx,1) }}" y="{{ round($by,1) }}" width="{{ $bxW }}" height="{{ $bxH }}" rx="8" fill="#fff" stroke="#e5e7eb"/>
-                                <text x="{{ round($bx + 12,1) }}" y="{{ round($by + 17,1) }}" font-size="11" font-weight="800" fill="#13176b">{{ str_replace("\n", ' ', $peak['label']) }}</text>
-                                <text x="{{ round($bx + 12,1) }}" y="{{ round($by + 32,1) }}" font-size="11" font-weight="700" fill="#6b7280">Amount: {{ $peak['value'] }}</text>
+                                <text x="{{ round($c['x'],1) }}" y="{{ $padT + $plotH + 20 }}" text-anchor="middle" font-size="10" fill="#667085">
+                                    @foreach(explode("\n", $c['raw']) as $li => $lineTxt)<tspan x="{{ round($c['x'],1) }}" dy="{{ $li === 0 ? 0 : 12 }}">{{ $lineTxt }}</tspan>@endforeach
+                                </text>
+                                <rect x="{{ round($c['x'] - $barWidth / 2, 1) }}" y="{{ round($c['y'], 1) }}" width="{{ round($barWidth, 1) }}" height="{{ round($barHeight, 1) }}" rx="4" fill="{{ $barColor }}"/>
+                                <rect class="hit" x="{{ round($c['x'] - ($plotW / $n / 2), 1) }}" y="{{ $padT }}" width="{{ round($plotW / $n, 1) }}" height="{{ $plotH }}" tabindex="0" data-label="{{ $c['label'] }}" data-value="{{ $c['value'] }}" data-cx="{{ round($c['x'] / $W * 100, 2) }}" data-cy="{{ round(($c['y'] + $padT + $plotH) / 2 / $H * 100, 2) }}" aria-label="{{ $c['label'] }}: {{ $c['value'] }} learners"/>
+                            @endforeach
+                            @if($avgV > 0)
+                                @php $ay = $padT + $plotH - ($plotH * $avgV / $maxV); @endphp
+                                <line x1="{{ $padL }}" y1="{{ $ay }}" x2="{{ $padL + $plotW }}" y2="{{ $ay }}" stroke="#dba617" stroke-width="1.5" stroke-dasharray="5 4"/>
+                                <rect x="{{ $padL + $plotW - 44 }}" y="{{ $ay - 16 }}" width="44" height="16" rx="4" fill="#fff7db" fill-opacity=".92"/>
+                                <text x="{{ $padL + $plotW }}" y="{{ $ay - 5 }}" text-anchor="end" font-size="10" font-weight="600" fill="#b8860b">avg {{ $avgV }}</text>
                             @endif
                         </svg>
+                        <div class="tip" id="chart-tip" role="status"></div>
                         </div>
                     @else
-                        <div class="empty-state">No statistics yet.</div>
+                        <div class="empty-state">No enrollment history yet. Growth appears here once learners join your courses.</div>
                     @endif
                 </div>
             </section>
 
-            {{-- Learner Success â€” SVG donut chart --}}
-            <section class="panel">
-                <div class="panel-head">
-                    <span>Learner Success</span>
-                    <span class="range">All time</span>
+            @php
+                $demographicGroups = [
+                    ['title' => 'Age distribution', 'values' => $demographics['age']],
+                    ['title' => 'Gender distribution', 'values' => $demographics['gender']],
+                ];
+            @endphp
+            <section class="card" aria-label="Learner demographics">
+                <div class="card-head">
+                    <h3>Learner demographics</h3>
+                    <span class="sub">{{ number_format($demographics['total']) }} unique learners</span>
                 </div>
-                <div class="panel-body">
-                    @php
-                        $success = collect($learnerSuccess ?? []);
-                        $total   = max($success->sum('count'), 1);
-                        $donutColors = ['#13176b', '#dba617', '#7fe9e3'];
-                        $R = 70; $CIRC = 2 * pi() * $R;
-                        $offset = 0;
-                        $segments = $success->values()->map(function ($seg, $i) use ($total, $CIRC, $donutColors, &$offset) {
-                            $len = $CIRC * ($seg['count'] ?? 0) / $total;
-                            $s = [
-                                'color'  => $donutColors[$i % count($donutColors)],
-                                'dash'   => $len,
-                                'gap'    => $CIRC - $len,
-                                'offset' => -$offset,
-                                'count'  => $seg['count'] ?? 0,
-                                'label'  => $seg['label'] ?? '',
-                            ];
-                            $offset += $len;
-                            return $s;
-                        });
-                    @endphp
-
-                    @if($success->isNotEmpty())
-                        <div class="donut-flex">
-                            <div class="donut-wrap">
-                                <svg width="190" height="190" viewBox="0 0 190 190" role="img" aria-label="Learner success breakdown">
-                                    <g transform="rotate(-90 95 95)">
-                                        @foreach($segments as $seg)
-                                            <circle cx="95" cy="95" r="{{ $R }}" fill="none"
-                                                stroke="{{ $seg['color'] }}" stroke-width="34"
-                                                stroke-dasharray="{{ round($seg['dash'],2) }} {{ round($seg['gap'],2) }}"
-                                                stroke-dashoffset="{{ round($seg['offset'],2) }}"/>
+                <div class="card-body">
+                    @if($demographics['total'] > 0)
+                        <div class="demographics-groups">
+                            @foreach($demographicGroups as $group)
+                                <section class="demographics-group" aria-label="{{ $group['title'] }}">
+                                    <h4>{{ $group['title'] }}</h4>
+                                    <div class="demographics-bars">
+                                        @foreach($group['values'] as $label => $count)
+                                            @php $percentage = (int) round($count / $demographics['total'] * 100); @endphp
+                                            <div class="demographic-row">
+                                                <span class="demographic-label">{{ $label }}</span>
+                                                <div class="demographic-track" role="img" aria-label="{{ $label }}: {{ number_format($count) }} learners, {{ $percentage }}%">
+                                                    <div class="demographic-fill" style="width:{{ $percentage }}%"></div>
+                                                </div>
+                                                <span class="demographic-value">{{ number_format($count) }} ({{ $percentage }}%)</span>
+                                            </div>
                                         @endforeach
-                                    </g>
-                                    <text x="95" y="90" text-anchor="middle" font-size="26" font-weight="800" fill="#13176b">{{ $success->sum('count') }}</text>
-                                    <text x="95" y="110" text-anchor="middle" font-size="11" font-weight="700" fill="#6b7280">Learners</text>
-                                </svg>
-                            </div>
-                            <div class="legend-box">
-                                @foreach($segments as $seg)
-                                    <div class="legend-item">
-                                        <span class="legend-dot" style="background: {{ $seg['color'] }};"></span>
-                                        <span>
-                                            <span class="l-num">{{ $seg['count'] }}</span><br>
-                                            <span class="l-text">{{ $seg['label'] }}</span>
-                                        </span>
                                     </div>
-                                @endforeach
-                            </div>
+                                </section>
+                            @endforeach
                         </div>
                     @else
-                        <div class="empty-state">No learner data yet.</div>
+                        <div class="demographics-empty">No enrolled learner demographics are available for the selected courses.</div>
                     @endif
                 </div>
             </section>
-
         </div>
 
-        <section class="panel" style="margin-top:28px;">
-            <div class="panel-head">
-                <span>Course Outcomes</span>
-                <span class="range">Your courses</span>
+        {{-- Learner success --}}
+        @php
+            $success = collect($learnerSuccess ?? []);
+            $totalCount = (int) $success->sum('count');
+            $total = max($totalCount, 1);
+            $colors = ['#13176b', '#dba617', '#7fe9e3'];
+            $segments = $success->values()->map(fn ($s, $i) => ['color' => $colors[$i % count($colors)], 'count' => $s['count'] ?? 0, 'label' => $s['label'] ?? '', 'pct' => round(($s['count'] ?? 0) / $total * 100, 1)]);
+        @endphp
+        <section class="card">
+            <div class="card-head"><h3>Learner success</h3><span class="sub">All time · {{ $totalCount }} learners</span></div>
+            <div class="card-body">
+                @if($success->isNotEmpty() && $totalCount > 0)
+                    <div class="success-bar" role="img" aria-label="Learner success breakdown">
+                        @foreach($segments as $seg)@if($seg['count'] > 0)<span style="width:{{ $seg['pct'] }}%;background:{{ $seg['color'] }};" title="{{ $seg['label'] }}: {{ $seg['count'] }} ({{ $seg['pct'] }}%)"></span>@endif @endforeach
+                    </div>
+                    <div class="success-legend">
+                        @foreach($segments as $seg)
+                            <div class="s-item"><span class="s-swatch" style="background:{{ $seg['color'] }};"></span>
+                                <div><div class="s-num tnum">{{ $seg['count'] }}<small>{{ $seg['pct'] }}%</small></div><div class="s-label">{{ $seg['label'] }}</div></div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="empty-state">No learner results yet. Completed courses and passed quizzes show up here.</div>
+                @endif
             </div>
-            <div class="panel-body course-outcomes-wrap paginated-table-scroll">
-                <table class="course-outcomes">
-                    <thead><tr><th>Course</th><th>Enrolled</th><th>Completed</th><th>Completion</th><th>Avg. Quiz</th><th>Quiz Pass Rate (learners)</th><th>Avg. Rating</th><th>Reviews</th><th>Reviews to Grade</th></tr></thead>
+        </section>
+
+        {{-- Course outcomes: sortable, searchable, with data bars --}}
+        @php
+            $rows = method_exists($courseAnalytics, 'getCollection') ? $courseAnalytics->getCollection() : collect($courseAnalytics);
+            $avgOf = function ($key) use ($rows) { $v = $rows->pluck($key)->filter(fn ($x) => $x !== null); return $v->isEmpty() ? null : round($v->avg(), 1); };
+            $minReviews = \App\Support\CourseEvaluationTemplate::MINIMUM_REVIEWS_FOR_RATING;
+        @endphp
+        <section class="card">
+            <div class="card-head">
+                <h3>Course outcomes</h3>
+                <div class="toolbar"><input type="search" id="course-search" placeholder="Search courses" aria-label="Search courses"><span class="sub">Your courses</span></div>
+            </div>
+            <div class="table-scroll paginated-table-scroll">
+                <table class="course-outcomes" id="outcomes-table">
+                    <thead><tr>
+                        <th class="text" data-type="text"><button type="button">Course</button></th>
+                        <th data-type="num"><button type="button">Enrolled</button></th>
+                        <th data-type="num"><button type="button">Completed</button></th>
+                        <th data-type="num"><button type="button">Completion</button></th>
+                        <th data-type="num"><button type="button">Avg. Quiz</button></th>
+                        <th data-type="num"><button type="button" title="Share of learners who passed the quiz">Quiz Pass Rate (learners)</button></th>
+                        <th data-type="num"><button type="button">Avg. Rating</button></th>
+                        <th data-type="num"><button type="button">Reviews</button></th>
+                        <th data-type="num"><button type="button" title="Reviews waiting for your grade">Reviews to Grade</button></th>
+                    </tr></thead>
                     <tbody>
                         @forelse($courseAnalytics as $course)
+                            @php $rated = $course->review_count >= $minReviews; @endphp
                             <tr>
-                                <td>{{ $course->title }}</td>
-                                <td>{{ $course->enrolled }}</td>
-                                <td>{{ $course->completed }}</td>
-                                <td>{{ $course->completion_rate === null ? '—' : $course->completion_rate . '%' }}</td>
-                                <td>{{ $course->average_score === null ? '—' : $course->average_score . '%' }}</td>
-                                <td>{{ $course->pass_rate === null ? '—' : $course->pass_rate . '%' }}</td>
-                                <td>{{ $course->review_count >= \App\Support\CourseEvaluationTemplate::MINIMUM_REVIEWS_FOR_RATING ? number_format($course->rating_average, 1) : 'New' }}</td>
-                                <td>{{ $course->review_count }}</td>
-                                <td>{{ $course->pending_reviews }}</td>
+                                <td data-v="{{ strtolower($course->title) }}">{{ $course->title }}</td>
+                                <td data-v="{{ $course->enrolled }}">{{ $course->enrolled }}</td>
+                                <td data-v="{{ $course->completed }}">{{ $course->completed }}</td>
+                                <td data-v="{{ $course->completion_rate ?? -1 }}">
+                                    @if($course->completion_rate === null)<span class="na">—</span>@else<div class="cell"><span>{{ $course->completion_rate }}%</span><i style="--w:{{ min(100, max(0, $course->completion_rate)) }}%"></i></div>@endif
+                                </td>
+                                <td data-v="{{ $course->average_score ?? -1 }}">
+                                    @if($course->average_score === null)<span class="na">—</span>@else<div class="cell"><span>{{ $course->average_score }}%</span><i style="--w:{{ min(100, max(0, $course->average_score)) }}%;--c:#7b80d6"></i></div>@endif
+                                </td>
+                                <td data-v="{{ $course->pass_rate ?? -1 }}">
+                                    @if($course->pass_rate === null)<span class="na">—</span>@else<div class="cell"><span>{{ $course->pass_rate }}%</span><i style="--w:{{ min(100, max(0, $course->pass_rate)) }}%;--c:var(--teal)"></i></div>@endif
+                                </td>
+                                <td data-v="{{ $rated ? $course->rating_average : -1 }}">@if($rated)<span class="star">★</span> {{ number_format($course->rating_average, 1) }}@else<span class="pill new">New</span>@endif</td>
+                                <td data-v="{{ $course->review_count }}">{{ $course->review_count }}</td>
+                                <td data-v="{{ $course->pending_reviews }}">@if($course->pending_reviews > 0)<span class="pill warn">{{ $course->pending_reviews }}</span>@else<span class="pill ok">0</span>@endif</td>
                             </tr>
                         @empty
-                            <tr><td colspan="9" style="text-align:center;color:var(--muted);">Create a course to see its learner outcomes here.</td></tr>
+                            <tr><td colspan="9"><div class="empty-state">Create a course to see learner outcomes here.</div></td></tr>
                         @endforelse
                     </tbody>
+                    @if($rows->count() > 1)
+                    <tfoot><tr>
+                        <td>Average on this page</td>
+                        <td>{{ $avgOf('enrolled') ?? '—' }}</td><td>{{ $avgOf('completed') ?? '—' }}</td>
+                        <td>{{ $avgOf('completion_rate') === null ? '—' : $avgOf('completion_rate').'%' }}</td>
+                        <td>{{ $avgOf('average_score') === null ? '—' : $avgOf('average_score').'%' }}</td>
+                        <td>{{ $avgOf('pass_rate') === null ? '—' : $avgOf('pass_rate').'%' }}</td>
+                        <td colspan="3"></td>
+                    </tr></tfoot>
+                    @endif
                 </table>
             </div>
             @include('components.pagination', ['paginator' => $courseAnalytics])
         </section>
 
-        <section class="panel" style="margin-top:18px;">
-            <div class="panel-head"><span>Recent course evaluation comments</span><span class="range">Latest 5</span></div>
-            <div class="panel-body">
-                @forelse($recentCourseComments as $review)
-                    <article style="padding:12px 0;border-bottom:1px solid #e5e7eb;">
-                        <div style="display:flex;justify-content:space-between;gap:6px 16px;align-items:center;flex-wrap:wrap;">
-                            <strong>{{ $review->course?->title ?? 'Course' }}</strong>
-                            <span aria-label="{{ $review->rating }} out of 5">★ {{ $review->rating }}/5</span>
-                        </div>
-                        <p style="margin:6px 0 0;color:var(--muted);">{{ $review->comment }}</p>
-                    </article>
-                @empty
-                    <div class="empty-state">No written course evaluation comments yet.</div>
-                @endforelse
+        {{-- Comments --}}
+        <section class="card">
+            <div class="card-head"><h3>Recent course evaluation comments</h3><span class="sub">Latest 5</span></div>
+            <div class="card-body">
+                @if($recentCourseComments->isNotEmpty())
+                    <div class="comments">
+                        @foreach($recentCourseComments as $review)
+                            <article class="comment">
+                                <div class="comment-top"><strong>{{ $review->course?->title ?? 'Course' }}</strong><span class="star" aria-label="{{ $review->rating }} out of 5">★ {{ $review->rating }}/5</span></div>
+                                <p>{{ $review->comment }}</p>
+                            </article>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="empty-state">No written comments yet. Learner feedback appears here after they evaluate a course.</div>
+                @endif
             </div>
         </section>
 
@@ -376,75 +407,80 @@
 </div>
 
 <script>
-    function refreshFacultyMonitoring() {
-        fetch('{{ route('faculty.analytics.live', $selectedCourseId ? ['course_id' => $selectedCourseId] : []) }}')
-            .then(response => response.json())
+    // ---- Live learner count ----
+    const liveUrl = '{{ route('faculty.analytics.live', $selectedCourseId ? ['course_id' => $selectedCourseId] : []) }}';
+    let liveTimer = null;
+    function refreshFacultyAnalytics() {
+        fetch(liveUrl, { headers: { 'Accept': 'application/json' } })
+            .then(r => { if (!r.ok) throw new Error('Unable to refresh live learner count.'); return r.json(); })
             .then(data => {
                 const active = document.getElementById('faculty-live-active-users');
                 if (active) active.textContent = data.stats.active_users;
-
-                const container = document.getElementById('faculty-live-activity');
-                if (!container) return;
-
-                container.innerHTML = '';
-                const items = (data.activity || []).slice(0, 5);
-                if (items.length === 0) {
-                    container.innerHTML = '<div class="empty-state">No recent activity yet - events will appear here as they happen.</div>';
-                    return;
-                }
-                items.forEach(item => {
-                    const row = document.createElement('div');
-                    row.className = 'legend-item';
-                    const marker = document.createElement('div');
-                    marker.className = 'legend-dot';
-                    marker.style.background = '#13176b';
-                    const content = document.createElement('div');
-                    const title = document.createElement('div');
-                    title.className = 'l-num';
-                    title.textContent = item.title;
-                    const detail = document.createElement('div');
-                    detail.className = 'l-text';
-                    detail.textContent = `${item.detail} - ${item.time}`;
-                    content.append(title, detail);
-                    row.append(marker, content);
-                    container.appendChild(row);
-                });
             })
-            .catch(() => {
-                const container = document.getElementById('faculty-live-activity');
-                if (container) {
-                    container.innerHTML = '<div class="empty-state">Monitoring feed unavailable.</div>';
-                }
-            });
+            .catch(error => console.error(error));
     }
+    function startLive() { refreshFacultyAnalytics(); liveTimer = setInterval(refreshFacultyAnalytics, 15000); }
+    document.addEventListener('visibilitychange', () => { if (document.hidden) { clearInterval(liveTimer); liveTimer = null; } else if (!liveTimer) startLive(); });
+    startLive();
 
-    refreshFacultyMonitoring();
-    setInterval(refreshFacultyMonitoring, 15000);
-</script>
-
-{{-- â”€â”€ Back to top (appears on long pages) â”€â”€ --}}
-<button id="back-to-top-btn" type="button" title="Back to top" aria-label="Back to top"
-        onclick="window.scrollTo({top:0,behavior:'smooth'});">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
-</button>
-<style>
-    #back-to-top-btn{position:fixed;right:26px;bottom:26px;z-index:2000;width:48px;height:48px;border-radius:50%;border:none;background:#13176b;color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 22px rgba(19,23,107,.35);transition:transform .15s ease,background .2s ease;}
-    #back-to-top-btn:hover{background:#dba617;transform:translateY(-3px);}
-    #back-to-top-btn svg{width:22px;height:22px;}
-</style>
-<script>
+    // ---- Chart tooltip ----
     (function () {
-        var btn = document.getElementById('back-to-top-btn');
-        if (!btn) return;
-        function toggleBackToTop() {
-            btn.style.display = (window.scrollY || document.documentElement.scrollTop) > 400 ? 'flex' : 'none';
+        const wrap = document.getElementById('growth-chart'), tip = document.getElementById('chart-tip');
+        if (!wrap || !tip) return;
+        const svg = wrap.querySelector('svg');
+        function show(r) {
+            const s = svg.getBoundingClientRect(), w = wrap.getBoundingClientRect();
+            tip.innerHTML = '<b>' + r.dataset.value + ' learners</b>' + r.dataset.label;
+            tip.style.left = (s.left - w.left + wrap.scrollLeft + s.width * r.dataset.cx / 100) + 'px';
+            tip.style.top = (s.top - w.top + s.height * r.dataset.cy / 100) + 'px';
+            tip.classList.add('show');
         }
-        window.addEventListener('scroll', toggleBackToTop, { passive: true });
-        toggleBackToTop();
+        wrap.querySelectorAll('.hit').forEach(r => {
+            ['mouseenter', 'focus'].forEach(e => r.addEventListener(e, () => show(r)));
+            ['mouseleave', 'blur'].forEach(e => r.addEventListener(e, () => tip.classList.remove('show')));
+        });
+    })();
+
+    // ---- Sortable + searchable course table (works on the current page) ----
+    (function () {
+        const table = document.getElementById('outcomes-table'); if (!table) return;
+        const body = table.tBodies[0], heads = table.querySelectorAll('thead th');
+        heads.forEach((th, i) => th.querySelector('button').addEventListener('click', () => {
+            const asc = th.getAttribute('aria-sort') !== 'ascending', num = th.dataset.type === 'num';
+            heads.forEach(h => h.removeAttribute('aria-sort'));
+            th.setAttribute('aria-sort', asc ? 'ascending' : 'descending');
+            const rows = Array.from(body.rows).filter(r => r.cells.length > 1);
+            rows.sort((a, b) => {
+                const x = a.cells[i].dataset.v, y = b.cells[i].dataset.v;
+                const c = num ? parseFloat(x) - parseFloat(y) : x.localeCompare(y);
+                return asc ? c : -c;
+            });
+            rows.forEach(r => body.appendChild(r));
+        }));
+        const search = document.getElementById('course-search');
+        if (search) search.addEventListener('input', () => {
+            const q = search.value.trim().toLowerCase();
+            Array.from(body.rows).forEach(r => { if (r.cells.length > 1) r.style.display = r.cells[0].textContent.toLowerCase().includes(q) ? '' : 'none'; });
+        });
     })();
 </script>
 
-    {{-- Shared responsiveness layer (drawer nav + grid stacking) --}}
-    @include('components.responsive')
+<button id="back-to-top-btn" type="button" title="Back to top" aria-label="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'});">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+</button>
+<style>
+    #back-to-top-btn{position:fixed;right:26px;bottom:26px;z-index:2000;width:44px;height:44px;border-radius:50%;border:none;background:#13176b;color:#fff;display:none;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(19,23,107,.3);transition:background .2s;}
+    #back-to-top-btn:hover{background:#dba617;}
+    #back-to-top-btn svg{width:20px;height:20px;}
+</style>
+<script>
+    (function () {
+        var b = document.getElementById('back-to-top-btn');
+        function t() { b.style.display = (window.scrollY || document.documentElement.scrollTop) > 400 ? 'flex' : 'none'; }
+        window.addEventListener('scroll', t, { passive: true }); t();
+    })();
+</script>
+
+@include('components.responsive')
 </body>
 </html>

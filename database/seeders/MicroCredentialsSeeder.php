@@ -26,6 +26,8 @@ class MicroCredentialsSeeder extends Seeder
             ['id' => 1, 'name' => 'admin',   'display_name' => 'Administrator', 'description' => 'Platform administrator', 'created_at' => now(), 'updated_at' => now()],
             ['id' => 2, 'name' => 'faculty', 'display_name' => 'Faculty',       'description' => 'Course instructor',        'created_at' => now(), 'updated_at' => now()],
             ['id' => 3, 'name' => 'student', 'display_name' => 'Student',       'description' => 'Learner',                  'created_at' => now(), 'updated_at' => now()],
+            ['id' => 4, 'name' => 'superadmin', 'display_name' => 'Superadmin', 'description' => 'Full administrator access', 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 5, 'name' => 'subadmin', 'display_name' => 'Sub-admin', 'description' => 'Access to assigned administrator pages', 'created_at' => now(), 'updated_at' => now()],
         ]);
 
         // ── Users ─────────────────────────────────────────────────────────

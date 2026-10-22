@@ -31,6 +31,18 @@
         </div>
     @endif
 
+    @if($latestSubmission && ($latestSubmission->response_text || $latestSubmission->submission_path))
+        <section class="inline-submitted-answer">
+            <strong>Your submitted answer</strong>
+            @if($latestSubmission->response_text)
+                <p>{{ $latestSubmission->response_text }}</p>
+            @endif
+            @if($latestSubmission->submission_path)
+                <a href="{{ route('lesson-activities.download', $latestSubmission->id) }}">Download submitted file</a>
+            @endif
+        </section>
+    @endif
+    
     @if(! $lesson_completed && ! $activityAccepted && ! $activityPendingReview)
         <form class="inline-assessment-form" data-assessment-form method="POST" action="{{ route('lesson-activities.submit', $activity->id) }}" enctype="multipart/form-data">
             @csrf

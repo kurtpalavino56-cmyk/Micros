@@ -76,11 +76,17 @@
                                 @if(!empty($badge->learning_outcomes))
                                     <div class="badge-detail">
                                         <dt>Learning outcomes</dt>
-                                        <dd><ul>
-                                            @foreach($badge->learning_outcomes as $outcome)
-                                                <li>{{ is_array($outcome) ? trim(($outcome['code'] ?? '').' '.($outcome['description'] ?? '')) : $outcome }}</li>
-                                            @endforeach
-                                        </ul></dd>
+                                        <dd>
+                                            @if(count($badge->learning_outcomes) === 1 && is_array($badge->learning_outcomes[0]))
+                                                <div class="rich-content">{!! \App\Support\RichTextSanitizer::sanitize($badge->learning_outcomes[0]['description'] ?? '') !!}</div>
+                                            @else
+                                                <ul>
+                                                    @foreach($badge->learning_outcomes as $outcome)
+                                                        <li>{{ is_array($outcome) ? trim(($outcome['code'] ?? '').' '.($outcome['description'] ?? '')) : $outcome }}</li>
+                                                    @endforeach
+                                                </ul>
+                                            @endif
+                                        </dd>
                                     </div>
                                 @endif
                                 @if($badge->credential_uid)

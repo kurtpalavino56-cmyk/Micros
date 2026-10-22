@@ -123,6 +123,46 @@
             background: rgba(255,255,255,0.10);
         }
 
+        .password-checklist {
+            margin: -0.2rem 0 0.9rem;
+            padding: 0.75rem 0.9rem;
+            list-style: none;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.07);
+            color: rgba(255,255,255,0.65);
+            font-size: 0.76rem;
+        }
+        .password-checklist__title {
+            margin-bottom: 0.35rem;
+            color: rgba(255,255,255,0.85);
+            font-weight: 600;
+        }
+        .password-checklist li:not(.password-checklist__title) {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            margin-top: 0.2rem;
+        }
+        .password-checklist li:not(.password-checklist__title)::before {
+            content: '';
+            width: 0.8rem;
+            height: 0.8rem;
+            flex: 0 0 0.8rem;
+            border: 1px solid rgba(255,255,255,0.45);
+            border-radius: 50%;
+        }
+        .password-checklist li.is-met { color: #a9f0c5; }
+        .password-checklist li.is-met::before {
+            content: '✓';
+            display: grid;
+            place-items: center;
+            border-color: #a9f0c5;
+            background: #a9f0c5;
+            color: var(--navy-dark);
+            font-size: 0.6rem;
+            font-weight: 800;
+        }
+
         /* Sign Up button */
         .register-submit {
             width: 100%;
@@ -180,9 +220,8 @@
             transform: translateY(-1px);
         }
 
-        /* Errors */
         .form-error { color: #ff6b6b; font-size: 0.76rem; margin-top: 0.25rem; }
-        .alert-error {
+        /* .alert-error {
             background: rgba(255,107,107,0.12);
             border: 1px solid rgba(255,107,107,0.35);
             border-radius: 10px;
@@ -190,7 +229,7 @@
             font-size: 0.82rem;
             padding: 0.7rem 1rem;
             margin-bottom: 1.2rem;
-        }
+        } */
 
         /* ════════════════════════════════
            RIGHT — Image Panel (same slider as login)
@@ -335,13 +374,13 @@
 
             <h1 class="register-form-panel__heading">Let's get you started!</h1>
 
-            @if ($errors->any())
+            <!-- @if ($errors->any())
                 <div class="alert-error">
                     @foreach ($errors->all() as $error)
                         <div>{{ $error }}</div>
                     @endforeach
                 </div>
-            @endif
+            @endif -->
 
             <form method="POST" action="{{ url('/register') }}">
                 @csrf
@@ -404,6 +443,7 @@
                 <div class="field-row">
                     <div class="field">
                         <input type="password" name="password"
+                            data-password-strength
                             placeholder="Password"
                             autocomplete="new-password"
                             required>
@@ -416,6 +456,14 @@
                             required>
                     </div>
                 </div>
+                <ul class="password-checklist" data-password-checklist aria-label="Password requirements">
+                    <li class="password-checklist__title">Your password must include:</li>
+                    <li data-password-rule="length">At least 8 characters</li>
+                    <li data-password-rule="uppercase">At least 1 uppercase letter</li>
+                    <li data-password-rule="lowercase">At least 1 lowercase letter</li>
+                    <li data-password-rule="number">At least 1 number</li>
+                    <li data-password-rule="symbol">At least 1 special character</li>
+                </ul>
 
                 <button type="submit" class="register-submit">Sign Up</button>
 
@@ -439,9 +487,6 @@
             <div class="slider__seals">
                 <div class="slider__seal">
                     <img src="{{ asset('Images/PSU-Logo.png') }}" alt="PSU">
-                </div>
-                <div class="slider__seal">
-                    <img src="{{ asset('Images/CCS-Logo.png') }}" alt="CCS">
                 </div>
             </div>
 
@@ -497,6 +542,24 @@
     });
 
     startTimer();
+
+    const passwordInput = document.querySelector('[data-password-strength]');
+    const passwordRules = document.querySelectorAll('[data-password-rule]');
+    const passwordChecks = {
+        length: value => value.length >= 8,
+        uppercase: value => /[A-Z]/.test(value),
+        lowercase: value => /[a-z]/.test(value),
+        number: value => /\d/.test(value),
+        symbol: value => /[^A-Za-z0-9]/.test(value),
+    };
+
+    passwordInput.addEventListener('input', () => {
+        passwordRules.forEach(rule => {
+            const isMet = passwordChecks[rule.dataset.passwordRule](passwordInput.value);
+            rule.classList.toggle('is-met', isMet);
+            rule.setAttribute('aria-checked', isMet ? 'true' : 'false');
+        });
+    });
 </script>
 
 

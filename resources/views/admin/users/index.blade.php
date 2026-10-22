@@ -124,6 +124,213 @@
             box-shadow: 0 1px 3px rgba(9, 37, 95, .12);
         }
 
+        .create-user-panel {
+            width: 100%;
+            margin: 0 0 20px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-card);
+            background: var(--white);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .create-user-panel summary {
+            padding: 15px 18px;
+            color: var(--navy);
+            font-size: .9rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .create-user-panel[open] summary {
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .create-user-form {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            padding: 18px;
+        }
+
+        .create-user-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .create-user-field label {
+            color: #536175;
+            font-size: .75rem;
+            font-weight: 600;
+        }
+
+        .create-user-field input,
+        .create-user-field select {
+            min-height: 40px;
+            padding: 9px 11px;
+            border: 1px solid #d9e1ec;
+            border-radius: 7px;
+            background: var(--white);
+            color: var(--text-main);
+            font: inherit;
+            font-size: .82rem;
+        }
+
+        .create-user-field input:focus,
+        .create-user-field select:focus {
+            border-color: var(--blue);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(11, 78, 162, .09);
+        }
+
+        .create-user-field-wide {
+            grid-column: 1 / -1;
+        }
+
+        .create-user-error {
+            color: #b42318;
+            font-size: .72rem;
+        }
+
+        .create-user-errors {
+            grid-column: 1 / -1;
+            margin: 0;
+            padding: 11px 14px;
+            border: 1px solid #f3c8c4;
+            border-radius: 7px;
+            background: #fff1f0;
+            color: #a63830;
+            font-size: .8rem;
+        }
+
+        .admin-page-access {
+            grid-column: 1 / -1;
+            padding: 14px;
+            border: 1px solid var(--border-light);
+            border-radius: 7px;
+            background: var(--blue-soft);
+        }
+
+        .admin-page-access[hidden] {
+            display: none;
+        }
+
+        .admin-page-access legend {
+            padding: 0 5px;
+            color: var(--navy);
+            font-size: .8rem;
+            font-weight: 700;
+        }
+
+        .admin-page-access-options {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 9px 14px;
+        }
+
+        .admin-page-access-options label {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            color: #536175;
+            font-size: .75rem;
+        }
+
+        .admin-page-access-options input {
+            accent-color: var(--navy);
+        }
+
+        .manage-access-button {
+            padding: 7px 12px;
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            background: var(--white);
+            color: var(--navy);
+            font: inherit;
+            font-size: .75rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .manage-access-button:hover {
+            border-color: var(--blue);
+            background: var(--blue-light);
+        }
+
+        .manage-access-dialog {
+            width: min(560px, calc(100% - 32px));
+            max-height: min(85vh, 720px);
+            padding: 0;
+            overflow: auto;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--white);
+            color: var(--text-main);
+            box-shadow: var(--shadow-md);
+        }
+
+        .manage-access-dialog::backdrop {
+            background: rgba(9, 37, 95, .48);
+        }
+
+        .manage-access-dialog-content {
+            padding: 22px;
+        }
+
+        .manage-access-dialog h2 {
+            margin: 0 0 5px;
+            color: var(--navy);
+            font-size: 1.05rem;
+        }
+
+        .manage-access-dialog-description {
+            margin: 0 0 18px;
+            color: var(--text-muted);
+            font-size: .8rem;
+        }
+
+        .manage-access-dialog .admin-page-access {
+            margin: 0 0 16px;
+        }
+
+        .manage-access-dialog-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 9px;
+        }
+
+        .manage-access-cancel {
+            min-height: 38px;
+            padding: 9px 16px;
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            background: var(--white);
+            color: var(--text-main);
+            font: inherit;
+            font-size: .8rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .create-user-submit {
+            justify-self: start;
+            min-height: 38px;
+            padding: 9px 17px;
+            border: 1px solid var(--yellow);
+            border-radius: 7px;
+            background: var(--yellow);
+            color: #17212b;
+            font: inherit;
+            font-size: .8rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .create-user-submit:hover {
+            background: #e8b91f;
+        }
+
         /* Search and filters */
         .user-search-form {
             display: flex;
@@ -408,6 +615,19 @@
                 flex: 1;
             }
 
+            .create-user-form {
+                grid-template-columns: 1fr;
+            }
+
+            .create-user-field-wide {
+                grid-column: auto;
+            }
+
+            .admin-page-access,
+            .admin-page-access-options {
+                grid-template-columns: 1fr;
+            }
+
             .user-search-form {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
@@ -441,12 +661,97 @@
         {{-- MAIN CONTENT --}}
         <main class="main">
 
+            <x-flash-toast :message="session('success')" />
+
             <header class="page-head user-management-heading">
                 <div>
                     <h1>User Management</h1>
-                    <p>Manage student and faculty accounts, roles, and platform access.</p>
+                    <p>Manage learner, faculty, and administrator accounts, roles, and platform access.</p>
                 </div>
             </header>
+
+            <details class="create-user-panel" @if ($errors->any()) open @endif>
+                <summary>Create account</summary>
+                <form class="create-user-form" action="{{ route('admin.users.store') }}" method="POST">
+                    @csrf
+
+                    @if ($errors->any())
+                        <div class="create-user-errors" role="alert">
+                            <strong>There was a problem creating the account.</strong>
+                            <ul>
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    <div class="create-user-field">
+                        <label for="create-user-first-name">First name</label>
+                        <input id="create-user-first-name" name="first_name" type="text" value="{{ old('first_name') }}" autocomplete="given-name" required>
+                        @error('first_name')<span class="create-user-error">{{ $message }}</span>@enderror
+                    </div>
+
+                    <div class="create-user-field">
+                        <label for="create-user-last-name">Last name</label>
+                        <input id="create-user-last-name" name="last_name" type="text" value="{{ old('last_name') }}" autocomplete="family-name" required>
+                        @error('last_name')<span class="create-user-error">{{ $message }}</span>@enderror
+                    </div>
+
+                    <div class="create-user-field">
+                        <label for="create-user-email">Email</label>
+                        <input id="create-user-email" name="email" type="email" value="{{ old('email') }}" autocomplete="email" required>
+                        @error('email')<span class="create-user-error">{{ $message }}</span>@enderror
+                    </div>
+
+                    <div class="create-user-field">
+                        <label for="create-user-username">Username</label>
+                        <input id="create-user-username" name="username" type="text" value="{{ old('username') }}" autocomplete="username" required>
+                        @error('username')<span class="create-user-error">{{ $message }}</span>@enderror
+                    </div>
+
+                    <div class="create-user-field">
+                        <label for="create-user-role">Account role</label>
+                        <select id="create-user-role" name="role_id" required>
+                            @foreach ($accountRoles as $roleId => $roleName)
+                                <option value="{{ $roleId }}" @selected((string) old('role_id', \App\Models\User::ROLE_STUDENT) === (string) $roleId)>
+                                    {{ $roleName }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('role_id')<span class="create-user-error">{{ $message }}</span>@enderror
+                    </div>
+
+                    @if ($isSuperAdmin)
+                        <fieldset class="admin-page-access" id="admin-page-access" @if ((string) old('role_id', \App\Models\User::ROLE_STUDENT) !== (string) \App\Models\User::ROLE_SUBADMIN) hidden @endif>
+                            <legend>Sub-admin page access</legend>
+                            <div class="admin-page-access-options">
+                                @foreach ($adminPageAccessOptions as $pageKey => $pageLabel)
+                                    <label>
+                                        <input type="checkbox" name="admin_page_access[]" value="{{ $pageKey }}" @checked(in_array($pageKey, old('admin_page_access', []), true))>
+                                        {{ $pageLabel }}
+                                    </label>
+                                @endforeach
+                            </div>
+                            @error('admin_page_access')<span class="create-user-error">{{ $message }}</span>@enderror
+                            @error('admin_page_access.*')<span class="create-user-error">{{ $message }}</span>@enderror
+                        </fieldset>
+                    @endif
+
+                    <div class="create-user-field">
+                        <label for="create-user-password">Temporary password</label>
+                        <input id="create-user-password" name="password" type="password" autocomplete="new-password" required>
+                        @error('password')<span class="create-user-error">{{ $message }}</span>@enderror
+                    </div>
+
+                    <div class="create-user-field">
+                        <label for="create-user-password-confirmation">Confirm password</label>
+                        <input id="create-user-password-confirmation" name="password_confirmation" type="password" autocomplete="new-password" required>
+                    </div>
+
+                    <button class="create-user-submit create-user-field-wide" type="submit">Create account</button>
+                </form>
+            </details>
 
             <div class="user-tools">
                 @php $roleTab = $roleTab ?? 'students'; @endphp
@@ -462,6 +767,11 @@
                         Faculty
                     </a>
                 </div>
+
+                    <a href="{{ route('admin.usermanagement', array_merge(request()->except('role','page'), ['role' => 'administrators'])) }}"
+                       class="role-tab {{ $roleTab === 'administrators' ? 'active' : '' }}">
+                        Administrators
+                    </a>
 
                 <form class="user-search-form" action="{{ route('admin.usermanagement') }}" method="GET">
                     <input type="hidden" name="role" value="{{ $roleTab }}">
@@ -519,14 +829,7 @@
 
                                     <td>{{ $user->email }}</td>
 
-                                    <td>
-                                        {{ match ((int) ($user->role_id ?? 3)) {
-                                            1 => 'Administrator',
-                                            2 => 'Faculty',
-                                            3 => 'Learner',
-                                            default => 'Learner'
-                                        } }}
-                                    </td>
+                                    <td>{{ $user->displayRole() }}</td>
 
                                     <td>
                                         <span class="code-pill">{{ $user->user_code ?? '—' }}</span>
@@ -540,7 +843,11 @@
 
                                     {{-- Delete action --}}
                                     <td style="text-align:right;" onclick="event.stopPropagation();">
-                                        @if ((int) ($user->role_id ?? 3) === 1)
+                                        @if ($isSuperAdmin && $user->isSubAdmin())
+                                            <button class="manage-access-button" type="button" data-open-access-dialog="manage-access-{{ $user->id }}">
+                                                Manage access
+                                            </button>
+                                        @elseif ($user->isAdmin())
                                             <span style="color:#9ca3af;font-size:12px;">&mdash;</span>
                                         @else
                                             <form method="POST"
@@ -562,6 +869,48 @@
                             @endforeach
                         </tbody>
                     </table>
+
+                    @if ($isSuperAdmin)
+                        @foreach ($users->where('role_id', \App\Models\User::ROLE_SUBADMIN) as $user)
+                            @php
+                                $assignedPages = (string) old('access_user_id') === (string) $user->id
+                                    ? old('page_access', $user->admin_page_access ?? [])
+                                    : ($user->admin_page_access ?? []);
+                            @endphp
+                            <dialog class="manage-access-dialog" id="manage-access-{{ $user->id }}" aria-labelledby="manage-access-title-{{ $user->id }}">
+                                <div class="manage-access-dialog-content">
+                                    <h2 id="manage-access-title-{{ $user->id }}">Manage Sub-admin access</h2>
+                                    <p class="manage-access-dialog-description">
+                                        Choose additional pages for {{ trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: $user->username }}. Dashboard and Profile are always included.
+                                    </p>
+                                    <form method="POST" action="{{ route('admin.users.access.update', $user->id) }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="access_user_id" value="{{ $user->id }}">
+                                        <fieldset class="admin-page-access">
+                                            <legend>Assigned pages</legend>
+                                            <div class="admin-page-access-options">
+                                                @foreach ($adminPageAccessOptions as $pageKey => $pageLabel)
+                                                    <label>
+                                                        <input type="checkbox" name="page_access[]" value="{{ $pageKey }}" @checked(in_array($pageKey, $assignedPages, true))>
+                                                        {{ $pageLabel }}
+                                                    </label>
+                                                @endforeach
+                                            </div>
+                                            @if ((string) old('access_user_id') === (string) $user->id)
+                                                @error('page_access', 'access')<span class="create-user-error">{{ $message }}</span>@enderror
+                                                @error('page_access.*', 'access')<span class="create-user-error">{{ $message }}</span>@enderror
+                                            @endif
+                                            <div class="manage-access-dialog-actions">
+                                                <button class="manage-access-cancel" type="button" data-close-access-dialog>Cancel</button>
+                                                <button class="create-user-submit" type="submit">Save access</button>
+                                            </div>
+                                        </fieldset>
+                                    </form>
+                                </div>
+                            </dialog>
+                        @endforeach
+                    @endif
                 </div>
 
                 @include('components.pagination', [
@@ -576,11 +925,54 @@
 
     {{-- SCRIPTS --}}
     <script>
+        (function () {
+            document.querySelectorAll('[data-open-access-dialog]').forEach(function (button) {
+                button.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    const dialog = document.getElementById(button.dataset.openAccessDialog);
+                    if (dialog) dialog.showModal();
+                });
+            });
+
+            document.querySelectorAll('.manage-access-dialog').forEach(function (dialog) {
+                dialog.addEventListener('click', function (event) {
+                    if (event.target === dialog || event.target.closest('[data-close-access-dialog]')) {
+                        dialog.close();
+                    }
+                });
+            });
+
+            const failedAccessUserId = @json(old('access_user_id'));
+            if (failedAccessUserId) {
+                const failedDialog = document.getElementById('manage-access-' + failedAccessUserId);
+                if (failedDialog) failedDialog.showModal();
+            }
+        })();
+
         function toggleSection(id) {
             const section = document.getElementById(id);
             if (!section || section.classList.contains('locked')) return;
             section.classList.toggle('open');
         }
+
+        (function () {
+            const roleSelect = document.getElementById('create-user-role');
+            const pageAccess = document.getElementById('admin-page-access');
+            if (!roleSelect || !pageAccess) return;
+
+            const checkboxes = pageAccess.querySelectorAll('input[type="checkbox"]');
+            function syncPageAccess() {
+                const isSubAdmin = roleSelect.value === '{{ \App\Models\User::ROLE_SUBADMIN }}';
+                pageAccess.hidden = !isSubAdmin;
+                checkboxes.forEach(function (checkbox) {
+                    checkbox.disabled = !isSubAdmin;
+                });
+            }
+
+            roleSelect.addEventListener('change', syncPageAccess);
+            syncPageAccess();
+        })();
+            
     </script>
 
     {{-- Back to top --}}

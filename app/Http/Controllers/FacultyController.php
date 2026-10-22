@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Badge;
 use App\Models\Certificate;
-use App\Models\CompetencyUnit;
 use App\Models\Complaint;
 use App\Models\Course;
 use App\Models\CourseCategory;
@@ -32,6 +31,7 @@ use App\Support\CompletionStatusPresenter;
 use App\Support\RichTextSanitizer;
 use App\Support\SkillCatalog;
 use App\Support\UserPresenter;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -285,6 +285,76 @@ class FacultyController extends Controller
         ]);
     }
 
+    public function exportCourseStudents(int $id, string $format)
+    {
+        $course = $this->ownedCourse($id);
+        $students = Enrollment::query()
+            ->where('course_id', $course->id)
+            ->with('user')
+            ->orderBy('id')
+            ->get()
+            ->map(function (Enrollment $enrollment) use ($course): array {
+                $needsReview = $course->requires_faculty_verification
+                    && in_array($enrollment->faculty_verification_status, ['pending', 'not_required'], true)
+                    && $enrollment->completion_status === MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION;
+
+                return [
+                    'name' => $enrollment->user?->name ?? 'Student',
+                    'student_id' => $enrollment->user?->student_id ?? $enrollment->user?->user_code ?? 'Student ID not provided',
+                    'progress' => (int) $enrollment->progress_percent,
+                    'status' => $needsReview
+                        ? 'Awaiting Faculty Verification'
+                        : CompletionStatusPresenter::institutionalLabel(
+                            $enrollment->completion_status,
+                            $enrollment->faculty_verification_status,
+                            $enrollment->academic_unit_confirmation_status,
+                        ),
+                    'enrolled_at' => $enrollment->enrolled_at?->format('Y-m-d') ?? '—',
+                ];
+            });
+
+        $data = [
+            'course' => $course,
+            'students' => $students,
+            'generatedAt' => now(),
+        ];
+        $filename = 'enrolled-students-'.Str::slug($course->title).'-'.now()->format('Y-m-d');
+
+        if ($format === 'pdf') {
+            return Pdf::loadView('faculty.students.course-export', $data)
+                ->setPaper('a4', 'landscape')
+                ->download($filename.'.pdf');
+        }
+
+        if ($format === 'word') {
+            return response()
+                ->view('faculty.students.course-export', $data)
+                ->header('Content-Type', 'application/msword; charset=UTF-8')
+                ->header('Content-Disposition', 'attachment; filename="'.$filename.'.doc"');
+        }
+
+        return response()->streamDownload(function () use ($course, $students): void {
+            $output = fopen('php://output', 'w');
+            if ($output === false) {
+                throw new \RuntimeException('Unable to open the student export stream.');
+            }
+
+            fwrite($output, "\xEF\xBB\xBF");
+            fputcsv($output, ['Course', 'Student name', 'Student ID', 'Progress (%)', 'Status', 'Enrolled at']);
+
+            foreach ($students as $student) {
+                fputcsv($output, array_map(
+                    fn (string|int $value): string => preg_match('/^[=+\-@\t\r]/', (string) $value) === 1
+                        ? "'".$value
+                        : (string) $value,
+                    [$course->title, $student['name'], $student['student_id'], $student['progress'], $student['status'], $student['enrolled_at']]
+                ));
+            }
+
+            fclose($output);
+        }, $filename.'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     /** Show the learning record and submitted work for an enrollment in an owned course. */
     public function reviewEnrollment(int $id, Enrollment $enrollment): View
     {
@@ -527,6 +597,54 @@ class FacultyController extends Controller
             : ($facultyCourses->modelKeys() ?: [0]);
         $enrollBase = Enrollment::whereIn('course_id', $courseIds);
         $learnerIds = (clone $enrollBase)->select('user_id')->distinct();
+        $ageBands = ['Under 18', '18–24', '25–34', '35–44', '45–54', '55+', 'Not specified'];
+        $genderGroups = ['Female', 'Male', 'Other', 'Prefer not to say', 'Not specified'];
+        $demographics = [
+            'total' => 0,
+            'age' => array_fill_keys($ageBands, 0),
+            'gender' => array_fill_keys($genderGroups, 0),
+        ];
+
+        foreach (User::query()
+            ->whereIn('id', $learnerIds)
+            ->where('role_id', User::ROLE_STUDENT)
+            ->get(['date_of_birth', 'gender']) as $learner) {
+            $demographics['total']++;
+            $ageBand = 'Not specified';
+            $birthDateValue = trim((string) $learner->date_of_birth);
+
+            if ($birthDateValue !== '') {
+                $birthDate = \DateTimeImmutable::createFromFormat('!Y-m-d', $birthDateValue);
+                $dateErrors = \DateTimeImmutable::getLastErrors();
+
+                if ($birthDate !== false
+                    && $birthDate->format('Y-m-d') === $birthDateValue
+                    && ($dateErrors === false || ($dateErrors['warning_count'] === 0 && $dateErrors['error_count'] === 0))
+                    && $birthDate <= new \DateTimeImmutable('today')) {
+                    $age = $birthDate->diff(new \DateTimeImmutable('today'))->y;
+                    $ageBand = match (true) {
+                        $age < 18 => 'Under 18',
+                        $age <= 24 => '18–24',
+                        $age <= 34 => '25–34',
+                        $age <= 44 => '35–44',
+                        $age <= 54 => '45–54',
+                        default => '55+',
+                    };
+                }
+            }
+
+            $demographics['age'][$ageBand]++;
+            $gender = strtolower(trim((string) $learner->gender));
+            $genderGroup = match ($gender) {
+                'female' => 'Female',
+                'male' => 'Male',
+                'prefer not to say' => 'Prefer not to say',
+                '' => 'Not specified',
+                default => 'Other',
+            };
+            $demographics['gender'][$genderGroup]++;
+        }
+
         // Cumulative learner growth, one point per month for the last year.
         // N+1 fix: this ran 12 separate COUNT queries (one per month). The
         // cumulative total equals the number of learners whose FIRST
@@ -644,6 +762,7 @@ class FacultyController extends Controller
             ],
             'academyStats' => $academyStats,
             'learnerSuccess' => $learnerSuccess,
+            'demographics' => $demographics,
             'courseAnalytics' => $courseAnalytics,
             'recentCourseComments' => $recentCourseComments,
             'facultyCourses' => $facultyCourses,
@@ -849,6 +968,7 @@ class FacultyController extends Controller
                 'description' => $course->description,
                 'status' => $course->statusLabel(),
                 'approval_status' => $course->approval_status,
+                'denial_feedback' => $course->denial_feedback,
                 'level' => $course->level,
                 'students_count' => Enrollment::where('course_id', $course->id)->count(),
                 'modules_count' => $modules->count(),
@@ -942,7 +1062,7 @@ class FacultyController extends Controller
             'denial_feedback' => null,
         ]);
         $userNotifications->createForRole(
-            User::ROLE_ADMIN,
+            User::FULL_ADMIN_NOTIFICATION_ROLE_IDS,
             'Course awaiting review',
             '"'.$course->title.'" was submitted for administrator approval.',
             'course',
@@ -1006,7 +1126,7 @@ class FacultyController extends Controller
 
             if ($data['decision'] === 'verified' && $updatedEnrollment->academic_unit_confirmation_status === 'pending') {
                 $userNotifications->createForRole(
-                    User::ROLE_ADMIN,
+                    User::FULL_ADMIN_NOTIFICATION_ROLE_IDS,
                     'Completion awaiting confirmation',
                     'A learner completed "'.$courseTitle.'" and is awaiting institutional confirmation.',
                     'enrollment',
@@ -1040,7 +1160,6 @@ class FacultyController extends Controller
             'prereqOptions' => $this->prerequisiteOptions(),
             // #10 Badge / certificate options for the award section.
             'badgeOptions' => $this->badgeOptions(),
-            'competencyUnitOptions' => CompetencyUnit::orderBy('title')->get(['id', 'title']),
         ]);
     }
 
@@ -1064,7 +1183,6 @@ class FacultyController extends Controller
             'prereqOptions' => $this->prerequisiteOptions($course->id),
             // #10 Badge / certificate options for the award section.
             'badgeOptions' => $this->badgeOptions(),
-            'competencyUnitOptions' => CompetencyUnit::orderBy('title')->get(['id', 'title']),
         ]);
     }
 
@@ -1098,13 +1216,11 @@ class FacultyController extends Controller
             'duration' => ['nullable', 'numeric', 'min:0'],
             'passing_score' => ['nullable', 'integer', 'min:0', 'max:100'],
             'learning_objectives' => ['nullable', 'string'],
-            'learning_outcomes' => ['nullable', 'array', 'max:50'],
-            'learning_outcomes.*.description' => ['required_with:learning_outcomes', 'string', 'max:2000'],
-            'learning_outcomes.*.competency_unit_id' => ['nullable', 'integer', 'exists:competency_units,id'],
+            'learning_outcomes_content' => ['nullable', 'string', 'max:50000'],
             'competencies' => ['nullable', 'array'],
             'competencies.*' => ['string', 'max:120'],
             'prerequisites' => ['nullable', 'string', 'max:120'],
-            'thumbnail' => ['nullable', 'image', 'max:51200'],
+            'thumbnail' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:51200'],
             'change_note' => ['nullable', 'string', 'max:2000'],
             'prerequisite_ids' => ['nullable', 'array'],
             'prerequisite_ids.*' => ['integer', 'exists:courses,id'],
@@ -1173,12 +1289,8 @@ class FacultyController extends Controller
         $attributes['approved_by'] = null;
 
         $course->update($attributes);
-        $outcomes = $data['learning_outcomes'] ?? [];
-        if ($outcomes === []) {
-            $outcomes = collect($this->linesToArray($data['learning_objectives'] ?? null) ?? [])
-                ->map(fn (string $description): array => ['description' => $description])
-                ->all();
-        }
+        $outcomeContent = $this->sanitizeRichText($data['learning_outcomes_content'] ?? '');
+        $outcomes = $outcomeContent === '' ? [] : [['description' => $outcomeContent]];
         $learningOutcomes->sync($course, $outcomes);
 
         // Written directly rather than through update(). If 'related_skills'
@@ -1394,9 +1506,7 @@ class FacultyController extends Controller
             'duration' => ['nullable', 'numeric', 'min:0'],
             'passing_score' => ['nullable', 'integer', 'min:0', 'max:100'],
             'learning_objectives' => ['nullable', 'string'],
-            'learning_outcomes' => ['nullable', 'array', 'max:50'],
-            'learning_outcomes.*.description' => ['required_with:learning_outcomes', 'string', 'max:2000'],
-            'learning_outcomes.*.competency_unit_id' => ['nullable', 'integer', 'exists:competency_units,id'],
+            'learning_outcomes_content' => ['nullable', 'string', 'max:50000'],
             'competencies' => ['nullable', 'array'],
             'competencies.*' => ['string', 'max:120'],
             'prerequisites' => ['nullable', 'string', 'max:120'],
@@ -1404,7 +1514,7 @@ class FacultyController extends Controller
             // string "on", which fails boolean validation and silently
             // bounced the form back. $request->boolean() handles it below.
             'feature_homepage' => ['nullable'],
-            'thumbnail' => ['nullable', 'image', 'max:51200'],   // 50 MB
+            'thumbnail' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:51200'],   // 50 MB
             'related_skills' => ['nullable', 'array'],
             'related_skills.*' => ['string', 'max:80'],
             'related_skills_csv' => ['nullable', 'string', 'max:4000'],
@@ -1423,12 +1533,8 @@ class FacultyController extends Controller
 
         try {
             $course = $courseCreationService->create($request, $data, $auth);
-            $outcomes = $data['learning_outcomes'] ?? [];
-            if ($outcomes === []) {
-                $outcomes = collect($this->linesToArray($data['learning_objectives'] ?? null) ?? [])
-                    ->map(fn (string $description): array => ['description' => $description])
-                    ->all();
-            }
+            $outcomeContent = $this->sanitizeRichText($data['learning_outcomes_content'] ?? '');
+            $outcomes = $outcomeContent === '' ? [] : [['description' => $outcomeContent]];
             $learningOutcomes->sync($course, $outcomes);
         } catch (\Throwable $e) {
             report($e);

@@ -25,6 +25,7 @@ use App\Models\StackingFrameworkRequirement;
 use App\Models\User;
 use App\Models\UserBadge;
 use App\Models\UserStackingProgress;
+use App\Services\AdminPageAccessService;
 use App\Services\AdminUserManagementService;
 use App\Services\CourseModerationService;
 use App\Services\CourseReadinessService;
@@ -47,6 +48,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -175,6 +177,16 @@ class AdminController extends Controller
 
     public function dashboard()
     {
+        $currentUser = Auth::user();
+        $dashboardAccess = [
+            'user-management' => $currentUser->canAccessAdminPage('user-management'),
+            'courses' => $currentUser->canAccessAdminPage('courses'),
+            'completion-verification' => $currentUser->canAccessAdminPage('completion-verification'),
+            'credentials' => $currentUser->canAccessAdminPage('credentials'),
+            'reports' => $currentUser->canAccessAdminPage('reports'),
+            'announcements' => $currentUser->canAccessAdminPage('announcements'),
+            'audit-logs' => $currentUser->canAccessAdminPage('audit-logs'),
+        ];
         $weekStart = now()->startOfWeek();
         $previousWeekStart = $weekStart->copy()->subWeek();
         $monthStart = now()->startOfMonth();
@@ -188,14 +200,19 @@ class AdminController extends Controller
         $coursesPublishedThisWeek = $publishedCourses()->where('approved_at', '>=', $weekStart)->count();
         $coursesPublishedLastWeek = $publishedCourses()->where('approved_at', '>=', $previousWeekStart)
             ->where('approved_at', '<', $weekStart)->count();
-        $pendingReviewsThisWeek = Course::where('approval_status', 'pending')->where('created_at', '>=', $weekStart)->count()
-            + Enrollment::where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
-                ->where('academic_unit_confirmation_status', 'pending')->where('updated_at', '>=', $weekStart)->count();
-        $pendingReviewsLastWeek = Course::where('approval_status', 'pending')->where('created_at', '>=', $previousWeekStart)
-            ->where('created_at', '<', $weekStart)->count()
-            + Enrollment::where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
-                ->where('academic_unit_confirmation_status', 'pending')->where('updated_at', '>=', $previousWeekStart)
-                ->where('updated_at', '<', $weekStart)->count();
+        $pendingCourseReviewsThisWeek = Course::where('approval_status', 'pending')
+            ->where('created_at', '>=', $weekStart)->count();
+        $pendingCourseReviewsLastWeek = Course::where('approval_status', 'pending')
+            ->where('created_at', '>=', $previousWeekStart)->where('created_at', '<', $weekStart)->count();
+        $pendingCompletionReviewsThisWeek = Enrollment::where(
+            'completion_status',
+            MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION
+        )->where('academic_unit_confirmation_status', 'pending')->where('updated_at', '>=', $weekStart)->count();
+        $pendingCompletionReviewsLastWeek = Enrollment::where(
+            'completion_status',
+            MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION
+        )->where('academic_unit_confirmation_status', 'pending')->where('updated_at', '>=', $previousWeekStart)
+            ->where('updated_at', '<', $weekStart)->count();
         $credentialsThisMonth = DB::table('user_badges')->where('status', 'active')
             ->where('earned_at', '>=', $monthStart)->count()
             + Certificate::where('status', 'active')->where('issued_at', '>=', $monthStart)->count();
@@ -221,7 +238,8 @@ class AdminController extends Controller
             'pending_reviews' => $pendingCourseReviews + $pendingCompletionVerifications,
             'pending_course_reviews' => $pendingCourseReviews,
             'pending_completion_verifications' => $pendingCompletionVerifications,
-            'pending_reviews_weekly_change' => $pendingReviewsThisWeek - $pendingReviewsLastWeek,
+            'pending_reviews_weekly_change' => ($pendingCourseReviewsThisWeek - $pendingCourseReviewsLastWeek)
+                + ($pendingCompletionReviewsThisWeek - $pendingCompletionReviewsLastWeek),
             'credentials_earned' => DB::table('user_badges')->where('status', 'active')->count()
                 + Certificate::where('status', 'active')->count(),
             'badges_issued' => DB::table('user_badges')->count(),
@@ -237,6 +255,7 @@ class AdminController extends Controller
                 'info' => $pendingCourseReviews.' courses awaiting review',
                 'route' => 'admin.courses',
                 'button' => 'Go to Courses & Badges',
+                'page' => 'courses',
             ],
             [
                 'title' => 'Completion Verification',
@@ -244,6 +263,7 @@ class AdminController extends Controller
                 'info' => $pendingCompletionVerifications.' learners awaiting verification',
                 'route' => 'admin.enrollments',
                 'button' => 'Go to Completion Verification',
+                'page' => 'completion-verification',
             ],
             [
                 'title' => 'User Management',
@@ -251,6 +271,7 @@ class AdminController extends Controller
                 'info' => User::count().' user accounts',
                 'route' => 'admin.usermanagement',
                 'button' => 'Go to User Management',
+                'page' => 'user-management',
             ],
             [
                 'title' => 'Certificates',
@@ -258,6 +279,7 @@ class AdminController extends Controller
                 'info' => Certificate::where('status', 'active')->count().' active certificates',
                 'route' => 'admin.certificates',
                 'button' => 'Go to Certificates',
+                'page' => 'credentials',
             ],
             [
                 'title' => 'Announcements',
@@ -265,6 +287,7 @@ class AdminController extends Controller
                 'info' => Announcement::count().' announcements',
                 'route' => 'admin.announcements',
                 'button' => 'Go to Announcements',
+                'page' => 'announcements',
             ],
             [
                 'title' => 'Audit Logs',
@@ -272,20 +295,34 @@ class AdminController extends Controller
                 'info' => AuditLog::whereDate('created_at', today())->count().' events recorded today',
                 'route' => 'admin.audit-logs',
                 'button' => 'Go to Audit Logs',
+                'page' => 'audit-logs',
             ],
         ];
+        $quickModules = array_filter(
+            $quickModules,
+            fn (array $module): bool => $dashboardAccess[$module['page']]
+        );
+        $stats['pending_course_reviews'] = $dashboardAccess['courses'] ? $pendingCourseReviews : 0;
+        $stats['pending_completion_verifications'] = $dashboardAccess['completion-verification']
+            ? $pendingCompletionVerifications
+            : 0;
+        $stats['pending_reviews'] = $stats['pending_course_reviews'] + $stats['pending_completion_verifications'];
+        $stats['pending_reviews_weekly_change'] = ($dashboardAccess['courses'] ? $pendingCourseReviewsThisWeek - $pendingCourseReviewsLastWeek : 0)
+            + ($dashboardAccess['completion-verification'] ? $pendingCompletionReviewsThisWeek - $pendingCompletionReviewsLastWeek : 0);
 
         $coursePerformance = $this->courseCharts();
         $courseCount = $coursePerformance->count();
         $chartMaximumEnrollments = max(1, (int) $coursePerformance->max('enrollments'));
         $chartPoints = $coursePerformance->values()->map(function ($course, $index) use ($courseCount, $chartMaximumEnrollments) {
-            $x = $courseCount > 1 ? 62 + ($index * 516 / ($courseCount - 1)) : 320;
+            $x = $courseCount > 1 ? 104 + ($index * 432 / ($courseCount - 1)) : 320;
             $enrollmentY = 202 - ($course->enrollments / $chartMaximumEnrollments * 160);
             $completionY = 202 - (max(0, min(100, $course->completion_rate)) / 100 * 160);
 
             return (object) [
                 'course' => $course,
                 'x' => round($x, 2),
+                'enrollment_x' => round($x - 28, 2),
+                'completion_x' => round($x + 4, 2),
                 'enrollment_y' => round($enrollmentY, 2),
                 'completion_y' => round($completionY, 2),
             ];
@@ -320,6 +357,7 @@ class AdminController extends Controller
             'chartPoints' => $chartPoints,
             'chartTicks' => $chartTicks,
             'quickModules' => $quickModules,
+            'dashboardAccess' => $dashboardAccess,
         ]);
     }
 
@@ -403,16 +441,21 @@ class AdminController extends Controller
 
     // ── User Management ───────────────────────────────────────────────────
 
-    public function userManagement(Request $request)
+    public function userManagement(Request $request, AdminPageAccessService $adminPageAccess)
     {
         $query = trim((string) $request->input('q', ''));
         $sort = $request->input('sort', 'created_at');
         $direction = $request->input('direction') === 'asc' ? 'asc' : 'desc';
-        $roleTab = $request->input('role', 'students');   // students | faculty
+        $roleTab = $request->input('role', 'students');
 
         $usersQuery = User::query()
             ->when($roleTab === 'faculty', fn ($q) => $q->where('role_id', User::ROLE_FACULTY))
             ->when($roleTab === 'students', fn ($q) => $q->where('role_id', User::ROLE_STUDENT))
+            ->when($roleTab === 'administrators', fn ($q) => $q->whereIn('role_id', [
+                User::ROLE_ADMIN,
+                User::ROLE_SUPERADMIN,
+                User::ROLE_SUBADMIN,
+            ]))
             ->when($query !== '', function ($q) use ($query) {
                 $q->where(function ($sub) use ($query) {
                     $sub->where('first_name', 'like', "%{$query}%")
@@ -437,9 +480,19 @@ class AdminController extends Controller
         // Previously this loaded EVERY user row — including avatar_url, a
         // LONGTEXT column holding base64 photos — into memory on each visit.
         $users = $usersQuery
-            ->select(['id', 'first_name', 'last_name', 'username', 'email', 'role_id', 'user_code', 'is_active', 'created_at'])
+            ->select(['id', 'first_name', 'last_name', 'username', 'email', 'role_id', 'user_code', 'is_active', 'admin_page_access', 'created_at'])
             ->paginate(20)
             ->withQueryString();
+
+        $accountRoles = [
+            User::ROLE_FACULTY => 'Faculty',
+            User::ROLE_STUDENT => 'Learner',
+        ];
+
+        if (Auth::user()->isSuperAdmin()) {
+            $accountRoles[User::ROLE_SUPERADMIN] = 'Superadmin';
+            $accountRoles[User::ROLE_SUBADMIN] = 'Sub-admin';
+        }
 
         return view('admin.users.index', [
             'users' => $users,
@@ -447,6 +500,9 @@ class AdminController extends Controller
             'sort' => $sort,
             'direction' => $direction,
             'roleTab' => $roleTab,
+            'accountRoles' => $accountRoles,
+            'adminPageAccessOptions' => $adminPageAccess->selectablePages(),
+            'isSuperAdmin' => Auth::user()->isSuperAdmin(),
         ]);
     }
 
@@ -461,20 +517,67 @@ class AdminController extends Controller
         return view('admin.users.show', ['u' => $detail]);
     }
 
-    public function storeUser(Request $request, AdminUserManagementService $userManagement, UserCodeService $userCodes)
-    {
+    public function storeUser(
+        Request $request,
+        AdminUserManagementService $userManagement,
+        UserCodeService $userCodes,
+        AdminPageAccessService $adminPageAccess,
+    ) {
+        $isSuperAdmin = Auth::user()->isSuperAdmin();
+        $allowedRoleIds = $isSuperAdmin
+            ? [User::ROLE_FACULTY, User::ROLE_STUDENT, User::ROLE_SUPERADMIN, User::ROLE_SUBADMIN]
+            : [User::ROLE_FACULTY, User::ROLE_STUDENT];
+        $isCreatingSubAdmin = (int) $request->input('role_id') === User::ROLE_SUBADMIN;
+
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'username' => ['required', 'string', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Password::defaults()],
-            'role_id' => ['required', 'integer', 'in:1,2,3'],
+            'role_id' => ['required', 'integer', Rule::in($allowedRoleIds)],
+            'admin_page_access' => $isCreatingSubAdmin
+                ? ['sometimes', 'array']
+                : ['prohibited'],
+            'admin_page_access.*' => [
+                'string',
+                Rule::in(array_keys($adminPageAccess->selectablePages())),
+            ],
         ]);
 
         $userManagement->create($validated, $userCodes);
 
-        return redirect()->route('admin.usermanagement')->with('success', 'User created successfully.');
+        $roleTab = match ((int) $validated['role_id']) {
+            User::ROLE_ADMIN, User::ROLE_SUPERADMIN, User::ROLE_SUBADMIN => 'administrators',
+            User::ROLE_FACULTY => 'faculty',
+            default => 'students',
+        };
+
+        return redirect()->route('admin.usermanagement', ['role' => $roleTab])
+            ->with('success', 'User created successfully.');
+    }
+
+    public function updateSubAdminAccess(Request $request, int $id, AdminPageAccessService $adminPageAccess)
+    {
+        abort_unless(Auth::user()->isSuperAdmin(), 403);
+
+        $user = User::findOrFail($id);
+        abort_unless($user->isSubAdmin(), 404);
+
+        $validated = $request->validateWithBag('access', [
+            'page_access' => ['sometimes', 'array'],
+            'page_access.*' => [
+                'string',
+                Rule::in(array_keys($adminPageAccess->selectablePages())),
+            ],
+        ]);
+
+        $user->update([
+            'admin_page_access' => $adminPageAccess->subAdminPages($validated['page_access'] ?? []),
+        ]);
+
+        return redirect()->route('admin.usermanagement', ['role' => 'administrators'])
+            ->with('success', 'Sub-admin access updated successfully.');
     }
 
     /**
@@ -613,17 +716,45 @@ class AdminController extends Controller
 
     public function replyComplaint(Request $request, int $id)
     {
+        $complaint = Complaint::findOrFail($id);
+        $isVisitor = $complaint->isFromVisitor();
         $data = $request->validate([
-            'body' => ['required', 'string', 'max:5000'],
+            'body' => ['required', 'string', 'max:'.($isVisitor ? 20000 : 5000)],
+            'attachment' => [
+                $isVisitor ? 'prohibited' : 'nullable',
+                'file',
+                'mimes:jpg,jpeg,png,gif,webp',
+                'max:10240',
+            ],
         ]);
 
-        $complaint = Complaint::findOrFail($id);
+        $replyBody = $isVisitor
+            ? RichTextSanitizer::sanitize($data['body'])
+            : trim($data['body']);
+        $attachmentUrl = null;
+        $attachmentName = null;
+
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $directory = public_path('uploads/complaints');
+
+            if (! is_dir($directory)) {
+                mkdir($directory, 0775, true);
+            }
+
+            $filename = Str::random(40).'.'.strtolower($file->getClientOriginalExtension());
+            $file->move($directory, $filename);
+            $attachmentUrl = 'uploads/complaints/'.$filename;
+            $attachmentName = $file->getClientOriginalName();
+        }
 
         ComplaintReply::create([
             'complaint_id' => $complaint->id,
             'user_id' => Auth::id(),
-            'body' => trim($data['body']),
+            'body' => $replyBody,
             'is_admin' => true,
+            'attachment_url' => $attachmentUrl,
+            'attachment_name' => $attachmentName,
         ]);
 
         $complaint->last_reply_at = now();
@@ -640,7 +771,7 @@ class AdminController extends Controller
             try {
                 Mail::to($complaint->guest_email)->send(new ComplaintReplyMail(
                     complaint: $complaint,
-                    replyBody: trim($data['body']),
+                    replyBody: $replyBody,
                     adminName: Auth::user()->name ?? 'UPSKILL Administrator',
                 ));
 
@@ -827,6 +958,8 @@ class AdminController extends Controller
             'certificate' => CertificateBuilder::data($c),
             'status' => $c->statusLabel(),
             'status_key' => $this->statusKey($c),
+            'change_note' => $c->change_note,
+            'denial_feedback' => $c->denial_feedback,
             'readiness_checklist' => $readinessChecklist,
             'can_approve' => $readinessIssues === [],
             'readiness_issues' => $readinessIssues,
@@ -845,6 +978,7 @@ class AdminController extends Controller
         $modules = $c->modules->map(fn ($m) => (object) [
             'title' => $m->title,
             'description' => $m->description,
+            'is_final' => $m->is_final,
             'lessons' => $m->lessons->map(fn ($l) => (object) [
                 'title' => $l->title,
                 'type' => $l->type,

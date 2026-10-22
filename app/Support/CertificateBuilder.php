@@ -17,6 +17,10 @@ use Illuminate\Support\Facades\Storage;
  */
 class CertificateBuilder
 {
+    private const ISSUER_NAME = 'Dr. Elbert M. Galas';
+
+    private const ISSUER_ROLE = 'University President';
+
     /** Fonts offered for a typed signature. Keys are stored in the DB. */
     public const SIGNATURE_FONTS = [
         'Great Vibes' => "'Great Vibes', cursive",
@@ -89,7 +93,13 @@ class CertificateBuilder
      */
     public static function data(Course $course, ?User $student = null, ?Certificate $certificate = null): array
     {
-        $issuer = $course->creator;
+        $courseDescription = preg_replace('/<\s*br\b[^>]*>|<\/[^>]+>/i', ' ', (string) $course->description);
+        $courseDescription = html_entity_decode(
+            strip_tags($courseDescription ?? ''),
+            ENT_QUOTES | ENT_HTML5,
+            'UTF-8'
+        );
+        $courseDescription = trim(preg_replace('/\s+/', ' ', $courseDescription) ?? '');
 
         return [
             'course_title' => $course->title,
@@ -98,13 +108,12 @@ class CertificateBuilder
             // "Certificate of Completion" here would print in its place.
             'certificate_title' => $course->title,
             'student_name' => $student?->name ?? 'Student Name',
-            'issuer_name' => $course->certificate_signature_name
-                                ?: ($issuer?->name ?? $course->instructor ?? 'Course Instructor'),
-            'issuer_role' => $issuer?->displayRole() ?? 'Faculty',
+            'issuer_name' => self::ISSUER_NAME,
+            'issuer_role' => self::ISSUER_ROLE,
             // "date were created" in the brief: the course's creation date,
             // not the date the student finished.
             'course_created' => optional($course->created_at)->format('F j, Y'),
-            'course_description' => $course->description,
+            'course_description' => $courseDescription,
             // "Learning Hours" — like Date Completed, only meaningful once
             // the student has actually finished, so it stays NULL while
             // previewing rather than advertising a figure for an award
@@ -182,9 +191,8 @@ class CertificateBuilder
             'certificate_title' => $certificate->microcredential_title_snapshot ?: optional($course)->title,
             'course_title' => $certificate->microcredential_title_snapshot ?: optional($course)->title,
             'student_name' => $student?->name ?? 'Student Name',
-            'issuer_name' => optional($course)->certificate_signature_name
-                                ?: (optional($course)->creator?->name ?? optional($course)->instructor ?? 'Course Instructor'),
-            'issuer_role' => optional($course)->creator?->displayRole() ?? 'Faculty',
+            'issuer_name' => self::ISSUER_NAME,
+            'issuer_role' => self::ISSUER_ROLE,
             'learning_outcomes' => $certificate->learning_outcomes_snapshot ?? [],
             'competencies' => $certificate->competencies_snapshot ?? [],
             'pqf_level' => $certificate->pqf_level_snapshot,

@@ -198,6 +198,8 @@ main.faculty-dashboard .enrollment-bars.is-empty span:nth-child(5){height:45%}
 main.faculty-dashboard .enrollment-bars.is-empty span:nth-child(6){height:60%}
 main.faculty-dashboard .enrollment-empty-note{display:flex;align-items:center;min-height:54px;margin-top:17px;padding:12px 14px;border-radius:13px;background:rgba(255,245,209,.72);color:rgba(11,27,69,.8);font-size:11px;line-height:1.55}
 main.faculty-dashboard .attention-list{display:flex;flex-direction:column;gap:9px}
+main.faculty-dashboard .attention-warning{width:18px;height:18px;flex:0 0 18px;color:#dc2626}
+main.faculty-dashboard .attention-warning svg{display:block;width:100%;height:100%}
 main.faculty-dashboard .attention-item{display:flex;flex-direction:column;gap:5px;padding:11px 12px;border:1px solid #F0E4BF;border-radius:12px;background:#FFFCF3;color:var(--dash-ink);text-decoration:none;transition:border-color .18s ease,background-color .18s ease}
 main.faculty-dashboard .attention-item:hover{border-color:#E8C85A;background:#FFF8DF}
 main.faculty-dashboard .attention-item:focus-visible{outline:2px solid var(--dash-royal);outline-offset:2px}
@@ -322,6 +324,14 @@ main.faculty-dashboard .to-grade-badge:hover{background:#BFDBFE}
                 <div class="panel">
                     <div class="panel-head">
                         <span>Needs attention</span>
+                        @if ($attentionItems->isNotEmpty())
+                            <span class="attention-warning" role="img" aria-label="Attention required" title="Attention required">
+                                {{-- Font Awesome Free solid triangle-exclamation, CC BY 4.0: https://github.com/FortAwesome/Font-Awesome/blob/7.x/svgs/solid/triangle-exclamation.svg --}}
+                                <svg viewBox="0 0 576 512" aria-hidden="true">
+                                    <path fill="currentColor" d="M569.517 440.013 329.577 23.985c-18.434-32.009-64.687-32.057-83.154 0L6.483 440.013C-11.975 472.007 11.194 512 48.06 512h479.88c36.866 0 60.035-39.993 41.577-71.987ZM288 448a32 32 0 1 1 0-64 32 32 0 0 1 0 64Zm24-160c0 13.255-10.745 24-24 24s-24-10.745-24-24V192c0-13.255 10.745-24 24-24s24 10.745 24 24v96Z" />
+                                </svg>
+                            </span>
+                        @endif
                     </div>
                     <div class="panel-body">
                         @if ($attentionItems->isNotEmpty())

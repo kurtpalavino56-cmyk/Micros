@@ -630,7 +630,7 @@ function UpskillFileUploadPlugin(editor) {
 }
 
 function getEditorConfig(element) {
-    const isAnnouncementEditor = element.dataset.editorPreset === 'announcement';
+     const isAdminEditorPreset = ['announcement', 'admin-reply'].includes(element.dataset.editorPreset);
 
     return {
         licenseKey: 'GPL',
@@ -668,7 +668,7 @@ function getEditorConfig(element) {
             UpskillFileUploadPlugin,
         ],
 
-        toolbar: isAnnouncementEditor ? [
+        toolbar: isAdminEditorPreset ? [
             'undo',
             'redo',
             '|',
@@ -730,7 +730,7 @@ function getEditorConfig(element) {
 },
 
         simpleUpload: {
-            uploadUrl: isAnnouncementEditor
+            uploadUrl: isAdminEditorPreset
                 ? '/Admin-editor/upload?kind=image'
                 : '/Faculty-editor/upload?kind=image',
             headers: {

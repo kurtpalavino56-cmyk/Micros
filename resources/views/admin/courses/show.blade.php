@@ -30,7 +30,7 @@
             --surface: #f5f7fa;
             --white: #ffffff;
             --line: #e2e7ef;
-            --text: #17212b;
+            --text: #101010;
             --muted: #687385;
             --danger: #c0352d;
         }
@@ -57,7 +57,7 @@
 
         /* Cards */
         .card { background: var(--white); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; box-shadow: 0 1px 3px rgba(9,37,95,.04); }
-        .card-title { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-size: .95rem; font-weight: 700; color: var(--title); }
+        .card-title { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-size: .95rem; font-weight: 700; color: #101010; }
         .card-title .ico { color: var(--blue); }
         .card-title small { margin-left: auto; font-size: .74rem; font-weight: 400; color: var(--muted); }
         .card p { font-size: .88rem; line-height: 1.7; color: #4b5563; }
@@ -71,7 +71,7 @@
         .alert-success { background: #eaf8ef; border: 1px solid #ccebd6; color: #166534; border-radius: 10px; padding: 11px 16px; font-size: .86rem; font-weight: 600; margin-bottom: 14px; }
         .alert-error { background: #fff1f0; border: 1px solid #f3c8c4; color: var(--danger); border-radius: 10px; padding: 11px 16px; font-size: .86rem; font-weight: 600; margin-bottom: 14px; }
         .approval-readiness { margin-bottom: 16px; }
-        .approval-readiness h2 { margin: 0 0 4px; font-size: .95rem; color: var(--title); }
+        .approval-readiness h2 { margin: 0 0 4px; font-size: .95rem; color: #101010; }
         .approval-readiness p { margin: 0 0 12px; font-size: .8rem; color: var(--muted); }
         .approval-checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 9px 16px; }
         .approval-check { display: flex; align-items: flex-start; gap: 8px; color: #475467; font-size: .8rem; line-height: 1.45; }
@@ -97,10 +97,10 @@
         .detail-title, .by, .card-title { overflow-wrap: anywhere; }
 
         /* Faculty-authored HTML (descriptions, lesson content) */
-        .rich { font-size: .88rem; line-height: 1.7; color: #4b5563; overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
+        .rich { font-size: .88rem; line-height: 1.7; color: #101010; overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
         .rich > *:first-child { margin-top: 0; }
-        .rich p { margin: 0 0 .7em; }
-        .rich h1, .rich h2, .rich h3, .rich h4 { margin: 1em 0 .4em; color: var(--title); line-height: 1.3; }
+        .rich p { margin: 0 0 .7em; color: inherit; }
+        .rich h1, .rich h2, .rich h3, .rich h4 { margin: 1em 0 .4em; color: inherit; line-height: 1.3; }
         .rich ul, .rich ol { margin: 0 0 .7em; padding-left: 1.4em; }
         .rich img, .rich video, .rich iframe { max-width: 100%; height: auto; border-radius: 8px; }
         .file-embed { margin: 10px 0; padding: 8px; border-radius: 10px; background: #f5f8fc; }
@@ -167,7 +167,7 @@
         .stat-ico { width: 34px; height: 34px; flex: 0 0 34px; border-radius: 50%; background: var(--soft); color: var(--blue); display: flex; align-items: center; justify-content: center; }
         .stat-ico .ico { width: 17px; height: 17px; }
         .stat small { display: block; font-size: .72rem; color: var(--muted); }
-        .stat b { display: block; font-size: .9rem; font-weight: 700; color: var(--title); overflow-wrap: break-word; }
+        .stat b { display: block; font-size: .9rem; font-weight: 700; color: #101010; overflow-wrap: break-word; }
 
         .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 
@@ -175,11 +175,27 @@
         .chip { padding: 5px 13px; border-radius: 999px; background: var(--soft); color: var(--blue); font-size: .77rem; font-weight: 500; }
         .chip.rel { background: var(--yellow-soft); color: var(--yellow-text); }
         .syllabus-details .chip-row { margin-bottom: 12px; }
-        .syllabus-details p { margin-top: 9px; line-height: 1.55; }
-        .syllabus-details .outcome-heading { display: block; margin-top: 12px; }
+        .syllabus-details > p { position: relative; margin: 0; padding: 10px 0; line-height: 1.55; color: #101010; }
+        .syllabus-details > p + p::before,
+        .syllabus-details .outcome-heading::before { position: absolute; top: 0; left: 0; width: 100%; height: 1px; background: #e4e7ec; content: ''; }
+        .syllabus-details > p + p { margin-top: 8px; }
+        .syllabus-details .outcome-heading { position: relative; display: block; margin-top: 8px; padding-top: 12px; }
+        .syllabus-details .rich-content { margin-top: 4px; overflow-wrap: anywhere; }
+        .syllabus-details .rich-content > *:first-child { margin-top: 0; }
+        .syllabus-details .rich-content h1,
+        .syllabus-details .rich-content h2,
+        .syllabus-details .rich-content h3,
+        .syllabus-details .rich-content h4,
+        .syllabus-details .rich-content h5,
+        .syllabus-details .rich-content h6 { margin: .45em 0 .3em; color: inherit; }
+        .syllabus-details .rich-content p { margin: 0 0 8px; line-height: 1.6; color: inherit; }
+        .syllabus-details .rich-content ul,
+        .syllabus-details .rich-content ol { margin: 4px 0 8px; padding-left: 1.4rem; }
+        .syllabus-details .rich-content li { margin-bottom: 3px; line-height: 1.5; }
+        .syllabus-details .obj-list .rich-content { flex: 1; min-width: 0; margin-top: 0; }
         .syllabus-details .obj-list { margin-top: 3px; }
         .syllabus-details .obj-list li { gap: 10px; padding: 5px 0; line-height: 1.5; }
-        .related-head { margin: 18px 0 4px; font-size: .86rem; font-weight: 700; color: var(--title); }
+        .related-head { margin: 18px 0 4px; font-size: .86rem; font-weight: 700; color: #101010; }
         .related-hint { margin-bottom: 10px; font-size: .76rem; color: var(--muted); line-height: 1.5; }
 
         .obj-list { list-style: none; counter-reset: obj; }
@@ -198,6 +214,14 @@
         .module-body { display: none; background: var(--white); border-top: 1px solid var(--line); }
         .module-block.open .module-body { display: block; }
         .module-sub { padding: 10px 14px 4px; font-size: .8rem; color: var(--muted); }
+        .module-overview { padding: 12px 14px; border-bottom: 1px solid var(--line-soft); background: #fff; }
+        .module-overview-title { margin-bottom: 5px; color: #101010; font-size: .75rem; font-weight: 700; }
+        .module-overview-content { color: #101010; font-size: .84rem; line-height: 1.6; overflow-wrap: anywhere; }
+        .module-overview-content > *:first-child { margin-top: 0; }
+        .module-overview-content p { margin: 0 0 7px; }
+        .module-overview-content p:last-child { margin-bottom: 0; }
+        .module-overview-content ul, .module-overview-content ol { margin: 4px 0 7px; padding-left: 1.4rem; }
+        .module-overview-empty { color: var(--muted); font-size: .8rem; font-style: italic; }
 
         .lesson-row, .quiz-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 14px; border-top: 1px solid var(--line); font-size: .83rem; cursor: pointer; }
         .lesson-row:first-child { border-top: 0; }
@@ -213,7 +237,7 @@
         .lesson-empty { font-style: italic; }
         .lesson-file { color: var(--blue); font-weight: 600; text-decoration: underline; }
         .lesson-assessment { margin-top: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
-        .lesson-assessment-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-bottom: 6px; color: var(--title); font-size: .87rem; font-weight: 700; }
+        .lesson-assessment-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-bottom: 6px; color: #101010; font-size: .87rem; font-weight: 700; }
         .lesson-assessment-meta { color: var(--muted); font-size: .75rem; font-weight: 500; }
         .assessment-instructions, .activity-instructions { margin: 6px 0 10px; color: #4b5563; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
         .assessment-question { padding: 10px 0; border-top: 1px solid var(--line); }
@@ -224,7 +248,7 @@
         .assessment-options li.is-correct { background: #eaf8ef; color: #166534; font-weight: 600; }
         .assessment-answer { color: #166534; font-weight: 600; }
         .lesson-activity { margin-top: 10px; padding: 10px 12px; border-left: 3px solid var(--blue); background: #fff; }
-        .lesson-activity-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; color: var(--title); font-weight: 700; }
+        .lesson-activity-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; color: #101010; font-weight: 700; }
         .lesson-activity-meta { color: var(--muted); font-size: .74rem; font-weight: 500; }
         .activity-rubric { margin: 6px 0 0; padding: 8px 10px; overflow-x: auto; border-radius: 6px; background: #f5f7fa; color: #4b5563; font: .76rem/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; }
         .quiz-instructions { margin-bottom: 10px; font-style: normal; }
@@ -241,7 +265,7 @@
 
         /* Award */
         .award-badge { display: block; width: 112px; max-width: 100%; height: auto; margin: 0 auto 8px; }
-        .award-name { text-align: center; font-size: 1rem; font-weight: 700; color: var(--title); word-break: break-word; }
+        .award-name { text-align: center; font-size: 1rem; font-weight: 700; color: #101010; word-break: break-word; }
         .award-sub { text-align: center; margin-top: 2px; font-size: .84rem; color: var(--muted); }
         .award-none { padding: 18px 12px; border: 1px dashed #d3dae6; border-radius: 10px; text-align: center; font-size: .8rem; color: #98a2b3; }
         .cert-head { display: flex; align-items: center; gap: 8px; margin: 16px 0 10px; font-size: .8rem; color: var(--muted); }
@@ -256,7 +280,7 @@
         .progress-line { display: flex; align-items: center; gap: 12px; }
         .progress-track { flex: 1; height: 8px; border-radius: 4px; background: #eef1f6; overflow: hidden; }
         .progress-fill { height: 100%; background: var(--yellow); border-radius: 4px; }
-        .pct-num { font-size: .86rem; font-weight: 700; color: var(--title); }
+        .pct-num { font-size: .86rem; font-weight: 700; color: #101010; }
         .pct-sub { margin-top: 8px; font-size: .78rem; color: var(--muted); }
 
         .enrollment-review-link { width: 100%; margin-top: 12px; }
@@ -467,6 +491,15 @@
                     <div class="stat"><span class="stat-ico"><svg class="ico"><use href="#i-play"/></svg></span><div><small>Lessons</small><b>{{ $course->lessons_count }}</b></div></div>
                 </section>
 
+                <section class="card">
+                    <div class="card-title"><svg class="ico"><use href="#i-file"/></svg>Description</div>
+                    @php
+                        $descHtml = $tidy($course->description);
+                        $descBlank = trim(preg_replace('/[\s\x{00A0}]+/u', ' ', html_entity_decode(strip_tags($descHtml, '<img><oembed>')))) === '';
+                    @endphp
+                    <div class="rich rich-content">{!! $descBlank ? 'No description provided.' : $descHtml !!}</div>
+                </section>
+
                 <section class="card syllabus-details">
                     <div class="card-title"><svg class="ico"><use href="#i-file"/></svg>Micro-credential syllabus details</div>
                     <div class="chip-row"><span class="chip">PQF {{ $course->pqf_level ? 'Level '.$course->pqf_level : 'not specified' }}</span><span class="chip">{{ $course->learning_hours ? $course->learning_hours.' learning hours' : 'Learning hours not specified' }}</span><span class="chip">{{ $course->delivery_mode ? Illuminate\Support\Str::headline($course->delivery_mode) : 'Delivery mode not specified' }}</span></div>
@@ -475,24 +508,19 @@
                     <p><strong>Mastery criteria:</strong> {{ $course->grading_rubric ?: 'Not specified' }}</p>
                     @if(!empty($course->learning_outcomes))
                         <strong class="outcome-heading">Measurable learning outcomes</strong>
-                        <ul class="obj-list">
-                            @foreach($course->learning_outcomes as $outcome)
-                                <li>{{ $outcome }}</li>
-                            @endforeach
-                        </ul>
+                        @if(count($course->learning_outcomes) === 1)
+                            <div class="rich rich-content">{!! \App\Support\RichTextSanitizer::sanitize($course->learning_outcomes[0]) !!}</div>
+                        @else
+                            <ul class="obj-list">
+                                @foreach($course->learning_outcomes as $outcome)
+                                    <li><div class="rich rich-content">{!! \App\Support\RichTextSanitizer::sanitize($outcome) !!}</div></li>
+                                @endforeach
+                            </ul>
+                        @endif
                     @endif
                 </section>
 
                 <div class="stack">
-                    <section class="card">
-                        <div class="card-title"><svg class="ico"><use href="#i-file"/></svg>Description</div>
-                        @php
-                            $descHtml = $tidy($course->description);
-                            $descBlank = trim(preg_replace('/[\s\x{00A0}]+/u', ' ', html_entity_decode(strip_tags($descHtml, '<img><oembed>')))) === '';
-                        @endphp
-                        <div class="rich rich-content">{!! $descBlank ? 'No description provided.' : $descHtml !!}</div>
-                    </section>
-
                     <section class="card">
                         <div class="card-title"><svg class="ico"><use href="#i-tag"/></svg>Skills covered</div>
                         @if (! empty($course->skills))
@@ -533,8 +561,20 @@
                             </button>
 
                             <div class="module-body">
-                                @if ($module->description)
-                                    <div class="module-sub rich rich-content">{!! $tidy($module->description) !!}</div>
+                                @php
+                                    $moduleDescription = $tidy($module->description);
+                                    $moduleDescriptionIsBlank = trim(preg_replace('/[\s\x{00A0}]+/u', ' ', html_entity_decode(strip_tags($moduleDescription, '<img><oembed>')))) === '';
+                                @endphp
+                                @if (!$moduleDescriptionIsBlank)
+                                    <section class="module-overview" aria-label="Module details">
+                                        <div class="module-overview-title">Module details</div>
+                                        <div class="module-overview-content rich rich-content">{!! $moduleDescription !!}</div>
+                                    </section>
+                                @elseif (!$module->is_final)
+                                    <section class="module-overview" aria-label="Module details">
+                                        <div class="module-overview-title">Module details</div>
+                                        <div class="module-overview-empty">No module description provided.</div>
+                                    </section>
                                 @endif
 
                                 @foreach ($module->lessons as $lesson)

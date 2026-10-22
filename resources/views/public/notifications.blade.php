@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Notifications | UPSKILL</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,22 +26,6 @@
         .notif-message{color:#4b5563;font-size:14px;line-height:1.5;overflow-wrap:anywhere;}
         .notif-view{display:inline-flex;align-items:center;margin-top:8px;padding:6px 12px;border:1px solid #dfe4f0;border-radius:999px;background:#fff;color:var(--navy);font-size:12px;font-weight:700;}
         .notif-view:hover{border-color:var(--navy);background:#f7f9ff;}
-        .announcement-modal{position:fixed;inset:0;z-index:4000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(12,15,45,.56);}
-        .announcement-modal[hidden]{display:none;}
-        .announcement-dialog{display:flex;flex-direction:column;width:min(680px,100%);max-height:min(80vh,760px);overflow:hidden;border:1px solid var(--line);border-radius:18px;background:#fff;box-shadow:0 24px 70px rgba(12,15,77,.28);}
-        .announcement-dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px 22px;border-bottom:1px solid var(--line);}
-        .announcement-dialog-head h3{margin:0;color:var(--navy);font-size:19px;}
-        .announcement-dialog-head time{display:block;margin-top:5px;color:var(--muted);font-size:12px;}
-        .announcement-dialog-close{width:34px;height:34px;flex:0 0 34px;border:0;border-radius:9px;background:#f1f3f8;color:var(--navy);font-size:21px;}
-        .announcement-dialog-content{overflow:auto;padding:22px;color:#374151;font-size:14px;line-height:1.65;}
-        .announcement-dialog-content p{margin:0 0 12px;}.announcement-dialog-content p:last-child{margin-bottom:0;}
-        .announcement-dialog-content h1,.announcement-dialog-content h2,.announcement-dialog-content h3,.announcement-dialog-content h4{margin:18px 0 9px;line-height:1.3;color:var(--navy);}
-        .announcement-dialog-content ul,.announcement-dialog-content ol{padding-left:24px;}
-        .announcement-dialog-content blockquote{margin:12px 0;padding-left:14px;border-left:3px solid var(--gold);color:#5f6b85;}
-        .announcement-dialog-content img{max-width:100%;height:auto;}
-        .announcement-dialog-content a{color:var(--navy);text-decoration:underline;}
-        .announcement-dialog-footer{display:flex;justify-content:flex-end;padding:14px 22px;border-top:1px solid var(--line);}
-        .announcement-dialog-footer button{padding:8px 16px;border:0;border-radius:8px;background:var(--navy);color:#fff;font-size:13px;font-weight:700;}
         @media (max-width:900px){
             .content-grid{grid-template-columns:1fr;gap:16px;}
             /* The filter list becomes one scrollable row of chips. */
@@ -92,7 +77,7 @@
 
         <section class="hero">
             <div><h2>Notifications</h2><p>Updates about your courses, reviews, credentials, and announcements.</p></div>
-            <div class="hero-badges"><span class="pill"><strong>{{ $unreadCount }}</strong>Unread</span><span class="pill"><strong>{{ $totalCount }}</strong>Total</span></div>
+            <div class="hero-badges"><span class="pill"><strong data-unread-notification-count>{{ $unreadCount }}</strong> unread</span><span class="pill"><strong>{{ $totalCount }}</strong> total</span></div>
         </section>
 
         <a href="{{ route($homeRoute) }}" class="btn-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.8V20h14V9.8"/></svg>Home</a>
@@ -101,7 +86,7 @@
             <aside class="sidebar-card">
                 <h3>Filter</h3>
                 <a class="filter-item {{ $active === 'all' ? 'active' : '' }}" href="{{ route('notifications.index') }}">All notifications <span class="count">{{ $totalCount }}</span></a>
-                <a class="filter-item {{ $active === 'unread' ? 'active' : '' }}" href="{{ route('notifications.index', ['filter' => 'unread']) }}">Unread <span class="count">{{ $unreadCount }}</span></a>
+                <a class="filter-item {{ $active === 'unread' ? 'active' : '' }}" href="{{ route('notifications.index', ['filter' => 'unread']) }}">Unread <span class="count" data-unread-notification-count>{{ $unreadCount }}</span></a>                <a class="filter-item {{ $active === 'course' ? 'active' : '' }}" href="{{ route('notifications.index', ['filter' => 'course']) }}">Courses <span class="count">{{ $all->where('type', 'course')->count() }}</span></a>
                 <a class="filter-item {{ $active === 'course' ? 'active' : '' }}" href="{{ route('notifications.index', ['filter' => 'course']) }}">Courses <span class="count">{{ $all->where('type', 'course')->count() }}</span></a>
                 <a class="filter-item {{ $active === 'enrollment' ? 'active' : '' }}" href="{{ route('notifications.index', ['filter' => 'enrollment']) }}">Enrollments <span class="count">{{ $all->where('type', 'enrollment')->count() }}</span></a>
                 <a class="filter-item {{ $active === 'assessment' ? 'active' : '' }}" href="{{ route('notifications.index', ['filter' => 'assessment']) }}">Assessments <span class="count">{{ $all->where('type', 'assessment')->count() }}</span></a>
@@ -134,53 +119,6 @@
         </div>
     </main>
 
-    <div class="announcement-modal" id="announcement-modal" hidden>
-        <section class="announcement-dialog" role="dialog" aria-modal="true" aria-labelledby="announcement-dialog-title">
-            <header class="announcement-dialog-head">
-                <div><h3 id="announcement-dialog-title"></h3><time id="announcement-dialog-time"></time></div>
-                <button class="announcement-dialog-close" type="button" data-close-announcement aria-label="Close announcement">&times;</button>
-            </header>
-            <div class="announcement-dialog-content ck-content" id="announcement-dialog-content"></div>
-            <footer class="announcement-dialog-footer"><button type="button" data-close-announcement>Close</button></footer>
-        </section>
-    </div>
-
-    <script>
-        (function () {
-            var modal = document.getElementById('announcement-modal');
-            var title = document.getElementById('announcement-dialog-title');
-            var time = document.getElementById('announcement-dialog-time');
-            var content = document.getElementById('announcement-dialog-content');
-
-            function closeAnnouncement() {
-                modal.hidden = true;
-                content.replaceChildren();
-            }
-
-            document.querySelectorAll('[data-view-announcement]').forEach(function (button) {
-                button.addEventListener('click', function () {
-                    var template = document.getElementById('announcement-content-' + button.dataset.viewAnnouncement);
-                    if (!template) return;
-
-                    title.textContent = button.dataset.title || 'Announcement';
-                    time.textContent = button.dataset.time || '';
-                    content.replaceChildren(template.content.cloneNode(true));
-                    modal.hidden = false;
-                    modal.querySelector('[data-close-announcement]').focus();
-                });
-            });
-
-            modal.querySelectorAll('[data-close-announcement]').forEach(function (button) {
-                button.addEventListener('click', closeAnnouncement);
-            });
-            modal.addEventListener('click', function (event) {
-                if (event.target === modal) closeAnnouncement();
-            });
-            document.addEventListener('keydown', function (event) {
-                if (event.key === 'Escape' && !modal.hidden) closeAnnouncement();
-            });
-        })();
-    </script>
 
     {{-- Shared responsiveness layer (drawer nav + grid stacking) --}}
     @include('components.responsive')

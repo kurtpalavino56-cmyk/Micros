@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\AdminPageAccessService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -47,6 +48,11 @@ class RoleBasedAccess
                 'faculty' => 'faculty.dashboard',
                 default => 'dashboard',
             });
+        }
+
+        if ($user->isSubAdmin()) {
+            $page = app(AdminPageAccessService::class)->pageForRoute($request->route()?->getName());
+            abort_unless($page !== null && $user->canAccessAdminPage($page), 403);
         }
 
         return $next($request);

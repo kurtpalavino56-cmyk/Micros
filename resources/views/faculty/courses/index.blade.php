@@ -217,6 +217,9 @@
     .pending-count{min-width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:0 6px;background:#dc2626;color:#fff;font-size:10px;}
     .manage-flash{margin:-14px 0 22px;padding:12px 16px;border:1px solid #bbf7d0;border-radius:12px;background:#f0fdf4;color:#166534;font-size:13px;font-weight:700;transition:opacity .25s ease,transform .25s ease;}
     .manage-flash.error{border-color:#fecaca;background:#fef2f2;color:#991b1b;}
+    .manage-flash.review-feedback{border-color:#fde68a;background:#fffbeb;color:#78350f;white-space:normal;}
+    .manage-flash.review-feedback strong{display:block;margin-bottom:4px;}
+    .manage-flash.review-feedback p{margin:0;font-weight:500;line-height:1.5;white-space:pre-wrap;}
     .manage-flash.is-dismissing{opacity:0;transform:translateY(-4px);}
     .activity-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px;background:#f8faff;border:1px solid #e2e8f0;border-radius:12px;}
     .activity-form[hidden],.activity-edit-form[hidden]{display:none;}
@@ -614,6 +617,12 @@
         <x-flash-toast :message="session('success')" />
         @if($errors->has('submission'))
             <div class="manage-flash error" role="alert">{{ $errors->first('submission') }}</div>
+        @endif
+        @if(filled($course->denial_feedback ?? null))
+            <section class="manage-flash review-feedback" role="alert" aria-labelledby="admin-review-feedback-title">
+                <strong id="admin-review-feedback-title">Feedback from admin</strong>
+                <p>{{ $course->denial_feedback }}</p>
+            </section>
         @endif
 
         <section class="readiness-panel" aria-labelledby="readiness-title">

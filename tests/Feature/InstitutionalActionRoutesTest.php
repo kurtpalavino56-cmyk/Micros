@@ -99,6 +99,38 @@ test('faculty learner progress shows verify action when the required faculty rev
         ->assertSee(route('faculty.enrollments.verify', $enrollment->id), false);
 });
 
+test('faculty can download all enrolled students as pdf word or excel from the all students tab', function () {
+    $faculty = User::factory()->faculty()->create();
+    [$course, , $student] = makeReadyEnrollmentFor($faculty);
+    $filename = 'enrolled-students-test-microcredential-'.now()->format('Y-m-d');
+
+    $this->actingAs($faculty)
+        ->get(route('faculty.students.course', ['id' => $course->id, 'filter' => 'all']))
+        ->assertOk()
+        ->assertSee('Download all enrolled students')
+        ->assertSee('PDF')
+        ->assertSee('Word (.doc)')
+        ->assertSee('Excel (.csv)');
+
+    $wordResponse = $this->get(route('faculty.students.course.export', ['id' => $course->id, 'format' => 'word']));
+    $wordResponse->assertDownload($filename.'.doc')
+        ->assertSee($student->name)
+        ->assertSee($student->student_id);
+
+    $excelResponse = $this->get(route('faculty.students.course.export', ['id' => $course->id, 'format' => 'excel']));
+    $excelResponse->assertDownload($filename.'.csv');
+    expect($excelResponse->streamedContent())
+        ->toContain($student->name)
+        ->toContain($student->student_id);
+
+    $this->get(route('faculty.students.course.export', ['id' => $course->id, 'format' => 'pdf']))
+        ->assertDownload($filename.'.pdf');
+
+    $this->actingAs(User::factory()->faculty()->create())
+        ->get(route('faculty.students.course.export', ['id' => $course->id, 'format' => 'excel']))
+        ->assertNotFound();
+});
+
 test('faculty review queue includes ready enrollments when verification was enabled after initial enrollment evaluation', function () {
     $faculty = User::factory()->faculty()->create();
     [$course, $enrollment, $student] = makeReadyEnrollmentFor($faculty);

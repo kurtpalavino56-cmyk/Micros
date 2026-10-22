@@ -129,17 +129,40 @@
                                     - {{ $reply->created_at?->diffForHumans() }}
                                 </div>
                                 <div class="bubble">{{ $reply->body }}</div>
+                                @if ($reply->attachment_url)
+                                    <div class="msg-attach">
+                                        @if ($reply->attachmentIsImage())
+                                            <img src="{{ route('complaint-replies.attachment', $reply->id) }}"
+                                                 alt="{{ $reply->attachment_name }}">
+                                        @else
+                                            <a class="message-attachment-link" href="{{ route('complaint-replies.attachment', $reply->id) }}" target="_blank" rel="noopener">
+                                                📎 {{ $reply->attachment_name ?? 'Attachment' }}
+                                            </a>
+                                        @endif
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     @endforeach
                 </div>
 
                 <div class="reply-box">
-                    <form class="inbox-reply-compose" method="POST" action="{{ route($inboxReplyRoute, $selected->id) }}">
+                    <form class="inbox-reply-compose reply-field-compose" method="POST" enctype="multipart/form-data" action="{{ route($inboxReplyRoute, $selected->id) }}">
                         @csrf
-                        <textarea name="body" placeholder="Write a reply..." required></textarea>
+                        <label for="inbox-reply-attachment" class="reply-attachment-picker" title="Attach an image" aria-label="Attach an image" role="button" tabindex="0">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.4 11.1 12.8 19.7a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>
+                        </label>
+                        <input class="reply-attachment-input" type="file" id="inbox-reply-attachment" name="attachment" accept=".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp">
+                        <textarea name="body" rows="1" placeholder="Write a reply..." required>{{ old('body') }}</textarea>
                         <div class="reply-actions">
                             <button type="submit" class="btn-navy ui-button ui-button--primary">Send Reply</button>
+                        </div>
+                        <p class="reply-attachment-name" id="inbox-reply-attachment-name">Images only, up to 10 MB.</p>
+                        @error('attachment')
+                            <div class="reply-attachment-error">{{ $message }}</div>
+                        @enderror
+                        <div class="reply-attachment-preview" id="inbox-reply-attachment-preview" hidden>
+                            <img alt="Selected image attachment">
                         </div>
                     </form>
                 </div>
@@ -225,6 +248,51 @@
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') closeLightbox(null, true);
     });
+</script>
+<script>
+    (function () {
+        var replyAttachmentInput = document.getElementById('inbox-reply-attachment');
+        if (!replyAttachmentInput) {
+            return;
+        }
+
+        var attachmentPicker = document.querySelector('.reply-attachment-picker');
+        attachmentPicker.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                replyAttachmentInput.click();
+            }
+        });
+
+        replyAttachmentInput.addEventListener('change', function () {
+            var name = document.getElementById('inbox-reply-attachment-name');
+            var preview = document.getElementById('inbox-reply-attachment-preview');
+            var image = preview.querySelector('img');
+            var file = this.files[0];
+
+            name.textContent = file ? file.name : 'Images only, up to 10 MB.';
+            preview.hidden = !file || !file.type.startsWith('image/');
+            if (file && file.type.startsWith('image/')) {
+                image.src = URL.createObjectURL(file);
+            }
+        });
+
+        var replyText = document.querySelector('.reply-field-compose textarea');
+        if (!replyText) {
+            return;
+        }
+
+        var resizeReplyText = function () {
+            replyText.style.height = '44px';
+            var maxHeight = 112;
+            var nextHeight = Math.min(replyText.scrollHeight, maxHeight);
+            replyText.style.height = nextHeight + 'px';
+            replyText.style.overflowY = replyText.scrollHeight > maxHeight ? 'auto' : 'hidden';
+        };
+
+        replyText.addEventListener('input', resizeReplyText);
+        resizeReplyText();
+    }());
 </script>
 
 </x-layout>

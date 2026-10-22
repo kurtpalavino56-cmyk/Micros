@@ -19,6 +19,12 @@ class AdminUserManagementService
             'username' => $data['username'],
             'password' => Hash::make($data['password']),
             'role_id' => (int) $data['role_id'],
+            'admin_page_access' => (int) $data['role_id'] === User::ROLE_SUBADMIN
+                ? array_values(array_unique([
+                    ...User::DEFAULT_SUBADMIN_ADMIN_PAGES,
+                    ...($data['admin_page_access'] ?? []),
+                ]))
+                : null,
             'student_id' => $code,
             'user_code' => $code,
             'is_active' => true,
@@ -34,6 +40,8 @@ class AdminUserManagementService
             'username' => $user->username,
             'role' => match ((int) $user->role_id) {
                 User::ROLE_ADMIN => 'Administrator',
+                User::ROLE_SUPERADMIN => 'Superadmin',
+                User::ROLE_SUBADMIN => 'Sub-admin',
                 User::ROLE_FACULTY => 'Faculty',
                 default => 'Learner',
             },

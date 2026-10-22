@@ -21,6 +21,8 @@ class UserCodeService
     {
         $prefix = match ($roleId) {
             User::ROLE_ADMIN => 'AD',
+            User::ROLE_SUPERADMIN => 'SA',
+            User::ROLE_SUBADMIN => 'SB',
             User::ROLE_FACULTY => 'FC',
             default => 'LN',
         };

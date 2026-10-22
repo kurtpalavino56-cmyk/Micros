@@ -9,15 +9,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inbox | UPSKILL Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     {{-- Browser tab icon (favicon) --}}
     <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
-    @vite('resources/css/inbox-reply.css')
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    @vite(['resources/js/app.js', 'resources/css/inbox-reply.css'])
 <style>
     :root{--navy:#13176b;--gold:#dba617;--muted:#6b7280;--line:#e5e7eb;--green:#15803d;
           --red:#ef4444;--shadow:0 10px 25px rgba(19,23,107,.08);--topbar-h:60px;}
     *{box-sizing:border-box;}
-    body{font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--navy);margin:0;background:#f5f7ff;}
+    body{font-family:Inter,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--navy);margin:0;background:#f5f7ff;}
     a{text-decoration:none;color:inherit;}
     button{font-family:inherit;cursor:pointer;}
     
@@ -77,12 +81,20 @@
         cursor:pointer;line-height:1;}
     .msgs{padding:22px 24px;min-height:250px;max-height:520px;overflow-y:auto;}
     .msg{margin-bottom:16px;display:flex;}
-    .msg .bubble{max-width:76%;padding:12px 15px;border-radius:14px;font-size:14px;
-        line-height:1.55;white-space:pre-wrap;}
+    .msg > div{display:flex;flex:0 1 min(80%,600px);flex-direction:column;width:min(80%,600px);min-width:0;max-width:min(80%,600px);}
+    .msg.from-admin > div{margin-right:0;align-items:flex-end;}
+    .msg.from-admin .msg-who{text-align:right;}
+    .msg .bubble{display:inline-block;align-self:flex-start;width:fit-content;min-width:48px;max-width:100%;padding:12px 15px;border-radius:14px;font-size:14px;
+        line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;}
+    .msg .bubble p{margin:0 0 8px;}
+    .msg .bubble p:last-child{margin-bottom:0;}
+    .msg .bubble > :first-child{margin-top:0;}
+    .msg .bubble > :last-child{margin-bottom:0;}
+    .msg.from-admin .bubble{align-self:flex-end;}
     .msg.from-student .bubble{background:#f1f3fb;color:#1f2937;border-bottom-left-radius:4px;}
     .msg.from-admin{justify-content:flex-end;}
     .msg.from-admin .bubble{background:var(--navy);color:#fff;border-bottom-right-radius:4px;}
-    .msg-who{font-size:11.5px;color:var(--muted);margin-bottom:4px;font-weight:700;}
+    .msg-who{font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:700;line-height:1.4;}
     .reply-box{border-top:1px solid var(--line);padding:16px 24px 20px;}
     textarea{width:100%;border:1.5px solid #c9ccdb;border-radius:12px;padding:12px 14px;
         font-size:14px;font-family:inherit;min-height:96px;resize:vertical;color:var(--navy);}
@@ -117,14 +129,37 @@
     .inbox-page .grid{margin-top:22px;}
     .inbox-page .detail-hd{background:#f8faff;}
     .inbox-page .detail-hd h2{font-size:18px;line-height:1.35;color:#111a3c;}
+    .inbox-page .detail-hd-top{display:flex;align-items:center;justify-content:space-between;gap:16px;}
+    .inbox-page .detail-hd-top h2{min-width:0;margin:0;}
+    .inbox-page .resolve-form{flex:0 0 auto;}
+    .inbox-page .resolve-form .btn-ghost{white-space:nowrap;}
     .inbox-page .btn-navy{border-radius:9px;transition:background .15s ease,transform .15s ease;}
     .inbox-page .btn-navy:hover{background:#20278a;transform:translateY(-1px);}
+    .inbox-page .reply-attachment-picker{display:flex;align-items:center;justify-content:center;width:44px;height:44px;
+        border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--navy);cursor:pointer;}
+    .inbox-page .reply-attachment-picker:hover{background:#f7f9ff;border-color:#c5d0ee;}
+    .inbox-page .reply-attachment-picker svg{width:20px;height:20px;}
+    .inbox-page .reply-attachment-input{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
+    .inbox-page .reply-attachment-name{grid-column:1/-1;margin:0;color:var(--muted);font-size:12px;}
+    .inbox-page .reply-field-compose{grid-template-columns:44px minmax(0,1fr) auto;align-items:end;}
+    .inbox-page .visitor-reply-compose{grid-template-columns:minmax(0,1fr) auto;align-items:center;}
+    .inbox-page .visitor-reply-compose .reply-actions{grid-column:2;align-self:stretch;justify-content:flex-end;margin:0;}
+    .inbox-page .reply-field-compose textarea{width:100%;height:44px;min-height:44px;max-height:112px;min-width:0;margin:0;padding:11px 14px;
+        border:1.5px solid #c9ccdb;border-radius:10px;font:inherit;font-size:14px;line-height:20px;color:var(--navy);resize:none;overflow-y:hidden;}
+    .inbox-page .reply-field-compose textarea:focus{outline:none;border-color:var(--navy);}
+    .inbox-page .reply-field-compose .reply-attachment-picker,.inbox-page .reply-field-compose .reply-actions{align-self:end;}
+    .inbox-page .reply-attachment-error{grid-column:1/-1;color:#b42318;font-size:12px;}
+    .inbox-page .reply-field-compose .mail-note{grid-column:1/-1;}
+    .inbox-page .reply-attachment-preview{margin-top:8px;}
+    .inbox-page .reply-attachment-preview img{display:block;max-width:180px;max-height:140px;border:1px solid var(--line);border-radius:8px;}
     @media(max-width:1000px){.inbox-page .grid{grid-template-columns:1fr;}}
     @media(max-width:680px){
         .wrap{padding:20px 0 32px;}
         .msg .bubble{max-width:88%;}
         .attach img{max-width:100%;}
         .reply-actions .btn-navy,.reply-box .btn-ghost{width:100%;}
+        .inbox-page .detail-hd-top{align-items:flex-start;flex-direction:column;gap:10px;}
+        .inbox-page .resolve-form,.inbox-page .resolve-form .btn-ghost{width:100%;}
         .detail-hd h2{font-size:16px;}
         .page-heading{font-size:1.45rem;}
         .thread-filter-row{grid-template-columns:1fr;}
@@ -217,7 +252,15 @@
         <div class="panel">
             @if ($selected)
                 <div class="detail-hd">
-                    <h2>{{ $selected->subject }}</h2>
+                    <div class="detail-hd-top">
+                        <h2>{{ $selected->subject }}</h2>
+                        <form class="resolve-form" method="POST" action="{{ route('admin.complaints.resolve', $selected->id) }}">
+                            @csrf
+                            <button type="submit" class="btn-ghost">
+                                {{ $selected->status === 'resolved' ? 'Reopen conversation' : 'Mark as resolved' }}
+                            </button>
+                        </form>
+                    </div>
                     <div class="who">
                         <span class="origin {{ strtolower($selected->senderRoleLabel()) }}">
                             {{ $selected->senderRoleLabel() }}
@@ -268,33 +311,62 @@
                                     {{ $reply->is_admin ? 'Administrator' : ($reply->author->name ?? 'Student') }}
                                     · {{ $reply->created_at?->diffForHumans() }}
                                 </div>
-                                <div class="bubble">{{ $reply->body }}</div>
+                                <div class="bubble">@if ($selected->isFromVisitor() && $reply->is_admin){!! \App\Support\RichTextSanitizer::sanitize((string) $reply->body) !!}@else{{ $reply->body }}@endif</div>
+                                @if ($reply->attachment_url)
+                                    <div class="attach">
+                                        @if ($reply->attachmentIsImage())
+                                            <img src="{{ route('complaint-replies.attachment', $reply->id) }}"
+                                                 alt="{{ $reply->attachment_name }}"
+                                                 onclick="openLightbox(this.src)">
+                                        @else
+                                            <a class="attach-file" href="{{ route('complaint-replies.attachment', $reply->id) }}" target="_blank" rel="noopener">
+                                                📎 {{ $reply->attachment_name ?? 'Attachment' }}
+                                            </a>
+                                        @endif
+                                        <div class="attach-name">{{ $reply->attachment_name }}</div>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     @endforeach
                 </div>
 
                 <div class="reply-box">
-                    <form class="inbox-reply-compose" method="POST" action="{{ route('admin.complaints.reply', $selected->id) }}">
+                    <form class="inbox-reply-compose {{ $selected->isFromVisitor() ? 'visitor-reply-compose' : 'reply-field-compose' }}" method="POST" enctype="multipart/form-data" action="{{ route('admin.complaints.reply', $selected->id) }}">
                         @csrf
-                        <textarea name="body"
-                            placeholder="{{ $selected->isFromVisitor() ? 'Write your reply — it will be emailed to them…' : 'Write your reply to the student…' }}"
-                            required></textarea>
-                        <div class="reply-actions">
-                            <button type="submit" class="btn-navy">Send Reply</button>
-                        </div>
+                        @if ($selected->isFromVisitor())
+                            <x-rich-text-editor
+                                id="admin-reply"
+                                name="body"
+                                :value="old('body')"
+                                preset="admin-reply"
+                                placeholder="Write your reply — it will be emailed to them…"
+                            />
+                            <div class="reply-actions">
+                                <button type="submit" class="btn-navy">Send Reply</button>
+                            </div>
+                        @else
+                            <label for="admin-reply-attachment" class="reply-attachment-picker" title="Attach an image" aria-label="Attach an image" role="button" tabindex="0">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.4 11.1 12.8 19.7a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>
+                            </label>
+                            <input class="reply-attachment-input" type="file" id="admin-reply-attachment" name="attachment" accept=".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp">
+                            <textarea name="body" rows="1" placeholder="Write your reply to the {{ strtolower($selected->senderRoleLabel()) }}…" required>{{ old('body') }}</textarea>
+                            <div class="reply-actions">
+                                <button type="submit" class="btn-navy">Send Reply</button>
+                            </div>
+                            <p class="reply-attachment-name" id="admin-reply-attachment-name">Images only, up to 10 MB.</p>
+                            @error('attachment')
+                                <div class="reply-attachment-error">{{ $message }}</div>
+                            @enderror
+                            <div class="reply-attachment-preview" id="admin-reply-attachment-preview" hidden>
+                                <img alt="Selected image attachment">
+                            </div>
+                        @endif
                         @if ($selected->isFromVisitor() && $selected->guest_email)
                             <div class="mail-note">
                                 ✉ This reply will be emailed to {{ $selected->guest_email }}.
                             </div>
                         @endif
-                    </form>
-                    <form method="POST" action="{{ route('admin.complaints.resolve', $selected->id) }}"
-                          style="margin-top:10px;">
-                        @csrf
-                        <button type="submit" class="btn-ghost">
-                            {{ $selected->status === 'resolved' ? 'Reopen conversation' : 'Mark as resolved' }}
-                        </button>
                     </form>
                 </div>
             @else
@@ -377,5 +449,43 @@
 
 {{-- Shared responsiveness layer (drawer nav + grid stacking) --}}
 @include('components.responsive')
+<script>
+    const replyAttachmentInput = document.getElementById('admin-reply-attachment');
+    if (replyAttachmentInput) {
+        const attachmentPicker = document.querySelector('.reply-attachment-picker');
+        attachmentPicker.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                replyAttachmentInput.click();
+            }
+        });
+        replyAttachmentInput.addEventListener('change', function () {
+            const name = document.getElementById('admin-reply-attachment-name');
+            const preview = document.getElementById('admin-reply-attachment-preview');
+            const image = preview.querySelector('img');
+            const file = this.files[0];
+
+            name.textContent = file ? file.name : 'Images only, up to 10 MB.';
+            preview.hidden = !file || !file.type.startsWith('image/');
+            if (file && file.type.startsWith('image/')) {
+                image.src = URL.createObjectURL(file);
+            }
+        });
+    }
+
+    const replyText = document.querySelector('.reply-field-compose textarea');
+    if (replyText) {
+        const resizeReplyText = function () {
+            replyText.style.height = '44px';
+            const maxHeight = 112;
+            const nextHeight = Math.min(replyText.scrollHeight, maxHeight);
+            replyText.style.height = `${nextHeight}px`;
+            replyText.style.overflowY = replyText.scrollHeight > maxHeight ? 'auto' : 'hidden';
+        };
+
+        replyText.addEventListener('input', resizeReplyText);
+        resizeReplyText();
+    }
+</script>
 </body>
 </html>
