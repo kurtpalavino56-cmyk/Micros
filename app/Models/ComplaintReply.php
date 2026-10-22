@@ -15,6 +15,8 @@ class ComplaintReply extends Model
         'user_id',
         'body',
         'is_admin',
+        'attachment_url',
+        'attachment_name',
     ];
 
     protected function casts(): array
@@ -30,5 +32,16 @@ class ComplaintReply extends Model
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function attachmentIsImage(): bool
+    {
+        if (! $this->attachment_url) {
+            return false;
+        }
+
+        $extension = strtolower(pathinfo($this->attachment_url, PATHINFO_EXTENSION));
+
+        return in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true);
     }
 }

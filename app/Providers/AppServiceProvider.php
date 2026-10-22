@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\Complaint;
 use App\Models\Course;
+use App\Models\Enrollment;
+use App\Services\MicrocredentialCompletionService;
 use App\Services\UserNotificationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -66,12 +68,27 @@ class AppServiceProvider extends ServiceProvider
             $request = request();
 
             if (! $request->attributes->has('upskill.unread')) {
-                $counts = ['notifications' => 0, 'inbox' => 0];
+                $counts = [
+                    'notifications' => 0,
+                    'inbox' => 0,
+                    'admin_course_reviews' => 0,
+                    'admin_completion_reviews' => 0,
+                ];
 
                 if (Auth::check()) {
                     $user = Auth::user();
 
                     $counts['notifications'] = app(UserNotificationService::class)->unreadCount($user);
+
+                    if ($user->isAdmin()) {
+                        $counts['admin_course_reviews'] = Course::query()
+                            ->where('approval_status', 'pending')
+                            ->count();
+                        $counts['admin_completion_reviews'] = Enrollment::query()
+                            ->where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
+                            ->where('academic_unit_confirmation_status', 'pending')
+                            ->count();
+                    }
 
                     if ($user->isFaculty() || $user->isStudent()) {
                         // Inbox = the signed-in user's admin message threads.
@@ -90,6 +107,8 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with('unreadNotificationCount', $counts['notifications']);
             $view->with('unreadInboxCount', $counts['inbox']);
+            $view->with('adminPendingCourseReviewCount', $counts['admin_course_reviews']);
+            $view->with('adminPendingCompletionReviewCount', $counts['admin_completion_reviews']);
         });
     }
 }

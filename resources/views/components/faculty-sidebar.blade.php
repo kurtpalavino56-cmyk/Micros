@@ -1,4 +1,4 @@
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,1,0" rel="stylesheet">
 <style>
     :root{--faculty-topbar-height:66px;}
 html,body{scrollbar-width:none;-ms-overflow-style:none;}
@@ -15,7 +15,7 @@ html,body{scrollbar-width:none;-ms-overflow-style:none;}
     .faculty-sidebar .side-link.active>*{position:relative;z-index:2;}
     .faculty-sidebar .side-link.active:hover{background:transparent;color:#071550;}
     .faculty-sidebar .side-icon-box{width:30px;height:30px;flex:0 0 30px;display:flex;align-items:center;justify-content:center;background:transparent !important;border:0;border-radius:0;}
-    .faculty-sidebar .side-icon-box .material-symbols-rounded{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;width:24px;height:24px;font-size:24px;line-height:1;font-feature-settings:"liga";-webkit-font-smoothing:antialiased;transition:color .2s ease,transform .2s ease;}
+    .faculty-sidebar .side-icon-box .material-symbols-rounded{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;width:24px;height:24px;font-size:24px;line-height:1;font-feature-settings:"liga";font-variation-settings:"FILL" 1;-webkit-font-smoothing:antialiased;transition:color .2s ease,transform .2s ease;}
     .faculty-sidebar .side-link:not(.active) .side-icon-box .material-symbols-rounded{color:#061a45;}
     .faculty-sidebar .side-link:not(.active):hover .side-icon-box .material-symbols-rounded{color:#061a45;}
     .faculty-sidebar .side-link.active .side-icon-box .material-symbols-rounded{color:#061a45;}

@@ -24,8 +24,8 @@
         ->avatar_url, ->about, ->date_of_birth, ->gender, ->education, ->bio,
         ->language, ->timezone
 
-    Styling note: the page heading block (.profile-head) is intentionally
-    left exactly as it was. Everything else uses the Inter-based card system.
+    Profile layout follows the faculty profile while keeping student learning
+    metrics, skills, achievements, and account details.
 --}}
 <x-layout title="My Profile | Upskill" shell="student" page="profile">
 
@@ -34,9 +34,270 @@
 
 {{-- ===== SUCCESS / ERROR TOAST ===== --}}
 <x-flash-toast :message="session('success')" />
+<style>
+    body.app-shell.page-profile .student-profile-page {
+        max-width: 1180px;
+        margin: 0 auto;
+    }
+
+    body.app-shell.page-profile .profile-head {
+        align-items: flex-end;
+        margin-bottom: 22px;
+    }
+
+    body.app-shell.page-profile .profile-head h2 {
+        color: #101010;
+    }
+
+    body.app-shell.page-profile .profile-head .btn-outline.ui-button--secondary {
+        border-color: #172f94;
+        background: #172f94;
+        color: #fff;
+    }
+
+    body.app-shell.page-profile .profile-head .btn-outline.ui-button--secondary:hover {
+        border-color: #112577;
+        background: #112577;
+        color: #fff;
+    }
+
+    body.app-shell.page-profile .profile-head p {
+        margin-top: 6px;
+    }
+
+    body.app-shell.page-profile .profile-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-areas:
+            "identity identity"
+            "learning learning"
+            "about settings"
+            "achievements activities"
+            "student-id student-id";
+        gap: 20px;
+    }
+
+    body.app-shell.page-profile .profile-col,
+    body.app-shell.page-profile .profile-side {
+        display: contents;
+    }
+
+    body.app-shell.page-profile .profile-card {
+        grid-area: identity;
+        margin-bottom: 0;
+    }
+
+    body.app-shell.page-profile .quick-grid {
+        grid-area: learning;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+        margin-bottom: 0;
+    }
+
+    body.app-shell.page-profile .quick-card {
+        position: relative;
+        min-height: 116px;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 18px 20px;
+        padding-right: 46px;
+        background: #fff;
+    }
+
+    body.app-shell.page-profile .quick-card .quick-card-arrow {
+        position: absolute;
+        right: 18px;
+        bottom: 18px;
+        width: 16px;
+        height: 16px;
+        padding: 0;
+        background: transparent;
+        color: #667085;
+        transition: transform .15s ease, color .15s ease;
+    }
+
+    body.app-shell.page-profile .quick-card strong {
+        color: #101010;
+        font-family: "Plus Jakarta Sans", Inter, sans-serif;
+        font-size: 27px;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+    }
+
+    body.app-shell.page-profile .quick-card-label {
+        color: #667085;
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    body.app-shell.page-profile .quick-card:hover strong,
+    body.app-shell.page-profile .quick-card:hover .quick-card-label {
+        color: var(--navy);
+    }
+
+    body.app-shell.page-profile .quick-card:hover .quick-card-arrow {
+        color: var(--navy);
+        transform: translateX(3px);
+    }
+
+    body.app-shell.page-profile .student-avatar-wrap {
+        position: relative;
+        flex: 0 0 auto;
+    }
+
+    body.app-shell.page-profile .student-avatar-edit {
+        position: absolute;
+        right: 0;
+        bottom: 2px;
+        display: flex;
+        width: 32px;
+        height: 32px;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: 3px solid #fff;
+        border-radius: 50%;
+        background: var(--navy);
+        color: #fff;
+        cursor: pointer;
+        transition: background .15s, color .15s;
+    }
+
+    body.app-shell.page-profile .student-avatar-edit:hover {
+        background: var(--color-psu-gold-500);
+        color: var(--navy);
+    }
+
+    body.app-shell.page-profile .student-avatar-edit svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    body.app-shell.page-profile .student-profile-card {
+        margin-bottom: 0;
+        padding: 0;
+    }
+
+    body.app-shell.page-profile .student-profile-card--about {
+        grid-area: about;
+    }
+
+    body.app-shell.page-profile .student-profile-card--settings {
+        grid-area: settings;
+    }
+
+    body.app-shell.page-profile .student-profile-card-head {
+        padding: 20px 24px 12px;
+        border-bottom: 1px solid var(--p-border);
+        background: #f9fafb;
+    }
+
+    body.app-shell.page-profile .student-profile-card-head .section-title {
+        margin: 0;
+        color: #101010;
+    }
+
+    body.app-shell.page-profile .student-profile-card-head .section-title svg {
+        color: #101010;
+    }
+
+    body.app-shell.page-profile .student-profile-card-body {
+        padding: 8px 24px 22px;
+    }
+
+    body.app-shell.page-profile .student-profile-card .about-text {
+        margin-top: 8px;
+    }
+
+    body.app-shell.page-profile .student-profile-card .detail-row:first-of-type {
+        border-top: none;
+    }
+
+    body.app-shell.page-profile .profile-achievements {
+        grid-area: achievements;
+    }
+
+    body.app-shell.page-profile .profile-activities {
+        grid-area: activities;
+    }
+
+    body.app-shell.page-profile .profile-student-id {
+        grid-area: student-id;
+    }
+
+    body.app-shell.page-profile .profile-side .panel-card {
+        margin-bottom: 0;
+    }
+
+    body.app-shell.page-profile .profile-side .panel-card-head {
+        background: #f9fafb;
+        border-bottom: 1px solid var(--p-border);
+    }
+
+    body.app-shell.page-profile .profile-side .panel-card-head h4,
+    body.app-shell.page-profile .profile-side .panel-card-head h4 svg {
+        color: #101010;
+    }
+
+    body.app-shell.page-profile .profile-side .panel-card-head a {
+        color: var(--navy);
+        opacity: 1;
+    }
+
+    body.app-shell.page-profile .profile-side .panel-card-body {
+        color: #101010;
+    }
+
+    @media (max-width: 900px) {
+        body.app-shell.page-profile .profile-grid {
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-areas:
+                "identity"
+                "learning"
+                "about"
+                "settings"
+                "achievements"
+                "activities"
+                "student-id";
+        }
+    }
+
+    @media (max-width: 640px) {
+        body.app-shell.page-profile .quick-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        body.app-shell.page-profile .quick-card {
+            min-height: 104px;
+            padding: 15px;
+            padding-right: 38px;
+        }
+
+        body.app-shell.page-profile .quick-card .quick-card-arrow {
+            right: 14px;
+            bottom: 14px;
+        }
+
+        body.app-shell.page-profile .student-profile-card-head {
+            padding: 17px 18px 10px;
+        }
+
+        body.app-shell.page-profile .student-profile-card-body {
+            padding: 6px 18px 18px;
+        }
+    }
+
+    @media (max-width: 380px) {
+        body.app-shell.page-profile .quick-grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+</style>
 {{-- Sidebar --}}
 {{-- Main content --}}
     <div class="page-content">
+    <div class="student-profile-page">
 
         <div class="profile-head student-page-heading page-header ui-page-header">
             <div>
@@ -55,10 +316,15 @@
                 <div class="card-block ui-card-surface profile-card">
                     <div class="profile-cover" aria-hidden="true"></div>
                     <div class="profile-info">
-                        <div class="avatar-circle" @if($user->avatar_url ?? null) style="background-image:url('{{ $user->avatar_url }}')" @endif>
-                            @unless($user->avatar_url ?? null)
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>
-                            @endunless
+                        <div class="student-avatar-wrap">
+                            <div class="avatar-circle" @if($user->avatar_url ?? null) style="background-image:url('{{ $user->avatar_url }}')" @endif>
+                                @unless($user->avatar_url ?? null)
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>
+                                @endunless
+                            </div>
+                            <button class="student-avatar-edit" type="button" onclick="openEditModal('personal')" title="Change photo" aria-label="Change profile photo">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                            </button>
                         </div>
                         <div class="profile-meta">
                             <h3>{{ $user->name ?? 'Student' }}</h3>
@@ -105,46 +371,39 @@
                 </div>
 
                 {{-- About me card --}}
-                <div class="card-block ui-card-surface">
-                    <div class="ui-card-header">
+                <div class="card-block ui-card-surface student-profile-card student-profile-card--about">
+                    <div class="student-profile-card-head">
                         <h4 class="section-title ui-section-title">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>
                             About me
                         </h4>
                     </div>
+                    <div class="student-profile-card-body">
                     @if($user->about ?? null)
                         <p class="about-text">{{ $user->about }}</p>
+                    @else
+                        <p class="about-text"><button type="button" class="add-link" onclick="openEditModal('about')">Write a short introduction</button> so others can learn about you.</p>
                     @endif
-                    @if($user->date_of_birth ?? null)
-                        <div class="detail-row">
-                            <span class="label">Date of birth</span>
-                            <span class="value">{{ $user->date_of_birth }}</span>
-                        </div>
-                    @endif
-                    @if($user->gender ?? null)
-                        <div class="detail-row">
-                            <span class="label">Gender</span>
-                            <span class="value">{{ $user->gender }}</span>
-                        </div>
-                    @endif
-                    @if($user->education ?? null)
-                        <div class="detail-row">
-                            <span class="label">Education</span>
-                            <span class="value">{{ $user->education }}</span>
-                        </div>
-                    @endif
-                    @if($user->school ?? null)
-                        <div class="detail-row">
-                            <span class="label">School</span>
-                            <span class="value">{{ $user->school }}</span>
-                        </div>
-                    @endif
-                    @if($user->bio ?? null)
-                        <div class="detail-row">
-                            <span class="label">Bio</span>
-                            <span class="value">{{ $user->bio }}</span>
-                        </div>
-                    @endif
+                    <div class="detail-row">
+                        <span class="label">Date of birth</span>
+                        <span class="value">@if($user->date_of_birth ?? null){{ $user->date_of_birth }}@else<button type="button" class="add-link" onclick="openEditModal('about')">Add date of birth</button>@endif</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Gender</span>
+                        <span class="value">@if($user->gender ?? null){{ $user->gender }}@else<button type="button" class="add-link" onclick="openEditModal('about')">Select gender</button>@endif</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Education</span>
+                        <span class="value">@if($user->education ?? null){{ $user->education }}@else<button type="button" class="add-link" onclick="openEditModal('about')">Add education</button>@endif</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">School</span>
+                        <span class="value">@if($user->school ?? null){{ $user->school }}@else<button type="button" class="add-link" onclick="openEditModal('about')">Add school</button>@endif</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Bio</span>
+                        <span class="value">@if($user->bio ?? null){{ $user->bio }}@else<button type="button" class="add-link" onclick="openEditModal('about')">Add your bio or skills</button>@endif</span>
+                    </div>
 
                     {{-- Skills list (from the About Me form) --}}
                     <div class="skills-block">
@@ -169,6 +428,38 @@
                             </div>
                         </div>
                     </div>
+                    </div>
+                </div>
+
+                {{-- Account settings --}}
+                <div class="card-block ui-card-surface student-profile-card student-profile-card--settings">
+                    <div class="student-profile-card-head">
+                        <h4 class="section-title ui-section-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="2" y1="14" x2="6" y2="14"/><line x1="10" y1="8" x2="14" y2="8"/><line x1="18" y1="16" x2="22" y2="16"/></svg>
+                            Settings
+                        </h4>
+                    </div>
+                    <div class="student-profile-card-body">
+                        <div class="settings-row">
+                            <span class="label">Email</span>
+                            <span class="value-text">{{ $user->email ?? '-' }}</span>
+                        </div>
+                        <div class="settings-row">
+                            <span class="label">Password</span>
+                            <span class="value-text">************</span>
+                            <button class="btn-change" type="button" onclick="openEditModal('settings')">Change</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="label">Language</span>
+                            <span class="value-text">{{ $user->language ?? 'English' }}</span>
+                            <button class="btn-change" type="button" onclick="openEditModal('settings')">Change</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="label">Time zone</span>
+                            <span class="value-text">{{ ($user->timezone ?? '') !== '' ? $user->timezone : 'Not set' }}</span>
+                            <button class="btn-change" type="button" onclick="openEditModal('settings')">Change</button>
+                        </div>
+                    </div>
                 </div>
 
             </div>
@@ -179,23 +470,31 @@
                 <div class="quick-grid">
                     <a href="{{ route('courses.enrolled') }}" class="quick-card">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                        Courses Enrolled
+                        <strong>{{ number_format($stats['courses_enrolled'] ?? 0) }}</strong>
+                        <span class="quick-card-label">Courses enrolled</span>
+                        <svg class="quick-card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
                     </a>
                     <a href="{{ route('badges.index') }}" class="quick-card">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 6 7 1-5 5 1.5 7L12 17l-6.5 4L7 14 2 9l7-1 3-6z"/></svg>
-                        Badges Earned
+                        <strong>{{ number_format($stats['badges_earned'] ?? 0) }}</strong>
+                        <span class="quick-card-label">Badges earned</span>
+                        <svg class="quick-card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
                     </a>
                     <a href="{{ route('certificates.index') }}" class="quick-card">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M8 13l-2 8 6-3 6 3-2-8"/></svg>
-                        Certificates
+                        <strong>{{ number_format($stats['certificates'] ?? 0) }}</strong>
+                        <span class="quick-card-label">Certificates</span>
+                        <svg class="quick-card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
                     </a>
                     <a href="{{ route('analytics.index') }}" class="quick-card">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-                        Hours Learned
+                        <strong>{{ number_format($stats['hours_learned'] ?? 0) }}</strong>
+                        <span class="quick-card-label">Lessons completed</span>
+                        <svg class="quick-card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
                     </a>
                 </div>
 
-                <div class="panel-card">
+                <div class="panel-card profile-achievements">
                     <div class="panel-card-head ui-card-header">
                         <h4 class="ui-card-header__title">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10l-1 8a4 4 0 0 1-8 0L7 4z"/></svg>
@@ -212,7 +511,7 @@
                     </div>
                 </div>
 
-                <div class="panel-card">
+                <div class="panel-card profile-activities">
                     <div class="panel-card-head ui-card-header">
                         <h4 class="ui-card-header__title">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
@@ -234,7 +533,7 @@
                     // The student's real ID number stored on the users table.
                     $studentId = $user->student_id ?? '-';
                 @endphp
-                <div class="panel-card">
+                <div class="panel-card profile-student-id">
                     <div class="panel-card-head ui-card-header">
                         <h4 class="ui-card-header__title">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M5.5 17a3 3 0 0 1 5 0"/><path d="M14 9h5M14 13h5"/></svg>
@@ -251,9 +550,8 @@
                 </div>
 
             </div>
-
         </div>
-
+    </div>
     </div>
 
 {{-- ===== EDIT PROFILE MODAL ===== --}}

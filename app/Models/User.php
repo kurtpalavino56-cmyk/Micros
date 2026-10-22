@@ -21,6 +21,20 @@ class User extends Authenticatable
 
     public const ROLE_STUDENT = 3;
 
+    public const ROLE_SUPERADMIN = 4;
+
+    public const ROLE_SUBADMIN = 5;
+
+    public const DEFAULT_SUBADMIN_ADMIN_PAGES = [
+        'dashboard',
+        'profile',
+    ];
+
+    public const FULL_ADMIN_NOTIFICATION_ROLE_IDS = [
+        self::ROLE_ADMIN,
+        self::ROLE_SUPERADMIN,
+    ];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -59,6 +73,7 @@ class User extends Authenticatable
         'profile_completed',
         'notifications_read_at',
         'announcements_read_at',
+        'admin_page_access',
     ];
 
     /**
@@ -91,6 +106,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'notifications_read_at' => 'datetime',
             'announcements_read_at' => 'datetime',
+            'admin_page_access' => 'array',
             'password' => 'hashed',
             'is_active' => 'boolean',
             'profile_completed' => 'boolean',
@@ -120,7 +136,7 @@ class User extends Authenticatable
     public function roleName(): string
     {
         return match ((int) $this->role_id) {
-            self::ROLE_ADMIN => 'admin',
+            self::ROLE_ADMIN, self::ROLE_SUPERADMIN, self::ROLE_SUBADMIN => 'admin',
             self::ROLE_FACULTY => 'faculty',
             default => 'student',
         };
@@ -131,6 +147,14 @@ class User extends Authenticatable
      */
     public function displayRole(): string
     {
+        if ($this->isSuperAdmin()) {
+            return 'Superadmin';
+        }
+
+        if ($this->isSubAdmin()) {
+            return 'Sub-admin';
+        }
+
         if (! empty($this->role_label)) {
             return $this->role_label;
         }
@@ -144,7 +168,28 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return (int) $this->role_id === self::ROLE_ADMIN;
+        return in_array((int) $this->role_id, [
+            self::ROLE_ADMIN,
+            self::ROLE_SUPERADMIN,
+            self::ROLE_SUBADMIN,
+        ], true);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return (int) $this->role_id === self::ROLE_SUPERADMIN;
+    }
+
+    public function isSubAdmin(): bool
+    {
+        return (int) $this->role_id === self::ROLE_SUBADMIN;
+    }
+
+    public function canAccessAdminPage(string $page): bool
+    {
+        return ! $this->isSubAdmin()
+            || in_array($page, self::DEFAULT_SUBADMIN_ADMIN_PAGES, true)
+            || in_array($page, $this->admin_page_access ?? [], true);
     }
 
     public function isFaculty(): bool

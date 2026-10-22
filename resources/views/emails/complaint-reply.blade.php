@@ -44,7 +44,9 @@
             {{-- The admin's reply --}}
             <div style="background:#f7f9ff;border-left:4px solid #0a1f6e;border-radius:8px;
                         padding:16px 18px;margin-bottom:24px;">
-                <div style="font-size:15px;line-height:1.65;color:#13176b;white-space:pre-wrap;">{{ $reply }}</div>
+                <div style="font-size:15px;line-height:1.65;color:#13176b;">
+                    {!! \App\Support\RichTextSanitizer::sanitize($reply) !!}
+                </div>
             </div>
 
             {{-- What they originally sent, for context --}}

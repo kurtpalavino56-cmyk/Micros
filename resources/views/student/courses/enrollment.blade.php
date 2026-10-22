@@ -1,4 +1,10 @@
 {{-- resources/views/student/Course_Enrollment.blade.php --}}
+@push('styles')
+    @vite('resources/css/flash-toast.css')
+@endpush
+@push('scripts')
+    @vite('resources/js/flash-toast.js')
+@endpush
 <x-layout shell="student" page="course-player" :title="(($course->title ?? 'Course') . ' | Upskill')">
 <div class="layout">
 
@@ -40,8 +46,7 @@
 
                 <div class="module-toggle">
                     <div class="module-title-area" id="mta-{{ $mIndex }}"
-                         onclick="showModuleWelcome(@js($module->title),{{ $module->lessons->count() }},{{ $modules->count() }},{{ $module->assessment_count }},{{ $mIndex }},@js($module->description ?? ''))">
-                        <span class="module-num">{{ $module->is_final ? 'Final Exam' : 'Module '.($mIndex + 1).': '.$module->title }}</span>
+                        onclick="showModuleWelcome(@js($module->title),{{ $module->lessons->count() }},{{ $modules->count() }},{{ $module->assessment_count }},{{ $mIndex }})">                        <span class="module-num">{{ $module->is_final ? 'Final Exam' : 'Module '.($mIndex + 1).': '.$module->title }}</span>
                         <span class="module-sub" id="msub-{{ $mIndex }}">{{ $module->is_final ? 'Course completion assessment' : $module->lessons->count().' lessons' }}</span>
                         @if($mIndex > 0)
                         <span class="module-lock-badge" id="mlock-{{ $mIndex }}">
@@ -88,12 +93,12 @@
                         @endphp
                         @foreach($assessmentItems as $assessment)
                             @if($assessment->kind === 'quiz')
-                                <a class="lesson-assessment-link lesson-quiz-link" href="{{ route('quiz.show', $assessment->item->id) }}"
+                                <a class="lesson-assessment-link lesson-quiz-link" data-step-title="{{ $assessment->item->title }}" href="{{ route('quiz.show', $assessment->item->id) }}"
                                    onclick="event.preventDefault(); event.stopPropagation(); openLessonAssessmentFromSidebar({{ $mIndex }}, {{ $lIndex }}, this.href);">
                                     Take lesson quiz: {{ $assessment->item->title }} · pass {{ $assessment->item->passing_score }}%
                                 </a>
                             @else
-                                <a class="lesson-assessment-link lesson-activity-link" href="{{ route('lesson-activities.show', $assessment->item->id) }}"
+                                <a class="lesson-assessment-link lesson-activity-link" data-step-title="{{ $assessment->item->title }}" href="{{ route('lesson-activities.show', $assessment->item->id) }}"
                                    onclick="event.preventDefault(); event.stopPropagation(); openLessonAssessmentFromSidebar({{ $mIndex }}, {{ $lIndex }}, this.href);">
                                     {{ Illuminate\Support\Str::headline($assessment->item->activity_type) }}: {{ $assessment->item->title }}{{ $assessment->item->is_required ? ' · Required' : ' · Optional' }}
                                 </a>
@@ -102,7 +107,7 @@
                     @endforeach
 
                     @if(($module->quiz ?? false) && count($module->quiz->questions ?? []) > 0)
-                    <div class="quiz-row">
+                    <div class="quiz-row" data-step-title="{{ $module->quiz->title }}">
                         <div>
                             <div class="quiz-info-title">{{ $module->quiz->title }}</div>
                             <div class="quiz-info-sub">
@@ -171,19 +176,10 @@
                 </div>
             </div>
 
-            {{-- Info card --}}
-            <div class="welcome-info-card module-description-card">
-                <h4>About this module</h4>
-                <div id="wm-description" class="module-description-content rich-content">
-                    <p>Module description will appear here.</p>
-                </div>
-            </div>
+            <div class="module-description-content rich-content" id="wm-description" aria-label="Module description" hidden></div>
 
             {{-- Continue button --}}
             <div class="welcome-continue-wrap">
-                <button class="btn-welcome-continue" id="btn-resume-course" onclick="resumeCourse()" type="button" hidden>
-                    Resume learning
-                </button>
                 <button class="btn-welcome-continue" onclick="continueFromWelcome()" type="button">
                     Start Learning
                 </button>
@@ -207,7 +203,16 @@
                 <div id="inline-assessment-content"></div>
             </div>
 
-            <button class="btn-lesson-continue" id="btn-lesson-continue" onclick="continueLesson()" type="button">Continue</button>
+            <nav class="lesson-step-nav" aria-label="Lesson navigation">
+                <button class="lesson-step-nav__back" id="lesson-step-back" type="button" onclick="goToPreviousLearningStep()" hidden>
+                    <span class="material-symbols-rounded" aria-hidden="true">arrow_back</span>
+                    <span class="lesson-step-nav__copy"><strong>Back</strong><span id="lesson-back-target"></span></span>
+                </button>
+                <button class="btn-lesson-continue" id="btn-lesson-continue" onclick="continueLesson()" type="button">
+                    <span class="material-symbols-rounded" aria-hidden="true">arrow_forward</span>
+                    <span class="lesson-step-nav__copy"><strong id="lesson-next-action">Next</strong><span id="lesson-next-target">Next learning step</span></span>
+                </button>
+            </nav>
             <p id="lesson-flow-status" role="status" style="display:none;margin:-8px 0 0;color:var(--muted);font-size:14px;text-align:right;"></p>
         </div>
 
@@ -240,6 +245,19 @@
             </article>
         </section>
 
+        <section id="view-final-exam-result" style="display:none;flex-direction:column;gap:20px;" aria-labelledby="final-exam-result-title">
+            <header class="lesson-header-btn"><span id="final-exam-result-title">Final Exam Result</span></header>
+            <article class="final-exam-result">
+                <h2 id="final-exam-result-message"></h2>
+                <p id="final-exam-result-score"></p>
+                <p id="final-exam-result-note" hidden></p>
+                <div class="final-exam-result-actions">
+                    <button class="btn-next-module" id="btn-final-exam-review" type="button" onclick="openCourseReview()">Continue to Course Review</button>
+                    <div id="final-exam-retake-container"></div>
+                </div>
+            </article>
+        </section>
+
         <section id="view-course-recap" style="display:none;flex-direction:column;gap:20px;" aria-labelledby="course-recap-title">
             <header class="lesson-header-btn">
                 <span id="course-recap-title">Course Review</span>
@@ -260,7 +278,7 @@
 
 <dialog class="course-completion-dialog" id="course-completion-dialog" aria-labelledby="course-completion-title">
     <div class="course-completion-content">
-        <div class="course-completion-icon" aria-hidden="true">✓</div>
+        <div class="course-completion-icon" aria-hidden="true">🎉</div>
         <h2 id="course-completion-title">Congratulations!</h2>
         <p id="course-completion-message" role="status"></p>
         <div class="course-completion-actions">
@@ -305,6 +323,7 @@ var COURSE_RECAP = {!! json_encode($courseRecap ?? [], JSON_HEX_TAG | JSON_HEX_A
    STATE
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 var _curLessonEl   = null;
+var _curSidebarStepEl = null;
 var _curModIdx     = 0;
 var _curLesIdx     = 0;
 var _moduleScores  = {};         // { modIdx: correctCount } â€” replaced on retake
@@ -315,17 +334,9 @@ var _lastSentPercent = {{ (int) ($progress_percent ?? 0) }};
 
 // Count total quiz questions on load
 document.addEventListener('DOMContentLoaded', function () {
-    var initialDescription = document.getElementById('wm-description');
-    if (initialDescription) {
-        var firstModuleDescription = (MODULE_DESCRIPTIONS[0] || '').trim();
-        initialDescription.innerHTML = firstModuleDescription
-            ? renderLessonContent(firstModuleDescription)
-            : '<p class="module-description-empty">No module description has been provided yet.</p>';
-    }
-
+    renderModuleDescription(MODULE_DESCRIPTIONS[0] || '');
     restoreProgress(_savedProgress);
     syncCourseEvaluationUnlock();
-    initializeResumeButton();
     initializeCourseEvaluationForm();
     if (_serverProgressPercent >= 100 && HAS_COURSE_REVIEW) {
         reportCourseCompletion(false);
@@ -339,6 +350,7 @@ function hideAllViews() {
     document.getElementById('view-quiz').style.display    = 'none';
     document.getElementById('view-course-evaluation').style.display = 'none';
     document.getElementById('view-final-exam-instructions').style.display = 'none';
+    document.getElementById('view-final-exam-result').style.display = 'none';
     document.getElementById('view-course-recap').style.display = 'none';
     document.querySelector('.lesson-content').classList.remove('welcome-mode');
 
@@ -840,6 +852,35 @@ function startFinalExam() {
     handleQuizClick(_curModIdx);
 }
 
+function showFinalExamResult(modIdx, passed, score, total) {
+    const resultView = document.getElementById('view-final-exam-result');
+    const resultMessage = document.getElementById('final-exam-result-message');
+    const resultScore = document.getElementById('final-exam-result-score');
+    const resultNote = document.getElementById('final-exam-result-note');
+    const reviewButton = document.getElementById('btn-final-exam-review');
+    const retakeButton = document.getElementById('btn-retake');
+    const retakeContainer = document.getElementById('final-exam-retake-container');
+    const hasAttemptsRemaining = !attemptBudget(modIdx).exhausted;
+
+    resultMessage.textContent = passed
+        ? 'Congratulations! You passed the Final Exam.'
+        : 'You did not pass the Final Exam.';
+    resultScore.textContent = 'Your score: ' + score + ' out of ' + total + '.';
+    resultNote.hidden = passed || hasAttemptsRemaining;
+    resultNote.textContent = 'You have used all allowed attempts for the Final Exam.';
+    reviewButton.style.display = passed || COURSE_EVALUATION_ELIGIBLE ? 'flex' : 'none';
+    retakeButton.style.display = 'none';
+
+    if (!passed) {
+        retakeContainer.appendChild(retakeButton);
+        showRetakeButton(modIdx);
+    }
+
+    hideAllViews();
+    resultView.style.display = 'flex';
+    scrollLearningTop();
+}
+
 function openCourseRecap() {
     const dialog = document.getElementById('course-completion-dialog');
     if (dialog && dialog.open) dialog.close();
@@ -958,8 +999,8 @@ function updateProgressBreakdown(breakdown) {
 
 updateProgressBreakdown(_progressBreakdown);
 
-/* â”€â”€ Module Welcome â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-function showModuleWelcome(title, lessonCount, modCount, assessmentCount, modIdx, description) {
+/* Module Welcome */
+function showModuleWelcome(title, lessonCount, modCount, assessmentCount, modIdx) {
     const requestedGroup = document.getElementById('mg-' + modIdx);
     if (requestedGroup && requestedGroup.classList.contains('module-locked')) {
         alert('Complete the previous module and its assessment first.');
@@ -975,84 +1016,19 @@ function showModuleWelcome(title, lessonCount, modCount, assessmentCount, modIdx
     document.getElementById('ws-mod').textContent       = modCount;
     document.getElementById('ws-les').textContent       = lessonCount;
     document.getElementById('ws-assess').textContent    = assessmentCount;
-
-    const descriptionEl = document.getElementById('wm-description');
-    if (descriptionEl) {
-        const html = (description || '').trim();
-        descriptionEl.innerHTML = html
-            ? renderLessonContent(html)
-            : '<p class="module-description-empty">No module description has been provided yet.</p>';
-    }
+    renderModuleDescription(MODULE_DESCRIPTIONS[modIdx] || '');
 
     hideAllViews();
     document.getElementById('view-welcome').style.display = 'flex';
     document.querySelector('.lesson-content').classList.add('welcome-mode');
 }
 
-function initializeResumeButton() {
-    const resumeButton = document.getElementById('btn-resume-course');
-    if (!resumeButton) return;
-    if (COURSE_EVALUATION_ELIGIBLE && !HAS_COURSE_REVIEW) {
-        resumeButton.textContent = 'Resume: Course Review';
-        resumeButton.hidden = false;
-        return;
-    }
-    const nextLesson = Array.from(document.querySelectorAll('.lesson-item')).find(function (lesson) {
-        const group = document.getElementById('mg-' + lesson.dataset.module);
-        return !lesson.classList.contains('lesson-correct') && group && !group.classList.contains('module-locked');
-    });
-    if (nextLesson) {
-        resumeButton.textContent = 'Resume: ' + nextLesson.querySelector('.lesson-title-text').textContent.trim();
-        resumeButton.hidden = false;
-        return;
-    }
+function renderModuleDescription(description) {
+    const descriptionElement = document.getElementById('wm-description');
+    const html = (description || '').trim();
 
-    const moduleGroups = Array.from(document.querySelectorAll('.module-group:not(.course-review-nav)'));
-    const availableQuiz = moduleGroups.find(function (group, index) {
-        const quiz = QUIZ_DATA[index];
-        const score = _moduleScores[index];
-        const passed = quiz && score !== undefined
-            && Math.round((Number(score) / quiz.questions.length) * 100) >= Number(quiz.passingScore || 75);
-        return !passed && group.dataset.finalPassed !== '1' && document.getElementById('qbtn-' + index)
-            && !document.getElementById('qbtn-' + index).classList.contains('locked');
-    });
-    if (availableQuiz) {
-        const index = moduleGroups.indexOf(availableQuiz);
-        resumeButton.textContent = 'Resume: ' + (QUIZ_DATA[index].title || 'Course assessment');
-        resumeButton.hidden = false;
-    } else if (COURSE_EVALUATION_ELIGIBLE && !HAS_COURSE_REVIEW) {
-        resumeButton.textContent = 'Resume: Course Review';
-        resumeButton.hidden = false;
-    }
-}
-
-function resumeCourse() {
-    if (COURSE_EVALUATION_ELIGIBLE && !HAS_COURSE_REVIEW) {
-        openCourseReview();
-        return;
-    }
-    const nextLesson = Array.from(document.querySelectorAll('.lesson-item')).find(function (lesson) {
-        const group = document.getElementById('mg-' + lesson.dataset.module);
-        return !lesson.classList.contains('lesson-correct') && group && !group.classList.contains('module-locked');
-    });
-    if (nextLesson) {
-        nextLesson.click();
-        return;
-    }
-    const moduleGroups = Array.from(document.querySelectorAll('.module-group:not(.course-review-nav)'));
-    const availableQuiz = moduleGroups.find(function (group, index) {
-        const quiz = QUIZ_DATA[index];
-        const score = _moduleScores[index];
-        const passed = quiz && score !== undefined
-            && Math.round((Number(score) / quiz.questions.length) * 100) >= Number(quiz.passingScore || 75);
-        return !passed && group.dataset.finalPassed !== '1' && document.getElementById('qbtn-' + index)
-            && !document.getElementById('qbtn-' + index).classList.contains('locked');
-    });
-    if (availableQuiz) {
-        availableQuiz.querySelector('.quiz-row .btn-quiz-sm').click();
-        return;
-    }
-    if (COURSE_EVALUATION_ELIGIBLE) openCourseReview();
+    descriptionElement.innerHTML = html ? renderLessonContent(html) : '';
+    descriptionElement.hidden = !html;
 }
 
 function continueFromWelcome() {
@@ -1086,7 +1062,7 @@ function checkLessonAccess(modIdx, lessonIdx) {
     return true;
 }
 
-/* â”€â”€ Load lesson helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Load lesson helper  */
 function renderLessonContent(html) {
     var template = document.createElement('template');
     template.innerHTML = html || '';
@@ -1222,11 +1198,12 @@ function _prepLesson(title, desc, duration, modIdx, lesIdx, content) {
 
     var continueButton = document.getElementById('btn-lesson-continue');
     var flowStatus = document.getElementById('lesson-flow-status');
+    updateLessonNextTarget(modIdx, lesIdx);
+    setLessonNextStatus('Next');
     document.querySelector('#view-lesson .lesson-card').style.display = '';
     document.getElementById('inline-assessment-host').hidden = true;
     document.getElementById('inline-assessment-content').innerHTML = '';
     continueButton.disabled = false;
-    continueButton.textContent = 'Continue';
     continueButton.style.display = '';
     flowStatus.style.display = 'none';
     flowStatus.textContent = '';
@@ -1236,6 +1213,76 @@ function escapeHtml(value) {
     var div = document.createElement('div');
     div.textContent = value == null ? '' : String(value);
     return div.innerHTML;
+}
+
+function updateLessonNextTarget(modIdx, lesIdx) {
+    _curSidebarStepEl = document.getElementById('li-' + modIdx + '-' + lesIdx);
+    updateLearningStepNavigation();
+}
+
+function getLearningSteps(moduleIndex) {
+    const module = document.getElementById('mg-' + moduleIndex);
+    return module ? Array.from(module.querySelectorAll('.lesson-item, .lesson-assessment-link, .quiz-row')) : [];
+}
+
+function getLearningStepTitle(step) {
+    if (step.classList.contains('lesson-item')) {
+        return step.querySelector('.lesson-title-text').textContent.trim();
+    }
+    if (step.classList.contains('lesson-assessment-link') || step.classList.contains('quiz-row')) {
+        return step.dataset.stepTitle || step.textContent.trim();
+    }
+    return '';
+}
+
+function getNextLearningStep(step) {
+    const currentModuleIndex = Number(step.closest('.module-group').id.replace('mg-', ''));
+    const steps = getLearningSteps(currentModuleIndex);
+    const nextStep = steps[steps.indexOf(step) + 1];
+    if (nextStep) return nextStep;
+
+    for (let moduleIndex = currentModuleIndex + 1; moduleIndex < document.querySelectorAll('.module-group:not(.course-review-nav)').length; moduleIndex += 1) {
+        const firstStep = getLearningSteps(moduleIndex)[0];
+        if (firstStep) return firstStep;
+    }
+
+    return null;
+}
+
+function updateLearningStepNavigation() {
+    const nextTarget = document.getElementById('lesson-next-target');
+    const backTarget = document.getElementById('lesson-back-target');
+    const backButton = document.getElementById('lesson-step-back');
+    const navigation = document.querySelector('.lesson-step-nav');
+    const currentModule = _curSidebarStepEl && _curSidebarStepEl.closest('.module-group');
+    const steps = currentModule ? getLearningSteps(Number(currentModule.id.replace('mg-', ''))) : [];
+    const currentIndex = steps.indexOf(_curSidebarStepEl);
+    const previousStep = currentIndex > 0 ? steps[currentIndex - 1] : null;
+    const nextStep = _curSidebarStepEl ? getNextLearningStep(_curSidebarStepEl) : null;
+
+    backButton.hidden = !previousStep;
+    navigation.classList.toggle('is-first-lesson', !previousStep);
+    backTarget.textContent = previousStep ? getLearningStepTitle(previousStep) : '';
+    nextTarget.textContent = nextStep ? getLearningStepTitle(nextStep) : 'Course review or completion';
+}
+
+function goToPreviousLearningStep() {
+    if (!_curSidebarStepEl) return;
+    const module = _curSidebarStepEl.closest('.module-group');
+    const steps = getLearningSteps(Number(module.id.replace('mg-', '')));
+    const previousStep = steps[steps.indexOf(_curSidebarStepEl) - 1];
+    if (!previousStep) return;
+
+    if (previousStep.classList.contains('lesson-item') || previousStep.classList.contains('lesson-assessment-link')) {
+        previousStep.click();
+        return;
+    }
+
+    previousStep.querySelector('.btn-quiz-sm')?.click();
+}
+
+function setLessonNextStatus(status) {
+    document.getElementById('lesson-next-action').textContent = status;
 }
 
 function loadVideoLesson(title, desc, duration, modIdx, lesIdx, content) {
@@ -1281,7 +1328,40 @@ function openLessonAssessmentFromSidebar(modIdx, lessonIdx, assessmentUrl) {
     const selectedLesson = document.getElementById('li-' + modIdx + '-' + lessonIdx);
     if (!selectedLesson) return;
     selectedLesson.click();
+    const assessmentLink = Array.from(document.querySelectorAll('.lesson-assessment-link'))
+        .find(function (link) {
+            return link.href === new URL(assessmentUrl, window.location.href).href;
+        });
+    if (assessmentLink) {
+        _curSidebarStepEl = assessmentLink;
+        updateLearningStepNavigation();
+    }
+    showInlineAssessmentLoading(assessmentLink ? getLearningStepTitle(assessmentLink) : 'assessment');
     continueLesson(assessmentUrl);
+}
+
+function showInlineAssessmentLoading(title) {
+    const host = document.getElementById('inline-assessment-host');
+    const content = document.getElementById('inline-assessment-content');
+    const lessonCard = document.querySelector('#view-lesson .lesson-card');
+    const continueButton = document.getElementById('btn-lesson-continue');
+    const flowStatus = document.getElementById('lesson-flow-status');
+    const loading = document.createElement('div');
+
+    loading.className = 'inline-assessment-panel inline-assessment-loading';
+    loading.setAttribute('role', 'status');
+    const spinner = document.createElement('span');
+    spinner.className = 'inline-assessment-loading-spinner';
+    spinner.setAttribute('aria-hidden', 'true');
+    const loadingText = document.createElement('span');
+    loadingText.textContent = 'Loading ' + title + '…';
+    loading.append(spinner, loadingText);
+    content.replaceChildren(loading);
+    lessonCard.style.display = 'none';
+    host.hidden = false;
+    continueButton.style.display = 'none';
+    flowStatus.style.display = 'none';
+    host.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function openInlineAssessment(url) {
@@ -1298,16 +1378,27 @@ async function openInlineAssessment(url) {
 
     try {
         const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
-        const payload = await response.json();
-        if (!response.ok || !payload.html) throw new Error(payload.message || 'Could not load this assessment.');
+        const contentType = response.headers.get('content-type') || '';
+        const payload = contentType.includes('application/json') ? await response.json() : null;
+        if (!response.ok || !payload?.html) {
+            throw new Error(payload?.message || 'Could not load this assessment (HTTP ' + response.status + ').');
+        }
         content.innerHTML = payload.html;
         const panel = content.querySelector('[data-assessment-kind]');
         if (!panel) throw new Error('The assessment could not be displayed.');
+        const assessmentLink = Array.from(document.querySelectorAll('.lesson-assessment-link'))
+            .find(function (link) {
+                return link.href === new URL(url, window.location.href).href;
+            });
+        if (assessmentLink) {
+            _curSidebarStepEl = assessmentLink;
+            updateLearningStepNavigation();
+        }
 
         const canContinue = panel.dataset.canContinue === '1';
-        continueButton.textContent = panel.querySelector('.quiz-cooldown')
+        setLessonNextStatus(panel.querySelector('.quiz-cooldown')
             ? 'Check quiz availability'
-            : (panel.dataset.assessmentKind === 'activity' && panel.querySelector('.is-pending') ? 'Check review status' : 'Continue');
+            : (panel.dataset.assessmentKind === 'activity' && panel.querySelector('.is-pending') ? 'Check review status' : 'Next'));
         continueButton.style.display = canContinue ? '' : 'none';
         continueButton.disabled = false;
         startInlineQuizTimer(panel);
@@ -1317,9 +1408,12 @@ async function openInlineAssessment(url) {
         content.querySelector('[role="alert"]').textContent = error.message || 'Could not load this assessment.';
         lessonCard.style.display = '';
         host.hidden = true;
-        continueButton.textContent = 'Continue';
+        setLessonNextStatus('Next');
         continueButton.style.display = '';
         continueButton.disabled = false;
+        flowStatus.textContent = error.message || 'Could not load this assessment.';
+        flowStatus.style.display = 'block';
+        window.showFlashToast?.(flowStatus.textContent, 'error');
     }
 }
 
@@ -1397,28 +1491,59 @@ async function submitInlineAssessment(form, timeExpired) {
         if (result.progress_breakdown) updateProgressBreakdown(result.progress_breakdown);
         form.remove();
 
-        const feedback = document.createElement('div');
-        feedback.className = 'inline-assessment-feedback';
-        feedback.setAttribute('role', 'status');
+        let feedback = null;
         if (panel.dataset.assessmentKind === 'quiz') {
+            feedback = document.createElement('div');
+            feedback.className = 'inline-assessment-feedback';
+            feedback.setAttribute('role', 'status');
             feedback.classList.add(result.passed ? 'is-success' : 'is-warning');
             feedback.textContent = result.passed
                 ? 'You passed with ' + result.score + '%. ' + (result.lesson_completed ? 'This lesson is complete.' : 'Continue to the next required item.')
                 : 'You scored ' + result.score + '%. You did not meet the passing score; the retake cooldown and attempt limit still apply.';
             panel.dataset.canContinue = result.passed || result.retake_unlock_at ? '1' : '0';
-            continueButton.textContent = result.passed ? 'Continue' : (result.retake_unlock_at ? 'Check quiz availability' : 'Continue');
+            setLessonNextStatus(result.passed ? 'Next' : (result.retake_unlock_at ? 'Check quiz availability' : 'Next'));
         } else if (result.status === 'submitted') {
+            feedback = document.createElement('div');
+            feedback.className = 'inline-assessment-feedback';
+            feedback.setAttribute('role', 'status');
             feedback.classList.add('is-pending');
             feedback.textContent = 'Assignment submitted. It must pass faculty review before this lesson can be completed.';
             panel.dataset.canContinue = '1';
-            continueButton.textContent = 'Check review status';
+            setLessonNextStatus('Check review status');
+            window.showFlashToast('Your assignment was submitted and is waiting for faculty review.', 'info');
         } else {
-            feedback.classList.add('is-success');
-            feedback.textContent = result.lesson_completed
-                ? 'Activity accepted. This lesson is complete.'
-                : 'Activity accepted. Continue to the next required item.';
             panel.dataset.canContinue = '1';
-            continueButton.textContent = 'Continue';
+            setLessonNextStatus('Next');
+            window.showFlashToast(result.message || 'Your activity was submitted.', 'success');
+        }
+        if (feedback) {
+            panel.appendChild(feedback);
+        }
+
+        if (panel.dataset.assessmentKind === 'activity') {
+            const submittedAnswer = document.createElement('section');
+            submittedAnswer.className = 'inline-submitted-answer';
+            const answerHeading = document.createElement('strong');
+            answerHeading.textContent = 'Your submitted answer';
+            submittedAnswer.appendChild(answerHeading);
+
+            if (result.response_text) {
+                const answerText = document.createElement('p');
+                answerText.textContent = result.response_text;
+                submittedAnswer.appendChild(answerText);
+            }
+
+            if (result.file_url) {
+                const fileLink = document.createElement('a');
+                fileLink.href = result.file_url;
+                fileLink.textContent = 'Download submitted file';
+                submittedAnswer.appendChild(fileLink);
+            } else if (result.file_submitted) {
+                const fileNotice = document.createElement('p');
+                fileNotice.textContent = 'A file was included in this submission.';
+                submittedAnswer.appendChild(fileNotice);
+            }
+
         }
         panel.appendChild(feedback);
         continueButton.style.display = panel.dataset.canContinue === '1' ? '' : 'none';
@@ -1451,9 +1576,11 @@ function continueLesson(assessmentUrl) {
     const openedAt = _lessonOpenedAt;
     const startRequest = _lessonStartRequest;
     btn.disabled = true;
-    btn.textContent = 'Continuing...';
+    setLessonNextStatus('Next…');
 
-    const waitMs = Math.max(0, 5500 - (Date.now() - openedAt));
+    const waitMs = lessonEl.classList.contains('lesson-correct')
+        ? 0
+        : Math.max(0, 5500 - (Date.now() - openedAt));
     window.setTimeout(async function () {
         if (_curLessonEl !== lessonEl) return;
 
@@ -1503,7 +1630,7 @@ function continueLesson(assessmentUrl) {
                 return;
             }
 
-            btn.textContent = result.pending_review ? 'Check review status' : 'Continue';
+            setLessonNextStatus(result.pending_review ? 'Check review status' : 'Next');
             btn.disabled = false;
             const flowStatus = document.getElementById('lesson-flow-status');
             flowStatus.textContent = result.message || (result.pending_review
@@ -1512,7 +1639,7 @@ function continueLesson(assessmentUrl) {
             flowStatus.style.display = 'block';
         } catch (error) {
             btn.disabled = false;
-            btn.textContent = 'Continue';
+            setLessonNextStatus('Next');
             alert(error.message || 'Could not continue from this lesson.');
         }
     }, waitMs);
@@ -1618,8 +1745,7 @@ function advanceAfterLesson() {
         lesCount,
         document.querySelectorAll('.module-group:not(.course-review-nav)').length,
         Number(group?.dataset.assessments || 0),
-        _curModIdx,
-        ''
+        _curModIdx
     );
     scrollLearningTop();
 }
@@ -1680,9 +1806,19 @@ function showQuizView(modIdx, viewOnly, retakeOnly, serverStarted) {
     viewOnly = viewOnly || false;
     retakeOnly = retakeOnly || false;
     if (!viewOnly && !serverStarted) {
+        const container = document.getElementById('quiz-questions-container');
+        const submitButton = document.getElementById('btn-quiz-submit');
+        document.getElementById('quiz-score-result').style.display = 'none';
+        document.getElementById('btn-retake').style.display = 'none';
+        document.getElementById('qh-title').textContent = data.title;
+        container.textContent = 'Loading quiz…';
+        submitButton.style.display = 'none';
+        hideAllViews();
+        document.getElementById('view-quiz').style.display = 'flex';
         startModuleQuiz(modIdx).then(function () {
             showQuizView(modIdx, false, retakeOnly, true);
         }).catch(function (message) {
+            container.textContent = message || 'Could not start this quiz. Reload the course and try again.';
             alert(message || 'Could not start this quiz. Reload the course and try again.');
         });
         return;
@@ -1994,10 +2130,8 @@ function applyServerQuizSubmission(modIdx, submission) {
             moduleGroup.dataset.finalPassed = '1';
             checkModuleComplete(modIdx);
             syncCourseEvaluationUnlock();
-            if (COURSE_EVALUATION_ELIGIBLE) {
-                openCourseReview();
-                return;
-            }
+            showFinalExamResult(modIdx, true, correctCount, data.questions.length);
+            return;
         }
         if (hasNextMod) {
             unlockModule(modIdx + 1);
@@ -2018,6 +2152,10 @@ function applyServerQuizSubmission(modIdx, submission) {
         }
         if (!attemptBudget(modIdx).exhausted) startRetakeCooldown(modIdx);
         showRetakeButton(modIdx);
+        const moduleGroup = document.getElementById('mg-' + modIdx);
+        if (moduleGroup && moduleGroup.dataset.finalExam === '1') {
+            showFinalExamResult(modIdx, false, correctCount, data.questions.length);
+        }
     }
 }
 
@@ -2113,6 +2251,9 @@ function attemptBudget(modIdx) {
 
 function showRetakeButton(modIdx) {
     const btn = document.getElementById('btn-retake');
+    const retakeLabel = document.getElementById('mg-' + modIdx)?.dataset.finalExam === '1'
+        ? 'Retake Final Exam'
+        : 'Retake Quiz';
     if (_cooldownTimerId) { clearInterval(_cooldownTimerId); _cooldownTimerId = null; }
 
     // Attempts spent â†’ no retake, no countdown. Faculty allowed a fixed
@@ -2135,12 +2276,12 @@ function showRetakeButton(modIdx) {
         if (remaining > 0) {
             btn.classList.add('cooldown');
             btn.disabled  = true;
-            btn.innerHTML = 'Retake Quiz'
+             btn.innerHTML = retakeLabel;
                           + '<span class="cooldown-timer">Available in ' + formatCooldown(remaining) + '</span>';
         } else {
             btn.classList.remove('cooldown');
             btn.disabled  = false;
-            btn.innerHTML = 'Retake Quiz';
+            btn.innerHTML = retakeLabel
             if (_cooldownTimerId) { clearInterval(_cooldownTimerId); _cooldownTimerId = null; }
         }
     }

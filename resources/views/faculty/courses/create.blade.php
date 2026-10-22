@@ -15,7 +15,6 @@
         'levels'                => ['Beginner', 'Intermediate', 'Advanced'],
         'skillGroups'           => ['Field' => ['Skill', ...], ...],
         'skillOptions'          => [...],
-        'competencyUnitOptions' => $units,   // ->id, ->title
         'prereqOptions'         => $courses, // ->id, ->title, ->category
         'editing'               => false,
         'course'                => null,
@@ -164,36 +163,13 @@
     .competency-remove{flex:0 0 auto;display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;border:0;border-radius:5px;background:transparent;color:var(--f-muted);font-size:17px;line-height:1;padding:0;cursor:pointer;}
     .competency-remove:hover{background:#e4e7ec;color:var(--f-strong);}
 
-    /* ── Learning outcomes ───────────────────────────────────── */
-    .outcome-head,.learning-outcome-row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 38px;gap:10px;align-items:center;}
-    .outcome-head{margin-bottom:6px;font-size:12px;font-weight:600;color:var(--f-muted);}
-    .learning-outcome-row{margin-bottom:10px;}
-    .learning-outcome-row .competency-remove{width:38px;height:38px;border:1px solid var(--f-border-soft);border-radius:var(--f-radius);background:#fff;}
-    .learning-outcome-row .competency-remove:hover{background:#fef3f2;border-color:#fecdca;color:var(--f-danger);}
-    #learning-outcomes-list:empty+.outcome-empty{display:block;}
-    .outcome-empty{display:none;padding:14px 16px;border:1px dashed var(--f-border);border-radius:var(--f-radius);font-size:13px;color:var(--f-muted);}
 
     /* ── Thumbnail picker ────────────────────────────────────── */
     .file-picker{display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:100%;}
-    .file-type-select{
-        min-height:42px;width:auto;min-width:0;padding:9px 30px 9px 12px;
-        border:1px solid var(--f-border);border-radius:var(--f-radius);background-color:#fff;color:var(--f-text);
-        font-family:Inter,Arial,sans-serif;font-size:13px;font-weight:500;cursor:pointer;
-        -webkit-appearance:none;-moz-appearance:none;appearance:none;
-        background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-        background-repeat:no-repeat;background-position:right 10px center;background-size:11px 11px;
-    }
-    .file-type-select::-ms-expand{display:none;}
-    .file-type-select:focus{outline:none;border-color:#3448a5;box-shadow:0 0 0 3px var(--f-focus);}
     .file-row{display:flex;align-items:center;min-height:42px;max-width:360px;border:1px solid var(--f-border);border-radius:var(--f-radius);overflow:hidden;cursor:pointer;}
     .file-row .file-btn{align-self:stretch;display:flex;align-items:center;padding:0 14px;background:#f2f4f7;border-right:1px solid var(--f-border);font-size:13px;font-weight:600;color:var(--f-label);white-space:nowrap;}
     .file-row .file-name{padding:0 14px;font-size:13px;color:var(--f-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .file-row input[type=file]{display:none;}
-    /* pointer-events:none is what actually blocks the click: a disabled
-       <input> inside a <label> still lets it through in some browsers. */
-    .file-row.is-disabled{cursor:not-allowed;pointer-events:none;background:var(--f-surface-alt);}
-    .file-row.is-disabled .file-btn{color:#98a2b3;}
-    .file-row.is-disabled .file-name{color:#98a2b3;}
     .thumb-current{margin-top:12px;font-size:13px;color:var(--f-muted);}
     .thumb-current strong{color:var(--f-text);font-weight:600;}
 
@@ -305,11 +281,6 @@
     @media (max-width:900px){
         .main{padding:24px 20px 20px;}
         .field-grid,.field-grid.cols-3{grid-template-columns:minmax(0,1fr);gap:18px;}
-        .outcome-head{display:none;}
-        .learning-outcome-row{grid-template-columns:minmax(0,1fr) 38px;}
-        .learning-outcome-row .select-wrap{grid-column:1;grid-row:2;}
-        .learning-outcome-row .competency-remove{grid-column:2;grid-row:1;}
-        .learning-outcome-row{padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--f-border-soft);}
     }
     @media (max-width:560px){
         .main{padding:20px 14px 16px;}
@@ -324,7 +295,7 @@
         .form-actions{flex-direction:column;bottom:10px;}
         .form-actions .btn-save,.form-actions .btn-cancel{width:100%;}
         .file-picker{align-items:stretch;}
-        .file-type-select,.file-row{width:100%;max-width:none;}
+        .file-row{width:100%;max-width:none;}
         .related-pop{padding:16px;border-radius:12px;}
     }
     @media (prefers-reduced-motion:reduce){
@@ -394,19 +365,20 @@
                     $savedCompetencies = old('competencies', isset($course) && $course ? ($course->skills ?? []) : []);
                     $savedCompetencies = is_array($savedCompetencies) ? $savedCompetencies : [];
 
-                    $savedOutcomes = old('learning_outcomes');
-                    if (! is_array($savedOutcomes)) {
-                        $savedOutcomes = [];
-                        if (isset($course) && $course) {
-                            $savedOutcomes = $course->learningOutcomes
-                                ->map(fn ($outcome) => ['description' => $outcome->description, 'competency_unit_id' => $outcome->competency_unit_id])
-                                ->all();
-                            if ($savedOutcomes === []) {
-                                $savedOutcomes = collect($course->objectives ?? [])
-                                    ->map(fn ($objective) => ['description' => $objective, 'competency_unit_id' => null])
-                                    ->all();
-                            }
+                    $savedOutcomes = old('learning_outcomes_content');
+                    if (! is_string($savedOutcomes)) {
+                        $outcomeDescriptions = isset($course) && $course
+                            ? $course->learningOutcomes->pluck('description')->all()
+                            : [];
+                        if ($outcomeDescriptions === [] && isset($course) && $course) {
+                            $outcomeDescriptions = $course->objectives ?? [];
                         }
+                     
+                        $savedOutcomes = count($outcomeDescriptions) === 1
+                            ? (string) $outcomeDescriptions[0]
+                            : ($outcomeDescriptions === []
+                                ? ''
+                                : '<ul><li>'.implode('</li><li>', array_map('e', $outcomeDescriptions)).'</li></ul>');
                     }
 
                     $selectedPrereqs = collect(old('prerequisite_ids', $course->prerequisite_ids ?? []))
@@ -471,7 +443,6 @@
                                       maxlength="120" rows="2" required
                                       placeholder="A brief plain-text summary shown on course cards.">{{ old('short_description', $course->short_description ?? '') }}</textarea>
                             <div class="field-foot">
-                                <small class="field-hint">Appears on course cards and near the course title on the public page.</small>
                                 <span class="field-count" id="shortSummaryCount" aria-live="polite">0 / 120</span>
                             </div>
                         </div>
@@ -490,22 +461,15 @@
                 <section class="form-card">
                     <div class="form-card-head">
                         <h3>Course image</h3>
-                        <p>Optional. Choose the image type first, then pick the file.</p>
+                        <p>Optional. Accepted formats: PNG, JPG/JPEG, and WEBP.</p>
                     </div>
                     <div class="form-card-body">
                         {{-- Uploaded by FacultyController::storeThumbnail() into public/uploads/thumbnails --}}
                         <div class="file-picker">
-                            <select class="file-type-select" id="thumbType" onchange="thumbTypeChanged()" aria-label="Image file type">
-                                <option value="">Select file type...</option>
-                                <option value="JPG">JPG / JPEG</option>
-                                <option value="PNG">PNG</option>
-                                <option value="WEBP">WEBP</option>
-                                <option value="GIF">GIF</option>
-                            </select>
-                            <label class="file-row is-disabled" id="thumbRow">
+                            <label class="file-row">
                                 <span class="file-btn">Choose file</span>
-                                <span class="file-name" id="thumbName">Select a file type first</span>
-                                <input type="file" name="thumbnail" id="thumbInput" disabled
+                                <span class="file-name" id="thumbName">No file chosen</span>
+                                <input type="file" name="thumbnail" id="thumbInput" accept=".png,.jpg,.jpeg,.webp"
                                        onchange="thumbFileChanged(this)">
                             </label>
                         </div>
@@ -643,42 +607,17 @@
                     <div class="form-card-body">
 
                         <div class="field">
-                            <span class="label">Measurable learning outcomes</span>
-
-                            <div class="outcome-head" aria-hidden="true">
-                                <span>Outcome</span>
-                                <span>Competency unit</span>
-                                <span></span>
-                            </div>
-                            <div id="learning-outcomes-list">
-                                @foreach ($savedOutcomes as $outcomeIndex => $outcome)
-                                    <div class="learning-outcome-row">
-                                        <input class="input" name="learning_outcomes[{{ $outcomeIndex }}][description]"
-                                               value="{{ $outcome['description'] ?? '' }}" maxlength="2000"
-                                               aria-label="Learning outcome"
-                                               placeholder="Observable outcome (e.g. Build a responsive page)" required>
-                                        <div class="select-wrap">
-                                            <select class="select" name="learning_outcomes[{{ $outcomeIndex }}][competency_unit_id]" aria-label="Competency unit">
-                                                <option value="">No competency mapping</option>
-                                                @foreach ($competencyUnitOptions ?? [] as $unit)
-                                                    <option value="{{ $unit->id }}" @selected((string) ($outcome['competency_unit_id'] ?? '') === (string) $unit->id)>{{ $unit->title }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <button class="competency-remove" type="button" aria-label="Remove outcome" onclick="this.closest('.learning-outcome-row').remove()">&times;</button>
-                                    </div>
-                                @endforeach
-                            </div>
-                            <div class="outcome-empty">No outcomes yet. Add the first one below.</div>
-                            <button class="competency-add btn-ghost" type="button" id="add-learning-outcome">Add outcome</button>
-                            <small class="field-hint">Write outcomes as observable actions. Map each to a competency unit when one applies. Outcomes appear to students and in credential records.</small>
+                            <label class="label" for="learning-outcomes-editor">Measurable learning outcomes</label>
+                            @include('components.rich-text-editor', [
+                                'name' => 'learning_outcomes_content',
+                                'id' => 'learning-outcomes-editor',
+                                'value' => $savedOutcomes,
+                                'placeholder' => 'Describe what learners will be able to do after completing this micro-credential.',
+                            ])
+                            <small class="field-hint">Describe observable actions. These outcomes appear to students and in credential records.</small>
                         </div>
 
                         <div class="field field-grid">
-                            <div>
-                                <label for="targetLearners">Intended learners</label>
-                                <textarea class="textarea" id="targetLearners" name="target_learners" rows="3" placeholder="Who should take this micro-credential?">{{ old('target_learners', $course->target_learners ?? '') }}</textarea>
-                            </div>
                             <div>
                                 <label for="deliveryMode">Delivery mode</label>
                                 <div class="select-wrap">
@@ -689,26 +628,29 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                <div style="margin-top:20px;">
-                                    <label for="estimatedLearningHours">Estimated learner effort (hours)</label>
-                                    <input class="input" type="number" name="learning_hours" id="estimatedLearningHours"
-                                           min="1" max="10000" value="{{ $learningHours }}" placeholder="e.g. 24"
-                                           oninput="document.getElementById('legacyCourseDuration').value = this.value">
-                                    <small class="field-hint">Total time a learner is expected to spend on the course.</small>
-                                </div>
+                            </div>
+                            <div>
+                                <label for="estimatedLearningHours">Estimated learner effort (hours)</label>
+                                <input class="input" type="number" name="learning_hours" id="estimatedLearningHours"
+                                       min="1" max="10000" value="{{ $learningHours }}" placeholder="e.g. 24"
+                                       oninput="document.getElementById('legacyCourseDuration').value = this.value">
                             </div>
                         </div>
 
-                        <div class="field field-grid">
-                            <div>
-                                <label for="assessmentStrategy">Assessment strategy</label>
-                                <textarea class="textarea" id="assessmentStrategy" name="assessment_strategy" rows="3" placeholder="Describe formative and summative assessment.">{{ old('assessment_strategy', $course->assessment_strategy ?? '') }}</textarea>
-                                <small class="field-hint">Pass criteria are set on each quiz or activity.</small>
-                            </div>
-                            <div>
-                                <label for="gradingRubric">Grading rubric / mastery standard</label>
-                                <textarea class="textarea" id="gradingRubric" name="grading_rubric" rows="3" placeholder="State the criteria and threshold used to judge mastery.">{{ old('grading_rubric', $course->grading_rubric ?? '') }}</textarea>
-                            </div>
+                        <div class="field">
+                            <label for="targetLearners">Intended learners</label>
+                            <textarea class="textarea" id="targetLearners" name="target_learners" rows="3" placeholder="Who should take this micro-credential?">{{ old('target_learners', $course->target_learners ?? '') }}</textarea>
+                        </div>
+
+                        <div class="field">
+                            <label for="assessmentStrategy">Assessment strategy</label>
+                            <textarea class="textarea" id="assessmentStrategy" name="assessment_strategy" rows="3" placeholder="Describe formative and summative assessment.">{{ old('assessment_strategy', $course->assessment_strategy ?? '') }}</textarea>
+                            <small class="field-hint">Pass criteria are set on each quiz or activity.</small>
+                        </div>
+
+                        <div class="field">
+                            <label for="gradingRubric">Grading rubric / mastery standard</label>
+                            <textarea class="textarea" id="gradingRubric" name="grading_rubric" rows="3" placeholder="State the criteria and threshold used to judge mastery.">{{ old('grading_rubric', $course->grading_rubric ?? '') }}</textarea>
                         </div>
                     </div>
                 </section>
@@ -1072,7 +1014,7 @@
         } catch (e) {}
 
         // Only plain single-value fields are drafted. Array fields
-        // (competencies[], related_skills[], learning_outcomes[...]) and hidden
+        // (competencies[], related_skills[]) and hidden
         // inputs are skipped so restoring cannot overwrite checkbox values.
         function isDraftable(f) {
             if (!f.name || f.name.indexOf('[') !== -1) return false;
@@ -1159,114 +1101,18 @@
 </script>
 
 <script>
-    // Thumbnail picker: the file input stays locked until an image type is
-    // chosen, then only accepts that extension.
-    var THUMB_TYPES = {
-        JPG:  ['jpg', 'jpeg'],
-        PNG:  ['png'],
-        WEBP: ['webp'],
-        GIF:  ['gif']
-    };
-
-    function thumbTypeChanged() {
-        var sel   = document.getElementById('thumbType');
-        var input = document.getElementById('thumbInput');
-        var row   = document.getElementById('thumbRow');
-        var span  = document.getElementById('thumbName');
-        if (!sel || !input || !row || !span) return;
-
-        var exts = THUMB_TYPES[sel.value];
-
-        // Switching type always clears the choice, so a PNG picked under
-        // "PNG" cannot survive a switch to "GIF".
-        input.value = '';
-
-        if (!exts) {
-            input.disabled = true;
-            input.removeAttribute('accept');
-            row.classList.add('is-disabled');
-            span.textContent = 'Select a file type first';
-            return;
-        }
-
-        input.disabled = false;
-        input.setAttribute('accept', exts.map(function (e) { return '.' + e; }).join(','));
-        row.classList.remove('is-disabled');
-        span.textContent = 'No file chosen';
-    }
-
     function thumbFileChanged(input) {
         var span = document.getElementById('thumbName');
-        var sel  = document.getElementById('thumbType');
         if (!span) return;
 
         if (!input.files || !input.files.length) {
-            span.textContent = sel && sel.value ? 'No file chosen' : 'Select a file type first';
-            return;
-        }
-
-        var name = input.files[0].name;
-        var ext  = (name.split('.').pop() || '').toLowerCase();
-        var exts = sel ? THUMB_TYPES[sel.value] : null;
-
-        if (exts && exts.indexOf(ext) === -1) {
-            alert('"' + name + '" is not a ' + sel.options[sel.selectedIndex].text + ' file.\n\n'
-                + 'Choose a file ending in ' + exts.map(function (e) { return '.' + e; }).join(' or ')
-                + ', or change the file type above.');
-            input.value = '';
             span.textContent = 'No file chosen';
             return;
         }
 
-        span.textContent = name;
+        span.textContent = input.files[0].name;
     }
 </script>
 
-<script>
-(() => {
-    const addButton = document.getElementById('add-learning-outcome');
-    const list = document.getElementById('learning-outcomes-list');
-    const competencyUnits = @json(($competencyUnitOptions ?? collect())->map(fn ($unit) => ['id' => $unit->id, 'title' => $unit->title])->values());
-    if (!addButton || !list) return;
-
-    addButton.addEventListener('click', () => {
-        const indexes = Array.from(list.querySelectorAll('input[name$="[description]"]'))
-            .map((input) => Number((input.name.match(/learning_outcomes\[(\d+)\]/) || [])[1] || -1));
-        const index = Math.max(-1, ...indexes) + 1;
-
-        const row = document.createElement('div');
-        row.className = 'learning-outcome-row';
-
-        const description = document.createElement('input');
-        description.className = 'input';
-        description.name = `learning_outcomes[${index}][description]`;
-        description.maxLength = 2000;
-        description.required = true;
-        description.setAttribute('aria-label', 'Learning outcome');
-        description.placeholder = 'Observable outcome (e.g. Build a responsive page)';
-
-        const wrap = document.createElement('div');
-        wrap.className = 'select-wrap';
-        const select = document.createElement('select');
-        select.className = 'select';
-        select.name = `learning_outcomes[${index}][competency_unit_id]`;
-        select.setAttribute('aria-label', 'Competency unit');
-        select.add(new Option('No competency mapping', ''));
-        competencyUnits.forEach((unit) => select.add(new Option(unit.title, unit.id)));
-        wrap.appendChild(select);
-
-        const remove = document.createElement('button');
-        remove.className = 'competency-remove';
-        remove.type = 'button';
-        remove.setAttribute('aria-label', 'Remove outcome');
-        remove.textContent = '\u00d7';
-        remove.addEventListener('click', () => row.remove());
-
-        row.append(description, wrap, remove);
-        list.appendChild(row);
-        description.focus();
-    });
-})();
-</script>
 </body>
 </html>

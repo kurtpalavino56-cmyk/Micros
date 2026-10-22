@@ -123,13 +123,14 @@ class RecordAuditActions
 
     private function isSupportedRole(User $user): bool
     {
-        return in_array((int) $user->role_id, [User::ROLE_ADMIN, User::ROLE_FACULTY, User::ROLE_STUDENT], true);
+        return $user->isAdmin()
+            || in_array((int) $user->role_id, [User::ROLE_FACULTY, User::ROLE_STUDENT], true);
     }
 
     private function roleKey(User $user): string
     {
         return match ((int) $user->role_id) {
-            User::ROLE_ADMIN => 'admin',
+            User::ROLE_ADMIN, User::ROLE_SUPERADMIN, User::ROLE_SUBADMIN => 'admin',
             User::ROLE_FACULTY => 'faculty',
             default => 'student',
         };

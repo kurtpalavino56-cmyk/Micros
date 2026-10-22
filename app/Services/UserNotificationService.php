@@ -43,7 +43,7 @@ class UserNotificationService
     }
 
     public function createForRole(
-        int $roleId,
+        int|array $roleIds,
         string $title,
         string $message,
         string $type,
@@ -51,7 +51,7 @@ class UserNotificationService
         ?int $entityId = null,
     ): void {
         User::query()
-            ->where('role_id', $roleId)
+            ->whereIn('role_id', (array) $roleIds)
             ->where('is_active', true)
             ->select('id')
             ->chunkById(500, function (Collection $users) use ($title, $message, $type, $entityType, $entityId): void {
@@ -101,6 +101,7 @@ class UserNotificationService
 
         $stored = $user
             ? $storedRecords->map(fn (Notification $notification): object => (object) [
+                'id' => $notification->id,
                 'title' => $notification->title,
                 'message' => $notification->message,
                 'time' => $notification->created_at?->diffForHumans() ?? '',
@@ -120,7 +121,14 @@ class UserNotificationService
 
         return $this->announcementFeed($user)
             ->concat($stored)
-            ->sortByDesc(fn (object $notification): int => $notification->occurred_at?->getTimestamp() ?? 0)
+            ->sort(function (object $first, object $second): int {
+                if ($first->unread !== $second->unread) {
+                    return $first->unread ? -1 : 1;
+                }
+
+                return ($second->occurred_at?->getTimestamp() ?? 0)
+                    <=> ($first->occurred_at?->getTimestamp() ?? 0);
+            })
             ->values();
     }
 
@@ -196,7 +204,7 @@ class UserNotificationService
 
         if ($entityType === 'course' && $course) {
             return match ((int) $user->role_id) {
-                User::ROLE_ADMIN => route('admin.courses.show', $entityId),
+                User::ROLE_ADMIN, User::ROLE_SUPERADMIN, User::ROLE_SUBADMIN => route('admin.courses.show', $entityId),
                 User::ROLE_FACULTY => route('faculty.courses.manage', $entityId),
                 default => route('courses.show', $entityId),
             };
@@ -204,7 +212,7 @@ class UserNotificationService
 
         if ($entityType === 'enrollment' && $enrollment) {
             return match ((int) $user->role_id) {
-                User::ROLE_ADMIN => route('admin.enrollments.show', $enrollment->id),
+                User::ROLE_ADMIN, User::ROLE_SUPERADMIN, User::ROLE_SUBADMIN => route('admin.enrollments.show', $enrollment->id),
                 User::ROLE_FACULTY => $enrollment->completion_status === 'awaiting_faculty_verification'
                     ? route('faculty.students.course', $enrollment->course_id)
                     : route('faculty.students.course', ['id' => $enrollment->course_id, 'filter' => 'all']),
@@ -225,7 +233,7 @@ class UserNotificationService
 
         if ($entityType === 'badge' && $entityId) {
             return match ((int) $user->role_id) {
-                User::ROLE_ADMIN => route('admin.certificates', ['type' => 'badges']).'#badge-'.$entityId,
+                User::ROLE_ADMIN, User::ROLE_SUPERADMIN, User::ROLE_SUBADMIN => route('admin.certificates', ['type' => 'badges']).'#badge-'.$entityId,
                 User::ROLE_FACULTY => route('faculty.students'),
                 default => route('badges.index').'#badge-'.$entityId,
             };
@@ -233,7 +241,7 @@ class UserNotificationService
 
         if ($entityType === 'certificate' && $certificate) {
             return match ((int) $user->role_id) {
-                User::ROLE_ADMIN => route('admin.certificates').'#certificate-'.$certificate->id,
+                User::ROLE_ADMIN, User::ROLE_SUPERADMIN, User::ROLE_SUBADMIN => route('admin.certificates').'#certificate-'.$certificate->id,
                 User::ROLE_FACULTY => route('faculty.students'),
                 default => route('certificates.view', $certificate->serial),
             };

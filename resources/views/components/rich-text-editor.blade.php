@@ -72,6 +72,24 @@
         margin: 0 0 9px;
     }
 
+    .up-ckeditor-wrapper .ck-content ul,
+    .up-ckeditor-wrapper .ck-content ol {
+        margin: 0.75em 0;
+        padding-left: 2em;
+    }
+
+    .up-ckeditor-wrapper .ck-content ul {
+        list-style: disc;
+    }
+
+    .up-ckeditor-wrapper .ck-content ol {
+        list-style: decimal;
+    }
+
+    .up-ckeditor-wrapper .ck-content li {
+        padding-left: 0.2em;
+    }
+    
     .up-ckeditor-wrapper .ck-content h1 {
         margin: 18px 0 9px;
         font-size: 24px;

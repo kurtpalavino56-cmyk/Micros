@@ -51,12 +51,14 @@
             <a class="auth-notifications-all" href="{{ route('notifications.index') }}">View all notifications</a>
         </div>
         </div>
-        <a href="{{ route($inboxRoute) }}" class="auth-topbar-icon auth-topbar-inbox {{ request()->routeIs('admin.complaints*', 'faculty.inbox', 'inbox.index') ? 'is-active' : '' }}" title="Inbox" aria-label="Inbox">
-            <span class="material-symbols-rounded" aria-hidden="true">mail</span>
-            @if (!$isAdmin && ($unreadInboxCount ?? 0) > 0)
-                <span class="auth-topbar-badge">{{ $unreadInboxCount }}</span>
-            @endif
-        </a>
+        @if (!$authUser?->isSubAdmin() || $authUser->canAccessAdminPage('complaints'))
+            <a href="{{ route($inboxRoute) }}" class="auth-topbar-icon auth-topbar-inbox {{ request()->routeIs('admin.complaints*', 'faculty.inbox', 'inbox.index') ? 'is-active' : '' }}" title="Inbox" aria-label="Inbox">
+                <span class="material-symbols-rounded" aria-hidden="true">mail</span>
+                @if (!$isAdmin && ($unreadInboxCount ?? 0) > 0)
+                    <span class="auth-topbar-badge">{{ $unreadInboxCount }}</span>
+                @endif
+            </a>
+        @endif
 
         <div class="auth-profile" id="auth-profile-menu">
             <button type="button" class="auth-profile-trigger" id="auth-profile-trigger" aria-haspopup="true" aria-expanded="false" title="Account menu">
@@ -67,7 +69,7 @@
                 </span>
                 <span class="auth-profile-copy">
                     <span class="auth-profile-name">{{ $user->name ?? 'Account' }}</span>
-                    <span class="auth-profile-role">{{ $isAdmin ? 'Administrator' : ($isFaculty ? 'Faculty' : 'Student') }}</span>
+                    <span class="auth-profile-role">{{ $authUser?->displayRole() ?? 'Student' }}</span>
                 </span>
                 <span class="auth-profile-chevron material-symbols-rounded" aria-hidden="true">expand_more</span>
             </button>
@@ -76,7 +78,9 @@
                     <strong>{{ $user->name ?? 'Account' }}</strong>
                     <span>{{ $user->email ?? '' }}</span>
                 </div>
-                <a href="{{ route($profileRoute) }}" role="menuitem">Profile</a>
+                @if (!$authUser?->isSubAdmin() || $authUser->canAccessAdminPage('profile'))
+                    <a href="{{ route($profileRoute) }}" role="menuitem">Profile</a>
+                @endif
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
                     <button type="submit" role="menuitem">Logout</button>
@@ -86,12 +90,13 @@
     </div>
 </header>
 
+@include('components.announcement-notification-modal')
+
 <style>
     .auth-topbar,.auth-topbar *{box-sizing:border-box;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-style:normal;}
     .auth-topbar .material-symbols-rounded{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;display:inline-block;line-height:1;text-transform:none;letter-spacing:normal;white-space:nowrap;direction:ltr;font-feature-settings:"liga";-webkit-font-smoothing:antialiased;}
     .auth-topbar{--navy:#0d1b6e;--gold:#dba617;--gold-light:#ffd84a;background:linear-gradient(115deg, #001B33 0%,#071550 0%,#0d1b6e 58%,#102b83 100%);display:flex;align-items:center;justify-content:space-between;padding:12px 28px;gap:20px;position:sticky;top:0;z-index:1000;border-bottom:1px solid rgba(255,255,255,.1);box-shadow:0 8px 24px rgba(7,21,80,.2);}
-    .auth-topbar.admin-auth-topbar{--navy:#2b373e;--gold:#f9c21b;--gold-light:#f9c21b;background:#2b373e;border-bottom:1px solid #202a30;box-shadow:0 8px 24px rgba(0,0,0,.18);}
-    .admin-auth-topbar .auth-topbar-brand strong>span:first-child{color:#f9c21b;}
+    .auth-topbar.admin-auth-topbar{--navy:#1C3552;--gold:#f9c21b;--gold-light:#f9c21b;background:#1C3552;border-bottom:1px solid #152a42;box-shadow:0 8px 24px rgba(0,0,0,.18);}    .admin-auth-topbar .auth-topbar-brand strong>span:first-child{color:#f9c21b;}
     .admin-auth-topbar .admin-brand-skill{color:#fff;}
     .admin-auth-topbar .auth-topbar-inbox.is-active{color:var(--gold-light);background:rgba(255,255,255,.12);}
     .auth-topbar.faculty-auth-topbar{--navy:#061a45;--gold:#9a7000;--gold-light:#fff;background:#f4c430;border-bottom:1px solid #ddb51d;box-shadow:0 6px 18px rgba(92,67,0,.16);}
@@ -132,8 +137,7 @@
     .auth-notifications-head{display:flex;align-items:baseline;justify-content:space-between;padding:14px 16px 11px;border-bottom:1px solid #eef0f5;}
     .auth-notifications-head strong{font-size:15px;}.auth-notifications-head span{font-size:11px;color:#6b7280;}
     .auth-notifications-list{max-height:300px;overflow:auto;padding:4px 0;}
-    .auth-notifications-item{display:block;padding:11px 16px;border-bottom:1px solid #f0f2f6;color:inherit;text-decoration:none;}.auth-notifications-item:hover{background:#f7f9ff;}
-    .auth-notifications-item strong{display:block;font-size:12px;}.auth-notifications-item p{margin:3px 0 0;color:#5f6b85;font-size:11px;line-height:1.4;}.auth-notifications-item time{display:block;margin-top:4px;color:#9aa3b5;font-size:10px;}.auth-notifications-item.is-unread{border-left:3px solid var(--gold);padding-left:13px;}
+    .auth-notifications-item{display:block;padding:11px 16px;border-bottom:1px solid #f0f2f6;color:inherit;text-decoration:none;}.auth-notifications-item:hover{background:#f7f9ff;}.auth-notifications-item[data-notification-type="announcement"]{cursor:pointer;}    .auth-notifications-item strong{display:block;font-size:12px;}.auth-notifications-item p{margin:3px 0 0;color:#5f6b85;font-size:11px;line-height:1.4;}.auth-notifications-item time{display:block;margin-top:4px;color:#9aa3b5;font-size:10px;}.auth-notifications-item.is-unread{border-left:3px solid var(--gold);padding-left:13px;}
     .auth-notifications-status{padding:18px 16px;margin:0;color:#6b7280;font-size:12px;text-align:center;}
     .auth-notifications-all{display:block;padding:11px 16px;background:#f7f9ff;color:var(--navy);font-size:12px;font-weight:800;text-align:center;}
     .auth-topbar-icon .material-symbols-rounded{font-size:24px;}
@@ -249,9 +253,60 @@
                 notificationsList.innerHTML = items.map(function (item) {
                     var tag = item.url ? 'a' : 'div';
                     var href = item.url ? ' href="' + escapeHtml(item.url) + '"' : '';
-                    return '<' + tag + href + ' class="auth-notifications-item ' + (item.unread ? 'is-unread' : '') + '"><strong>' + escapeHtml(item.title) + '</strong><p>' + escapeHtml(item.message) + '</p><time>' + escapeHtml(item.time) + '</time></' + tag + '>';
+                    var notificationId = item.id ? ' data-notification-id="' + escapeHtml(item.id) + '"' : '';
+                    var announcementAttrs = item.type === 'announcement'
+                        ? ' data-notification-type="announcement" data-announcement-id="' + escapeHtml(item.announcement_id) + '" data-announcement-title="' + escapeHtml(item.title) + '" data-announcement-time="' + escapeHtml(item.time) + '" data-announcement-content="' + escapeHtml(item.content) + '" role="button" tabindex="0" aria-haspopup="dialog"'
+                        : '';
+                    return '<' + tag + href + notificationId + announcementAttrs + ' class="auth-notifications-item ' + (item.unread ? 'is-unread' : '') + '"><strong>' + escapeHtml(item.title) + '</strong><p>' + escapeHtml(item.message) + '</p><time>' + escapeHtml(item.time) + '</time></' + tag + '>';                
                 }).join('');
             }
+            notificationsList.addEventListener('click', function (event) {
+                var target = event.target instanceof Element ? event.target : event.target.parentElement;
+                var link = target && target.closest('a[data-notification-id].is-unread');
+                if (!link) return;
+
+                event.preventDefault();
+                var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                var markReadUrl = @json(route('notifications.read', ['notification' => '__NOTIFICATION__']));
+
+                fetch(markReadUrl.replace('__NOTIFICATION__', encodeURIComponent(link.dataset.notificationId)), {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    credentials: 'same-origin',
+                })
+                    .then(function (response) {
+                        if (!response.ok) throw new Error('Notification could not be marked as read.');
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        link.classList.remove('is-unread');
+                        var badge = notificationsTrigger.querySelector('.auth-topbar-badge');
+                        if (data.unread_count > 0) {
+                            if (!badge) {
+                                badge = document.createElement('span');
+                                badge.className = 'auth-topbar-badge';
+                                notificationsTrigger.appendChild(badge);
+                            }
+                            badge.textContent = data.unread_count;
+                        } else if (badge) {
+                            badge.remove();
+                        }
+                        window.location.assign(link.href);
+                    })
+                    .catch(function () {
+                        var errorMessage = notificationsList.querySelector('[data-notification-error]');
+                        if (!errorMessage) {
+                            errorMessage = document.createElement('p');
+                            errorMessage.className = 'auth-notifications-status';
+                            errorMessage.dataset.notificationError = '';
+                            notificationsList.prepend(errorMessage);
+                        }
+                        errorMessage.textContent = 'Unable to mark this notification as read. Please try again.';
+                    });
+            });
             notificationsTrigger.addEventListener('click', function () {
                 var isOpen = !notificationsPanel.hidden;
                 notificationsPanel.hidden = isOpen;
@@ -264,7 +319,9 @@
                 }
             });
             document.addEventListener('click', function (event) { if (!notifications.contains(event.target)) closeNotifications(); });
-            document.addEventListener('keydown', function (event) { if (event.key === 'Escape') closeNotifications(); });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') closeNotifications();
+            });
         }
 
         var menu = document.getElementById('auth-profile-menu');

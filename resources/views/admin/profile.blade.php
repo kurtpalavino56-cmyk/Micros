@@ -401,6 +401,54 @@
 .btn-remove-avatar{background:#fff;border:1.5px solid #fecdd3;color:#b91c1c;
     border-radius:999px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;}
 .btn-remove-avatar:hover{background:#fff1f2;}
+
+    .admin-profile-page{max-width:1180px;margin:0 auto;}
+    .admin-profile-page .page-head{align-items:flex-end;margin-bottom:22px;}
+    .admin-profile-page .page-head h2{font-size:30px;color:#101010;letter-spacing:-.02em;}
+    .admin-profile-page .page-head p{font-size:14px;font-weight:400;color:var(--muted);}
+    .admin-profile-page .page-actions .btn-edit-profile,
+    .admin-profile-page .page-actions .btn-logout{min-height:42px;padding:0 20px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:none;}
+    .admin-profile-page .page-actions .btn-edit-profile{background:var(--navy);border:1px solid var(--navy);color:#fff;}
+    .admin-profile-page .page-actions .btn-edit-profile:hover{background:var(--navy-deep);}
+    .admin-profile-page .page-actions .btn-logout{background:#fff;border:1px solid var(--line);color:#b42318;}
+    .admin-profile-page .profile-hero{margin-bottom:20px;padding:0;border:1px solid var(--line);border-radius:18px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04);overflow:hidden;}
+    .admin-profile-page .profile-hero-cover{height:96px;background:linear-gradient(120deg,#fff3c4 0%,#fff8df 62%,#fefcf3 100%);}
+    .admin-profile-page .profile-hero-body{display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap;padding:0 28px 26px;}
+    .admin-profile-page .admin-avatar-wrap{position:relative;flex:0 0 auto;margin-top:-48px;}
+    .admin-profile-page .avatar-ring{width:104px!important;height:104px!important;border:4px solid #fff;box-shadow:0 0 0 1px var(--line),0 4px 12px rgba(16,24,40,.1);background:#eef0fb center/cover no-repeat;}
+    .admin-profile-page .avatar-edit{position:absolute;right:0;bottom:2px;display:flex;width:32px;height:32px;align-items:center;justify-content:center;padding:0;border:3px solid #fff;border-radius:50%;background:var(--navy);color:#fff;cursor:pointer;}
+    .admin-profile-page .avatar-edit:hover{background:var(--gold);color:var(--navy);}
+    .admin-profile-page .avatar-edit svg{width:14px;height:14px;}
+    .admin-profile-page .identity{flex:1 1 320px;padding-top:16px;}
+    .admin-profile-page .identity h3{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px!important;font-size:24px;letter-spacing:-.01em;color:#101010;}
+    .admin-profile-page .role-pill{background:#fff4d1;color:#7a5600;font:600 12px Inter,Arial,sans-serif;padding:4px 12px;}
+    .admin-profile-page .identity-grid{gap:10px 24px;}
+    .admin-profile-page .id-item{color:#101010;font-size:14px;}
+    .admin-profile-page .id-item svg{width:16px;height:16px;color:var(--muted);}
+    .admin-profile-page .two-col{gap:20px;margin-bottom:0;}
+    .admin-profile-page .profile-info-panel{margin-bottom:0!important;padding:0;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);overflow:hidden;}
+    .admin-profile-page .profile-info-panel .panel-head{padding:18px 24px!important;border-bottom:1px solid var(--line);background:#f9fafb;color:#101010;font-size:17px!important;}
+    .admin-profile-page .profile-info-panel .panel-head .head-ico svg{color:#101010;}
+    .admin-profile-page .profile-info-panel .panel-head h4{font-size:16px;font-weight:600;}
+    .admin-profile-page .profile-info-panel .panel-body{padding:8px 24px 22px!important;}
+    .admin-profile-page .about-intro{margin:8px 0 10px;color:#101010;font-size:14px;font-weight:400;}
+    .admin-profile-page .about-row,.admin-profile-page .set-row{padding:14px 0;border-bottom:1px solid var(--line);}
+    .admin-profile-page .about-row:last-child,.admin-profile-page .set-row:last-child{border-bottom:0;padding-bottom:0;}
+    .admin-profile-page .about-label,.admin-profile-page .set-label{color:#667085;font-size:13px;font-weight:500;}
+    .admin-profile-page .about-value,.admin-profile-page .set-value{color:#101010;font-size:14px;font-weight:600;}
+    .admin-profile-page .btn-change{border:1px solid var(--line);color:var(--navy);font-weight:600;padding:6px 16px;}
+    @media(max-width:980px){
+        .layout > .main{padding:24px 16px 32px;}
+        .admin-profile-page .two-col{grid-template-columns:1fr;}
+    }
+    @media(max-width:640px){
+        .admin-profile-page .profile-hero-body{padding:0 18px 22px;}
+        .admin-profile-page .profile-info-panel .panel-head{padding:16px 18px!important;}
+        .admin-profile-page .profile-info-panel .panel-body{padding:6px 18px 18px!important;}
+        .admin-profile-page .avatar-ring{width:80px!important;height:80px!important;}
+        .admin-profile-page .avatar-ring svg{width:44px;height:44px;}
+        .admin-profile-page .identity{flex-basis:100%;}
+    }
 </style>
 </head>
 <body>
@@ -413,6 +461,7 @@
     {{-- Admin sidebar — same collapsible sections as every other admin page --}}
 {{-- Main content --}}
     <main class="main">
+      <div class="admin-profile-page">
 
         <div class="page-head">
             <div>
@@ -429,14 +478,21 @@
         </div>
 
         {{-- ══════════════ IDENTITY CARD ══════════════ --}}
-        <section class="profile-card">
-            <div class="avatar-ring"
-                 @if($user->avatar_url ?? null) style="background-image:url('{{ $user->avatar_url }}')" @endif>
-                @unless($user->avatar_url ?? null)
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>
-                @endunless
-            </div>
-            <div class="identity">
+        <section class="profile-hero">
+            <div class="profile-hero-cover" aria-hidden="true"></div>
+            <div class="profile-hero-body">
+                <div class="admin-avatar-wrap">
+                    <div class="avatar-ring"
+                         @if($user->avatar_url ?? null) style="background-image:url('{{ $user->avatar_url }}')" @endif>
+                        @unless($user->avatar_url ?? null)
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>
+                        @endunless
+                    </div>
+                    <button class="avatar-edit" type="button" onclick="openEditModal('personal')" title="Change photo" aria-label="Change profile photo">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    </button>
+                </div>
+                <div class="identity">
                 <h3>{{ $user->name ?? 'Administrator' }}<span class="role-pill">{{ $user->role ?? 'Administrator' }}</span></h3>
                 <div class="identity-grid">
                     <span class="id-item">
@@ -460,13 +516,14 @@
                         {{ $user->user_code ?? '—' }}
                     </span>
                 </div>
+                </div>
             </div>
         </section>
 
         {{-- ══════════════ ABOUT + ACCOUNT ══════════════ --}}
         <div class="two-col">
 
-            <section class="panel" style="margin-bottom:28px;">
+            <section class="panel profile-info-panel">
                 <div class="panel-head">
                     <span class="head-ico">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
@@ -490,7 +547,7 @@
                 </div>
             </section>
 
-            <section class="panel" style="margin-bottom:28px;">
+            <section class="panel profile-info-panel">
                 <div class="panel-head">
                     <span class="head-ico">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -518,6 +575,7 @@
             </section>
 
         </div>
+      </div>
     </main>
 </div>
 

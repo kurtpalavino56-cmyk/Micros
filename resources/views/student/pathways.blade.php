@@ -33,7 +33,7 @@
                         @endphp
                         <div class="journey">
                             <div class="journey-track" style="left:{{ $lineInset }}%;right:{{ $lineInset }}%"></div>
-                            @if($currentIndex !== false)<div class="journey-fill ui-progress-fill" style="left:{{ $lineInset }}%;width:{{ $fillWidth }}%"></div>@endif
+                            @if($currentIndex !== false)<div class="journey-fill" style="left:{{ $lineInset }}%;width:{{ $fillWidth }}%"></div>@endif
                             <div class="journey-goals">
                                 @foreach($pathwaySteps as $step)
                                     <div class="journey-goal {{ $step['status'] === 'locked' ? 'is-locked' : '' }}">

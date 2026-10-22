@@ -25,11 +25,15 @@
     @if (!empty($cert['learning_outcomes']))
     <div class="certificate-view-detail ui-card-surface certificate-view-detail--outcomes">
         <h3 class="ui-section-title">Learning Outcomes Achieved</h3>
-        <ul>
-            @foreach ($cert['learning_outcomes'] as $lo)
-                <li>@if(!empty($lo['code'])){{ $lo['code'] }}: @endif{{ $lo['description'] ?? '' }}</li>
-            @endforeach
-        </ul>
+        @if(count($cert['learning_outcomes']) === 1)
+            <div class="rich-content">{!! \App\Support\RichTextSanitizer::sanitize($cert['learning_outcomes'][0]['description'] ?? '') !!}</div>
+        @else
+            <ul>
+                @foreach ($cert['learning_outcomes'] as $lo)
+                    <li>@if(!empty($lo['code'])){{ $lo['code'] }}: @endif{{ $lo['description'] ?? '' }}</li>
+                @endforeach
+            </ul>
+        @endif
     </div>
     @endif
 

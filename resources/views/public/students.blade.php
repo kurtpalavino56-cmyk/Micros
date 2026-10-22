@@ -485,7 +485,11 @@
                     @endif
                     @if(!empty($badgeCredential['learning_outcomes']))
                         <h3>Learning outcomes</h3>
-                        <ul>@foreach($badgeCredential['learning_outcomes'] as $outcome)<li>{{ is_array($outcome) ? trim(($outcome['code'] ?? '').' '.($outcome['description'] ?? '')) : $outcome }}</li>@endforeach</ul>
+                    @if(count($badgeCredential['learning_outcomes']) === 1 && is_array($badgeCredential['learning_outcomes'][0]))
+                            <div class="rich-content">{!! \App\Support\RichTextSanitizer::sanitize($badgeCredential['learning_outcomes'][0]['description'] ?? '') !!}</div>
+                        @else
+                            <ul>@foreach($badgeCredential['learning_outcomes'] as $outcome)<li>{{ is_array($outcome) ? trim(($outcome['code'] ?? '').' '.($outcome['description'] ?? '')) : $outcome }}</li>@endforeach</ul>
+                        @endif                    
                     @endif
                 </div>
             @endif

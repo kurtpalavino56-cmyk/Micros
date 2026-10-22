@@ -111,7 +111,7 @@
             </section>
 
             {{-- ── Enroll card (sticky on the right) ── --}}
-            <aside class="enroll-card ui-card-surface" aria-label="Enrollment">
+            <aside class="enroll-card ui-card-surface" aria-label="Enrollment and course details">
                 <div class="enroll-thumb"
                      @if($course->thumbnail_url)
                          style="background-image:url('{{ $course->thumbnail_url }}')"
@@ -175,6 +175,17 @@
                             Earn a digital certificate
                         </div>
                     </div>
+
+                    @if($course->pqf_level || $course->delivery_mode || $course->target_learners || $course->badge_name)
+                        <section class="course-card-details" aria-label="Course details">
+                            <dl class="detail-grid">
+                                @if($course->pqf_level)<div><dt><span class="material-symbols-rounded" aria-hidden="true">school</span>PQF level</dt><dd>Level {{ $course->pqf_level }}</dd></div>@endif
+                                @if($course->delivery_mode)<div><dt><span class="material-symbols-rounded" aria-hidden="true">devices</span>Delivery</dt><dd>{{ Str::headline($course->delivery_mode) }}</dd></div>@endif
+                                @if($course->target_learners)<div><dt><span class="material-symbols-rounded" aria-hidden="true">groups</span>Intended learners</dt><dd>{{ $course->target_learners }}</dd></div>@endif
+                                @if($course->badge_name)<div><dt><span class="material-symbols-rounded" aria-hidden="true">workspace_premium</span>Completion badge</dt><dd>{{ $course->badge_name }}@if($course->badge_description) &middot; {{ $course->badge_description }}@endif</dd></div>@endif
+                            </dl>
+                        </section>
+                    @endif
                 </div>
             </aside>
 
@@ -200,33 +211,33 @@
                     </div>
                     <div class="info-panel-body">
                         @if(!empty($course->learning_outcomes))
-                            <ul class="objectives-list">
-                                @foreach($course->learning_outcomes as $objective)
-                                    <li>
-                                        <span class="material-symbols-rounded" aria-hidden="true">check</span>
-                                        <span>{{ $objective }}</span>
-                                    </li>
-                                @endforeach
-                            </ul>
+                            @if(count($course->learning_outcomes) === 1)
+                                <div class="rich-content">{!! \App\Support\RichTextSanitizer::sanitize($course->learning_outcomes[0]) !!}</div>
+                            @else
+                                <ul class="objectives-list">
+                                    @foreach($course->learning_outcomes as $objective)
+                                        <li>
+                                            <span class="material-symbols-rounded" aria-hidden="true">check</span>
+                                            <span>{{ $objective }}</span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @endif
                         @else
                             <p class="empty-note">No measurable outcomes listed yet.</p>
                         @endif
                     </div>
                 </section>
 
-                {{-- Micro-credential details (only rendered when something is set) --}}
-                @if($course->pqf_level || $course->target_learners || $course->delivery_mode || $course->credit_bearing || $course->badge_name || $course->assessment_strategy || $course->grading_rubric)
+                {{-- Remaining micro-credential details --}}
+                @if($course->credit_bearing || $course->assessment_strategy || $course->grading_rubric)
                     <section class="info-panel ui-card-surface">
                         <div class="info-panel-head ui-card-header">
                             <h3 class="ui-card-header__title">Micro-credential details</h3>
                         </div>
                         <div class="info-panel-body">
                             <dl class="detail-grid">
-                                @if($course->pqf_level)<div><dt><span class="material-symbols-rounded" aria-hidden="true">school</span>PQF level</dt><dd>Level {{ $course->pqf_level }}</dd></div>@endif
-                                @if($course->delivery_mode)<div><dt><span class="material-symbols-rounded" aria-hidden="true">devices</span>Delivery</dt><dd>{{ Str::headline($course->delivery_mode) }}</dd></div>@endif
-                                @if($course->target_learners)<div><dt><span class="material-symbols-rounded" aria-hidden="true">groups</span>Intended learners</dt><dd>{{ $course->target_learners }}</dd></div>@endif
                                 @if($course->credit_bearing)<div><dt><span class="material-symbols-rounded" aria-hidden="true">account_balance</span>Credit information</dt><dd>{{ $course->credit_equivalency ?: 'Proposed for institutional review' }}@if($course->equivalent_course) &middot; {{ $course->equivalent_course }}@endif</dd></div>@endif
-                                @if($course->badge_name)<div><dt><span class="material-symbols-rounded" aria-hidden="true">workspace_premium</span>Completion badge</dt><dd>{{ $course->badge_name }}@if($course->badge_description) &middot; {{ $course->badge_description }}@endif</dd></div>@endif
                                 @if($course->assessment_strategy)<div class="is-wide"><dt><span class="material-symbols-rounded" aria-hidden="true">fact_check</span>Assessment strategy</dt><dd>{{ $course->assessment_strategy }}</dd></div>@endif
                                 @if($course->grading_rubric)<div class="is-wide"><dt><span class="material-symbols-rounded" aria-hidden="true">rule</span>Mastery criteria</dt><dd>{{ $course->grading_rubric }}</dd></div>@endif
                             </dl>

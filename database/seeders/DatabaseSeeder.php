@@ -56,6 +56,8 @@ class DatabaseSeeder extends Seeder
             ['id' => User::ROLE_ADMIN,   'name' => 'admin',   'display_name' => 'Administrator'],
             ['id' => User::ROLE_FACULTY, 'name' => 'faculty', 'display_name' => 'Faculty'],
             ['id' => User::ROLE_STUDENT, 'name' => 'student', 'display_name' => 'Student'],
+            ['id' => User::ROLE_SUPERADMIN, 'name' => 'superadmin', 'display_name' => 'Superadmin'],
+            ['id' => User::ROLE_SUBADMIN, 'name' => 'subadmin', 'display_name' => 'Sub-admin'],
         ] as $role) {
             Role::updateOrCreate(['id' => $role['id']], $role);
         }
@@ -70,7 +72,7 @@ class DatabaseSeeder extends Seeder
                 'last_name' => 'Aquino',
                 'username' => 'raquino',
                 'password' => Hash::make('password123'),
-                'role_id' => User::ROLE_ADMIN,
+                'role_id' => User::ROLE_SUPERADMIN,
                 'user_code' => '26-AD-0001',
                 'student_id' => '26-AD-0001',
                 'is_active' => true,

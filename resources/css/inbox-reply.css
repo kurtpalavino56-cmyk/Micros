@@ -29,9 +29,104 @@
     margin-top: 0;
 }
 
+.inbox-reply-compose.reply-field-compose {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    align-items: end;
+}
+
+.inbox-reply-compose.reply-field-compose textarea {
+    width: 100%;
+    height: 44px;
+    min-height: 44px;
+    max-height: 112px;
+    min-width: 0;
+    margin: 0;
+    padding: 11px 14px;
+    border: 1.5px solid #c9ccdb;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 14px;
+    line-height: 20px;
+    resize: none;
+    overflow-y: hidden;
+}
+
+.inbox-page .reply-box .inbox-reply-compose.reply-field-compose textarea {
+    height: 44px;
+    min-height: 44px;
+    max-height: 112px;
+}
+
+.inbox-reply-compose.reply-field-compose textarea:focus {
+    outline: none;
+    border-color: var(--navy);
+}
+
+.inbox-reply-compose .reply-attachment-picker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--navy);
+    cursor: pointer;
+}
+
+.inbox-reply-compose .reply-attachment-picker:hover {
+    background: #f7f9ff;
+    border-color: #c5d0ee;
+}
+
+.inbox-reply-compose .reply-attachment-picker svg {
+    width: 20px;
+    height: 20px;
+}
+
+.inbox-reply-compose .reply-attachment-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+}
+
+.inbox-reply-compose .reply-attachment-name,
+.inbox-reply-compose .reply-attachment-error,
+.inbox-reply-compose .reply-attachment-preview {
+    grid-column: 1 / -1;
+    margin: 0;
+}
+
+.inbox-reply-compose .reply-attachment-name,
+.inbox-reply-compose .reply-attachment-error {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.inbox-reply-compose .reply-attachment-error {
+    color: #b42318;
+}
+
+.inbox-reply-compose .reply-attachment-preview img {
+    display: block;
+    max-width: 180px;
+    max-height: 140px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
 @media (max-width: 600px) {
     .inbox-reply-compose {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    .inbox-reply-compose.reply-field-compose {
+        grid-template-columns: 44px minmax(0, 1fr) auto;
+        gap: 8px;
     }
 
     .inbox-reply-compose .reply-actions {
