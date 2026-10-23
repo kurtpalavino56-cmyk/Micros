@@ -1,99 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{ $course->title }} | Learner Progress &amp; Verification | Upskill</title>
-<link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
+<x-faculty.layout title="{{ $course->title }} | Learner Progress & Verification | Upskill" data-faculty-page="faculty-students-course">
+    <x-slot:head><link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-<style>
-    :root{--navy:#13176b;--ink:#0e1a3a;--muted:#64748b;--line:#e5e7eb;--gold:#dba617;--green:#15803d;--red:#b91c1c;--shadow:0 8px 22px rgba(19,23,107,.06);}
-    *{box-sizing:border-box;}
-    body{font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:var(--ink);margin:0;background:#f8faff;}
-    a{text-decoration:none;color:inherit;}button{font:inherit;cursor:pointer;}
-    .main{padding:28px 32px 48px;min-width:0;width:100%;max-width:1440px;margin-inline:auto;}
-    .page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
-    main .page-head h2{font-family:'Plus Jakarta Sans',Inter,ui-sans-serif,system-ui,sans-serif;font-size:27px;font-weight:800;letter-spacing:-.04em;color:var(--ink);margin:0 0 6px;}
-    main .page-head p{font-size:14px;font-weight:400;color:var(--muted);margin:0;}
-    .review-summary{display:flex;align-items:center;gap:8px;padding:12px 15px;margin:0 0 16px;border:1px solid #fed7aa;border-radius:10px;background:#fff7ed;color:#9a3412;font-size:13px;font-weight:600;}
-    .review-summary strong{font-size:15px;}
-    .tabs-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;}
-    .tabs{display:flex;flex:1;min-width:0;gap:8px;border-bottom:1px solid var(--line);margin:0;}
-    .tab{padding:10px 13px;color:#64748b;border-bottom:2px solid transparent;font-size:13px;font-weight:700;}
-    .tab.active{color:var(--navy);border-bottom-color:var(--navy);}
-    .course-head-actions{display:flex;align-items:flex-start;gap:9px;}
-    .course-head-actions>.action,.course-head-actions .export-dropdown{width:156px;}
-    .course-head-actions>.action,.course-head-actions .export-dropdown summary{min-height:40px;padding:8px 12px;font-size:12px;}
-    .course-head-actions>.action{background:var(--navy);border-color:var(--navy);color:#fff;}
-    .course-head-actions>.action:hover{background:#20278a;}
-    .export-dropdown{position:relative;}
-    .export-dropdown summary{display:flex;align-items:center;justify-content:center;gap:7px;list-style:none;cursor:pointer;}
-    .export-dropdown summary::-webkit-details-marker{display:none;}
-    .download-icon,.sort-icon{width:15px;height:15px;flex:0 0 15px;}
-    .export-dropdown summary::after{content:"";width:7px;height:7px;margin:0 0 3px 1px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;display:inline-block;transform:rotate(45deg);}
-    .export-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:10;display:grid;gap:5px;width:100%;min-width:0;padding:7px;background:#fff;border:1px solid var(--line);border-radius:9px;box-shadow:0 8px 22px rgba(19,23,107,.12);}
-    .export-menu .action{justify-content:flex-start;}
-    .table-toolbar{display:flex;flex:0 0 auto;justify-content:flex-end;margin:0;}
-    .table-toolbar form{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;}
-    .table-search{position:relative;display:flex;align-items:center;}
-    .table-search input,.table-sort select{min-height:36px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:var(--ink);font:inherit;font-size:12px;}
-    .table-search input{width:min(240px,50vw);padding-left:33px;}
-    .table-search-icon{position:absolute;left:11px;width:15px;height:15px;color:#64748b;pointer-events:none;}
-    .table-sort{display:block;}
-    .sort-select-wrap{position:relative;display:block;}
-    .sort-select-wrap select{padding-left:31px;}
-    .sort-select-wrap .sort-icon{position:absolute;top:50%;left:10px;transform:translateY(-50%);color:#64748b;pointer-events:none;}
-    .table-toolbar form>.action{min-height:36px;padding:7px 12px;background:#facc15;border-color:#eab308;color:#713f12;}
-    .table-toolbar form>.action:hover{background:#eab308;}
-    .action.remove{background:#fff;border-color:#fecaca;color:#b91c1c;}
-    .action.remove:hover{background:#fef2f2;}
-    .student-table-wrap{max-height:max(180px,calc(100vh - 340px));overflow:auto;overscroll-behavior:contain;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);}
-    .student-table{width:100%;min-width:760px;border-collapse:collapse;text-align:left;}
-    .student-table th,.student-table td{padding:13px 16px;border-bottom:1px solid var(--line);vertical-align:middle;}
-    .student-table th{position:sticky;top:0;z-index:1;background:#f1f4fb;color:#475569;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;}
-    .student-table td{font-size:13px;}
-    .student-table tbody tr:last-child td{border-bottom:0;}
-    .student-table tbody tr:hover{background:#fafbff;}
-    .student-table .student-cell{display:flex;align-items:center;gap:11px;min-width:190px;}
-    .student-table .student-cell .student-name{font-weight:700;color:var(--ink);}
-    .student-table .student-id{color:var(--muted);white-space:nowrap;}
-    .student-table .progress{width:auto;text-align:left;}
-    .student-table .review-actions{justify-content:flex-start;}
-    .student-table .empty-cell{padding:32px;text-align:center;color:var(--muted);}
-    .avatar{width:42px;height:42px;flex:0 0 42px;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#e8edfb;color:var(--navy);font-weight:800;background-size:cover;background-position:center;}
-    .status{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 9px;background:#f1f5f9;color:#475569;font-size:11px;font-weight:700;white-space:nowrap;}
-    .status.needs-review{background:#fff7ed;color:#c2410c;}.status.completed{background:#dcfce7;color:#166534;}.status.rejected{background:#fee2e2;color:#b91c1c;}
-    .progress{width:96px;color:#475569;font-size:12px;font-weight:700;text-align:right;white-space:nowrap;}
-    .review-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;}
-    .action{display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:var(--navy);font-size:12px;font-weight:700;text-decoration:none;}
-    .action:hover{background:#f8fafc;}.action.verify{background:var(--navy);border-color:var(--navy);color:#fff;}.action.verify:hover{background:#20278a;}.action.reject{color:var(--red);border-color:#fecaca;}
-    .action.export-pdf{background:#fff1f2;border-color:#fecdd3;color:#be123c;}
-    .action.export-word{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;}
-    .action.export-excel{background:#f0fdf4;border-color:#bbf7d0;color:#15803d;}
-    .empty-state{padding:32px;background:#fff;border:1px dashed var(--line);border-radius:10px;text-align:center;color:var(--muted);font-size:14px;}
-    .student-removal-modal{position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(15,23,42,.55);}
-    .student-removal-modal[hidden]{display:none;}
-    .student-removal-dialog{width:min(500px,100%);padding:23px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 24px 70px rgba(15,23,42,.25);outline:none;}
-    .student-removal-dialog h2{margin:0 0 9px;color:var(--ink);font-size:19px;}
-    .student-removal-dialog>p{margin:0 0 17px;color:var(--muted);font-size:13px;line-height:1.55;}
-    .student-removal-dialog form>label{display:block;margin-bottom:6px;color:var(--ink);font-size:12px;font-weight:800;}
-    .student-removal-dialog textarea{display:block;width:100%;min-height:100px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;color:var(--ink);font:inherit;font-size:13px;resize:vertical;}
-    .student-removal-dialog textarea:focus{outline:3px solid rgba(19,23,107,.16);border-color:var(--navy);}
-    .student-removal-error{margin:6px 0 0;color:#b91c1c;font-size:12px;}
-    .student-removal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:17px;}
-    body.student-removal-modal-open{overflow:hidden;}
-    .pagination{margin-top:16px;}
-    .flash{padding:11px 14px;margin-bottom:14px;border-radius:8px;background:#ecfdf3;color:#166534;font-size:13px;font-weight:600;}
-    @media(max-width:760px){.main{padding:22px 16px 36px;}.course-head-actions{flex-wrap:wrap;}.tabs-toolbar{align-items:stretch;flex-direction:column;}.tabs{overflow-x:auto;scrollbar-width:none;}.tab{flex:0 0 auto;white-space:nowrap;}.table-toolbar,.table-toolbar form{width:100%;}.table-toolbar form{justify-content:flex-start;}.review-summary{align-items:flex-start;}}
-</style>
-</head>
-<body>
-@include('components.authenticated-topbar')
-<div class="layout faculty-sidebar-layout">
-    @include('components.faculty-sidebar')
-    <main class="main">
+    </x-slot:head>
+<main class="main">
         @include('components.breadcrumbs', ['breadcrumbClass' => 'faculty-breadcrumbs', 'items' => [
             ['label' => 'Learner Progress & Verification', 'url' => route('faculty.students')],
             ['label' => $course->title],
@@ -314,7 +225,8 @@
             </div>
         @endif
     </main>
-</div>
+
+    <x-slot:scripts>
 @include('components.responsive')
-</body>
-</html>
+    </x-slot:scripts>
+</x-faculty.layout>

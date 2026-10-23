@@ -32,6 +32,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0" rel="stylesheet">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if ($shell === 'faculty')
+        @vite('resources/css/faculty.css')
+    @endif
     @stack('styles')
 </head>
 <body class="app-shell app-shell--{{ $shell }} {{ $pageClass }}">
