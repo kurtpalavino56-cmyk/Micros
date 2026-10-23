@@ -1,209 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upskill – Admin Dashboard</title>
 
-    <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-
-    <style>
-        /* =========================================================
-           UPSKILL ADMIN DASHBOARD – simple version
-           White surfaces, thin borders, one blue accent.
-        ========================================================= */
-        *, *::before, *::after { box-sizing: border-box; }
-
-        :root {
-            --navy: #0f2557;
-            --blue: #1d4ed8;
-            --yellow: #f4c430;
-            --canvas: #f6f7f9;
-            --white: #fff;
-            --line: #e5e8ee;
-            --line-soft: #eef0f4;
-            --ink: #1a2233;
-            --muted: #667085;
-            --soft: #98a2b3;
-            --green: #1f7a58;
-            --red: #b94040;
-            --r: 10px;
-        }
-
-        body {
-            margin: 0;
-            min-height: 100vh;
-            background: var(--canvas);
-            color: var(--ink);
-            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-            -webkit-font-smoothing: antialiased;
-        }
-        .layout { min-height: calc(100vh - 66px); background: var(--canvas); }
-
-        main.admin-dashboard {
-            width: 100%;
-            min-width: 0;
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 32px clamp(18px, 3vw, 40px) 56px;
-        }
-        .admin-dashboard :is(h1, h2, h3, .stat-val) { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; }
-        :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
-
-        /* HEADER */
-        .page-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
-        .page-heading { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -.03em; color: #000; }
-        .page-sub { margin: 4px 0 0; font-size: .9rem; color: var(--muted); }
-        .today-chip { display: inline-flex; align-items: center; gap: 7px; font-size: .82rem; color: var(--muted); }
-        .today-chip svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-
-        /* STAT CARDS */
-        .stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-        .stat-card { position: relative; overflow: hidden; padding: 18px 20px; background: var(--white); border: 1px solid var(--line); border-radius: var(--r); }
-        .stat-card::before { display: none; }
-        .stat-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-direction: row-reverse; }
-        .stat-icon { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; color: var(--muted); }
-        .stat-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-        .stat-lbl { font-size: .84rem; font-weight: 500; color: var(--muted); }
-        .stat-val { margin: 12px 0 8px; font-size: 2rem; font-weight: 700; letter-spacing: -.03em; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
-        .stat-context { display: flex; align-items: center; gap: 6px; font-size: .78rem; color: #000; }
-        .stat-trend { display: inline-flex; align-items: center; gap: 3px; font-weight: 600; }
-        .stat-trend svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-        .stat-trend-up { color: var(--green); }
-        .stat-trend-down { color: var(--red); }
-        .stat-trend-neutral { color: #000; }
-
-        /* REQUIRED ATTENTION */
-        .attention-strip { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 16px; padding: 16px 18px; background: #fff8db; border: 1px solid #f0dda0; border-radius: var(--r); }
-        .attention-copy { display: flex; align-items: center; gap: 12px; min-width: 0; }
-        .attention-indicator { width: 10px; height: 10px; flex: 0 0 10px; border-radius: 50%; background: #c28a00; }
-        .attention-strip.is-clear { background: var(--white); border-color: var(--line); }
-        .attention-strip.is-clear .attention-indicator { background: var(--green); }
-        .attention-title { margin: 0; font-size: .92rem; font-weight: 700; color: var(--ink); }
-        .attention-message { margin: 3px 0 0; font-size: .8rem; color: var(--muted); }
-        .attention-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-        .attention-link { display: inline-flex; align-items: center; gap: 6px; padding: 8px 11px; border: 1px solid rgba(15, 37, 87, .16); border-radius: 7px; background: var(--white); color: var(--navy); font-size: .78rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
-        .attention-link:hover { background: #f6f7f9; }
-        .attention-link strong { font-variant-numeric: tabular-nums; }
-        .attention-clear-label { color: var(--green); font-size: .8rem; font-weight: 600; }
-
-        /* SECTION HEADINGS */
-        .section-hd { margin: 30px 0 12px; }
-        .section-hd h2 { margin: 0; font-size: 1.05rem; font-weight: 700; color: #000; }
-        .section-hd p { margin: 3px 0 0; font-size: .82rem; color: var(--muted); }
-
-        /* QUICK ACCESS */
-        .quick-modules-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-        .quick-module-card {
-            position: relative;
-            display: grid;
-            grid-template-columns: 24px minmax(0, 1fr);
-            column-gap: 14px;
-            padding: 16px 18px;
-            background: var(--white);
-            border: 1px solid var(--line);
-            border-radius: var(--r);
-            transition: border-color .15s ease;
-        }
-        .quick-module-card:hover { border-color: var(--blue); }
-        .quick-module-head { display: contents; }
-        .quick-module-mark { grid-row: 1 / span 2; color: var(--blue); padding-top: 1px; }
-        .quick-module-mark svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-        .quick-module-copy { min-width: 0; }
-        .quick-module-card h3 { margin: 0; font-size: .92rem; font-weight: 600; color: var(--ink); }
-        .quick-module-card p { margin: 4px 0 0; font-size: .78rem; line-height: 1.45; color: var(--muted); }
-        .quick-module-info { grid-column: 2; margin-top: 8px; padding-right: 24px; font-size: .76rem; font-weight: 600; color: var(--navy); }
-        .quick-module-link { position: absolute; inset: 0; border-radius: var(--r); font-size: 0; }
-        .quick-module-chevron { position: absolute; right: 16px; bottom: 13px; z-index: 1; color: var(--blue); pointer-events: none; }
-        .quick-module-chevron svg { display: block; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-
-        /* CARDS + GRIDS */
-        .two-col { display: grid; gap: 16px; margin-top: 16px; }
-        .monitor-grid, .insights-grid { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
-        .card { min-width: 0; padding: 0 20px 12px; background: var(--white); border: 1px solid var(--line); border-radius: var(--r); }
-        .card-hd { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 54px; margin: 0 -20px 4px; padding: 0 20px; border-bottom: 1px solid var(--line-soft); }
-        .card-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: .92rem; font-weight: 700; color: #000; }
-        .view-all { font-size: .8rem; font-weight: 500; color: var(--blue); text-decoration: none; }
-        .view-all:hover { text-decoration: underline; }
-
-        .live-dot { display: inline-flex; align-items: center; gap: 6px; font-size: .76rem; color: var(--muted); }
-        .live-dot::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
-
-        /* LIVE FEED */
-        .monitor-grid > .card { display: flex; height: 280px; flex-direction: column; }
-        #live-activity-list { min-height: 0; flex: 1; overflow-y: auto; padding-left: 22px; }
-        #live-activity-list:empty::before { content: "Waiting for live activity…"; display: block; padding: 28px 4px; text-align: center; font-size: .82rem; color: var(--soft); }
-        .feed-item { position: relative; padding: 12px 0 12px 4px; }
-        .feed-item::before { position: absolute; top: 0; bottom: -1px; left: -17px; width: 1px; background: var(--line); content: ""; }
-        .feed-item::after { position: absolute; top: 17px; left: -22px; z-index: 1; width: 8px; height: 8px; border: 1.5px solid var(--yellow); border-radius: 50%; background: var(--white); content: ""; }
-        .feed-item:first-child::after { background: var(--yellow); }
-        .feed-item:last-child::before { bottom: 50%; }
-        .feed-title { font-size: .86rem; font-weight: 600; color: var(--ink); }
-        .feed-detail { margin-top: 3px; font-size: .78rem; color: #526078; }
-        .feed-time { color: #526078; white-space: nowrap; }
-        .feed-empty { padding: 22px 4px; font-size: .82rem; color: var(--red); }
-
-        /* SNAPSHOT */
-        .snapshot-card { min-height: 0; }
-        .snapshot-metrics { display: grid; width: 100%; max-width: 380px; min-height: 0; flex: 1; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); margin: 0 auto; padding-top: 4px; }
-        .snapshot-metric { display: flex; min-width: 0; min-height: 0; flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; padding: 12px; }
-        .snapshot-metric:nth-child(odd) { border-right: 1px solid var(--line-soft); }
-        .snapshot-metric:nth-child(-n+2) { border-bottom: 1px solid var(--line-soft); }
-        .snapshot-metric span { font-size: .82rem; color: var(--muted); }
-        .snapshot-metric strong { font: 700 1.75rem/1 'Plus Jakarta Sans', sans-serif; letter-spacing: -.03em; color: #000; font-variant-numeric: tabular-nums; }
-        .snapshot-metric small { font-size: .72rem; line-height: 1.4; color: var(--muted); }
-
-        /* BADGES */
-        .badges-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding-top: 10px; }
-        .badge-card { padding: 12px 14px; border: 1px solid var(--line-soft); border-radius: 8px; }
-        .badge-name { font-size: .84rem; font-weight: 600; color: var(--ink); }
-        .badge-count { margin-top: 3px; font-size: .76rem; color: var(--muted); }
-
-        /* COURSE PERFORMANCE BAR CHART */
-        .performance-legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 0 4px; }
-        .performance-legend-item { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: .76rem; }
-        .performance-legend-swatch { width: 10px; height: 10px; border-radius: 2px; background: var(--blue); }
-        .performance-legend-swatch.is-completion { background: var(--green); }
-        .performance-chart { display: block; width: 100%; height: auto; overflow: visible; }
-        .performance-gridline { stroke: var(--line-soft); stroke-width: 1; }
-        .performance-axis-label, .performance-course-label { fill: var(--muted); font-family: 'Inter', sans-serif; font-size: 11px; }
-        .performance-course-label { font-size: 10px; }
-        .performance-bar.is-enrollment { fill: var(--blue); }
-        .performance-bar.is-completion { fill: var(--green); }
-        .performance-empty { padding: 38px 12px; text-align: center; color: var(--muted); font-size: .84rem; }
-
-        /* RESPONSIVE */
-        @media (max-width: 1100px) {
-            .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            .quick-modules-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        }
-        @media (max-width: 900px) {
-            .monitor-grid, .insights-grid { grid-template-columns: 1fr; }
-            .attention-strip { align-items: flex-start; flex-direction: column; }
-        }
-        @media (max-width: 600px) {
-            main.admin-dashboard { padding: 22px 14px 40px; }
-            .stats-grid, .quick-modules-grid, .badges-grid { grid-template-columns: 1fr; }
-            .attention-actions { width: 100%; }
-            .attention-link { flex: 1 1 100%; white-space: normal; }
-            .stat-val { font-size: 1.7rem; }
-            .snapshot-metric strong { font-size: 1.45rem; }
-        }
-
-    </style>
-</head>
-
-<body>
-
-    @include('components.authenticated-topbar', ['user' => auth()->user()])
-
-    <div class="layout">
-        @include('components.admin-sidebar')
-
+<x-admin.layout title="Upskill – Admin Dashboard" page="admin-dashboard">
+    <x-slot:head>
+        <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
+            <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    </x-slot:head>
+<div class="layout">
         <main class="main admin-dashboard">
 
             <div class="page-top">
@@ -241,7 +45,7 @@
                     @php($trend = $stats['courses_weekly_change'])
                     <div class="stat-footer"><div class="stat-context"><span class="stat-trend {{ $trend > 0 ? 'stat-trend-up' : ($trend < 0 ? 'stat-trend-down' : 'stat-trend-neutral') }}">@if($trend !== 0)<svg viewBox="0 0 16 16" aria-hidden="true"><path d="{{ $trend > 0 ? 'M8 13V3m-4 4 4-4 4 4' : 'M8 3v10m-4-4 4 4 4-4' }}"/></svg>@endif{{ $trend > 0 ? '+' : '' }}{{ number_format($trend) }}</span> vs last week</div></div>
                 </div>
-                @endif  
+                @endif
 
                 @if ($dashboardAccess['courses'] || $dashboardAccess['completion-verification'])
                 <div class="stat-card">
@@ -528,6 +332,4 @@
     </script>
 
     {{-- Shared responsiveness layer (drawer nav + grid stacking) --}}
-    @include('components.responsive')
-</body>
-</html>
+</x-admin.layout>

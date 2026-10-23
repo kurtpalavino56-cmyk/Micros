@@ -1,4 +1,4 @@
-{{-- 
+{{--
     resources/views/admin/Program_Categories.blade.php
     Admin › Management › Program Categories
 
@@ -6,411 +6,15 @@
     Edit Course form. Expects: $user (UserPresenter::admin), $categories
     (CourseCategory collection, each with ->courses_using).
 --}}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Program Categories | UPSKILL Admin</title>
-
-<link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
-<link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
-
-<style>
-    :root {
-        --navy: #0d1b6e;
-        --navy-deep: #0a1550;
-        --gold: #dba617;
-        --line: #e5e7eb;
-        --muted: #6b7280;
-        --bg: #f5f7fb;
-        --white: #fff;
-        --green: #15803d;
-        --red: #dc2626;
-        --shadow: 0 10px 26px rgba(13,27,110,.08);
-    }
-
-    * {
-        box-sizing: border-box;
-    }
-
-    body {
-        margin: 0;
-        font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        font-weight: 400;
-        color: var(--navy);
-        background: var(--bg);
-    }
-
-    a {
-        text-decoration: none;
-        color: inherit;
-    }
-
-    button {
-        font: inherit;
-        cursor: pointer;
-    }
-
-    /* ── Layout ─────────────────────────────────────────────── */
-
-    .layout {
-        display: flex;
-        align-items: flex-start;
-    }
-
-    .main {
-        flex: 1;
-        min-width: 0;
-        padding: 28px 30px 60px;
-    }
-
-    /* ── Header ─────────────────────────────────────────────── */
-
-    .page-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 16px;
-        flex-wrap: wrap;
-        margin-bottom: 22px;
-    }
-
-    .page-head h1 {
-        margin: 0 0 5px;
-        font-size: 26px;
-        font-weight: 700;
-        color: #000;
-    }
-
-    .page-head p {
-        margin: 0;
-        color: var(--muted);
-        font-size: 14px;
-        max-width: 560px;
-        line-height: 1.5;
-    }
-
-    .count-pill {
-        background: #eef2ff;
-        color: var(--navy);
-        border-radius: 999px;
-        padding: 7px 16px;
-        font-size: 13px;
-        font-weight: 700;
-        white-space: nowrap;
-    }
-
-    /* ── Alerts ─────────────────────────────────────────────── */
-
-    .alert {
-        padding: 12px 16px;
-        border-radius: 12px;
-        margin-bottom: 18px;
-        font-size: 14px;
-        font-weight: 600;
-    }
-
-    .alert-ok {
-        background: #ecfdf3;
-        border: 1px solid #a7f3d0;
-        color: #065f46;
-    }
-
-    .alert-err {
-        background: #fef2f2;
-        border: 1px solid #fecaca;
-        color: #991b1b;
-    }
-
-    .alert ul {
-        margin: 6px 0 0;
-        padding-left: 18px;
-        font-weight: 500;
-    }
-
-    /* ── Content Grid ───────────────────────────────────────── */
-
-    .grid {
-        display: grid;
-        grid-template-columns: 1fr 340px;
-        gap: 24px;
-        align-items: start;
-    }
-
-    /* ── Cards ──────────────────────────────────────────────── */
-
-    .card {
-        background: #fff;
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        box-shadow: var(--shadow);
-        overflow: hidden;
-    }
-
-    .card-hd {
-        padding: 16px 20px;
-        border-bottom: 1px solid var(--line);
-        font-weight: 700;
-        font-size: 15px;
-    }
-
-    .card-bd {
-        padding: 20px;
-    }
-
-    /* ── Table ──────────────────────────────────────────────── */
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    th {
-        text-align: left;
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: .5px;
-        color: var(--muted);
-        padding: 12px 16px;
-        border-bottom: 1px solid var(--line);
-        background: #fafbff;
-    }
-
-    td {
-        padding: 14px 16px;
-        border-bottom: 1px solid var(--line);
-        font-size: 14px;
-        vertical-align: middle;
-    }
-
-    tr:last-child td {
-        border-bottom: none;
-    }
-
-    .cat-name {
-        font-weight: 600;
-    }
-
-    .cat-desc {
-        color: var(--muted);
-        font-size: 12.5px;
-        margin-top: 2px;
-    }
-
-    .pill {
-        display: inline-block;
-        border-radius: 999px;
-        padding: 4px 12px;
-        font-size: 11.5px;
-        font-weight: 600;
-    }
-
-    .pill-on {
-        background: #e8f7ef;
-        color: var(--green);
-    }
-
-    .pill-off {
-        background: #f1f5f9;
-        color: #475569;
-    }
-
-    .pill-use {
-        background: #eef2ff;
-        color: var(--navy);
-    }
-
-    .row-actions {
-        display: flex;
-        gap: 7px;
-        justify-content: flex-end;
-        flex-wrap: wrap;
-    }
-
-    .btn {
-        border: 1px solid var(--line);
-        background: #fff;
-        border-radius: 9px;
-        padding: 7px 13px;
-        font-size: 12.5px;
-        font-weight: 600;
-        color: var(--navy);
-        transition: background .15s, color .15s;
-    }
-
-    .btn:hover {
-        background: #f3f6ff;
-    }
-
-    .btn-danger {
-        color: var(--red);
-        border-color: #fecaca;
-    }
-
-    .btn-danger:hover {
-        background: #fef2f2;
-    }
-
-    .btn-primary {
-        background: var(--navy);
-        color: #fff;
-        border-color: var(--navy);
-    }
-
-    .btn-primary:hover {
-        background: var(--navy-deep);
-    }
-
-    .empty {
-        padding: 36px 20px;
-        text-align: center;
-        color: var(--muted);
-        font-size: 14px;
-    }
-
-    /* ── Form ───────────────────────────────────────────────── */
-
-    label {
-        display: block;
-        font-size: 12.5px;
-        font-weight: 600;
-        margin-bottom: 6px;
-    }
-
-    .input {
-        width: 100%;
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        padding: 10px 13px;
-        font-size: 14px;
-        background: #fbfdff;
-        color: var(--navy);
-    }
-
-    .input:focus {
-        outline: none;
-        border-color: var(--navy);
-    }
-
-    .field {
-        margin-bottom: 14px;
-    }
-
-    .hint {
-        color: var(--muted);
-        font-size: 12px;
-        margin-top: 6px;
-        line-height: 1.5;
-    }
-
-    /* ── Inline Edit Row ────────────────────────────────────── */
-
-    .edit-row {
-        display: none;
-        background: #fafbff;
-    }
-
-    .edit-row.open {
-        display: table-row;
-    }
-
-    .edit-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr auto auto;
-        gap: 10px;
-        align-items: center;
-    }
-
-    .check {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        font-size: 13px;
-        font-weight: 600;
-    }
-
-    /* ── Responsive ────────────────────────────────────────── */
-
-    @media (max-width: 1024px) {
-        .grid {
-            grid-template-columns: 1fr;
-        }
-
-        .main {
-            padding: 20px 16px 48px;
-        }
-    }
-
-    @media (max-width: 640px) {
-        .edit-grid {
-            grid-template-columns: 1fr;
-        }
-
-        table,
-        tbody,
-        tr,
-        td {
-            display: block;
-            width: 100%;
-        }
-
-        thead {
-            display: none;
-        }
-
-        tr {
-            border: 1px solid var(--line);
-            border-radius: 12px;
-            margin-bottom: 12px;
-            padding: 10px;
-        }
-
-        td {
-            border-bottom: none;
-            padding: 6px 4px;
-        }
-
-        .row-actions {
-            justify-content: flex-start;
-        }
-
-        /* Rows become cards here, so label each value. */
-        td[data-label]::before {
-            content: attr(data-label);
-            display: block;
-            margin-bottom: 4px;
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: .5px;
-            text-transform: uppercase;
-            color: var(--muted);
-        }
-
-        /* An opened inline editor must be a block once rows are cards. */
-        .edit-row.open {
-            display: block;
-        }
-
-        /* Cards are tall; let the page scroll rather than a nested box. */
-        .card .paginated-table-scroll {
-            max-height: none;
-        }
-    }
-</style>
-</head>
-
-<body>
-
+<x-admin.layout title="Program Categories | UPSKILL Admin" page="admin-program-categories">
+    <x-slot:head>
+        <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
+        <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
+    </x-slot:head>
 {{-- Shared authenticated Admin navbar --}}
-@include('components.authenticated-topbar', ['user' => auth()->user()])
-
 <div class="layout admin-layout">
 
     {{-- Shared Admin sidebar --}}
-    @include('components.admin-sidebar')
-
     <main class="main">
 
         <div class="page-head">
@@ -467,7 +71,7 @@
                                 <th>Category</th>
                                 <th>Status</th>
                                 <th>Courses</th>
-                                <th style="text-align:right;">Actions</th>
+                                <th class="adm-inline-admin-program-categories-1">Actions</th>
                             </tr>
                         </thead>
 
@@ -580,8 +184,8 @@
                                             </div>
 
                                             <label
-                                                class="check"
-                                                style="margin-top:18px;">
+                                                class="check adm-inline-admin-program-categories-2"
+                                               >
 
                                                 <input
                                                     type="checkbox"
@@ -594,8 +198,8 @@
 
                                             <button
                                                 type="submit"
-                                                class="btn btn-primary"
-                                                style="margin-top:18px;">
+                                                class="btn btn-primary adm-inline-admin-program-categories-3"
+                                               >
                                                 Save
                                             </button>
 
@@ -666,8 +270,8 @@
 
                         <button
                             type="submit"
-                            class="btn btn-primary"
-                            style="width:100%;padding:11px;">
+                            class="btn btn-primary adm-inline-admin-program-categories-4"
+                           >
                             Add category
                         </button>
 
@@ -699,7 +303,4 @@
 </script>
 
 {{-- Shared responsiveness layer --}}
-@include('components.responsive')
-
-</body>
-</html>
+</x-admin.layout>

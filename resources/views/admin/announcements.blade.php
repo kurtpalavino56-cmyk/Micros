@@ -3,138 +3,14 @@
     Admin › Announcements (sidebar item under Analytics).
     Expects: $announcements (collection of objects).
 --}}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Announcements | UPSKILL Admin</title>
-    {{-- Browser tab icon (favicon) --}}
-    <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    @vite(['resources/js/app.js'])
-<style>
-    :root{--navy:#13176b;--gold:#dba617;--muted:#6b7280;--line:#e5e7eb;--green:#15803d;
-          --shadow:0 10px 25px rgba(19,23,107,.08);--topbar-h:60px;}
-    *{box-sizing:border-box;}
-    body{font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--navy);margin:0;background:#f5f7ff;}
-    a{text-decoration:none;color:inherit;}
-    button{font-family:inherit;cursor:pointer;}
-    .topbar{position:sticky;top:0;height:var(--topbar-h);background:var(--navy);display:flex;
-        align-items:center;justify-content:space-between;padding:0 22px;z-index:200;
-        box-shadow:0 2px 8px rgba(0,0,0,.25);}
-    .topbar-brand{display:flex;align-items:center;gap:10px;color:#fff;font-size:1.05rem;
-        font-weight:800;letter-spacing:2px;text-transform:uppercase;}
-    .brand-logo{width:34px;height:34px;border-radius:50%;background:#fff;display:flex;
-        align-items:center;justify-content:center;overflow:hidden;}
-    .brand-logo img{width:100%;height:100%;object-fit:contain;}
-    .topbar-right{display:flex;align-items:center;gap:10px;}
-    .avatar-btn{width:40px;height:40px;border-radius:50%;background:#fff;color:var(--navy);
-        display:inline-flex;align-items:center;justify-content:center;}
-    /* Matches the padding the other admin pages use (30px 34px 44px). */
-    .wrap{max-width:1080px;margin:0 auto;padding:34px 40px 52px;}
-    .page-intro{margin-bottom:32px;}
-    .page-heading{font-size:1.6rem;font-weight:800;margin:0 0 4px;color:#000;}
-    .page-sub{color:var(--muted);font-size:.92rem;margin:0;}
-    .card{background:#fff;border:1px solid var(--line);border-radius:18px;
-        box-shadow:var(--shadow);padding:24px 26px;margin-bottom:22px;}
-    .card h2{margin:0 0 16px;font-size:1.05rem;}
-    label{display:block;font-size:12px;font-weight:800;letter-spacing:.4px;
-        text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
-    input[type=text],textarea{width:100%;border:1.5px solid #c9ccdb;border-radius:10px;
-        padding:11px 13px;font-size:14px;font-family:inherit;color:var(--navy);background:#fff;}
-    textarea{min-height:110px;resize:vertical;}
-    .announcement-editor .ck-editor__main>.ck-editor__editable{min-height:150px;padding:12px 14px;color:var(--navy);font-family:inherit;font-size:14px;line-height:1.6;}
-    .announcement-editor .ck.ck-toolbar{border-color:#c9ccdb;background:#f7f9ff;}
-    .announcement-editor .ck.ck-editor__main>.ck-editor__editable{border-color:#c9ccdb;}
-    input[type=text]:focus,textarea:focus{outline:none;border-color:var(--navy);}
-    .field{margin-bottom:16px;}
-    /* "Who Can See Your Announcement" — audience checkboxes */
-    .audience-row{display:flex;align-items:center;gap:18px;flex-wrap:wrap;
-        background:#f7f9ff;border:1px solid #dfe4fb;border-radius:12px;padding:14px 16px;}
-    .audience-label{font-weight:800;font-size:13.5px;color:var(--navy);}
-    .audience-opts{display:flex;gap:16px;flex-wrap:wrap;}
-    .audience-opts label{display:inline-flex;align-items:center;gap:7px;margin:0;
-        font-size:13.5px;font-weight:700;text-transform:none;letter-spacing:0;color:var(--navy);cursor:pointer;}
-    .audience-opts input{width:16px;height:16px;accent-color:var(--navy);cursor:pointer;}
-    .btn{border:none;border-radius:999px;padding:11px 22px;font-weight:800;font-size:13.5px;}
-    .btn-navy{background:var(--navy);color:#fff;}
-    .btn-ghost{background:#fff;border:1.5px solid var(--line);color:var(--navy);padding:8px 16px;
-        border-radius:999px;font-weight:700;font-size:12.5px;}
-    .btn-danger{background:#fff1f2;border:1px solid #fecdd3;color:#b91c1c;padding:8px 16px;
-        border-radius:999px;font-weight:700;font-size:12.5px;}
-    .ann{border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-bottom:10px;background:#fff;}
-    .ann:last-child{margin-bottom:0;}
-    .ann-head{display:flex;justify-content:space-between;align-items:center;gap:18px;}
-    .ann-title{font-size:15px;font-weight:800;margin:0 0 8px;color:#17212b;}
-    .ann-copy{min-width:0;}
-    .ann-body{color:#4b5563;font-size:14px;line-height:1.55;margin:0 0 10px;overflow-wrap:anywhere;}
-    .ann-body p{margin:0 0 8px;}
-    .ann-body p:last-child{margin-bottom:0;}
-    .ann-meta{color:var(--muted);font-size:12px;}
-    .pill{display:inline-block;background:#eef1fb;color:var(--navy);font-size:11.5px;
-        font-weight:800;padding:4px 11px;border-radius:999px;margin-right:6px;}
-    .pill.faculty{background:#fdf3d7;color:#c4930f;}
-    .pill.public{background:#e8f5ee;color:#136c3e;}
-    .pill.pinned{background:#fff4cf;color:#806208;}
-    .alert{padding:11px 14px;border-radius:12px;margin-bottom:18px;font-size:14px;}
-    .alert-ok{background:#ecfdf3;border:1px solid #a7f3d0;color:#065f46;}
-    .alert-err{background:#fff1f2;border:1px solid #fecdd3;color:#b91c1c;}
-    .empty{color:var(--muted);text-align:center;padding:34px 8px;font-size:14px;}
-    .actions{display:flex;gap:8px;flex-shrink:0;}
-    .btn-view{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;
-        border:1.5px solid var(--line);border-radius:999px;background:#fff;color:var(--navy);}
-    .btn-view:hover{background:#f7f9ff;border-color:#c9ccdb;}
-    .btn-view svg{width:18px;height:18px;fill:currentColor;}
-    .btn-view:focus-visible,.btn-ghost:focus-visible,.btn-pin:focus-visible,.btn-danger:focus-visible,
-    .announcement-dialog-close:focus-visible{outline:3px solid rgba(11,78,162,.28);outline-offset:2px;}
-    .btn-pin{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--line);
-        color:var(--navy);padding:8px 14px;border-radius:999px;font-weight:700;font-size:12.5px;}
-    .btn-pin.is-pinned{background:#fff8df;border-color:#e9cf72;color:#806208;}
-    .btn-pin svg{width:16px;height:16px;flex:0 0 16px;}
-    .announcement-modal[hidden]{display:none;}
-    .announcement-modal{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;padding:16px;}
-    .announcement-modal-backdrop{position:absolute;inset:0;background:rgba(7,20,63,.68);backdrop-filter:blur(3px);}
-    .announcement-dialog{position:relative;width:min(100%,760px);max-height:min(85vh,820px);overflow-y:auto;
-        padding:24px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 24px 70px rgba(6,16,52,.3);}
-    .announcement-dialog-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
-        padding-bottom:16px;border-bottom:1px solid var(--line);}
-    .announcement-dialog-head h2{margin:0;color:#000;font-size:22px;line-height:1.3;overflow-wrap:anywhere;}
-    .announcement-dialog-meta{margin:6px 0 0;color:var(--muted);font-size:12px;}
-    .announcement-dialog-close{width:36px;height:36px;flex:0 0 36px;border:0;border-radius:50%;
-        background:#f1f3f8;color:var(--navy);font-size:24px;line-height:1;cursor:pointer;}
-    .announcement-dialog-content{padding-top:18px;color:#4b5563;font-size:14px;line-height:1.65;overflow-wrap:anywhere;}
-    .announcement-dialog-content > :first-child{margin-top:0;}
-    .announcement-dialog-content img{max-width:100%;height:auto;}
-    .announcement-edit-modal[hidden]{display:none;}
-    .announcement-edit-modal{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;padding:16px;}
-    .announcement-edit-dialog{position:relative;width:min(100%,760px);max-height:min(90vh,900px);overflow-y:auto;
-        padding:24px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 24px 70px rgba(6,16,52,.3);}
-    .announcement-edit-dialog .announcement-dialog-head{align-items:center;}
-    .announcement-edit-dialog .field{margin-top:18px;}
-    .announcement-edit-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;}
-    .btn-cancel{background:#fff;border:1.5px solid var(--line);color:var(--navy);padding:10px 18px;
-        border-radius:999px;font-weight:700;font-size:13px;}
-    .btn-cancel:hover{background:#f7f9ff;}
-    body.announcement-modal-open{overflow:hidden;}
-    @media(max-width:640px){.ann-head{align-items:flex-start;flex-direction:column;}.actions{flex-wrap:wrap;}.announcement-edit-actions{flex-direction:column-reverse;}.announcement-edit-actions button{width:100%;}}
-    @media(max-width:600px){.announcement-dialog,.announcement-edit-dialog{padding:18px;}.announcement-dialog-head h2{font-size:19px;}}
-    /* The shared sidebar already gives .wrap a 16px side margin on phones;
-       the 40px page padding on top of it left a very narrow column. */
-    @media(max-width:768px){
-        .wrap{padding:22px 0 40px;}
-        .page-intro{margin-bottom:22px;}
-        .card{padding:18px 16px;border-radius:14px;}
-        .audience-row{gap:10px;padding:12px;}
-        .ann{padding:12px 14px;}
-        .actions .btn-ghost,.actions .btn-danger,.actions .btn-pin{padding:8px 12px;}
-    }
-</style>
-</head>
-<body>
-@include('components.authenticated-topbar', ['user' => auth()->user()])
-<style>.topbar{display:none!important;}.wrap{margin-top:0!important;}</style>
+<x-admin.layout title="Announcements | UPSKILL Admin" page="admin-announcements">
+    <x-slot:head>
+        {{-- Browser tab icon (favicon) --}}
+            <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
+            <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
+
+            @vite(['resources/js/app.js'])
+    </x-slot:head>
 @if(false)
 <nav class="topbar" hidden aria-hidden="true">
     <a href="{{ route('admin.dashboard') }}" class="topbar-brand">
@@ -162,7 +38,7 @@
             </svg>
             @endunless
         </a>
-        <form action="{{ route('logout') }}" method="POST" style="display:inline-flex;">
+        <form action="{{ route('logout') }}" method="POST" class="adm-inline-admin-announcements-1">
             @csrf
             <button type="submit" class="btn-danger">Logout</button>
         </form>
@@ -234,7 +110,7 @@
                                 <span class="pill pinned">Pinned</span>
                             @endif
                         </div>
-                        <div class="ann-meta" style="margin-top:8px;">
+                        <div class="ann-meta adm-inline-admin-announcements-2">
                             By {{ $a->author }} · {{ $a->created_at?->format('M j, Y g:i A') }}
                         </div>
                     </div>
@@ -438,9 +314,5 @@
 </script>
 
 {{-- Shared Admin sidebar styling (floating card + section pills) --}}
-@include('components.admin-sidebar')
-
 {{-- Shared responsiveness layer (drawer nav + grid stacking) --}}
-@include('components.responsive')
-</body>
-</html>
+</x-admin.layout>
