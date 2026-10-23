@@ -73,14 +73,18 @@
         .filter-select { width:100%; min-width:0; max-width:100%; padding:7px 25px 7px 10px; border:1px solid #dce3f0; border-radius:7px; background:#fff; appearance:auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .stats-grid { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:13px; margin-bottom:18px; }
         .stat-card, .card { background:#fff; border:1px solid #e0e6f0; border-radius:12px; box-shadow:0 2px 8px rgba(25,47,96,.04); }
-        .stat-card { padding:15px; min-width:0; }
-        .stat-top { display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:14px; }
-        .stat-icon { width:30px; height:30px; display:grid; place-items:center; color:#1f4bb7; }
-        .stat-icon.yellow { color:#866508; }
-        .stat-icon svg { width:20px; height:20px; fill:currentColor; }
-        .stat-label { color:#68758c; font-size:.73rem; line-height:1.25; min-height:30px; }
-        .stat-value { color:#142653; font-size:1.42rem; line-height:1.1; font-weight:800; margin:5px 0 6px; }
-        .stat-trend { color:#26815a; font-size:.68rem; font-weight:700; white-space:nowrap; }
+        .stat-card { position:relative; overflow:hidden; padding:18px 20px; min-width:0; border-color:#e5e8ee; border-radius:10px; box-shadow:none; }
+        .stat-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-direction:row-reverse; }
+        .stat-icon { width:32px; height:32px; flex:0 0 32px; display:grid; place-items:center; color:#737d8d; }
+        .stat-icon svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+        .stat-lbl { color:#69758c; font-size:.84rem; line-height:1.25; font-weight:500; }
+        .stat-val { color:#142653; font-size:1.7rem; line-height:1; font-weight:700; letter-spacing:-.03em; font-variant-numeric:tabular-nums; margin:12px 0 8px; }
+        .stat-context { display:flex; align-items:center; gap:6px; color:#000; font-size:.78rem; line-height:1.3; }
+        .stat-trend { display:inline-flex; align-items:center; gap:3px; font-weight:600; white-space:nowrap; }
+        .stat-trend svg { width:11px; height:11px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+        .stat-trend-up { color:#26815a; }
+        .stat-trend-down { color:#c43c3c; }
+        .stat-trend-neutral { color:#000; }
         .dashboard-grid { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(300px,.85fr); gap:16px; margin-bottom:16px; }
         .dashboard-grid.equal { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
         .card { padding:18px 19px; min-width:0; }
@@ -95,6 +99,8 @@
         .grid-line { stroke:#edf1f7; stroke-width:1; }
         .chart-line { fill:none; stroke:#2858c5; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
         .chart-area { fill:#e9efff; opacity:.8; }
+        .activity-bar { fill:#2858c5; }
+        .activity-bar:hover { fill:#d9b72c; }
         .donut-wrap { display:flex; align-items:center; gap:24px; min-height:185px; }
         .donut { width:148px; height:148px; flex:none; transform:rotate(-90deg); }
         .donut-track { fill:none; stroke:#edf0f5; stroke-width:17; }
@@ -118,7 +124,7 @@
         .score { font-weight:700; color:#1d3f96; }
         .assessment-metric { background:#fff9df; border:1px solid #f2e7ab; border-radius:8px; padding:8px 11px; text-align:right; }
         .assessment-metric small { display:block; color:#89721e; font-size:.64rem; } .assessment-metric strong { display:block; color:#6e5a0d; font-size:1.15rem; margin-top:2px; }
-        .assessment-bar { margin:23px 0 31px; } .assessment-bar-head { display:flex; justify-content:space-between; color:#344567; font-size:.75rem; font-weight:700; margin-bottom:8px; }
+        .assessment-bar { margin:20px 0 22px; } .assessment-bar + .assessment-bar { margin-top:0; } .assessment-bar-head { display:flex; justify-content:space-between; color:#344567; font-size:.75rem; font-weight:700; margin-bottom:8px; }
         .assessment-bar-head strong { color:#244da9; } .assessment-bar .progress-track { height:9px; }
         .metric-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
         .metric-box { border-left:2px solid #dfe7f6; padding-left:10px; } .metric-box strong { display:block; color:#172d5a; font-size:1.1rem; } .metric-box span { color:#8590a0; font-size:.67rem; }
@@ -184,18 +190,18 @@
         <section class="stats-grid" aria-label="Key performance indicators">
             @php
                 $kpis = [
-                    ['label' => 'Total Learners', 'value' => number_format($stats['total_students']), 'trend' => 'Filtered scope', 'icon' => 'users'],
-                    ['label' => 'Active Learners', 'value' => number_format($stats['active_students']), 'trend' => $period === 'all' ? 'Last 30 days' : 'Selected period', 'icon' => 'activity', 'yellow' => true],
-                    ['label' => 'Total Courses', 'value' => number_format($stats['total_courses']), 'trend' => 'Filtered scope', 'icon' => 'book'],
-                    ['label' => 'Course Completions', 'value' => number_format($stats['completions']), 'trend' => $period === 'all' ? 'All time' : 'Selected period', 'icon' => 'check', 'yellow' => true],
-                    ['label' => 'Credentials Issued', 'value' => number_format($stats['credentials']), 'trend' => $period === 'all' ? 'All time' : 'Selected period', 'icon' => 'award'],
-                    ['label' => 'Average Assessment Score', 'value' => $stats['course_score_avg'] === null ? '—' : $stats['course_score_avg'] . '%', 'trend' => 'Scored quiz attempts', 'icon' => 'chart', 'yellow' => true],
+                    ['label' => 'Total Learners', 'value' => number_format($stats['total_students']), 'trendKey' => 'learners', 'icon' => 'users'],
+                    ['label' => 'Active Learners', 'value' => number_format($stats['active_students']), 'trendKey' => 'active_learners', 'icon' => 'activity'],
+                    ['label' => 'Total Courses', 'value' => number_format($stats['total_courses']), 'trendKey' => 'courses', 'icon' => 'book'],
+                    ['label' => 'Course Completions', 'value' => number_format($stats['completions']), 'trendKey' => 'completions', 'icon' => 'check'],
+                    ['label' => 'Credentials Issued', 'value' => number_format($stats['credentials']), 'trendKey' => 'credentials', 'icon' => 'award'],
+                    ['label' => 'Average Score', 'value' => $stats['course_score_avg'] === null ? '—' : $stats['course_score_avg'] . '%', 'trendKey' => 'assessment_score', 'icon' => 'chart'],
                 ];
             @endphp
             @foreach ($kpis as $kpi)
                 <article class="stat-card">
-                    <div class="stat-top">
-                    <div class="stat-icon {{ !empty($kpi['yellow']) ? 'yellow' : '' }}">
+                    <div class="stat-heading">
+                    <div class="stat-icon">
                             <svg viewBox="0 0 24 24" aria-hidden="true">
                                 @if ($kpi['icon'] === 'users')
                                     <circle cx="8" cy="7.5" r="3.5"/><path d="M1.5 20c.35-3.7 2.65-5.7 6.5-5.7s6.15 2 6.5 5.7zM16 4.4a3.5 3.5 0 0 1 0 6.2M17 14.5c2.75.5 4.25 2.3 4.6 5.5h-5.3c-.12-2.2-.85-4-2.2-5.2.85-.3 1.8-.4 2.9-.3z"/>
@@ -204,7 +210,7 @@
                                 @elseif ($kpi['icon'] === 'book')
                                     <path d="M5 3h14a2 2 0 0 1 2 2v15H7a3 3 0 0 0-3 3V5a2 2 0 0 1 1-2zm1 2a1 1 0 0 0-1 1v12.2A4.9 4.9 0 0 1 7 17h12V5z"/>
                                 @elseif ($kpi['icon'] === 'check')
-                                    <circle cx="12" cy="12" r="10"/><path d="m7 12.2 3.2 3.2L17.5 8" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="12" cy="12" r="10"/><path d="m7 12.2 3.2 3.2L17.5 8"/>
                                 @elseif ($kpi['icon'] === 'award')
                                     <path d="m7.1 13.5-1 8 5.9-3.1 5.9 3.1-1-8A7 7 0 1 0 7.1 13.5zM12 3.5a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"/>
                                 @else
@@ -212,10 +218,29 @@
                                 @endif
                             </svg>
                         </div>
-                        <span class="stat-trend">{{ $kpi['trend'] }}</span>
+                        <div class="stat-lbl">{{ $kpi['label'] }}</div>
                     </div>
-                    <div class="stat-label">{{ $kpi['label'] }}</div>
-                    <div class="stat-value">{{ $kpi['value'] }}</div>
+                    <div class="stat-val">{{ $kpi['value'] }}</div>
+                    @php
+                        $trend = $stats['trends'][$kpi['trendKey']];
+                        $trendValue = $trend['current'] !== null && $trend['previous'] !== null
+                            ? round($trend['current'] - $trend['previous'], 1)
+                            : null;
+                        $trendClass = $trendValue === null ? 'stat-trend-neutral' : ($trendValue > 0 ? 'stat-trend-up' : ($trendValue < 0 ? 'stat-trend-down' : 'stat-trend-neutral'));
+                    @endphp
+                    <div class="stat-context">
+                        @if ($trendValue === null)
+                            <span class="stat-trend stat-trend-neutral">—</span> No previous data
+                        @else
+                            <span class="stat-trend {{ $trendClass }}">
+                                @if ($trendValue !== 0)
+                                    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="{{ $trendValue > 0 ? 'M8 13V3m-4 4 4-4 4 4' : 'M8 3v10m-4-4 4 4 4-4' }}"/></svg>
+                                @endif
+                                {{ $trendValue > 0 ? '+' : '' }}{{ number_format($trendValue, $kpi['trendKey'] === 'assessment_score' ? 1 : 0) }}
+                            </span>
+                            {{ $trendPeriodLabel }}
+                        @endif
+                    </div>
                 </article>
             @endforeach
         </section>
@@ -228,9 +253,15 @@
                         <button class="activity-tab {{ $activityMode === 'enrollments' ? 'active' : '' }}" type="button" data-activity="enrollments">Enrollments</button><button class="activity-tab {{ $activityMode === 'active' ? 'active' : '' }}" type="button" data-activity="active">Active Learners</button><button class="activity-tab {{ $activityMode === 'completions' ? 'active' : '' }}" type="button" data-activity="completions">Completions</button>
                     </div>
                 </div>
-                <svg class="activity-chart" viewBox="0 0 760 230" preserveAspectRatio="none" role="img" aria-label="Learner activity line chart">
-                    <path class="grid-line" d="M48 25H744M48 70H744M48 115H744M48 160H744M48 205H744"/><polygon class="chart-area" points="48,205 {{ $activity['points'] }} 744,205"/><polyline class="chart-line" points="{{ $activity['points'] }}"/>
-                    <g class="axis-label"><text x="12" y="29">{{ $activity['scale']['max'] }}</text><text x="12" y="74">{{ $activity['scale']['high'] }}</text><text x="12" y="119">{{ $activity['scale']['mid'] }}</text><text x="12" y="164">{{ $activity['scale']['low'] }}</text><text x="20" y="209">0</text>@foreach ($activity['labels'] as $index => $label)<text x="{{ 40 + $index * 87 }}" y="224">{{ $label }}</text>@endforeach</g>
+                <svg class="activity-chart" viewBox="0 0 760 230" preserveAspectRatio="none" role="img" aria-label="Learner activity bar chart">
+                    <path class="grid-line" d="M48 25H744M48 70H744M48 115H744M48 160H744M48 205H744"/>
+                    @foreach($activity['values'] as $index => $value)
+                        @php
+                            $barHeight = $value / $activity['scale']['max'] * 180;
+                        @endphp
+                        <rect class="activity-bar" x="{{ 63 + $index * 77 }}" y="{{ 205 - $barHeight }}" width="44" height="{{ $barHeight }}" rx="4"><title>{{ $activity['labels'][$index] }}: {{ number_format($value) }}</title></rect>
+                    @endforeach
+                    <g class="axis-label"><text x="12" y="29">{{ $activity['scale']['max'] }}</text><text x="12" y="74">{{ $activity['scale']['high'] }}</text><text x="12" y="119">{{ $activity['scale']['mid'] }}</text><text x="12" y="164">{{ $activity['scale']['low'] }}</text><text x="20" y="209">0</text>@foreach ($activity['labels'] as $index => $label)<text x="{{ 85 + $index * 77 }}" y="224" text-anchor="middle">{{ $label }}</text>@endforeach</g>
                 </svg>
             </article>
             <article class="card">
@@ -298,8 +329,9 @@
             </article>
             <div class="analytics-side-stack">
                 <article class="card">
-                    <div class="card-heading"><div><h2 class="card-title">Assessment Performance</h2><p class="card-subtitle">Quiz attempt scores in the selected scope</p></div><div class="assessment-metric"><small>Pass Rate</small><strong>{{ $assessment['pass_rate'] === null ? '—' : $assessment['pass_rate'] . '%' }}</strong></div></div>
+                    <div class="card-heading"><div><h2 class="card-title">Assessment Performance</h2><p class="card-subtitle">Quiz and final exam scores in the selected scope</p></div><div class="assessment-metric"><small>Pass Rate</small><strong>{{ $assessment['pass_rate'] === null ? '—' : $assessment['pass_rate'] . '%' }}</strong></div></div>
                     <div class="assessment-bar"><div class="assessment-bar-head"><span>Average quiz score</span><strong>{{ $assessment['average'] === null ? 'No attempts' : $assessment['average'] . '%' }}</strong></div><div class="progress-track"><div class="progress-fill" style="width:{{ $assessment['average'] ?? 0 }}%"></div></div></div>
+                    <div class="assessment-bar"><div class="assessment-bar-head"><span>Average final exam score</span><strong>{{ $assessment['final_exam_average'] === null ? 'No attempts' : $assessment['final_exam_average'] . '%' }}</strong></div><div class="progress-track"><div class="progress-fill" style="width:{{ $assessment['final_exam_average'] ?? 0 }}%"></div></div></div>
                     <div class="metric-grid"><div class="metric-box"><strong>{{ number_format($assessment['total']) }}</strong><span>Scored Attempts</span></div><div class="metric-box"><strong>{{ $assessment['highest'] === null ? '—' : $assessment['highest'] . '%' }}</strong><span>Highest Score</span></div><div class="metric-box"><strong>{{ $assessment['lowest'] === null ? '—' : $assessment['lowest'] . '%' }}</strong><span>Lowest Score</span></div></div>
                 </article>
                 <article class="card">

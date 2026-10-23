@@ -26,6 +26,16 @@
     .course-option{padding:10px;border:1px solid #e3e8f1;border-radius:9px;font-size:13px;background:#fff;display:flex;gap:8px;align-items:flex-start;}
     .course-option:has(input:checked){background:#eef2ff;border-color:#cbd5f5;}
     .course-option input{margin-top:2px;}
+    .course-sequence{margin-top:14px;padding:13px;border:1px solid #e3e8f1;border-radius:10px;background:#f9fafc;}
+    .course-sequence h3{margin:0;font-size:13px;}
+    .course-sequence-help{margin:4px 0 10px;color:var(--muted);font-size:12px;}
+    .course-sequence-list{display:grid;gap:6px;margin:0;padding:0;list-style:none;}
+    .course-sequence-list:empty{display:none;}
+    .course-sequence-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid #e3e8f1;border-radius:8px;background:#fff;font-size:12px;font-weight:700;}
+    .course-sequence-item span{min-width:0;overflow-wrap:anywhere;}
+    .course-sequence-actions{display:flex;flex:0 0 auto;gap:5px;}
+    .course-sequence-actions button{width:28px;height:28px;border:1px solid #dce4f0;border-radius:6px;background:#fff;color:var(--navy);font-weight:800;cursor:pointer;}
+    .course-sequence-actions button:disabled{opacity:.4;cursor:not-allowed;}
     .btn{background:var(--navy);color:#fff;border:0;border-radius:999px;padding:11px 18px;font-weight:800;cursor:pointer;}
     .btn:hover{background:#172b91;}
     .btn-secondary{background:#fff;color:var(--navy);border:1px solid #c8d2e5;border-radius:10px;padding:10px 15px;font-weight:750;cursor:pointer;}
@@ -98,8 +108,13 @@
                 <p style="font-weight:700;font-size:13px;margin:18px 0 9px">Assign courses</p>
                 <div class="course-grid">
                     @foreach($courses as $course)
-                        <label class="course-option"><input type="checkbox" name="course_ids[]" value="{{ $course->id }}" @checked(!old('pathway_id') && in_array((string) $course->id, array_map('strval', is_array(old('course_ids')) ? old('course_ids') : []), true))> <span>{{ $course->title }}</span></label>
+                        <label class="course-option"><input type="checkbox" value="{{ $course->id }}" data-course-title="{{ $course->title }}" @checked(!old('pathway_id') && in_array((string) $course->id, array_map('strval', is_array(old('course_ids')) ? old('course_ids') : []), true))> <span>{{ $course->title }}</span></label>
                     @endforeach
+                </div>
+                <div class="course-sequence" data-course-sequence>
+                    <h3>Course sequence</h3>
+                    <p class="course-sequence-help">Use the arrows to set the order students should follow.</p>
+                    <ol class="course-sequence-list" aria-live="polite"></ol>
                 </div>
                 <button class="btn" type="submit">Create pathway</button>
             </form>
@@ -160,7 +175,7 @@
 <div class="modal-backdrop" id="pathway-view-modal" hidden>
     <section class="pathway-modal" role="dialog" aria-modal="true" aria-labelledby="pathway-view-title" tabindex="-1">
         <header class="modal-head">
-            <div><h2 id="pathway-view-title">Pathway details</h2><p>Review the courses and status for this pathway.</p></div>
+            <div><h2 id="pathway-view-title">Pathway details</h2><p>Review the course sequence and status for this pathway.</p></div>
             <button type="button" class="modal-close" data-close-modal aria-label="Close">&times;</button>
         </header>
         <div class="modal-body">
@@ -192,8 +207,13 @@
                 <p style="font-weight:800;font-size:13px;margin:18px 0 9px">Assign courses</p>
                 <div class="course-grid">
                     @foreach($courses as $course)
-                        <label class="course-option"><input type="checkbox" name="course_ids[]" value="{{ $course->id }}"> <span>{{ $course->title }}</span></label>
+                        <label class="course-option"><input type="checkbox" value="{{ $course->id }}" data-course-title="{{ $course->title }}"> <span>{{ $course->title }}</span></label>
                     @endforeach
+                </div>
+                <div class="course-sequence" data-course-sequence>
+                    <h3>Course sequence</h3>
+                    <p class="course-sequence-help">Use the arrows to set the order students should follow.</p>
+                    <ol class="course-sequence-list" aria-live="polite"></ol>
                 </div>
             </div>
             <footer class="modal-footer">
@@ -210,6 +230,86 @@
         var editModal = document.getElementById('pathway-edit-modal');
         var editForm = document.getElementById('pathway-edit-form');
         var previousFocus = null;
+
+        function renderCourseSequence(form, preferredIds) {
+            var sequenceList = form.querySelector('.course-sequence-list');
+            var checkboxes = Array.from(form.querySelectorAll('.course-grid input[type="checkbox"]'));
+            var selectedIds = new Set(checkboxes.filter(function (checkbox) { return checkbox.checked; }).map(function (checkbox) { return checkbox.value; }));
+            var currentIds = Array.from(sequenceList.querySelectorAll('input[name="course_ids[]"]')).map(function (input) { return input.value; });
+            var orderedIds = [];
+            var seenIds = new Set();
+
+            [preferredIds || [], currentIds, checkboxes.filter(function (checkbox) { return checkbox.checked; }).map(function (checkbox) { return checkbox.value; })]
+                .flat()
+                .forEach(function (courseId) {
+                    courseId = String(courseId);
+                    if (selectedIds.has(courseId) && !seenIds.has(courseId)) {
+                        seenIds.add(courseId);
+                        orderedIds.push(courseId);
+                    }
+                });
+
+            sequenceList.replaceChildren();
+            orderedIds.forEach(function (courseId, index) {
+                var checkbox = checkboxes.find(function (item) { return item.value === courseId; });
+                if (!checkbox) return;
+
+                var item = document.createElement('li');
+                item.className = 'course-sequence-item';
+                var title = document.createElement('span');
+                title.textContent = (index + 1) + '. ' + (checkbox.dataset.courseTitle || checkbox.closest('label').textContent.trim());
+
+                var hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'course_ids[]';
+                hiddenInput.value = courseId;
+
+                var actions = document.createElement('div');
+                actions.className = 'course-sequence-actions';
+                var moveUp = document.createElement('button');
+                moveUp.type = 'button';
+                moveUp.textContent = '↑';
+                moveUp.setAttribute('aria-label', 'Move ' + title.textContent + ' earlier');
+                moveUp.disabled = index === 0;
+                moveUp.addEventListener('click', function () {
+                    var nextIds = orderedIds.slice();
+                    nextIds.splice(index, 1);
+                    nextIds.splice(index - 1, 0, courseId);
+                    renderCourseSequence(form, nextIds);
+                });
+
+                var moveDown = document.createElement('button');
+                moveDown.type = 'button';
+                moveDown.textContent = '↓';
+                moveDown.setAttribute('aria-label', 'Move ' + title.textContent + ' later');
+                moveDown.disabled = index === orderedIds.length - 1;
+                moveDown.addEventListener('click', function () {
+                    var nextIds = orderedIds.slice();
+                    nextIds.splice(index, 1);
+                    nextIds.splice(index + 1, 0, courseId);
+                    renderCourseSequence(form, nextIds);
+                });
+
+                actions.append(moveUp, moveDown);
+                item.append(title, hiddenInput, actions);
+                sequenceList.appendChild(item);
+            });
+        }
+
+        document.querySelectorAll('form').forEach(function (form) {
+            if (!form.querySelector('.course-sequence-list')) return;
+            form.querySelectorAll('.course-grid input[type="checkbox"]').forEach(function (checkbox) {
+                checkbox.addEventListener('change', function () {
+                    renderCourseSequence(form);
+                });
+            });
+            renderCourseSequence(form);
+        });
+
+        var createForm = document.querySelector('.create-panel');
+        if (createForm) {
+            renderCourseSequence(createForm, @json(!old('pathway_id') && is_array(old('course_ids')) ? array_map('strval', old('course_ids')) : []));
+        }
 
         function openModal(modal) {
             previousFocus = document.activeElement;
@@ -256,9 +356,9 @@
                     empty.textContent = 'No courses assigned.';
                     courseList.appendChild(empty);
                 } else {
-                    courses.forEach(function (courseName) {
+                    courses.forEach(function (courseName, index) {
                         var item = document.createElement('span');
-                        item.textContent = courseName;
+                        item.textContent = (index + 1) + '. ' + courseName;
                         courseList.appendChild(item);
                     });
                 }
@@ -274,9 +374,10 @@
             document.getElementById('pathway-edit-name').value = button.dataset.name || '';
             document.getElementById('pathway-edit-description').value = button.dataset.description || '';
             document.getElementById('pathway-edit-active').checked = button.dataset.active === '1';
-            editForm.querySelectorAll('input[name="course_ids[]"]').forEach(function (checkbox) {
+            editForm.querySelectorAll('.course-grid input[type="checkbox"]').forEach(function (checkbox) {
                 checkbox.checked = courseIds.indexOf(checkbox.value) !== -1;
             });
+            renderCourseSequence(editForm, courseIds);
         }
 
         document.querySelectorAll('[data-edit-pathway]').forEach(function (button) {
@@ -317,9 +418,10 @@
                 document.getElementById('pathway-edit-description').value = @json(old('description'));
                 document.getElementById('pathway-edit-active').checked = @json((bool) old('is_active'));
                 var oldCourseIds = @json(array_map('strval', is_array(old('course_ids')) ? old('course_ids') : []));
-                editForm.querySelectorAll('input[name="course_ids[]"]').forEach(function (checkbox) {
+                editForm.querySelectorAll('.course-grid input[type="checkbox"]').forEach(function (checkbox) {
                     checkbox.checked = oldCourseIds.indexOf(checkbox.value) !== -1;
                 });
+                renderCourseSequence(editForm, oldCourseIds);
                 openModal(editModal);
             }
         }

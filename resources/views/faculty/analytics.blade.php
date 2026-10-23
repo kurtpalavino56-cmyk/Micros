@@ -51,7 +51,6 @@
     .kpi .num{display:block;margin-top:8px;font-family:"Plus Jakarta Sans",Inter,sans-serif;font-size:32px;font-weight:800;line-height:1;color:var(--ink);}
     .kpi .note{margin-top:8px;font-size:12px;color:var(--muted);}
     .kpi .note b{color:var(--ink);}
-    .kpi.live{border-top:3px solid var(--good);} .kpi.a{border-top:3px solid var(--navy);} .kpi.b{border-top:3px solid var(--gold);} .kpi.c{border-top:3px solid var(--teal);}
 
     .split{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:20px;}
 

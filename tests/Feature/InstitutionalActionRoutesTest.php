@@ -94,9 +94,12 @@ test('faculty learner progress shows verify action when the required faculty rev
         ->get(route('faculty.students.course', $course->id))
         ->assertOk()
         ->assertSee($student->name)
-        ->assertSee('Needs review')
-        ->assertSee('Verify completion')
-        ->assertSee(route('faculty.enrollments.verify', $enrollment->id), false);
+        ->assertSee('Awaiting verification')
+        ->assertSee('Review')
+        ->assertSee(route('faculty.students.enrollments.review', [
+            'id' => $course->id,
+            'enrollment' => $enrollment->id,
+        ]), false);
 });
 
 test('faculty can download all enrolled students as pdf word or excel from the all students tab', function () {
@@ -107,7 +110,7 @@ test('faculty can download all enrolled students as pdf word or excel from the a
     $this->actingAs($faculty)
         ->get(route('faculty.students.course', ['id' => $course->id, 'filter' => 'all']))
         ->assertOk()
-        ->assertSee('Download all enrolled students')
+        ->assertSee('Download')
         ->assertSee('PDF')
         ->assertSee('Word (.doc)')
         ->assertSee('Excel (.csv)');
@@ -143,9 +146,12 @@ test('faculty review queue includes ready enrollments when verification was enab
         ->get(route('faculty.students.course', $course->id))
         ->assertOk()
         ->assertSee($student->name)
-        ->assertSee('Needs review')
-        ->assertSee('Verify completion')
-        ->assertSee(route('faculty.enrollments.verify', $enrollment->id), false);
+        ->assertSee('Awaiting verification')
+        ->assertSee('Review')
+        ->assertSee(route('faculty.students.enrollments.review', [
+            'id' => $course->id,
+            'enrollment' => $enrollment->id,
+        ]), false);
 
     $this->post(route('faculty.enrollments.verify', $enrollment->id), ['decision' => 'verified'])
         ->assertRedirect();

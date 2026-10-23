@@ -15,6 +15,7 @@ use App\Models\Enrollment;
 use App\Models\LessonActivity;
 use App\Models\LessonActivitySubmission;
 use App\Models\LessonCompletion;
+use App\Models\Notification;
 use App\Models\Pathway;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
@@ -44,6 +45,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 /**
  * StudentController — every Student_* page, now fed entirely from the
@@ -505,7 +507,7 @@ class StudentController extends Controller
 
     // ── Course Description ────────────────────────────────────────────────
 
-    public function show(int $id)
+    public function show(Request $request, int $id): View
     {
         $auth = Auth::user();
         // modules.quiz.questions added: syncEnrollmentProgress() walks every
@@ -521,8 +523,16 @@ class StudentController extends Controller
         $enrollment = Enrollment::where('user_id', $auth->id)
             ->where('course_id', $course->id)
             ->first();
+        $removalNotice = $request->integer('removal_notice')
+            ? Notification::query()
+                ->whereKey($request->integer('removal_notice'))
+                ->where('user_id', $auth->id)
+                ->where('entity_type', 'course_removal')
+                ->where('entity_id', $course->id)
+                ->first()
+            : null;
         abort_unless(
-            ($course->is_published && $course->is_approved) || $enrollment,
+            ($course->is_published && $course->is_approved) || $enrollment || $removalNotice,
             404
         );
 
@@ -631,6 +641,7 @@ class StudentController extends Controller
             'finalExam' => $finalExam,
             'is_enrolled' => (bool) $enrollment,
             'is_completed' => $enrollment?->completion_status === MicrocredentialCompletionService::STATUS_COMPLETED,
+            'removalNotice' => $removalNotice,
             'progress_percent' => $progressPercent,
             'prerequisites' => $prerequisites,
             'prerequisites_met' => $prerequisitesMet,

@@ -2879,7 +2879,8 @@ body.app-shell.page-courses-browse{
         flex-shrink:0;cursor:pointer;transition:background .18s ease,color .18s ease,border-color .18s ease,transform .18s ease;}
     body.app-shell.page-courses-browse .btn-recommended svg{width:17px;height:17px;}
     body.app-shell.page-courses-browse .btn-recommended:hover{transform:translateY(-1px);}
-    body.app-shell.page-courses-browse .btn-recommended.is-on{background:var(--gold,var(--color-psu-gold-500));border-color:var(--gold,var(--color-psu-gold-500));color:var(--ui-brand-dark);}
+    body.app-shell.page-courses-browse .btn-recommended.is-on,
+    body.app-shell.page-courses-browse .btn-recommended.is-on:hover{background:var(--ui-accent-yellow)!important;border-color:var(--ui-accent-yellow)!important;color:var(--ui-brand-dark)!important;}
     body.app-shell.page-courses-browse .btn-recommended.is-on svg{fill:rgba(12,15,77,.18);}
 
     /* Course grid */
@@ -3304,6 +3305,9 @@ body.app-shell.page-course-description{
         --c-good-bg:var(--ui-success-surface);
         --c-danger:var(--ui-danger);
     }
+body.app-shell.page-course-description .course-removal-notice{margin:0 0 18px;padding:14px 17px;border:1px solid #fecaca;border-radius:var(--ui-radius-md);background:#fef2f2;color:#7f1d1d;}
+body.app-shell.page-course-description .course-removal-notice strong{display:block;margin-bottom:4px;font-weight:800;}
+body.app-shell.page-course-description .course-removal-notice p{margin:0;font-size:var(--text-sm);line-height:1.55;}
 
 
     /* ── Page layout ─────────────────────────────────────────── */

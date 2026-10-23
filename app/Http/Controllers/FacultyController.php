@@ -33,6 +33,7 @@ use App\Support\SkillCatalog;
 use App\Support\UserPresenter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -250,10 +251,32 @@ class FacultyController extends Controller
         if (! in_array($filter, ['needs_review', 'all'], true)) {
             $filter = 'needs_review';
         }
+        if (! $course->requires_faculty_verification) {
+            $filter = 'all';
+        }
+        $search = trim((string) $request->query('q', ''));
+        $sort = $request->query('sort', 'name_asc');
+        if (! in_array($sort, ['name_asc', 'name_desc'], true)) {
+            $sort = 'name_asc';
+        }
+        $sortDirection = $sort === 'name_desc' ? 'desc' : 'asc';
 
         $enrollments = Enrollment::query()
             ->where('course_id', $course->id)
             ->with('user')
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->whereHas('user', function ($userQuery) use ($search): void {
+                    foreach (preg_split('/\s+/', $search, -1, PREG_SPLIT_NO_EMPTY) as $term) {
+                        $userQuery->where(function ($termQuery) use ($term): void {
+                            $termQuery->where('first_name', 'like', '%'.$term.'%')
+                                ->orWhere('middle_name', 'like', '%'.$term.'%')
+                                ->orWhere('last_name', 'like', '%'.$term.'%')
+                                ->orWhere('student_id', 'like', '%'.$term.'%')
+                                ->orWhere('user_code', 'like', '%'.$term.'%');
+                        });
+                    }
+                });
+            })
             ->when($filter === 'needs_review', function ($query) use ($course) {
                 if (! $course->requires_faculty_verification) {
                     return $query->whereRaw('1 = 0');
@@ -262,8 +285,9 @@ class FacultyController extends Controller
                 return $query->whereIn('faculty_verification_status', ['pending', 'not_required'])
                     ->where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION);
             })
-            ->orderByRaw("CASE WHEN faculty_verification_status IN ('pending', 'not_required') AND completion_status = ? THEN 0 ELSE 1 END", [MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION])
-            ->orderBy('id')
+            ->orderBy(User::query()->select('first_name')->whereColumn('users.id', 'enrollments.user_id'), $sortDirection)
+            ->orderBy(User::query()->select('last_name')->whereColumn('users.id', 'enrollments.user_id'), $sortDirection)
+            ->orderBy('enrollments.id')
             ->paginate(20)
             ->withQueryString();
 
@@ -282,7 +306,50 @@ class FacultyController extends Controller
             'filter' => $filter,
             'needsReviewCount' => $needsReviewCount,
             'totalStudents' => Enrollment::where('course_id', $course->id)->count(),
+            'search' => $search,
+            'sort' => $sort,
         ]);
+    }
+
+    /** Remove a learner from an owned course after collecting the faculty reason. */
+    public function removeStudentFromCourse(
+        Request $request,
+        int $id,
+        int $enrollment,
+        UserNotificationService $userNotifications
+    ): RedirectResponse {
+        $course = $this->ownedCourse($id);
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+        $reason = trim($validated['reason']);
+
+        $enrollment = Enrollment::query()
+            ->where('course_id', $course->id)
+            ->with('user')
+            ->findOrFail($enrollment);
+        $student = $enrollment->user;
+
+        abort_if($student === null, 404);
+
+        DB::transaction(function () use ($course, $enrollment, $reason, $student, $userNotifications): void {
+            $enrollment->delete();
+            $course->enrolled_count = $course->enrollments()->count();
+            $course->save();
+
+            $userNotifications->createForUser(
+                $student->id,
+                'Removed from course: '.$course->title,
+                'You were removed from this course by faculty. Reason: '.$reason,
+                'enrollment',
+                'course_removal',
+                $course->id,
+            );
+        });
+
+        return redirect()
+            ->route('faculty.students.course', ['id' => $course->id, 'filter' => 'all'])
+            ->with('success', $student->name.' was removed from the course.');
     }
 
     public function exportCourseStudents(int $id, string $format)

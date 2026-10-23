@@ -17,7 +17,8 @@
         .enrollment-counts{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;}
         .enrollment-count{display:inline-flex;align-items:center;padding:7px 12px;border:1px solid var(--enrollment-line);border-radius:999px;background:#fff;color:var(--enrollment-muted);font-size:.78rem;font-weight:700;white-space:nowrap;}
         .enrollment-count.pending{border-color:#f2d36b;background:#fff6d6;color:#7a5b00;}
-        .enrollment-tabs{display:flex;flex-wrap:wrap;gap:22px;margin:18px 0 20px;border-bottom:1px solid var(--enrollment-line);}
+        .enrollment-filter-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:18px 0 20px;border-bottom:1px solid var(--enrollment-line);}
+        .enrollment-tabs{display:flex;flex:1;min-width:0;flex-wrap:wrap;gap:22px;margin:0;border-bottom:0;}
         .enrollment-tab{display:inline-flex;align-items:center;gap:4px;padding:10px 0;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--enrollment-muted);font:inherit;font-size:.84rem;text-decoration:none;cursor:pointer;}
         .enrollment-tab:hover,.enrollment-tab.active{color:var(--enrollment-blue);}
         .enrollment-tab.active{border-bottom-color:var(--enrollment-yellow);font-weight:700;}
@@ -53,7 +54,7 @@
         .enrollment-button:hover{background:#f5f7fa;}
         .enrollment-empty{padding:36px 20px;color:var(--enrollment-muted);font-size:.9rem;text-align:center;}
         .enrollment-pagination{border-top:1px solid var(--enrollment-line);}
-        @media(max-width:700px){.enrollment-main{padding:22px 14px 40px!important;}.enrollment-heading{flex-direction:column;}.enrollment-heading h1{font-size:1.35rem;}.enrollment-counts{justify-content:flex-start;}.enrollment-card-head{align-items:flex-start;flex-direction:column;}.enrollment-course-filter{width:100%;flex-wrap:wrap;}.enrollment-course-filter label{width:100%;}.enrollment-course-filter select{flex:1;min-width:0;}}
+        @media(max-width:700px){.enrollment-main{padding:22px 14px 40px!important;}.enrollment-heading{flex-direction:column;}.enrollment-heading h1{font-size:1.35rem;}.enrollment-counts{justify-content:flex-start;}.enrollment-filter-row{align-items:stretch;flex-direction:column;gap:10px;padding-bottom:12px;}.enrollment-tabs{gap:14px;}.enrollment-course-filter{width:100%;flex-wrap:wrap;}.enrollment-course-filter label{width:100%;}.enrollment-course-filter select{flex:1;min-width:0;}}
     </style>
 </head>
 <body>
@@ -78,36 +79,35 @@
                     </div>
                 </header>
 
-                <nav class="enrollment-tabs" aria-label="Completion verification status filters">
-                    @foreach(['all' => 'All', 'pending' => 'Awaiting verification', 'approved' => 'Verified', 'denied' => 'Not approved'] as $key => $label)
-                        @php
-                            $tabRoute = $course
-                                ? route('admin.courses.enrollments', ['id' => $course->id, 'filter' => $key])
-                                : route('admin.enrollments', array_filter(['filter' => $key, 'course_id' => $selectedCourseId], fn ($value) => $value !== null));
-                        @endphp
-                        <a class="enrollment-tab {{ $filter === $key ? 'active' : '' }}" href="{{ $tabRoute }}" @if($filter === $key) aria-current="page" @endif>
-                            {{ $label }} <span class="enrollment-tab-count">{{ $statusCounts[$key] }}</span>
-                        </a>
-                    @endforeach
-                </nav>
+                <div class="enrollment-filter-row">
+                    <nav class="enrollment-tabs" aria-label="Completion verification status filters">
+                        @foreach(['all' => 'All', 'pending' => 'Awaiting verification', 'approved' => 'Verified', 'denied' => 'Not approved'] as $key => $label)
+                            @php
+                                $tabRoute = $course
+                                    ? route('admin.courses.enrollments', ['id' => $course->id, 'filter' => $key])
+                                    : route('admin.enrollments', array_filter(['filter' => $key, 'course_id' => $selectedCourseId], fn ($value) => $value !== null));
+                            @endphp
+                            <a class="enrollment-tab {{ $filter === $key ? 'active' : '' }}" href="{{ $tabRoute }}" @if($filter === $key) aria-current="page" @endif>
+                                {{ $label }} <span class="enrollment-tab-count">{{ $statusCounts[$key] }}</span>
+                            </a>
+                        @endforeach
+                    </nav>
+                    @unless($course)
+                        <form class="enrollment-course-filter" method="GET" action="{{ route('admin.enrollments') }}">
+                            <input type="hidden" name="filter" value="{{ $filter }}">
+                            <label for="enrollment-course-filter">Filter by course</label>
+                            <select id="enrollment-course-filter" name="course_id">
+                                <option value="">All courses</option>
+                                @foreach($courses as $filterCourse)
+                                    <option value="{{ $filterCourse->id }}" @selected((string) $selectedCourseId === (string) $filterCourse->id)>{{ $filterCourse->title }}</option>
+                                @endforeach
+                            </select>
+                            <button type="submit">Apply</button>
+                        </form>
+                    @endunless
+                </div>
 
                 <section class="enrollment-card" aria-label="Learner completion verification">
-                    <div class="enrollment-card-head">
-                        <h2>Learner completion and verification status</h2>
-                        @unless($course)
-                            <form class="enrollment-course-filter" method="GET" action="{{ route('admin.enrollments') }}">
-                                <input type="hidden" name="filter" value="{{ $filter }}">
-                                <label for="enrollment-course-filter">Filter by course</label>
-                                <select id="enrollment-course-filter" name="course_id">
-                                    <option value="">All courses</option>
-                                    @foreach($courses as $filterCourse)
-                                        <option value="{{ $filterCourse->id }}" @selected((string) $selectedCourseId === (string) $filterCourse->id)>{{ $filterCourse->title }}</option>
-                                    @endforeach
-                                </select>
-                                <button type="submit">Apply</button>
-                            </form>
-                        @endunless
-                    </div>
                     <div class="enrollment-table-wrap paginated-table-scroll">
                         <table class="enrollment-table {{ $course ? '' : 'global' }}">
                             <thead>

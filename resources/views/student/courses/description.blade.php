@@ -26,6 +26,83 @@
     Layout: hero + content on the left, sticky enroll card on the right.
     Below 1100px the card moves directly under the hero.
 --}}
+@push('styles')
+<style>
+    body.app-shell.page-course-description .course-tabs {
+        display: flex;
+        gap: 2rem;
+        margin: 0 0 2rem;
+        border-bottom: 1px solid #dfe4ee;
+    }
+    body.app-shell.page-course-description .course-tab {
+        appearance: none;
+        margin-bottom: -1px;
+        padding: 1.1rem 0 .85rem;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        border-radius: 0;
+        background: none;
+        color: #5b667a;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    body.app-shell.page-course-description .course-tab:hover { color: #1d2433; }
+    body.app-shell.page-course-description .course-tab[aria-selected="true"] { color: #172f94; border-bottom-color: #172f94; }
+    body.app-shell.page-course-description .course-tab-count { margin-left: .35rem; color: #5b667a; font-size: .85rem; font-weight: 400; }
+    body.app-shell.page-course-description .course-details-tabs:not(.has-js) .course-tabs { display: none; }
+    body.app-shell.page-course-description .course-tab-panel[hidden] { display: none !important; }
+    body.app-shell.page-course-description .course-details-tabs { padding: 0 32px; }
+    body.app-shell.page-course-description .course-public-section {
+        margin: 0 0 2.25rem;
+        padding: 0 0 2.25rem;
+        border-bottom: 1px solid #dfe4ee;
+    }
+    body.app-shell.page-course-description .course-public-section.info-panel {
+        overflow: visible;
+        border: 0;
+        border-bottom: 1px solid #dfe4ee;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+    body.app-shell.page-course-description .course-public-section .ui-card-header {
+        display: block;
+        min-height: 0;
+        margin: 0 0 1.1rem;
+        padding: 0;
+        border: 0;
+        background: transparent;
+    }
+    body.app-shell.page-course-description .course-public-section .ui-card-header__title {
+        color: #0f1f63;
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1.25;
+        letter-spacing: -.015em;
+    }
+    body.app-shell.page-course-description .course-public-section:last-child { margin-bottom: 0; border-bottom: 0; }
+    body.app-shell.page-course-description .course-public-section > h2 {
+        margin: 0 0 1.1rem;
+        color: #0f1f63;
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1.25;
+        letter-spacing: -.015em;
+    }
+    body.app-shell.page-course-description .course-public-section > .info-panel-body { padding: 0; }
+    body.app-shell.page-course-description .course-public-section .detail-grid { margin: 0; }
+    body.app-shell.page-course-description .course-outline-meta { margin: -.5rem 0 1rem; color: #5b667a; font-size: .92rem; }
+    @media (max-width: 640px) {
+        body.app-shell.page-course-description .course-public-section > h2 { font-size: 1.3rem; }
+        body.app-shell.page-course-description .course-public-section .ui-card-header__title { font-size: 1.3rem; }
+        body.app-shell.page-course-description .course-tabs { gap: 1.5rem; margin-bottom: 1.5rem; }
+    }
+    @media (max-width: 760px) {
+        body.app-shell.page-course-description .course-details-tabs { padding: 0 18px; }
+    }
+</style>
+@endpush
 <x-layout title="{{ $course->title ?? 'Course' }} | Upskill" shell="student" page="course-description">
 
 <div class="page-content">
@@ -42,6 +119,13 @@
             ],
             ['label' => $course->title ?? 'Course'],
         ]])
+
+        @if($removalNotice)
+            <div class="course-removal-notice" role="status">
+                <strong>You were removed from this course.</strong>
+                <p>Reason: {{ Illuminate\Support\Str::after($removalNotice->message, 'Reason: ') }}</p>
+            </div>
+        @endif
 
         <div class="course-shell">
 
@@ -191,12 +275,20 @@
 
             {{-- ── Main content column ── --}}
             <div class="course-content">
+                @php $courseLessonCount = $modules->sum(fn ($module) => $module->lessons->count()); @endphp
+                <div class="course-details-tabs">
+                    <div class="course-tabs" role="tablist" aria-label="Course sections">
+                        <button class="course-tab" type="button" role="tab" id="student-tab-overview" aria-controls="student-panel-overview" aria-selected="true">Overview</button>
+                        <button class="course-tab" type="button" role="tab" id="student-tab-lessons" aria-controls="student-panel-lessons" aria-selected="false" tabindex="-1">Lessons @if($courseLessonCount)<span class="course-tab-count">{{ $courseLessonCount }}</span>@endif</button>
+                    </div>
+
+                    <div class="course-tab-panel" id="student-panel-overview" role="tabpanel" aria-labelledby="student-tab-overview">
 
                 {{-- About --}}
                 @if(trim(strip_tags((string) $course->description)) !== '')
-                    <section class="info-panel course-overview" aria-labelledby="course-overview-title">
+                    <section class="info-panel course-public-section course-overview" aria-labelledby="course-overview-title">
                         <div class="info-panel-head ui-card-header">
-                            <h3 class="ui-card-header__title course-overview__title" id="course-overview-title">About this course</h3>
+                            <h2 class="ui-card-header__title course-overview__title" id="course-overview-title">About this course</h2>
                         </div>
                         <div class="info-panel-body">
                             <div class="rich-content">{!! $course->description !!}</div>
@@ -205,9 +297,9 @@
                 @endif
 
                 {{-- Learning outcomes --}}
-                <section class="info-panel ui-card-surface">
+                <section class="info-panel ui-card-surface course-public-section">
                     <div class="info-panel-head ui-card-header">
-                        <h3 class="ui-card-header__title">Learning outcomes</h3>
+                        <h2 class="ui-card-header__title">Learning outcomes</h2>
                     </div>
                     <div class="info-panel-body">
                         @if(!empty($course->learning_outcomes))
@@ -231,9 +323,9 @@
 
                 {{-- Remaining micro-credential details --}}
                 @if($course->credit_bearing || $course->assessment_strategy || $course->grading_rubric)
-                    <section class="info-panel ui-card-surface">
+                    <section class="info-panel ui-card-surface course-public-section">
                         <div class="info-panel-head ui-card-header">
-                            <h3 class="ui-card-header__title">Micro-credential details</h3>
+                            <h2 class="ui-card-header__title">Micro-credential details</h2>
                         </div>
                         <div class="info-panel-body">
                             <dl class="detail-grid">
@@ -245,12 +337,54 @@
                     </section>
                 @endif
 
+                {{-- Instructor --}}
+                <section class="info-panel ui-card-surface course-public-section">
+                    <div class="info-panel-head ui-card-header">
+                        <h2 class="ui-card-header__title">About the instructor</h2>
+                    </div>
+                    <div class="info-panel-body">
+                        @if($instructor_detail ?? false)
+                            <div class="instructor-wrap">
+                                <div class="instructor-avatar"
+                                     @if($instructor_detail->avatar_url)
+                                         style="background-image:url('{{ $instructor_detail->avatar_url }}')"
+                                     @endif>
+                                    @unless($instructor_detail->avatar_url){{ Str::upper(Str::substr($instructor_detail->name, 0, 1)) }}@endunless
+                                </div>
+                                <div>
+                                    <p class="instructor-name">{{ $instructor_detail->name }}</p>
+                                    @if($instructor_detail->department ?? false)
+                                        <p class="instructor-dept">{{ $instructor_detail->department }}</p>
+                                    @endif
+                                </div>
+                            </div>
+                            @if($instructor_detail->bio ?? false)
+                                <p class="instructor-bio">{{ $instructor_detail->bio }}</p>
+                            @endif
+                        @elseif($course->instructor)
+                            <div class="instructor-wrap">
+                                <div class="instructor-avatar">{{ Str::upper(Str::substr($course->instructor, 0, 1)) }}</div>
+                                <div>
+                                    <p class="instructor-name">{{ $course->instructor }}</p>
+                                    <p class="instructor-dept">Instructor</p>
+                                </div>
+                            </div>
+                        @else
+                            <p class="empty-note">No instructor information available.</p>
+                        @endif
+                    </div>
+                </section>
+                    </div>
+
+                    <div class="course-tab-panel" id="student-panel-lessons" role="tabpanel" aria-labelledby="student-tab-lessons">
+
                 {{-- Course content --}}
                 @if(($modules ?? collect())->isNotEmpty() || ($finalExam ?? null))
-                    <section class="info-panel ui-card-surface">
+                    <section class="info-panel ui-card-surface course-public-section">
                         <div class="info-panel-head ui-card-header">
-                            <h3 class="ui-card-header__title">Course content</h3>
+                            <h2 class="ui-card-header__title">Course outline</h2>
                         </div>
+                        <p class="course-outline-meta">{{ $modules->count() }} {{ Str::plural('module', $modules->count()) }} &middot; {{ $courseLessonCount }} {{ Str::plural('lesson', $courseLessonCount) }}</p>
 
                         @foreach($modules as $module)
                             <div class="module">
@@ -304,46 +438,14 @@
                             </div>
                         @endif
                     </section>
+                @else
+                    <section class="course-public-section">
+                        <h2>Course outline</h2>
+                        <p class="empty-note">The course outline will be available soon.</p>
+                    </section>
                 @endif
-
-                {{-- Instructor --}}
-                <section class="info-panel ui-card-surface">
-                    <div class="info-panel-head ui-card-header">
-                        <h3 class="ui-card-header__title">About the instructor</h3>
                     </div>
-                    <div class="info-panel-body">
-                        @if($instructor_detail ?? false)
-                            <div class="instructor-wrap">
-                                <div class="instructor-avatar"
-                                     @if($instructor_detail->avatar_url)
-                                         style="background-image:url('{{ $instructor_detail->avatar_url }}')"
-                                     @endif>
-                                    @unless($instructor_detail->avatar_url){{ Str::upper(Str::substr($instructor_detail->name, 0, 1)) }}@endunless
-                                </div>
-                                <div>
-                                    <p class="instructor-name">{{ $instructor_detail->name }}</p>
-                                    @if($instructor_detail->department ?? false)
-                                        <p class="instructor-dept">{{ $instructor_detail->department }}</p>
-                                    @endif
-                                </div>
-                            </div>
-                            @if($instructor_detail->bio ?? false)
-                                <p class="instructor-bio">{{ $instructor_detail->bio }}</p>
-                            @endif
-                        @elseif($course->instructor)
-                            <div class="instructor-wrap">
-                                <div class="instructor-avatar">{{ Str::upper(Str::substr($course->instructor, 0, 1)) }}</div>
-                                <div>
-                                    <p class="instructor-name">{{ $course->instructor }}</p>
-                                    <p class="instructor-dept">Instructor</p>
-                                </div>
-                            </div>
-                        @else
-                            <p class="empty-note">No instructor information available.</p>
-                        @endif
-                    </div>
-                </section>
-
+                </div>{{-- /.course-details-tabs --}}
             </div>{{-- /.course-content --}}
 
         </div>{{-- /.course-shell --}}
@@ -357,6 +459,49 @@
 </button>
 
 <script>
+    (function () {
+        var root = document.querySelector('.course-details-tabs');
+        if (!root) return;
+        root.classList.add('has-js');
+
+        var tabs = Array.prototype.slice.call(root.querySelectorAll('[role="tab"]'));
+        var panels = tabs.map(function (tab) {
+            return document.getElementById(tab.getAttribute('aria-controls'));
+        });
+
+        function show(index, focusTab) {
+            tabs.forEach(function (tab, tabIndex) {
+                var isSelected = tabIndex === index;
+                tab.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+                tab.tabIndex = isSelected ? 0 : -1;
+                if (panels[tabIndex]) panels[tabIndex].hidden = !isSelected;
+            });
+            if (focusTab) tabs[index].focus();
+        }
+
+        tabs.forEach(function (tab, index) {
+            tab.addEventListener('click', function () {
+                show(index, false);
+                if (history.replaceState) {
+                    history.replaceState(null, '', index === 1 ? '#lessons' : '#overview');
+                }
+            });
+            tab.addEventListener('keydown', function (event) {
+                var nextIndex = null;
+                if (event.key === 'ArrowRight') nextIndex = (index + 1) % tabs.length;
+                else if (event.key === 'ArrowLeft') nextIndex = (index - 1 + tabs.length) % tabs.length;
+                else if (event.key === 'Home') nextIndex = 0;
+                else if (event.key === 'End') nextIndex = tabs.length - 1;
+                if (nextIndex !== null) {
+                    event.preventDefault();
+                    show(nextIndex, true);
+                }
+            });
+        });
+
+        show(window.location.hash === '#lessons' ? 1 : 0, false);
+    })();
+
     (function () {
         var btn = document.getElementById('back-to-top-btn');
         if (!btn) return;

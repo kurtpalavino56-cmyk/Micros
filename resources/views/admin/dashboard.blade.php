@@ -116,8 +116,10 @@
         .quick-module-copy { min-width: 0; }
         .quick-module-card h3 { margin: 0; font-size: .92rem; font-weight: 600; color: var(--ink); }
         .quick-module-card p { margin: 4px 0 0; font-size: .78rem; line-height: 1.45; color: var(--muted); }
-        .quick-module-info { grid-column: 2; margin-top: 8px; font-size: .76rem; font-weight: 600; color: var(--navy); }
+        .quick-module-info { grid-column: 2; margin-top: 8px; padding-right: 24px; font-size: .76rem; font-weight: 600; color: var(--navy); }
         .quick-module-link { position: absolute; inset: 0; border-radius: var(--r); font-size: 0; }
+        .quick-module-chevron { position: absolute; right: 16px; bottom: 13px; z-index: 1; color: var(--blue); pointer-events: none; }
+        .quick-module-chevron svg { display: block; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
         /* CARDS + GRIDS */
         .two-col { display: grid; gap: 16px; margin-top: 16px; }
@@ -335,6 +337,7 @@
                                 <div class="quick-module-info">{{ $module['info'] }}</div>
                             </div>
                             <a class="quick-module-link" href="{{ route($module['route']) }}">{{ $module['button'] }}</a>
+                            <span class="quick-module-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
                         </article>
                     @endforeach
                 </div>

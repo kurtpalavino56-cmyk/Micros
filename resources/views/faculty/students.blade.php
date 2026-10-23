@@ -21,7 +21,7 @@
     .btn-outline:hover{background:#f8fafc;border-color:#94a3b8;}
     .course-table-wrap{max-width:1440px;overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);}
     .course-table{width:100%;min-width:760px;border-collapse:collapse;text-align:left;}
-    .course-table th{padding:14px 18px;background:#f6cb3b;color:var(--navy);font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}
+    .course-table th{padding:14px 18px;background:#f1f4fb;color:#475569;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}
     .course-table th:not(:first-child),.course-table td:not(:first-child){text-align:center;}
     .course-table td{padding:16px 18px;border-top:1px solid var(--line);vertical-align:middle;}
     .course-table tbody tr:first-child td{border-top:0;}
@@ -47,7 +47,6 @@
         ]])
         <div class="page-head faculty-page-heading">
             <div><h2 class="faculty-page-title">Learner Progress &amp; Verification</h2><p class="faculty-page-subtitle">Choose a course to review learner progress and verify completed requirements.</p></div>
-            <a href="{{ route('faculty.courses') }}" class="btn-outline">My Courses</a>
         </div>
 
         @if($courses->total())

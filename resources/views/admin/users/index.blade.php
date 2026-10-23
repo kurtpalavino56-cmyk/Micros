@@ -67,6 +67,11 @@
 
         /* Toolbar */
         .user-management-heading {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
             margin-bottom: 20px;
         }
         .user-management-heading h1 {
@@ -124,32 +129,112 @@
             box-shadow: 0 1px 3px rgba(9, 37, 95, .12);
         }
 
-        .create-user-panel {
-            width: 100%;
-            margin: 0 0 20px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-card);
-            background: var(--white);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .create-user-panel summary {
-            padding: 15px 18px;
-            color: var(--navy);
-            font-size: .9rem;
+        .create-user-open {
+            align-self: flex-start;
+            margin: 0 0 0 auto;
+            min-height: 40px;
+            padding: 10px 16px;
+            border: 1px solid var(--blue);
+            border-radius: 7px;
+            background: var(--blue);
+            color: #fff;
+            font: inherit;
+            font-size: .82rem;
             font-weight: 700;
             cursor: pointer;
         }
 
-        .create-user-panel[open] summary {
-            border-bottom: 1px solid var(--border-light);
+        .create-user-open:hover { background: var(--navy); border-color: var(--navy); }
+
+        .create-user-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1200;
+            display: flex;
+            justify-content: flex-end;
+            background: rgba(15, 23, 42, .42);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity .3s ease, visibility .3s ease;
+        }
+
+        .create-user-overlay.open { opacity: 1; visibility: visible; }
+
+        .create-user-drawer {
+            display: flex;
+            flex-direction: column;
+            width: 540px;
+            max-width: 96vw;
+            height: 100vh;
+            height: 100dvh;
+            background: #fff;
+            box-shadow: -12px 0 50px rgba(19, 23, 107, .18);
+            transform: translateX(100%);
+            transition: transform .38s cubic-bezier(.16, 1, .3, 1);
+        }
+
+        .create-user-overlay.open .create-user-drawer { transform: translateX(0); }
+
+        .create-user-drawer-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 22px 26px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .create-user-drawer-header h2 { margin: 0; color: var(--navy); font-size: 1.15rem; }
+        .create-user-drawer-header p { margin: 4px 0 0; color: var(--text-muted); font-size: .78rem; }
+
+        .create-user-close {
+            width: 34px;
+            height: 34px;
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            background: #fff;
+            color: var(--navy);
+            font-size: 22px;
+            line-height: 1;
+            cursor: pointer;
         }
 
         .create-user-form {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            flex-direction: column;
+        }
+
+        .create-user-form-body {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
+            align-content: start;
             gap: 14px;
-            padding: 18px;
+            padding: 20px 26px;
+            overflow-y: auto;
+        }
+
+        .create-user-form-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 9px;
+            padding: 14px 26px;
+            border-top: 1px solid var(--border);
+            background: #fff;
+        }
+
+        .create-user-cancel {
+            min-height: 38px;
+            padding: 9px 16px;
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            background: #fff;
+            color: var(--text-main);
+            font: inherit;
+            font-size: .8rem;
+            font-weight: 600;
+            cursor: pointer;
         }
 
         .create-user-field {
@@ -182,10 +267,6 @@
             border-color: var(--blue);
             outline: none;
             box-shadow: 0 0 0 3px rgba(11, 78, 162, .09);
-        }
-
-        .create-user-field-wide {
-            grid-column: 1 / -1;
         }
 
         .create-user-error {
@@ -314,7 +395,6 @@
         }
 
         .create-user-submit {
-            justify-self: start;
             min-height: 38px;
             padding: 9px 17px;
             border: 1px solid var(--yellow);
@@ -602,6 +682,11 @@
                 padding: 18px 12px;
             }
 
+            .create-user-drawer { width: 100%; max-width: 100%; }
+            .create-user-drawer-header { padding: 20px 18px 15px; }
+            .create-user-form-body { grid-template-columns: 1fr; padding: 18px; }
+            .create-user-form-footer { padding: 12px 18px; }
+
             .user-tools {
                 flex-direction: column;
                 align-items: stretch;
@@ -613,14 +698,6 @@
 
             .role-tab {
                 flex: 1;
-            }
-
-            .create-user-form {
-                grid-template-columns: 1fr;
-            }
-
-            .create-user-field-wide {
-                grid-column: auto;
             }
 
             .admin-page-access,
@@ -668,23 +745,32 @@
                     <h1>User Management</h1>
                     <p>Manage learner, faculty, and administrator accounts, roles, and platform access.</p>
                 </div>
+                <button class="create-user-open" id="open-create-user" type="button" onclick="openCreateUserDrawer()">Create account</button>
             </header>
 
-            <details class="create-user-panel" @if ($errors->any()) open @endif>
-                <summary>Create account</summary>
-                <form class="create-user-form" action="{{ route('admin.users.store') }}" method="POST">
-                    @csrf
-
-                    @if ($errors->any())
-                        <div class="create-user-errors" role="alert">
-                            <strong>There was a problem creating the account.</strong>
-                            <ul>
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
+            <div class="create-user-overlay" id="create-user-overlay" onclick="handleCreateUserOverlayClick(event)">
+                <section class="create-user-drawer" role="dialog" aria-modal="true" aria-labelledby="create-user-title" aria-describedby="create-user-description">
+                    <header class="create-user-drawer-header">
+                        <div>
+                            <h2 id="create-user-title">Create account</h2>
+                            <p id="create-user-description">Add a learner, faculty member, or administrator.</p>
                         </div>
-                    @endif
+                        <button class="create-user-close" type="button" onclick="closeCreateUserDrawer()" aria-label="Close create account drawer">&times;</button>
+                    </header>
+                    <form class="create-user-form" action="{{ route('admin.users.store') }}" method="POST">
+                        @csrf
+
+                        <div class="create-user-form-body">
+                            @if ($errors->any())
+                                <div class="create-user-errors" role="alert">
+                                    <strong>There was a problem creating the account.</strong>
+                                    <ul>
+                                        @foreach ($errors->all() as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
 
                     <div class="create-user-field">
                         <label for="create-user-first-name">First name</label>
@@ -749,9 +835,14 @@
                         <input id="create-user-password-confirmation" name="password_confirmation" type="password" autocomplete="new-password" required>
                     </div>
 
-                    <button class="create-user-submit create-user-field-wide" type="submit">Create account</button>
-                </form>
-            </details>
+                        </div>
+                        <footer class="create-user-form-footer">
+                            <button class="create-user-cancel" type="button" onclick="closeCreateUserDrawer()">Cancel</button>
+                            <button class="create-user-submit" type="submit">Create account</button>
+                        </footer>
+                    </form>
+                </section>
+            </div>
 
             <div class="user-tools">
                 @php $roleTab = $roleTab ?? 'students'; @endphp
@@ -766,12 +857,12 @@
                        class="role-tab {{ $roleTab === 'faculty' ? 'active' : '' }}">
                         Faculty
                     </a>
-                </div>
 
                     <a href="{{ route('admin.usermanagement', array_merge(request()->except('role','page'), ['role' => 'administrators'])) }}"
                        class="role-tab {{ $roleTab === 'administrators' ? 'active' : '' }}">
                         Administrators
                     </a>
+                </div>
 
                 <form class="user-search-form" action="{{ route('admin.usermanagement') }}" method="GET">
                     <input type="hidden" name="role" value="{{ $roleTab }}">
@@ -925,6 +1016,44 @@
 
     {{-- SCRIPTS --}}
     <script>
+        function openCreateUserDrawer() {
+            const drawer = document.getElementById('create-user-overlay');
+            if (!drawer) return;
+
+            drawer.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            window.setTimeout(function () {
+                const firstField = document.getElementById('create-user-first-name');
+                if (firstField) firstField.focus();
+            }, 50);
+        }
+
+        function closeCreateUserDrawer() {
+            const drawer = document.getElementById('create-user-overlay');
+            if (!drawer) return;
+
+            drawer.classList.remove('open');
+            document.body.style.overflow = '';
+            const trigger = document.getElementById('open-create-user');
+            if (trigger) trigger.focus();
+        }
+
+        function handleCreateUserOverlayClick(event) {
+            if (event.target === document.getElementById('create-user-overlay')) {
+                closeCreateUserDrawer();
+            }
+        }
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && document.getElementById('create-user-overlay')?.classList.contains('open')) {
+                closeCreateUserDrawer();
+            }
+        });
+
+        @if ($errors->any())
+            openCreateUserDrawer();
+        @endif
+
         (function () {
             document.querySelectorAll('[data-open-access-dialog]').forEach(function (button) {
                 button.addEventListener('click', function (event) {
