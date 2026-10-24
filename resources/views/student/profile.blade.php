@@ -97,11 +97,15 @@
     body.app-shell.page-profile .quick-card {
         position: relative;
         min-height: 116px;
-        justify-content: space-between;
-        gap: 12px;
+        justify-content: center;
+        gap: 6px;
         padding: 18px 20px;
         padding-right: 46px;
         background: #fff;
+    }
+
+    body.app-shell.page-profile .quick-card > svg:not(.quick-card-arrow) {
+        display: none;
     }
 
     body.app-shell.page-profile .quick-card .quick-card-arrow {
