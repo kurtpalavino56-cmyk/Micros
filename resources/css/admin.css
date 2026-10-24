@@ -6,7 +6,7 @@
         :where(body[data-admin-page="admin-academic-credit-recognition"]) .recognition-main { padding:30px 32px 48px !important; box-sizing:border-box; }
         :where(body[data-admin-page="admin-academic-credit-recognition"]) .recognition-content { max-width:1180px; margin:0 auto; }
         :where(body[data-admin-page="admin-academic-credit-recognition"]) .recognition-head { margin-bottom:22px; }
-        :where(body[data-admin-page="admin-academic-credit-recognition"]) .recognition-head h1 { margin:5px 0; color:#000; font-size:32px; line-height:1.15; }
+        :where(body[data-admin-page="admin-academic-credit-recognition"]) .recognition-head h1 { margin:5px 0; color:#000; font-size:1.625rem; line-height:1.25; }
         :where(body[data-admin-page="admin-academic-credit-recognition"]) .recognition-head p { margin:0; color:#68758c; font-size:14px; }
         :where(body[data-admin-page="admin-academic-credit-recognition"]) .notice { padding:12px 14px; border-radius:10px; margin-bottom:16px; font-size:13px; }
         :where(body[data-admin-page="admin-academic-credit-recognition"]) .ok { background:#ecfdf3; color:#067647; }
@@ -203,7 +203,7 @@
     /* Matches the padding the other admin pages use (30px 34px 44px). */
     :where(body[data-admin-page="admin-announcements"]) .wrap{max-width:1080px;margin:0 auto;padding:34px 40px 52px;}
     :where(body[data-admin-page="admin-announcements"]) .page-intro{margin-bottom:32px;}
-    :where(body[data-admin-page="admin-announcements"]) .page-heading{font-size:1.6rem;font-weight:800;margin:0 0 4px;color:#000;}
+    :where(body[data-admin-page="admin-announcements"]) .page-heading{font-size:1.625rem;font-weight:800;margin:0 0 4px;color:#000;}
     :where(body[data-admin-page="admin-announcements"]) .page-sub{color:var(--muted);font-size:.92rem;margin:0;}
     :where(body[data-admin-page="admin-announcements"]) .card{background:#fff;border:1px solid var(--line);border-radius:18px;
         box-shadow:var(--shadow);padding:24px 26px;margin-bottom:22px;}
@@ -312,7 +312,7 @@
         :where(body[data-admin-page="admin-audit-logs"]) .audit-main{padding:30px 32px 48px!important;}
         :where(body[data-admin-page="admin-audit-logs"]) .audit-content{max-width:1440px;margin:0 auto;}
         :where(body[data-admin-page="admin-audit-logs"]) .audit-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:20px;}
-        :where(body[data-admin-page="admin-audit-logs"]) .audit-heading h1{margin:0 0 6px;color:#000;font-size:30px;}
+        :where(body[data-admin-page="admin-audit-logs"]) .audit-heading h1{margin:0 0 6px;color:#000;font-size:1.625rem;}
         :where(body[data-admin-page="admin-audit-logs"]) .audit-heading p{margin:0;color:var(--muted);font-size:14px;line-height:1.5;}
         :where(body[data-admin-page="admin-audit-logs"]) .audit-count{flex:none;padding:8px 13px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--muted);font-size:13px;font-weight:700;}
         :where(body[data-admin-page="admin-audit-logs"]) .audit-card{margin-bottom:18px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:var(--shadow);}
@@ -670,7 +670,7 @@
             margin-left: 238px !important;
             width: calc(100% - 238px) !important;
             min-width: 0;
-            padding: 30px 34px 56px;
+            padding: 30px;
         }
         :where(body[data-admin-page="admin-courses-index"]) .page-wrap { max-width: 1120px; margin: 0 auto; }
 
@@ -734,6 +734,7 @@
         :where(body[data-admin-page="admin-courses-index"]) .status-draft .dot { background: #a3adbd; }
         :where(body[data-admin-page="admin-courses-index"]) .publication-status { font-weight: 500; color: var(--muted); }
         :where(body[data-admin-page="admin-courses-index"]) .publication-status::before { content: "•"; margin-right: 6px; color: var(--faint); }
+        body[data-admin-page="admin-courses-index"] .main .card-status-group .publication-status:first-child::before { content: none; margin-right: 0; }
 
         :where(body[data-admin-page="admin-courses-index"]) .star-form { display: flex; }
         :where(body[data-admin-page="admin-courses-index"]) .star-btn {
@@ -1473,7 +1474,7 @@
     :where(body[data-admin-page="admin-pathways"]) .main{padding:36px 32px 60px;min-width:0;}
     :where(body[data-admin-page="admin-pathways"]) .pathway-page{max-width:1180px;margin:0 auto;}
     :where(body[data-admin-page="admin-pathways"]) .page-head{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:28px;flex-wrap:wrap;}
-    :where(body[data-admin-page="admin-pathways"]) h1{font-size:32px;margin:0 0 7px;color:#000;}
+    :where(body[data-admin-page="admin-pathways"]) h1{font-size:1.625rem;margin:0 0 7px;color:#000;}
     :where(body[data-admin-page="admin-pathways"]) .lead{color:var(--muted);margin:0;font-size:14px;}
     :where(body[data-admin-page="admin-pathways"]) .alert{padding:12px 14px;border-radius:10px;margin-bottom:18px;font-size:13px;}
     :where(body[data-admin-page="admin-pathways"]) .alert.success{background:#ecfdf3;color:#067647;}
@@ -1899,6 +1900,7 @@
     gap:10px !important;
     font-size:16px !important;
 }
+
 :where(body[data-admin-page="admin-profile"]) .panel-head h4{margin:0;font-size:16px;font-weight:800;}
 :where(body[data-admin-page="admin-profile"]) .panel-head .head-ico{width:26px;height:26px;flex-shrink:0;}
 :where(body[data-admin-page="admin-profile"]) .panel-head .head-ico svg{width:16px;height:16px;}
@@ -2381,7 +2383,7 @@
         :where(body[data-admin-page="admin-stacking-frameworks"]) .framework-main { padding:30px 32px 48px !important; box-sizing:border-box; }
         :where(body[data-admin-page="admin-stacking-frameworks"]) .framework-content { max-width:1240px; margin:0 auto; }
         :where(body[data-admin-page="admin-stacking-frameworks"]) .framework-header { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin-bottom:24px; }
-        :where(body[data-admin-page="admin-stacking-frameworks"]) .framework-header h1 { margin:0 0 6px; color:#000; font-size:32px; line-height:1.15; }
+        :where(body[data-admin-page="admin-stacking-frameworks"]) .framework-header h1 { margin:0 0 6px; color:#000; font-size:1.625rem; line-height:1.25; }
         :where(body[data-admin-page="admin-stacking-frameworks"]) .framework-header p { margin:0; color:var(--framework-muted); font-size:14px; }
         :where(body[data-admin-page="admin-stacking-frameworks"]) .framework-header-actions { display:flex; gap:10px; flex-shrink:0; }
 
@@ -3076,14 +3078,14 @@
 
         /* Delete button */
         :where(body[data-admin-page="admin-users-index"]) .um-table button[type="submit"] {
-            background: #fff1f0 !important;
-            border: 1px solid #f3c8c4 !important;
-            color: #a63830 !important;
-            border-radius: 6px !important;
-            padding: 6px 12px !important;
+            background: #fff1f0;
+            border: 1px solid #f3c8c4;
+            color: #a63830;
+            border-radius: 6px;
+            padding: 6px 12px;
             font-family: inherit;
-            font-size: .73rem !important;
-            font-weight: 600 !important;
+            font-size: .73rem;
+            font-weight: 600;
             transition: background .18s ease, border-color .18s ease;
         }
 
@@ -3220,8 +3222,8 @@
         }
 
 
-:where(body[data-admin-page="admin-users-index"]) .adm-inline-admin-users-index-1{text-align:right;}
-:where(body[data-admin-page="admin-users-index"]) .adm-inline-admin-users-index-2{text-align:right;}
+:where(body[data-admin-page="admin-users-index"]) .adm-inline-admin-users-index-1{text-align:center;}
+:where(body[data-admin-page="admin-users-index"]) .adm-inline-admin-users-index-2{text-align:center;}
 :where(body[data-admin-page="admin-users-index"]) .adm-inline-admin-users-index-3{color:#9ca3af;font-size:12px;}
 :where(body[data-admin-page="admin-users-index"]) .adm-inline-admin-users-index-4{display:inline;}
 :where(body[data-admin-page="admin-users-index"]) .adm-inline-admin-users-index-5{background:#fff1f2;border:1px solid #fecdd3;color:#b91c1c;border-radius:999px;padding:6px 14px;font-weight:700;font-size:12px;cursor:pointer;}
@@ -3468,4 +3470,710 @@
 /* stacking-frameworks: moved from the static fieldset inline style */
 :where(body[data-admin-page="admin-stacking-frameworks"]) .adm-inline-admin-stacking-frameworks-1{border:0;padding:0;margin:0;min-width:0;}
 
+/* Shared admin presentation tokens and overrides. Kept on admin page bodies so
+   the authenticated shell and every non-admin surface retain their styling. */
+body[data-admin-page] {
+        --adm-brand-navy: var(--ui-brand-blue, #172f94);
+        --adm-accent-gold: var(--ui-accent-yellow, #f6cb3b);
+        --adm-success: var(--ui-success, #15803d);
+        --adm-success-soft: var(--ui-success-surface, #f0fdf4);
+        --adm-warning: var(--ui-warning, #a16207);
+        --adm-warning-soft: var(--ui-warning-surface, #fffbeb);
+        --adm-danger: var(--ui-danger, #b91c1c);
+        --adm-danger-soft: var(--ui-danger-surface, #fef2f2);
+        --adm-info: var(--ui-brand-blue, #172f94);
+        --adm-info-soft: var(--ui-brand-blue-soft, #e8ecfb);
+        --adm-neutral: #475569;
+        --adm-neutral-soft: #f1f5f9;
+        --adm-heading: var(--ui-text-strong, #111827);
+        --adm-body: var(--ui-text-body, #334155);
+        --adm-muted: var(--ui-text-muted, #64748b);
+        --adm-border: var(--ui-border, #e2e8f0);
+        --adm-surface: var(--ui-surface, #fff);
+        --adm-surface-subtle: var(--ui-surface-subtle, #f8fafc);
+        --adm-radius-card: 10px;
+        --adm-radius-control: var(--ui-radius-sm, .375rem);
+        --adm-radius-pill: var(--ui-radius-pill, 999px);
+        --adm-shadow: none;
+        --adm-control-height: var(--ui-control-height, 2.5rem);
+        --adm-space-1: var(--ui-space-1, .25rem);
+        --adm-space-2: var(--ui-space-2, .5rem);
+        --adm-space-3: var(--ui-space-3, .75rem);
+        --adm-space-4: var(--ui-space-4, 1rem);
+        --adm-space-6: var(--ui-space-6, 1.5rem);
+        --adm-space-8: var(--ui-space-8, 2rem);
+        --adm-text-xs: var(--text-xs, .75rem);
+        --adm-text-sm: var(--text-sm, .875rem);
+        --adm-text-base: var(--text-base, 1rem);
+        --adm-text-lg: var(--text-lg, 1.25rem);
+        --adm-text-2xl: var(--text-2xl, 1.625rem);
+        --adm-text-3xl: var(--text-3xl, 2.125rem);
+}
+
+    body[data-admin-page] .main :is(.recognition-head h1, .page-title, .page-head h1, .page-head h2, .page-top h1, .user-management-heading h1, .pathway-page h1, .framework-content h1, .cert-content h1, .record-content h1, .user-detail-wrap h1) {
+        color: var(--adm-heading);
+        font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
+        font-size: var(--adm-text-2xl);
+        font-weight: 700;
+        line-height: 1.25;
+        letter-spacing: normal;
+    }
+
+body[data-admin-page="admin-dashboard"] .main .page-heading,
+body[data-admin-page="admin-announcements"] .wrap .page-heading,
+body[data-admin-page="admin-courses-index"] .main .page-wrap .page-heading {
+    color: var(--adm-heading);
+    font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
+    font-size: var(--adm-text-2xl);
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+    body[data-admin-page] :is(.main, .wrap) :is(.page-sub, .page-subtitle, .lead, .page-intro p, .recognition-head p, .enrollment-heading p, .audit-heading p) {
+        color: var(--adm-muted);
+        font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
+        font-size: var(--adm-text-sm);
+        line-height: 1.5;
+    }
+
+body[data-admin-page] .main .enrollment-heading h1 {
+    color: var(--adm-heading);
+    font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+body[data-admin-page] .main .audit-heading h1 {
+    color: var(--adm-heading);
+    font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+body[data-admin-page="admin-complaints"] .wrap.inbox-page .page-heading {
+    color: var(--adm-heading);
+    font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+    body[data-admin-page] :is(.main, .wrap) :is(.card, .table-card, .recognition-card, .empty-card, .panel, .framework-card, .stat-card) {
+        border-color: var(--adm-border);
+        border-radius: var(--adm-radius-card);
+        box-shadow: var(--adm-shadow);
+    }
+
+    body[data-admin-page] :is(.main, .wrap) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, textarea) {
+        border-color: var(--adm-border);
+        border-radius: var(--adm-radius-control);
+        color: var(--adm-body);
+        font-family: inherit;
+    }
+
+body[data-admin-page] :is(.main, .wrap) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select) {
+    min-height: var(--adm-control-height);
+}
+
+    body[data-admin-page] :is(.main, .wrap) :is(input, select, textarea)::placeholder {
+        color: #94a3b8;
+    }
+
+    body[data-admin-page] :is(.main, .wrap) :is(input, select, textarea):focus-visible {
+        border-color: var(--adm-brand-navy);
+        outline: 3px solid color-mix(in srgb, var(--adm-brand-navy) 18%, transparent);
+        outline-offset: 1px;
+    }
+
+body[data-admin-page] :is(.main, .wrap) :is(.btn, .btn-primary, .btn-blue, .btn-approve, .btn-navy, .btn-publish, .btn-save, .create-user-open, .create-user-submit, .btn-generate, .credential-filter-submit, .framework-button.primary, .actions button:not(.danger), .filter-button, .search-button, .audit-button:not(.secondary), .enrollment-button.review) {
+        min-height: var(--adm-control-height);
+        border-radius: var(--adm-radius-control);
+        font-family: inherit;
+    }
+
+body[data-admin-page] :is(.main, .wrap) :is(.btn-primary, .btn-blue, .btn-approve, .btn-navy, .btn-publish, .btn-save, .create-user-open, .create-user-submit, .btn-generate, .credential-filter-submit, .framework-button.primary, .filter-button, .search-button, .audit-button:not(.secondary), .enrollment-button.review) {
+        border-color: var(--adm-brand-navy);
+        background: var(--adm-brand-navy);
+        color: #fff;
+    }
+
+    body[data-admin-page] .main :is(.credential-tab, .enrollment-tab, .role-tab) {
+        border-radius: 0;
+        background: transparent;
+    }
+
+    body[data-admin-page] .main :is(.credential-tab.active, .enrollment-tab.active, .role-tab.active) {
+        border-bottom: 2px solid var(--adm-brand-navy);
+        color: var(--adm-brand-navy);
+        font-weight: 700;
+    }
+
+body[data-admin-page="admin-users-index"] .main .role-tabs {
+    border-color: transparent;
+    background: transparent;
+}
+
+body[data-admin-page="admin-users-index"] .main .role-tab.active {
+    border-color: transparent;
+    border-bottom: 2px solid var(--adm-brand-navy);
+    background: transparent;
+    box-shadow: none;
+    color: var(--adm-brand-navy);
+}
+
+body[data-admin-page="admin-users-index"] .main .role-tab:not(.active) {
+    color: var(--adm-muted);
+}
+
+body[data-admin-page="admin-users-index"] .main .user-search-form button,
+body[data-admin-page="admin-enrollments"] .main .enrollment-course-filter button,
+body[data-admin-page="admin-courses-enrollments"] .main .enrollment-course-filter button {
+    min-height: var(--adm-control-height);
+    border-color: var(--adm-brand-navy);
+    border-radius: var(--adm-radius-control);
+    background: var(--adm-brand-navy);
+    color: #fff;
+}
+
+body[data-admin-page="admin-faculty-codes"] .main .btn-generate,
+body[data-admin-page="admin-users-index"] .main .create-user-open {
+    background: var(--adm-brand-navy);
+    border-color: var(--adm-brand-navy);
+    border-radius: var(--adm-radius-control);
+    color: #fff;
+}
+
+    body[data-admin-page] .main :is(.data-table, .um-table, .audit-table, .credential-table, .enrollment-table, .pathway-table, table) {
+        color: var(--adm-body);
+        font-family: inherit;
+    }
+
+    body[data-admin-page] .main :is(.data-table, .um-table, .audit-table, .credential-table, .enrollment-table, .pathway-table, table) thead th {
+        background-color: var(--adm-surface-subtle);
+        color: var(--adm-muted);
+        font-size: var(--adm-text-xs);
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    body[data-admin-page] .main :is(.data-table, .um-table, .audit-table, .credential-table, .enrollment-table, .pathway-table, table) :is(th, td) {
+        border-color: var(--adm-border);
+    }
+
+body[data-admin-page] .main table tbody td {
+    font-size: var(--adm-text-sm);
+    line-height: 1.35;
+}
+
+    body[data-admin-page] .main :is(.data-table, .um-table, .audit-table, .credential-table, .enrollment-table, .pathway-table, table) tbody tr:hover {
+        background-color: var(--adm-surface-subtle);
+    }
+
+body[data-admin-page] :is(.main, .wrap) :is(.card, .table-card, .enrollment-card, .code-stat, .framework-card, .panel, .recognition-card, .empty-card, .stat-card) {
+    border: 1px solid var(--adm-border);
+    border-radius: var(--adm-radius-card);
+    box-shadow: var(--adm-shadow);
+}
+
+body[data-admin-page] .main :is(.table-wrap, .paginated-table-scroll, .table-responsive, .table-scroll, .table-card, .audit-changes-table-wrap, [class*="table-wrap"]) {
+    scrollbar-color: #cbd5e1 #f1f5f9;
+    scrollbar-width: thin;
+}
+
+body[data-admin-page] .main :is(.table-wrap, .paginated-table-scroll, .table-responsive, .table-scroll, .table-card, .audit-changes-table-wrap, [class*="table-wrap"])::-webkit-scrollbar {
+    width: 8px;
+}
+
+body[data-admin-page] .main :is(.table-wrap, .paginated-table-scroll, .table-responsive, .table-scroll, .table-card, .audit-changes-table-wrap, [class*="table-wrap"])::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: #cbd5e1;
+}
+
+    body[data-admin-page] :is(.main, .wrap) :is(.status-badge, .status-pill, .pathway-status, .framework-pill, .enrollment-status, .status) {
+        display: inline-flex;
+        align-items: center;
+        min-height: 1.5rem;
+        border: 0;
+        border-radius: var(--adm-radius-pill);
+        font-size: var(--adm-text-xs);
+        font-weight: 650;
+        line-height: 1.2;
+    }
+
+body[data-admin-page] :is(.main, .wrap) :is(.status-badge.status-active, .status-pill.status-on, .status-pill.active, .pathway-status.is-active, .status.done, .record-pill.done, .status.status-approved, .status-pill.status-approved, .status-success, .status-available, .pill.pill-on, .framework-pill.approved, .enrollment-status.confirmed, .status.active, .status.resolved),
+body[data-admin-page="admin-certificates"] .main .status:not(.revoked) {
+        background: var(--adm-success-soft);
+        color: var(--adm-success);
+    }
+
+body[data-admin-page] :is(.main, .wrap) :is(.status-badge.status-pending, .status.status-pending, .status-pill.status-pending, .status-awaiting, .status-warning, .status-review, .status.pending, .status.open, .enrollment-status.pending, .framework-pill.pending, .record-pill.waiting),
+body[data-admin-page="admin-academic-credit-recognition"] .main .status:not(.done) {
+        background: var(--adm-warning-soft);
+        color: var(--adm-warning);
+    }
+
+body[data-admin-page] :is(.main, .wrap) :is(.status-badge.status-used, .status-pill.status-off, .pathway-status.is-inactive, .status.revoked, .status.status-rejected, .status.status-denied, .status-pill.status-denied, .status-denied, .enrollment-status.rejected, .status-inactive, .pill.pill-off, .framework-pill.inactive, .record-pill.failed) {
+        background: var(--adm-danger-soft);
+        color: var(--adm-danger);
+    }
+
+    body[data-admin-page] :is(.main, .wrap) :is(.status-neutral, .status-not-required, .status.status-draft, .status-pill.status-draft, .status-pill.archived, .status-pill.draft) {
+        background: var(--adm-neutral-soft);
+        color: var(--adm-neutral);
+    }
+
+    body[data-admin-page] :is(.main, .wrap) :is(.status-info, .status-published) {
+        background: var(--adm-info-soft);
+        color: var(--adm-info);
+    }
+
+body[data-admin-page="admin-faculty-codes"] .main .status-badge .status-dot,
+body[data-admin-page="admin-users-index"] .main .status-badge::before,
+body[data-admin-page="admin-users-index"] .main .status-badge::after {
+    display: none;
+}
+
+body[data-admin-page] .main .code-pill {
+    border: 1px solid #dce6f5;
+    border-radius: 5px;
+    background: #eef2ff;
+    color: var(--adm-brand-navy);
+    font-family: inherit;
+    font-size: var(--adm-text-xs);
+    font-weight: 700;
+    letter-spacing: normal;
+}
+
+body[data-admin-page] .main table :is(.primary, .enrollment-student, .um-row-click td:first-child) {
+    color: #142653;
+    font-weight: 700;
+}
+
+body[data-admin-page] .main table :is(.secondary, .enrollment-meta, .um-row-click td:nth-child(2), .adm-inline-admin-faculty-codes-4) {
+    color: var(--adm-muted);
+}
+
+body[data-admin-page] .main table :is(.btn-danger, .btn-delete, .revoke-button) {
+    height: 32px;
+    border: 1px solid #fecaca;
+    border-radius: var(--adm-radius-control);
+    background: var(--adm-danger-soft);
+    color: var(--adm-danger);
+    font-size: var(--adm-text-xs);
+}
+
+body[data-admin-page] .main table :is(.btn-copy, .view-revocation-button, .btn-secondary, .btn-outline) {
+    height: 32px;
+    border: 1px solid var(--adm-border);
+    border-radius: var(--adm-radius-control);
+    background: #fff;
+    color: var(--adm-brand-navy);
+    font-size: var(--adm-text-xs);
+}
+
+body[data-admin-page="admin-users-index"] .main .um-table tbody tr td button[type="submit"] {
+    background: var(--adm-danger-soft);
+    border: 1px solid #fecaca;
+    border-radius: var(--adm-radius-control);
+    color: var(--adm-danger);
+    font-size: var(--adm-text-xs);
+}
+
+body[data-admin-page="admin-users-index"] .main .status-badge.status-pending {
+    background: var(--adm-danger-soft);
+    color: var(--adm-danger);
+}
+
+body[data-admin-page="admin-users-index"] .main .um-table tbody tr.um-row-click > td:first-child,
+body[data-admin-page="admin-enrollments"] .main .enrollment-table .enrollment-student,
+body[data-admin-page="admin-courses-enrollments"] .main .enrollment-table .enrollment-student,
+body[data-admin-page="admin-certificates"] .main table .primary,
+body[data-admin-page="admin-faculty-codes"] .main table tbody td:nth-child(3) {
+    color: #142653;
+    font-weight: 700;
+}
+
+body[data-admin-page] .main :is(.btn-primary, .btn-blue, .btn-approve, .btn-navy, .btn-publish, .btn-save, .create-user-open, .create-user-submit, .btn-generate, .credential-filter-submit, .framework-button.primary, .filter-button, .search-button, .audit-button:not(.secondary), .enrollment-button.review) {
+    height: var(--adm-control-height);
+}
+
+body[data-admin-page="admin-users-index"] .main .user-search-form button,
+body[data-admin-page="admin-enrollments"] .main .enrollment-course-filter button,
+body[data-admin-page="admin-courses-enrollments"] .main .enrollment-course-filter button {
+    height: var(--adm-control-height);
+}
+
+/* Third-pass admin page coverage. These rules target page content only and
+   intentionally exclude the admin inbox and authenticated shell. */
+body[data-admin-page="admin-courses-index"] .main :is(h1, .page-title),
+body[data-admin-page="admin-courses-show"] .main :is(h1, .page-title),
+body[data-admin-page="admin-audit-logs"] .main .audit-heading h1,
+body[data-admin-page="admin-pathways"] .main .pathway-page h1,
+body[data-admin-page="admin-profile"] .main :is(h1, .page-title),
+body[data-admin-page="admin-program-categories"] .main :is(h1, .page-title),
+body[data-admin-page="admin-stacking-frameworks"] .main .framework-header h1,
+body[data-admin-page="admin-academic-credit-recognition"] .main .recognition-head h1,
+body[data-admin-page="admin-announcements"] .wrap .page-heading,
+body[data-admin-page="admin-analytics-report"] .main .page-title {
+    color: var(--adm-heading);
+    font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+body[data-admin-page="admin-courses-show"] .main .detail-title {
+    color: var(--adm-heading);
+    font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
+    font-size: var(--adm-text-2xl);
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+body[data-admin-page="admin-courses-index"] .main .course-stats,
+body[data-admin-page="admin-pathways"] .main :is(.lead, .pathway-description),
+body[data-admin-page="admin-audit-logs"] .main .audit-heading p,
+body[data-admin-page="admin-profile"] .main .page-head p,
+body[data-admin-page="admin-program-categories"] .main .page-head p,
+body[data-admin-page="admin-stacking-frameworks"] .main :is(.framework-header p, .framework-description),
+body[data-admin-page="admin-academic-credit-recognition"] .main .recognition-head p,
+body[data-admin-page="admin-announcements"] .wrap :is(.page-sub, .ann-meta),
+body[data-admin-page="admin-analytics-report"] .main :is(.page-subtitle, .card-subtitle),
+body[data-admin-page="admin-courses-show"] .main :is(.by, .hero-desc) {
+    color: var(--adm-muted);
+    font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
+    font-size: var(--adm-text-sm);
+    line-height: 1.5;
+}
+
+body[data-admin-page="admin-courses-index"] .main .tab,
+body[data-admin-page="admin-analytics-report"] .main .activity-tab,
+body[data-admin-page="admin-profile"] .main .modal-tabs .tab-btn {
+    border-radius: 0;
+    background: transparent;
+    color: var(--adm-muted);
+}
+
+body[data-admin-page="admin-courses-index"] .main .tab.active,
+body[data-admin-page="admin-analytics-report"] .main .activity-tab.active,
+body[data-admin-page="admin-profile"] .main .modal-tabs .tab-btn.active {
+    border-bottom: 2px solid var(--adm-brand-navy);
+    color: var(--adm-brand-navy);
+    font-weight: 700;
+}
+
+body[data-admin-page="admin-courses-index"] .main .tab .n {
+    color: var(--adm-muted);
+    font-size: var(--adm-text-xs);
+    font-weight: 650;
+}
+
+body[data-admin-page="admin-courses-index"] .main .tabs,
+body[data-admin-page="admin-profile"] .main .modal-tabs {
+    border-color: var(--adm-border);
+}
+
+body[data-admin-page="admin-courses-index"] .main .search,
+body[data-admin-page="admin-analytics-report"] .main .filter-select,
+body[data-admin-page="admin-courses-show"] .main :is(input:not([type="checkbox"]):not([type="hidden"]), select, textarea),
+body[data-admin-page="admin-audit-logs"] .main .audit-field :is(input, select),
+body[data-admin-page="admin-pathways"] .main :is(input:not([type="checkbox"]):not([type="hidden"]), select, textarea),
+body[data-admin-page="admin-profile"] .main :is(input:not([type="checkbox"]):not([type="file"]):not([type="hidden"]), select, textarea),
+body[data-admin-page="admin-program-categories"] .main .input,
+body[data-admin-page="admin-stacking-frameworks"] .main .framework-modal :is(input:not([type="hidden"]), select, textarea),
+body[data-admin-page="admin-announcements"] .wrap :is(input[type="text"], textarea) {
+    min-height: var(--adm-control-height);
+    border-color: var(--adm-border);
+    border-radius: var(--adm-radius-control);
+    color: var(--adm-body);
+    font-family: inherit;
+}
+
+body[data-admin-page="admin-courses-index"] .main .search::placeholder,
+body[data-admin-page="admin-courses-show"] .main :is(input, textarea)::placeholder,
+body[data-admin-page="admin-pathways"] .main input::placeholder,
+body[data-admin-page="admin-profile"] .main input::placeholder,
+body[data-admin-page="admin-program-categories"] .main .input::placeholder,
+body[data-admin-page="admin-announcements"] .wrap input::placeholder,
+body[data-admin-page="admin-announcements"] .wrap textarea::placeholder {
+    color: #94a3b8;
+}
+
+body[data-admin-page="admin-courses-index"] .main .search:focus-visible,
+body[data-admin-page="admin-courses-show"] .main :is(input, select, textarea):focus-visible,
+body[data-admin-page="admin-audit-logs"] .main .audit-field :is(input, select):focus-visible,
+body[data-admin-page="admin-pathways"] .main :is(input, select, textarea):focus-visible,
+body[data-admin-page="admin-profile"] .main :is(input, select, textarea):focus-visible,
+body[data-admin-page="admin-program-categories"] .main .input:focus-visible,
+body[data-admin-page="admin-stacking-frameworks"] .main .framework-modal :is(input, select, textarea):focus-visible,
+body[data-admin-page="admin-announcements"] .wrap :is(input[type="text"], textarea):focus-visible {
+    border-color: var(--adm-brand-navy);
+    outline: 3px solid color-mix(in srgb, var(--adm-brand-navy) 18%, transparent);
+    outline-offset: 1px;
+}
+
+body[data-admin-page="admin-courses-index"] .main .search,
+body[data-admin-page="admin-analytics-report"] .main .filter-select,
+body[data-admin-page="admin-courses-show"] .main :is(input:not([type="checkbox"]):not([type="hidden"]), select),
+body[data-admin-page="admin-audit-logs"] .main .audit-field :is(input, select),
+body[data-admin-page="admin-pathways"] .main :is(input:not([type="checkbox"]):not([type="hidden"]), select),
+body[data-admin-page="admin-profile"] .main :is(input:not([type="checkbox"]):not([type="file"]):not([type="hidden"]), select),
+body[data-admin-page="admin-program-categories"] .main .input,
+body[data-admin-page="admin-stacking-frameworks"] .main .framework-modal :is(input:not([type="hidden"]), select),
+body[data-admin-page="admin-announcements"] .wrap input[type="text"] {
+    height: var(--adm-control-height);
+}
+
+body[data-admin-page="admin-courses-index"] .main :is(.btn, .btn-publish),
+body[data-admin-page="admin-courses-show"] .main :is(.btn-approve, .btn-blue),
+body[data-admin-page="admin-audit-logs"] .main .audit-button:not(.secondary),
+body[data-admin-page="admin-pathways"] .main .btn:not(.btn-secondary):not(.btn-danger),
+body[data-admin-page="admin-profile"] .main :is(.btn-save, .btn-edit-profile),
+body[data-admin-page="admin-program-categories"] .main :is(.btn-primary, .btn:not(.btn-danger)),
+body[data-admin-page="admin-stacking-frameworks"] .main .framework-button.primary,
+body[data-admin-page="admin-academic-credit-recognition"] .main .actions button:not(.danger),
+body[data-admin-page="admin-academic-credit-recognition"] .main :is(.adm-inline-admin-academic-credit-recognition-2, .adm-inline-admin-academic-credit-recognition-3),
+body[data-admin-page="admin-announcements"] .wrap :is(.btn-navy),
+body[data-admin-page="admin-analytics-report"] .main :is(.filter-button, .search-button) {
+    min-height: var(--adm-control-height);
+    height: var(--adm-control-height);
+    border: 1px solid var(--adm-brand-navy);
+    border-radius: var(--adm-radius-control);
+    background: var(--adm-brand-navy);
+    color: #fff;
+    font-family: inherit;
+}
+
+body[data-admin-page="admin-analytics-report"] .main .segment.active {
+    min-height: var(--adm-control-height);
+    height: var(--adm-control-height);
+    border: 1px solid var(--adm-brand-navy);
+    border-radius: var(--adm-radius-control);
+    background: var(--adm-brand-navy);
+    color: #fff;
+}
+
+body[data-admin-page="admin-courses-index"] .main .btn-unpublish,
+body[data-admin-page="admin-courses-show"] .main .btn-outline,
+body[data-admin-page="admin-courses-show"] .main .btn:not(.btn-approve):not(.btn-blue):not(.btn-delete),
+body[data-admin-page="admin-audit-logs"] .main .audit-button.secondary,
+body[data-admin-page="admin-pathways"] .main .btn-secondary,
+body[data-admin-page="admin-profile"] .main :is(.btn-cancel-modal, .btn-remove-avatar),
+body[data-admin-page="admin-program-categories"] .main .btn:not(.btn-primary):not(.btn-danger),
+body[data-admin-page="admin-stacking-frameworks"] .main .framework-button.secondary,
+body[data-admin-page="admin-announcements"] .wrap :is(.btn-ghost, .btn-view, .btn-pin:not(.is-pinned), .btn-cancel),
+body[data-admin-page="admin-analytics-report"] .main :is(.secondary, .activity-tab, .download-report) {
+    min-height: var(--adm-control-height);
+    height: var(--adm-control-height);
+    border: 1px solid var(--adm-border);
+    border-radius: var(--adm-radius-control);
+    background: #fff;
+    color: var(--adm-brand-navy);
+}
+
+body[data-admin-page="admin-analytics-report"] .main .segment:not(.active) {
+    min-height: var(--adm-control-height);
+    height: var(--adm-control-height);
+    border: 1px solid var(--adm-border);
+    border-radius: var(--adm-radius-control);
+    background: #fff;
+    color: var(--adm-brand-navy);
+}
+
+body[data-admin-page="admin-courses-index"] .main .course-card,
+body[data-admin-page="admin-courses-show"] .main .card,
+body[data-admin-page="admin-audit-logs"] .main .audit-card,
+body[data-admin-page="admin-pathways"] .main :is(.panel, .pathway-modal),
+body[data-admin-page="admin-profile"] .main :is(.panel, .profile-hero, .modal-panel),
+body[data-admin-page="admin-program-categories"] .main .card,
+body[data-admin-page="admin-stacking-frameworks"] .main :is(.framework-card, .framework-modal-card),
+body[data-admin-page="admin-academic-credit-recognition"] .main :is(.recognition-card, .empty-card),
+body[data-admin-page="admin-announcements"] .wrap :is(.card, .ann),
+body[data-admin-page="admin-analytics-report"] .main :is(.card, .stat-card) {
+    border: 1px solid var(--adm-border);
+    border-radius: var(--adm-radius-card);
+    box-shadow: var(--adm-shadow);
+}
+
+body[data-admin-page="admin-courses-index"] .main .publication-status.adm-publication-published {
+    padding: 3px 9px;
+    background: var(--adm-success-soft);
+    color: var(--adm-success);
+    font-weight: 650;
+}
+
+body[data-admin-page="admin-courses-index"] .main .publication-status.adm-publication-unpublished {
+    padding: 3px 9px;
+    background: var(--adm-neutral-soft);
+    color: var(--adm-neutral);
+    font-weight: 650;
+}
+
+body[data-admin-page="admin-courses-index"] .main :is(.status, .publication-status),
+body[data-admin-page="admin-courses-show"] .main .status-pill,
+body[data-admin-page="admin-program-categories"] .main :is(.pill, .status),
+body[data-admin-page="admin-stacking-frameworks"] .main .framework-pill,
+body[data-admin-page="admin-academic-credit-recognition"] .main .status,
+body[data-admin-page="admin-announcements"] .wrap .pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.5rem;
+    border-radius: var(--adm-radius-pill);
+    font-size: var(--adm-text-xs);
+    font-weight: 650;
+    line-height: 1.2;
+}
+
+body[data-admin-page="admin-courses-index"] .main :is(.status-approved, .status-published),
+body[data-admin-page="admin-courses-show"] .main :is(.status-approved, .status-published),
+body[data-admin-page="admin-program-categories"] .main :is(.pill-on, .status-approved),
+body[data-admin-page="admin-stacking-frameworks"] .main .framework-pill.approved,
+body[data-admin-page="admin-academic-credit-recognition"] .main .status.done {
+    background: var(--adm-success-soft);
+    color: var(--adm-success);
+}
+
+body[data-admin-page="admin-courses-index"] .main .status-pending,
+body[data-admin-page="admin-courses-show"] .main .status-pending,
+body[data-admin-page="admin-program-categories"] .main :is(.pill-review, .status-pending),
+body[data-admin-page="admin-stacking-frameworks"] .main .framework-pill.pending,
+body[data-admin-page="admin-academic-credit-recognition"] .main .status:not(.done) {
+    background: var(--adm-warning-soft);
+    color: var(--adm-warning);
+}
+
+body[data-admin-page="admin-courses-index"] .main :is(.status-denied, .status-rejected),
+body[data-admin-page="admin-courses-show"] .main :is(.status-denied, .status-rejected),
+body[data-admin-page="admin-program-categories"] .main :is(.pill-off, .status-denied),
+body[data-admin-page="admin-stacking-frameworks"] .main .framework-pill.inactive {
+    background: var(--adm-danger-soft);
+    color: var(--adm-danger);
+}
+
+body[data-admin-page="admin-program-categories"] .main .pill-use {
+    background: var(--adm-info-soft);
+    color: var(--adm-info);
+}
+
+body[data-admin-page="admin-courses-index"] .main .dot,
+body[data-admin-page="admin-courses-show"] .main .status-pill .dot,
+body[data-admin-page="admin-program-categories"] .main .status-dot {
+    display: none;
+}
+
+body[data-admin-page="admin-courses-index"] .main :is(.course-title, .course-by),
+body[data-admin-page="admin-courses-show"] .main :is(.course-title, .instructor-name),
+body[data-admin-page="admin-audit-logs"] .main .audit-event,
+body[data-admin-page="admin-pathways"] .main .pathway-name,
+body[data-admin-page="admin-program-categories"] .main :is(.primary, .category-name, .cat-name),
+body[data-admin-page="admin-stacking-frameworks"] .main .framework-card-title h3,
+body[data-admin-page="admin-academic-credit-recognition"] .main .meta strong {
+    color: #142653;
+    font-weight: 700;
+}
+
+body[data-admin-page="admin-courses-index"] .main .course-stats,
+body[data-admin-page="admin-courses-show"] .main :is(.muted, .secondary),
+body[data-admin-page="admin-audit-logs"] .main :is(.audit-role, .audit-event small),
+body[data-admin-page="admin-pathways"] .main .pathway-description,
+body[data-admin-page="admin-program-categories"] .main :is(.muted, .secondary, .cat-desc),
+body[data-admin-page="admin-stacking-frameworks"] .main .framework-info-item span,
+body[data-admin-page="admin-announcements"] .wrap .ann-meta {
+    color: var(--adm-muted);
+}
+
+body[data-admin-page="admin-courses-index"] .main table thead th,
+body[data-admin-page="admin-audit-logs"] .main :is(.audit-table, .audit-changes-table) thead th,
+body[data-admin-page="admin-pathways"] .main .pathway-table thead th,
+body[data-admin-page="admin-program-categories"] .main table thead th {
+    background: var(--adm-surface-subtle);
+    color: var(--adm-muted);
+    font-size: var(--adm-text-xs);
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+body[data-admin-page="admin-courses-index"] .main table :is(th, td),
+body[data-admin-page="admin-audit-logs"] .main :is(.audit-table, .audit-changes-table) :is(th, td),
+body[data-admin-page="admin-pathways"] .main .pathway-table :is(th, td),
+body[data-admin-page="admin-program-categories"] .main table :is(th, td) {
+    border-color: var(--adm-border);
+}
+
+body[data-admin-page="admin-courses-index"] .main table tbody tr:hover,
+body[data-admin-page="admin-audit-logs"] .main .audit-table tbody tr:hover,
+body[data-admin-page="admin-pathways"] .main .pathway-table tbody tr:hover,
+body[data-admin-page="admin-program-categories"] .main table tbody tr:hover {
+    background: var(--adm-surface-subtle);
+}
+
+body[data-admin-page="admin-audit-logs"] .main :is(.paginated-table-scroll, .audit-changes-table-wrap) {
+    scrollbar-color: #cbd5e1 #f1f5f9;
+    scrollbar-width: thin;
+}
+
+body[data-admin-page="admin-audit-logs"] .main :is(.paginated-table-scroll, .audit-changes-table-wrap)::-webkit-scrollbar {
+    width: 8px;
+}
+
+body[data-admin-page="admin-audit-logs"] .main :is(.paginated-table-scroll, .audit-changes-table-wrap)::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: #cbd5e1;
+}
+
+body[data-admin-page="admin-pathways"] .main :is(.btn-danger, .btn-delete),
+body[data-admin-page="admin-courses-show"] .main :is(.btn-delete, .btn-danger),
+body[data-admin-page="admin-program-categories"] .main :is(.btn-danger, .btn-delete),
+body[data-admin-page="admin-announcements"] .wrap .btn-danger,
+body[data-admin-page="admin-analytics-report"] .main .btn-danger {
+    height: 32px;
+    border: 1px solid #fecaca;
+    border-radius: var(--adm-radius-control);
+    background: var(--adm-danger-soft);
+    color: var(--adm-danger);
+    font-size: var(--adm-text-xs);
+}
+
+body[data-admin-page="admin-audit-logs"] .main :is(.audit-change-button, .audit-details-button),
+body[data-admin-page="admin-pathways"] .main .pathway-table .btn-secondary,
+body[data-admin-page="admin-announcements"] .wrap .ann .actions :is(.btn-ghost, .btn-view) {
+    height: 32px;
+    border: 1px solid var(--adm-border);
+    border-radius: var(--adm-radius-control);
+    background: #fff;
+    color: var(--adm-brand-navy);
+    font-size: var(--adm-text-xs);
+}
+
+/* Native admin dialogs: explicitly center within the viewport instead of
+   relying on browser default dialog margins. */
+body[data-admin-page="admin-audit-logs"] dialog.audit-technical-modal[open],
+body[data-admin-page="admin-users-index"] dialog.manage-access-dialog[open],
+body[data-admin-page="admin-certificates"] dialog.cert-modal[open] {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+}
+
+/* Keep the User Management action label and controls on the same center line. */
+body[data-admin-page="admin-users-index"] .main .um-table thead th:last-child,
+body[data-admin-page="admin-users-index"] .main .um-table tbody td:last-child {
+    padding-right: 20px;
+    padding-left: 20px;
+    text-align: center;
+}
+
+body[data-admin-page="admin-users-index"] .main .um-table .status-badge {
+    padding: 3px 9px;
+}
+
+/* Hide only the viewport scrollbar on admin pages; page scrolling remains enabled. */
+html:has(body[data-admin-page]:not([data-admin-page="admin-complaints"])) {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+html:has(body[data-admin-page]:not([data-admin-page="admin-complaints"]))::-webkit-scrollbar {
+    display: none;
+}
 

@@ -37,10 +37,6 @@
                 <p>Manage your administrative information and account details</p>
             </div>
             <div class="page-actions">
-                <form action="{{ route('logout') }}" method="POST" class="adm-inline-admin-profile-1">
-                    @csrf
-                    <button class="btn-logout" type="submit">Logout</button>
-                </form>
                 <button class="btn-edit-profile" type="button" onclick="openEditModal('personal')">Edit Profile</button>
             </div>
         </div>

@@ -13,7 +13,7 @@
 
         <div class="page-head">
             <div>
-                <div class="page-heading">Courses and badges</div>
+                <div class="page-heading">Course Approvals</div>
                 <div class="page-sub">Review courses and manage their completion badges.</div>
             </div>
             <div class="page-head-tools">
@@ -55,11 +55,13 @@
                         {{-- 1 · Status --}}
                         <div class="card-top">
                             <div class="card-status-group">
-                                <span class="status status-{{ $course->status_key }}">
-                                    <span class="dot"></span>{{ $course->status_key === 'approved' ? 'Approved' : $course->status }}
-                                </span>
+                                @if ($course->status_key !== 'approved')
+                                    <span class="status status-{{ $course->status_key }}">
+                                        <span class="dot"></span>{{ $course->status }}
+                                    </span>
+                                @endif
                                 @if ($course->can_toggle_publish)
-                                    <span class="publication-status">{{ $course->is_published ? 'Published' : 'Unpublished' }}</span>
+                                    <span class="publication-status adm-publication-{{ $course->is_published ? 'published' : 'unpublished' }}">{{ $course->is_published ? 'Published' : 'Unpublished' }}</span>
                                 @endif
                             </div>
 
