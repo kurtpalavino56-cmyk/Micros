@@ -54,7 +54,7 @@
         @if (!$authUser?->isSubAdmin() || $authUser->canAccessAdminPage('complaints'))
             <a href="{{ route($inboxRoute) }}" class="auth-topbar-icon auth-topbar-inbox {{ request()->routeIs('admin.complaints*', 'faculty.inbox', 'inbox.index') ? 'is-active' : '' }}" title="Inbox" aria-label="Inbox">
                 <span class="material-symbols-rounded" aria-hidden="true">mail</span>
-                @if (!$isAdmin && ($unreadInboxCount ?? 0) > 0)
+                @if (($unreadInboxCount ?? 0) > 0)
                     <span class="auth-topbar-badge">{{ $unreadInboxCount }}</span>
                 @endif
             </a>

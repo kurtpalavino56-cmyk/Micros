@@ -346,6 +346,10 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':student',
 // FACULTY ROUTES
 // ══════════════════════════════════════════════════════════════════════════
 
+// Shared faculty/admin action with explicit course ownership checks in the controller.
+Route::post('/Faculty-students/{id}/attempt-grants', [FacultyController::class, 'grantQuizAttempts'])
+    ->whereNumber('id')->middleware(['auth', PreventBackHistory::class])->name('faculty.students.course.attempt-grants');
+
 Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty', RecordAuditActions::class])->group(function () {
     Route::get('/Faculty-dashboard', [FacultyController::class, 'dashboard'])->name('faculty.dashboard');
 

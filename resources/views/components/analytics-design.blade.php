@@ -42,6 +42,10 @@
         letter-spacing: -.02em;
     }
 
+    .analytics-shell .faculty-analytics-page .page-head.faculty-page-heading h2.faculty-page-title {
+        color: #101010;
+    }
+
     .analytics-shell .analytics-page .page-subtitle,
     .analytics-shell .analytics-page .analytics-header .subtitle,
     .analytics-shell .faculty-analytics-page .page-head.faculty-page-heading .faculty-page-subtitle {

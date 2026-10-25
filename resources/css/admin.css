@@ -97,7 +97,7 @@
         :where(body[data-admin-page="admin-analytics-report"]) .stat-card, :where(body[data-admin-page="admin-analytics-report"]) .card { background:#fff; border:1px solid #e0e6f0; border-radius:12px; box-shadow:0 2px 8px rgba(25,47,96,.04); }
         :where(body[data-admin-page="admin-analytics-report"]) .stat-card { position:relative; overflow:hidden; padding:18px 20px; min-width:0; border-color:#e5e8ee; border-radius:10px; box-shadow:none; }
         :where(body[data-admin-page="admin-analytics-report"]) .stat-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-direction:row-reverse; }
-        :where(body[data-admin-page="admin-analytics-report"]) .stat-icon { width:32px; height:32px; flex:0 0 32px; display:grid; place-items:center; color:#737d8d; }
+        :where(body[data-admin-page="admin-analytics-report"]) .stat-icon { width:32px; height:32px; flex:0 0 32px; display:grid; place-items:center; background:transparent; color:#737d8d; }
         :where(body[data-admin-page="admin-analytics-report"]) .stat-icon svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
         :where(body[data-admin-page="admin-analytics-report"]) .stat-lbl { color:#69758c; font-size:.84rem; line-height:1.25; font-weight:500; }
         :where(body[data-admin-page="admin-analytics-report"]) .stat-val { color:#142653; font-size:1.7rem; line-height:1; font-weight:700; letter-spacing:-.03em; font-variant-numeric:tabular-nums; margin:12px 0 8px; }
@@ -1178,7 +1178,7 @@
         :where(body[data-admin-page="admin-dashboard"]) .stat-card { position: relative; overflow: hidden; padding: 18px 20px; background: var(--white); border: 1px solid var(--line); border-radius: var(--r); }
         :where(body[data-admin-page="admin-dashboard"]) .stat-card::before { display: none; }
         :where(body[data-admin-page="admin-dashboard"]) .stat-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-direction: row-reverse; }
-        :where(body[data-admin-page="admin-dashboard"]) .stat-icon { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; color: var(--muted); }
+        :where(body[data-admin-page="admin-dashboard"]) .stat-icon { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; background: transparent; color: var(--muted); }
         :where(body[data-admin-page="admin-dashboard"]) .stat-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
         :where(body[data-admin-page="admin-dashboard"]) .stat-lbl { font-size: .84rem; font-weight: 500; color: var(--muted); }
         :where(body[data-admin-page="admin-dashboard"]) .stat-val { margin: 12px 0 8px; font-size: 2rem; font-weight: 700; letter-spacing: -.03em; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
@@ -4165,6 +4165,52 @@ body[data-admin-page="admin-users-index"] .main .um-table tbody td:last-child {
 
 body[data-admin-page="admin-users-index"] .main .um-table .status-badge {
     padding: 3px 9px;
+}
+
+body[data-admin-page="admin-pathways"] .main .create-panel > .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 148px;
+    height: 42px;
+    margin-top: 20px;
+    padding: 0 22px;
+    border-radius: var(--adm-radius-control);
+    font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
+    font-size: var(--adm-text-sm);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0;
+    white-space: nowrap;
+}
+
+body[data-admin-page="admin-analytics-report"] .main .activity-tabs {
+    display: flex;
+    align-items: stretch;
+    gap: 16px;
+    border-bottom: 1px solid var(--adm-border);
+}
+
+body[data-admin-page="admin-analytics-report"] .main .activity-tabs .activity-tab {
+    min-height: 38px;
+    height: auto;
+    padding: 8px 2px 9px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    color: var(--adm-muted);
+    font-family: inherit;
+    font-size: var(--adm-text-xs);
+    font-weight: 600;
+    line-height: 1.25;
+    white-space: nowrap;
+}
+
+body[data-admin-page="admin-analytics-report"] .main .activity-tabs .activity-tab.active {
+    border-bottom-color: var(--adm-brand-navy);
+    background: transparent;
+    color: var(--adm-brand-navy);
 }
 
 /* Hide only the viewport scrollbar on admin pages; page scrolling remains enabled. */

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Badge;
 use App\Models\Certificate;
 use App\Models\Complaint;
@@ -15,6 +16,7 @@ use App\Models\LessonActivity;
 use App\Models\LessonActivitySubmission;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
+use App\Models\QuizAttemptGrant;
 use App\Models\QuizQuestion;
 use App\Models\User;
 use App\Services\CourseCreationService;
@@ -23,6 +25,7 @@ use App\Services\CourseModuleService;
 use App\Services\CourseReadinessService;
 use App\Services\LearningOutcomeService;
 use App\Services\MicrocredentialCompletionService;
+use App\Services\QuizAttemptService;
 use App\Services\QuizManagementService;
 use App\Services\StudentProgressService;
 use App\Services\UserNotificationService;
@@ -248,10 +251,10 @@ class FacultyController extends Controller
     {
         $course = $this->ownedCourse($id);
         $filter = $request->query('filter', 'needs_review');
-        if (! in_array($filter, ['needs_review', 'all'], true)) {
+        if (! in_array($filter, ['needs_review', 'all', 'attempts'], true)) {
             $filter = 'needs_review';
         }
-        if (! $course->requires_faculty_verification) {
+        if (! $course->requires_faculty_verification && $filter === 'needs_review') {
             $filter = 'all';
         }
         $search = trim((string) $request->query('q', ''));
@@ -299,6 +302,43 @@ class FacultyController extends Controller
                 ->count()
             : 0;
 
+        $attemptRows = collect();
+        if ($filter === 'attempts') {
+            $studentIds = Enrollment::query()->where('course_id', $course->id)->pluck('user_id');
+            $quizIds = Quiz::query()->where('course_id', $course->id)->whereHas('questions')->pluck('id');
+            $pairs = QuizAttempt::query()
+                ->whereIn('user_id', $studentIds)
+                ->whereIn('quiz_id', $quizIds)
+                ->whereHas('answers')
+                ->select(['user_id', 'quiz_id'])
+                ->distinct()
+                ->get();
+            $attemptService = app(QuizAttemptService::class);
+            $attemptRows = $pairs->map(function (QuizAttempt $pair) use ($attemptService, $search): ?array {
+                $quiz = Quiz::query()->with('module')->find($pair->quiz_id);
+                $student = User::query()->find($pair->user_id);
+                if (! $quiz || ! $student || ($search !== '' && ! str_contains(strtolower($student->name.' '.$student->student_id.' '.$quiz->title), strtolower($search)))) {
+                    return null;
+                }
+                $status = $attemptService->retakeStatus($quiz, (int) $student->id);
+                if (! $status['exhausted']) {
+                    return null;
+                }
+                $lastGrant = QuizAttemptGrant::query()
+                    ->where('student_id', $student->id)
+                    ->where('quiz_id', $quiz->id)
+                    ->latest('created_at')
+                    ->first();
+
+                return [
+                    'student' => $student,
+                    'quiz' => $quiz,
+                    'status' => $status,
+                    'lastGrant' => $lastGrant,
+                ];
+            })->filter()->values();
+        }
+
         return view('faculty.students.course', [
             'user' => UserPresenter::faculty(Auth::user()),
             'course' => $course,
@@ -308,7 +348,120 @@ class FacultyController extends Controller
             'totalStudents' => Enrollment::where('course_id', $course->id)->count(),
             'search' => $search,
             'sort' => $sort,
+            'attemptRows' => $attemptRows,
         ]);
+    }
+
+    /** Grant additional attempts to currently exhausted learners for a course quiz. */
+    public function grantQuizAttempts(Request $request, int $id, UserNotificationService $userNotifications): RedirectResponse
+    {
+        $actor = Auth::user();
+        abort_unless($actor && $actor->isFaculty(), 403);
+        $course = $this->ownedCourse($id);
+
+        $validated = $request->validate([
+            'student_id' => ['required_without_all:grants,selected_pairs', 'integer', 'exists:users,id'],
+            'quiz_id' => ['required_without_all:grants,selected_pairs', 'integer', 'exists:quizzes,id'],
+            'amount' => ['required_without:grants', 'integer', 'min:1', 'max:10'],
+            'reason' => ['required_without:grants', 'string', 'max:1000'],
+            'grants' => ['required_without_all:student_id,selected_pairs', 'array', 'min:1'],
+            'grants.*.student_id' => ['required_with:grants', 'integer', 'exists:users,id'],
+            'grants.*.quiz_id' => ['required_with:grants', 'integer', 'exists:quizzes,id'],
+            'grants.*.amount' => ['required_with:grants', 'integer', 'min:1', 'max:10'],
+            'grants.*.reason' => ['required_with:grants', 'string', 'max:1000'],
+            'selected_pairs' => ['required_without_all:student_id,grants', 'array', 'min:1'],
+            'selected_pairs.*' => ['required', 'regex:/^\d+:\d+$/'],
+        ]);
+        $entries = isset($validated['grants']) ? $validated['grants'] : (isset($validated['selected_pairs'])
+            ? array_map(function (string $pair) use ($validated): array {
+                [$studentId, $quizId] = array_map('intval', explode(':', $pair, 2));
+
+                return [
+                    'student_id' => $studentId,
+                    'quiz_id' => $quizId,
+                    'amount' => $validated['amount'],
+                    'reason' => $validated['reason'],
+                ];
+            }, $validated['selected_pairs'])
+            : [[
+                'student_id' => $validated['student_id'],
+                'quiz_id' => $validated['quiz_id'],
+                'amount' => $validated['amount'],
+                'reason' => $validated['reason'],
+            ]]);
+        $attemptService = app(QuizAttemptService::class);
+        $grantSummaries = [];
+
+        DB::transaction(function () use ($entries, $course, $actor, $request, $attemptService, $userNotifications, &$grantSummaries): void {
+            foreach ($entries as $entry) {
+                $quiz = Quiz::query()->with('module')->where('course_id', $course->id)->findOrFail($entry['quiz_id']);
+                $student = User::query()->findOrFail($entry['student_id']);
+                $enrollment = Enrollment::query()
+                    ->where('course_id', $course->id)
+                    ->where('user_id', $student->id)
+                    ->first();
+                abort_unless($enrollment, 422);
+                abort_unless($attemptService->retakeStatus($quiz, (int) $student->id)['exhausted'], 422);
+                $reason = trim($entry['reason']);
+                abort_if($reason === '', 422);
+                $grant = QuizAttemptGrant::query()->create([
+                    'student_id' => $student->id,
+                    'quiz_id' => $quiz->id,
+                    'extra_attempts' => (int) $entry['amount'],
+                    'granted_by' => $actor->id,
+                    'reason' => $reason,
+                ]);
+                $status = $attemptService->retakeStatus($quiz, (int) $student->id);
+                $grantSummaries[] = [
+                    'student' => $student->name,
+                    'quiz' => $quiz->title,
+                    'used' => $status['used'],
+                    'allowed' => $status['allowed'],
+                ];
+                $limitMessage = $status['allowed'] === 0
+                    ? 'Your quiz remains unlimited.'
+                    : 'Your updated limit is '.$status['allowed'].' attempts with '.$status['remaining'].' remaining.';
+                $cooldownMessage = $status['unlock'] !== null
+                    ? ' The existing retake cooldown still applies.'
+                    : '';
+                $assessmentLabel = $quiz->module?->is_final ? 'final exam' : 'quiz';
+                $amount = (int) $entry['amount'];
+                $userNotifications->createForUser(
+                    (int) $student->id,
+                    'Additional '.$assessmentLabel.' attempt granted',
+                    $actor->name.' granted '.$amount.' additional '.($amount === 1 ? 'attempt' : 'attempts').' for '.$quiz->title.' in '.$course->title.'. '.$limitMessage.' Reason: '.$reason.$cooldownMessage,
+                    'assessment',
+                    'enrollment',
+                    (int) $enrollment->id,
+                );
+                AuditLog::query()->create([
+                    'actor_id' => $actor->id,
+                    'actor_name' => $actor->name,
+                    'actor_role' => $actor->roleName(),
+                    'event' => 'quiz_attempts_granted',
+                    'target_type' => 'quiz_attempt_grant',
+                    'target_id' => $grant->id,
+                    'target_label' => $student->name.' — '.$quiz->title,
+                    'changes' => [
+                        'extra_attempts' => ['old' => null, 'new' => $amount],
+                        'reason' => ['old' => null, 'new' => $reason],
+                    ],
+                    'description' => 'Granted '.$entry['amount'].' additional attempt(s); now '.$status['used'].'/'.$status['allowed'].' attempts used/allowed.',
+                    'method' => $request->method(),
+                    'route' => $request->route()?->getName() ?? '',
+                    'ip_address' => $request->ip(),
+                    'user_agent' => mb_substr((string) $request->userAgent(), 0, 500),
+                ]);
+            }
+        });
+
+        $redirect = $actor->isAdmin()
+            ? redirect()->route('admin.dashboard')
+            : redirect()->route('faculty.students.course', ['id' => $course->id, 'filter' => 'attempts']);
+
+        return $redirect
+            ->with('success', count($entries).' attempt grant(s) saved. Used/allowed counts have been refreshed.')
+            ->with('attemptGrantSummary', $grantSummaries);
     }
 
     /** Remove a learner from an owned course after collecting the faculty reason. */

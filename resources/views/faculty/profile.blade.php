@@ -323,7 +323,6 @@
                     <div class="form-group">
                         <label for="edit_email">Email</label>
                         <input class="profile-readonly-field" type="email" id="edit_email" name="email" value="{{ old('email', $user->email ?? '') }}" placeholder="you@example.com" readonly>
-                        <p class="hint">Email changes are managed by an administrator.</p>
                     </div>
 
                     <hr class="form-divider">

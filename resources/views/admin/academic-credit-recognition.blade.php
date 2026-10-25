@@ -15,7 +15,6 @@
                 @if($errors->any())<div class="notice err">{{ $errors->first() }}</div>@endif
 
                 <h2>Students ready for an evidence report</h2>
-                <p>These stacking records meet the platform’s configured requirements. Generate a report to submit through the institution’s separate credit-review process.</p>
                 <section class="recognition-list adm-inline-admin-academic-credit-recognition-1">
                     @forelse($eligibleReports as $progress)
                         @if($progress->user && $progress->framework)

@@ -3,9 +3,12 @@
     $canContinue = $latestAttemptPassed || (! $status['exhausted'] && (bool) $status['unlock']);
     $quizAvailable = ! $status['exhausted'] && ! $status['unlock'] && ! $latestAttemptPassed;
 @endphp
-<section class="inline-assessment-panel" data-assessment-kind="quiz" data-assessment-id="{{ $quiz->id }}" data-can-continue="{{ $canContinue ? '1' : '0' }}" data-timer-remaining="{{ (int) ($timer_remaining_seconds ?? 0) }}">
+<section class="inline-assessment-panel" data-assessment-kind="quiz" data-assessment-id="{{ $quiz->id }}" data-assessment-url="{{ route('quiz.show', $quiz->id) }}" data-cooldown-until="{{ (int) ($status['unlock'] ?? 0) }}" data-can-continue="{{ $canContinue ? '1' : '0' }}" data-timer-remaining="{{ (int) ($timer_remaining_seconds ?? 0) }}">
     <header class="inline-assessment-header">
-        <span class="inline-assessment-eyebrow">Lesson assessment</span>
+        <div class="inline-assessment-header-top">
+            <span class="inline-assessment-eyebrow">Lesson assessment</span>
+            <span class="inline-quiz-cooldown" data-quiz-cooldown role="timer" aria-live="polite" @unless($status['unlock'] && ! $status['exhausted']) hidden @endunless></span>
+        </div>
         <h2>{{ $quiz->title }}</h2>
         <p>{{ $quiz->lesson?->title ?? '' }} · {{ $quiz->questions->count() }} questions · Pass {{ $quiz->passing_score }}%</p>
     </header>
@@ -20,9 +23,7 @@
         </div>
     @elseif($status['exhausted'])
         <div class="inline-assessment-feedback is-warning" role="status">You have used all allowed attempts for this quiz.</div>
-    @elseif($status['unlock'])
-        <div class="inline-assessment-feedback is-warning quiz-cooldown" role="status">You can retake this quiz after the 24-hour cooldown.</div>
-    @else
+    @elseif(! $status['unlock'])
         <form class="inline-assessment-form inline-quiz-form" data-assessment-form method="POST" action="{{ route('quiz.submit', $quiz->id) }}">
             @csrf
             @foreach($quiz->questions as $question)

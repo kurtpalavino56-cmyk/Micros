@@ -42,7 +42,7 @@
       <div class="psucert__corner psucert__corner--bottom"></div>
 
       <div class="psucert__crest">
-        <img src="{{ asset('Images/PSU-Logo.png') }}" alt="Pangasinan State University">
+        <img src="{{ asset('Images/PSU-Logo-Certificate.jpg') }}" alt="Pangasinan State University">
       </div>
 
       <div class="psucert__qr">
@@ -84,6 +84,11 @@
             <span class="psucert__k">Learning Hours</span>
             <span class="psucert__c">:</span>
             <span class="psucert__v">{{ $c['learning_hours'] ?: 'On completion' }}</span>
+          </div>
+          <div class="psucert__row">
+            <span class="psucert__k">PQF Level</span>
+            <span class="psucert__c">:</span>
+            <span class="psucert__v">{{ !empty($c['pqf_level']) ? 'Level '.$c['pqf_level'] : 'Not specified' }}</span>
           </div>
           <div class="psucert__row">
             <span class="psucert__k">Credential Id</span>

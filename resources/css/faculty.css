@@ -2072,6 +2072,39 @@
 
 /* learner progress: faculty-students-course */
 
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-bulk{display:grid;grid-template-columns:145px auto;justify-content:start;align-items:end;gap:12px;margin:0 0 12px;padding:14px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-bulk[hidden]{display:none!important;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-bulk-title{grid-column:1/-1;color:var(--ink);font-size:14px;font-weight:700;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-field{display:grid;gap:5px;min-width:0;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-field label{color:#475569;font-size:12px;font-weight:700;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-bulk input,:where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-row-form input{width:100%;min-width:0;min-height:36px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:var(--ink);font:inherit;font-size:12px;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-bulk input[type="number"],:where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-row-form input[type="number"]{width:78px;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-field input:focus{border-color:var(--navy);outline:0;box-shadow:0 0 0 3px rgba(19,23,107,.12);}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-table{min-width:1050px;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-table .student-identity{display:grid;gap:2px;min-width:0;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-table .student-identity .student-id{display:block;margin:0;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-row-form{display:grid;grid-template-columns:76px 106px;align-items:end;justify-content:center;gap:8px;min-width:0;width:max-content;margin-inline:auto;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-amount-field label{white-space:nowrap;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-row-form .attempt-grant-amount-field input[type="number"]{width:76px;min-height:36px;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-row-form .action{width:106px;min-width:106px;min-height:36px;padding-block:7px;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-table th:nth-child(6),:where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-table td:nth-child(6){text-align:center;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-table th:nth-child(4),:where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-table td:nth-child(4){text-align:center;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-table th:first-child,:where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-table td:first-child{width:56px;text-align:center;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-select,:where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-select-all{display:block;width:16px;height:16px;margin:0 auto;accent-color:var(--navy);}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-modal{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:20px;background:rgba(15,23,42,.52);}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-modal[hidden]{display:none;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-modal-dialog{width:min(100%,480px);padding:24px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 24px 70px rgba(15,23,42,.24);}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-modal-dialog h2{margin:0 0 7px;color:var(--ink);font-family:'Plus Jakarta Sans',Inter,ui-sans-serif,system-ui,sans-serif;font-size:20px;font-weight:800;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-modal-dialog p{margin:0 0 18px;color:var(--muted);font-size:13px;line-height:1.5;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-modal-dialog form>label{display:block;margin-bottom:6px;color:var(--ink);font-size:12px;font-weight:700;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-modal-dialog textarea{display:block;width:100%;min-height:110px;resize:vertical;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;color:var(--ink);font:inherit;font-size:13px;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-modal-dialog textarea:focus{border-color:var(--navy);outline:0;box-shadow:0 0 0 3px rgba(19,23,107,.12);}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+    :where(html[data-faculty-page="faculty-students-course"]) body.attempt-grant-modal-open{overflow:hidden;}
+    :where(html[data-faculty-page="faculty-students-course"]) .final-exam-label{margin-left:6px;background:#fff7ed;color:#9a3412;}
+    :where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-summary{display:grid;gap:5px;margin:0 0 14px;padding:12px 15px;border:1px solid #bbf7d0;border-radius:9px;background:#f0fdf4;color:#166534;font-size:13px;}
+    @media(max-width:760px){:where(html[data-faculty-page="faculty-students-course"]) .tabs-toolbar{align-items:stretch;flex-direction:column;}:where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-bulk{grid-template-columns:minmax(0,1fr);align-items:stretch;}:where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-row-form{grid-template-columns:106px;justify-items:center;min-width:0;width:106px;margin-inline:auto;}:where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-row-form .attempt-grant-amount-field{width:76px;}:where(html[data-faculty-page="faculty-students-course"]) .attempt-grant-row-form .action{justify-self:center;}}
+
     :root:where([data-faculty-page="faculty-students-course"]){--navy:#13176b;--ink:#0e1a3a;--muted:#64748b;--line:#e5e7eb;--gold:#dba617;--green:#15803d;--red:#b91c1c;--shadow:0 8px 22px rgba(19,23,107,.06);}
     :where(html[data-faculty-page="faculty-students-course"]), :where(html[data-faculty-page="faculty-students-course"]) *{box-sizing:border-box;}
     body:where([data-faculty-page="faculty-students-course"]){font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:var(--ink);margin:0;background:#f8faff;}
@@ -2820,7 +2853,8 @@ html,body{scrollbar-width:none;-ms-overflow-style:none;}
     html::-webkit-scrollbar,body::-webkit-scrollbar{width:0;height:0;display:none;}
     .layout.faculty-sidebar-layout{display:grid;grid-template-columns:244px minmax(0,1fr);min-height:calc(100vh - var(--faculty-topbar-height));align-items:start;transition:grid-template-columns .25s ease;}
     .layout.faculty-sidebar-layout.sidebar-collapsed{grid-template-columns:78px minmax(0,1fr);}
-    .layout.faculty-sidebar-layout .faculty-sidebar{background:#fff;padding:24px 10px 20px;display:flex;flex-direction:column;gap:5px;border-right:1px solid #e5e7eb;height:calc(100vh - var(--faculty-topbar-height));position:sticky;top:var(--faculty-topbar-height);z-index:900;align-self:start;overflow-x:hidden;overflow-y:auto;transition:padding .25s ease,width .25s ease;}
+    .layout.faculty-sidebar-layout .faculty-sidebar{background:#fff;padding:24px 10px 20px;display:flex;flex-direction:column;gap:5px;border-right:1px solid #e5e7eb;height:calc(100vh - var(--faculty-topbar-height));position:sticky;top:var(--faculty-topbar-height);z-index:900;align-self:start;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;transition:padding .25s ease,width .25s ease;}
+    .layout.faculty-sidebar-layout .faculty-sidebar::-webkit-scrollbar{display:none;}
     .faculty-sidebar .side-link{display:flex;align-items:center;flex:0 0 56px;gap:15px;padding:10px 14px;border-radius:13px;color:#061a45;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;line-height:1.25;text-decoration:none;white-space:nowrap;overflow:hidden;transition:background-color .2s ease,color .2s ease,transform .15s ease;}
     .faculty-sidebar .side-link:not(.active):hover{background:#fffbe6;color:#061a45;}
     .faculty-sidebar .side-link:not(.active):active{transform:scale(.98);}

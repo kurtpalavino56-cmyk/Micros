@@ -832,7 +832,6 @@
                         <input class="ui-input profile-readonly-field" type="email" id="edit_email" name="email"
                             value="{{ old('email', $user->email ?? '') }}"
                             placeholder="you@example.com" readonly>
-                        <p class="hint">Email changes are managed by an administrator.</p>
                     </div>
 
                     <hr class="form-divider">

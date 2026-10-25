@@ -30,6 +30,13 @@
         </div>
 
         <x-flash-toast :message="session('success')" />
+        @if(session('attemptGrantSummary'))
+            <div class="attempt-grant-summary" role="status">
+                @foreach(session('attemptGrantSummary') as $grantSummary)
+                    <span><strong>{{ $grantSummary['student'] }}</strong> · {{ $grantSummary['quiz'] }}: {{ $grantSummary['used'] }} / {{ $grantSummary['allowed'] }} attempts used / allowed</span>
+                @endforeach
+            </div>
+        @endif
 
         @if($filter === 'needs_review' && $needsReviewCount > 0)
             <div class="review-summary"><strong>{{ $needsReviewCount }}</strong> {{ Illuminate\Support\Str::plural('learner', $needsReviewCount) }} completed the course requirements and {{ $needsReviewCount === 1 ? 'is' : 'are' }} waiting for your verification.</div>
@@ -41,6 +48,7 @@
                     <a class="tab {{ $filter === 'needs_review' ? 'active' : '' }}" href="{{ route('faculty.students.course', ['id' => $course->id, 'filter' => 'needs_review']) }}">Awaiting verification <span>({{ $needsReviewCount }})</span></a>
                 @endif
                 <a class="tab {{ $filter === 'all' ? 'active' : '' }}" href="{{ route('faculty.students.course', ['id' => $course->id, 'filter' => 'all']) }}">All students <span>({{ $totalStudents }})</span></a>
+                <a class="tab {{ $filter === 'attempts' ? 'active' : '' }}" href="{{ route('faculty.students.course', ['id' => $course->id, 'filter' => 'attempts']) }}">Quiz &amp; Exam Attempts</a>
             </nav>
 
             <div class="table-toolbar">
@@ -79,6 +87,144 @@
             })();
         </script>
 
+        @if($filter === 'attempts')
+            <form id="bulk-attempt-grants" class="attempt-grant-bulk" method="POST" action="{{ route('faculty.students.course.attempt-grants', $course->id) }}" hidden>
+                @csrf
+                <strong class="attempt-grant-bulk-title">Grant attempts to the selected rows</strong>
+                <div class="attempt-grant-field attempt-grant-amount-field"><label for="bulk-attempt-amount">Additional attempts</label><input id="bulk-attempt-amount" type="number" name="amount" min="1" max="10" value="1" required></div>
+                <button class="action verify" type="button" data-open-attempt-reason>Grant attempts to selected</button>
+            </form>
+            <div class="student-table-wrap">
+                <table class="student-table attempt-grant-table">
+                    <thead><tr><th scope="col"><input class="attempt-grant-select-all" type="checkbox" aria-label="Select all exhausted attempts"></th><th scope="col">Student</th><th scope="col">Quiz / exam</th><th scope="col">Attempts used / allowed</th><th scope="col">Last grant</th><th scope="col">Grant attempts</th></tr></thead>
+                    <tbody>
+                    @forelse($attemptRows as $index => $row)
+                        <tr>
+                            <td><input class="attempt-grant-select" type="checkbox" name="selected_pairs[]" value="{{ $row['student']->id }}:{{ $row['quiz']->id }}" form="bulk-attempt-grants" aria-label="Select {{ $row['student']->name }} for bulk grant"></td>
+                            <td><div class="student-cell"><div class="avatar">{{ strtoupper(substr($row['student']->name, 0, 1)) }}</div><div class="student-identity"><span class="student-name">{{ $row['student']->name }}</span><small class="student-id">{{ $row['student']->student_id ?? $row['student']->user_code }}</small></div></div></td>
+                            <td>{{ $row['quiz']->title }} @if($row['quiz']->module?->is_final)<span class="status final-exam-label">Final exam</span>@endif</td>
+                            <td><strong>{{ $row['status']['used'] }} / {{ $row['status']['allowed'] }}</strong></td>
+                            <td>@if($row['lastGrant'])<span title="Reason: {{ $row['lastGrant']->reason }}&#10;Granted by: {{ $row['lastGrant']->grantor?->name ?? 'Unknown' }}">{{ $row['lastGrant']->created_at->format('M j, Y') }} · +{{ $row['lastGrant']->extra_attempts }} {{ $row['lastGrant']->extra_attempts === 1 ? 'attempt' : 'attempts' }}</span>@else<span class="student-id">None</span>@endif</td>
+                            <td>
+                                <form class="attempt-grant-row-form" method="POST" action="{{ route('faculty.students.course.attempt-grants', $course->id) }}">
+                                    @csrf
+                                    <input type="hidden" name="student_id" value="{{ $row['student']->id }}">
+                                    <input type="hidden" name="quiz_id" value="{{ $row['quiz']->id }}">
+                                    <div class="attempt-grant-field attempt-grant-amount-field"><input id="attempt-amount-{{ $index }}" type="number" name="amount" min="1" max="10" value="1" aria-label="Additional attempts" required></div>
+                                    <button class="action verify" type="button" data-open-attempt-reason>Grant</button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td class="empty-cell" colspan="6">No students have exhausted their quiz or exam attempts.</td></tr>
+                    @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div id="attempt-grant-reason-modal" class="attempt-grant-modal" hidden>
+                <section class="attempt-grant-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="attempt-grant-modal-title" aria-describedby="attempt-grant-modal-help" tabindex="-1">
+                    <h2 id="attempt-grant-modal-title">Reason for attempt grant</h2>
+                    <p id="attempt-grant-modal-help">Add a reason to record why these additional attempts are being granted.</p>
+                    <form id="attempt-grant-reason-form">
+                        <label for="attempt-grant-modal-reason">Reason <span aria-hidden="true">*</span></label>
+                        <textarea id="attempt-grant-modal-reason" rows="4" maxlength="1000" required></textarea>
+                        <div class="attempt-grant-modal-actions">
+                            <button class="action" type="button" data-close-attempt-reason>Cancel</button>
+                            <button class="action verify" type="submit">Confirm grant</button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+            <script>
+                (function () {
+                    var bulkForm = document.getElementById('bulk-attempt-grants');
+                    var selectAll = document.querySelector('.attempt-grant-select-all');
+                    var selectors = Array.from(document.querySelectorAll('.attempt-grant-select'));
+                    var modal = document.getElementById('attempt-grant-reason-modal');
+                    var modalDialog = modal && modal.querySelector('.attempt-grant-modal-dialog');
+                    var reasonForm = document.getElementById('attempt-grant-reason-form');
+                    var reasonInput = document.getElementById('attempt-grant-modal-reason');
+                    var targetForm = null;
+                    var previousFocus = null;
+                    if (!bulkForm || !modal || !reasonForm || !reasonInput) return;
+
+                    function updateSelection() {
+                        var checkedCount = selectors.filter(function (selector) { return selector.checked; }).length;
+                        bulkForm.hidden = checkedCount === 0;
+                        if (selectAll) {
+                            selectAll.disabled = selectors.length === 0;
+                            selectAll.checked = selectors.length > 0 && checkedCount === selectors.length;
+                            selectAll.indeterminate = checkedCount > 0 && checkedCount < selectors.length;
+                        }
+                    }
+
+                    function closeModal() {
+                        modal.hidden = true;
+                        document.body.classList.remove('attempt-grant-modal-open');
+                        targetForm = null;
+                        if (previousFocus) previousFocus.focus();
+                    }
+
+                    selectors.forEach(function (selector) {
+                        selector.addEventListener('change', updateSelection);
+                    });
+                    if (selectAll) {
+                        selectAll.addEventListener('change', function () {
+                            selectors.forEach(function (selector) { selector.checked = selectAll.checked; });
+                            updateSelection();
+                        });
+                    }
+                    updateSelection();
+                    reasonInput.addEventListener('input', function () {
+                        reasonInput.setCustomValidity('');
+                    });
+
+                    document.querySelectorAll('[data-open-attempt-reason]').forEach(function (button) {
+                        button.addEventListener('click', function () {
+                            var form = button.closest('form');
+                            if (!form || !form.reportValidity()) return;
+                            targetForm = form;
+                            previousFocus = button;
+                            reasonInput.value = '';
+                            modal.hidden = false;
+                            document.body.classList.add('attempt-grant-modal-open');
+                            modalDialog.focus();
+                            reasonInput.focus();
+                        });
+                    });
+
+                    reasonForm.addEventListener('submit', function (event) {
+                        event.preventDefault();
+                        if (!targetForm || !reasonForm.reportValidity()) return;
+                        var reason = reasonInput.value.trim();
+                        if (reason === '') {
+                            reasonInput.setCustomValidity('Enter a reason for granting attempts.');
+                            reasonInput.reportValidity();
+                            return;
+                        }
+                        var storedReason = targetForm.querySelector('input[name="reason"]');
+                        if (!storedReason) {
+                            storedReason = document.createElement('input');
+                            storedReason.type = 'hidden';
+                            storedReason.name = 'reason';
+                            targetForm.appendChild(storedReason);
+                        }
+                        storedReason.value = reason;
+                        targetForm.submit();
+                    });
+
+                    modal.querySelectorAll('[data-close-attempt-reason]').forEach(function (button) {
+                        button.addEventListener('click', closeModal);
+                    });
+                    modal.addEventListener('click', function (event) {
+                        if (event.target === modal) closeModal();
+                    });
+                    document.addEventListener('keydown', function (event) {
+                        if (event.key === 'Escape' && !modal.hidden) closeModal();
+                    });
+                })();
+            </script>
+        @else
         <div class="student-table-wrap">
             <table class="student-table">
                 <thead>
@@ -149,6 +295,7 @@
                 </tbody>
             </table>
         </div>
+        @endif
         @if($filter === 'all')
             <div class="student-removal-modal" id="student-removal-modal" hidden>
                 <section class="student-removal-dialog" role="dialog" aria-modal="true" aria-labelledby="student-removal-title" aria-describedby="student-removal-help" tabindex="-1">

@@ -157,10 +157,10 @@
     <div class="corner corner-bottom-gold"></div>
     <div class="corner corner-bottom-navy"></div>
 
-    <div class="crest"><img src="{{ public_path('images/PSU-Logo.png') }}" alt="Pangasinan State University"></div>
+    <div class="crest"><img src="{{ public_path('Images/PSU-Logo-Certificate.jpg') }}" alt="Pangasinan State University"></div>
     <div class="qr">
         @if (!empty($cert['qr_url']))
-            <img src="{{ $cert['qr_url'] }}" alt="Verify">
+            <img src="{{ $cert['qr_url'] }}" alt="">
         @endif
         <div>Verify</div>
     </div>
@@ -192,6 +192,11 @@
                         <td class="key">LEARNING HOURS</td>
                         <td class="colon">:</td>
                         <td class="value">{{ $cert['learning_hours'] ?? '—' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="key">PQF LEVEL</td>
+                        <td class="colon">:</td>
+                        <td class="value">{{ !empty($cert['pqf_level']) ? 'Level '.$cert['pqf_level'] : 'Not specified' }}</td>
                     </tr>
                     <tr>
                         <td class="key">CREDENTIAL ID</td>

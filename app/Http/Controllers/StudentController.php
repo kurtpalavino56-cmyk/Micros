@@ -444,34 +444,38 @@ class StudentController extends Controller
         // column, and a LIKE against it is unreliable across drivers (and
         // matches substrings — "Syntax" inside "Syntaxes"). Decoding the
         // array and comparing normalised values is exact and portable.
-        if ($filters['recommended'] && $skills->isNotEmpty()) {
-            $wanted = $skills->map(fn ($s) => $this->normalizeSkill($s))->filter()->all();
+        if ($filters['recommended']) {
+            if ($skills->isEmpty()) {
+                $matched = $matched->take(0);
+            } else {
+                $wanted = $skills->map(fn ($s) => $this->normalizeSkill($s))->filter()->all();
 
-            $matched = $matched->filter(function (Course $c) use ($wanted) {
-                $courseSkills = collect(array_merge(
-                    FacultyController::relatedSkillsOf($c),
-                    (array) ($c->skills ?? [])
-                ))->map(fn ($s) => $this->normalizeSkill($s))->filter()->all();
+                $matched = $matched->filter(function (Course $c) use ($wanted) {
+                    $courseSkills = collect(array_merge(
+                        FacultyController::relatedSkillsOf($c),
+                        (array) ($c->skills ?? [])
+                    ))->map(fn ($s) => $this->normalizeSkill($s))->filter()->all();
 
-                // Exact skill match is the primary signal.
-                if (array_intersect($wanted, $courseSkills)) {
-                    return true;
-                }
-
-                // Fallback for courses saved before "Subject is Related on"
-                // existed: look for the skill in the course's own text.
-                $haystack = $this->normalizeSkill(
-                    ($c->title ?? '').' '.($c->description ?? '').' '.($c->category ?? '')
-                );
-
-                foreach ($wanted as $skill) {
-                    if ($skill !== '' && str_contains($haystack, $skill)) {
+                    // Exact skill match is the primary signal.
+                    if (array_intersect($wanted, $courseSkills)) {
                         return true;
                     }
-                }
 
-                return false;
-            });
+                    // Fallback for courses saved before "Subject is Related on"
+                    // existed: look for the skill in the course's own text.
+                    $haystack = $this->normalizeSkill(
+                        ($c->title ?? '').' '.($c->description ?? '').' '.($c->category ?? '')
+                    );
+
+                    foreach ($wanted as $skill) {
+                        if ($skill !== '' && str_contains($haystack, $skill)) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                });
+            }
         }
 
         $courses = $matched->map(fn (Course $c) => (object) [
@@ -844,28 +848,21 @@ class StudentController extends Controller
                 ->where('passed', true)
                 ->exists();
 
-            // Attempt budget. 0 = unlimited. Once it is used up the quiz is
-            // closed for good: review only, no countdown.
-            $allowed = $this->attemptsAllowed($m->quiz);
-            $used = $this->attemptsUsed($m->quiz, $auth->id);
-            $exhausted = $allowed > 0 && $used >= $allowed;
+            // Submission and display use the same server-side attempt status.
+            $attemptStatus = $this->quizAttempts->retakeStatus($m->quiz, (int) $auth->id);
+            $allowed = $attemptStatus['allowed'];
+            $used = $attemptStatus['used'];
+            $exhausted = $attemptStatus['exhausted'];
 
             $quizAttempts[(string) $mIdx] = [
                 'allowed' => $allowed,
                 'used' => $used,
-                'remaining' => $allowed > 0 ? max(0, $allowed - $used) : null,
+                'remaining' => $attemptStatus['remaining'],
                 'exhausted' => $exhausted,
             ];
 
-            if ($failed && ! $passed && ! $exhausted) {
-                $at = $failed->submitted_at ?? $failed->created_at;
-                // Attempt predates the quiz's last edit → questions changed,
-                // so the lock no longer applies.
-                $editedAt = $this->quizLastEditedAt($m->quiz);
-                $stale = $editedAt && $at && $at->lt($editedAt);
-                if (! $stale && $at && $at->copy()->addMinutes(5)->isFuture()) {
-                    $quizUnlocks[(string) $mIdx] = $at->copy()->addMinutes(5)->getTimestamp() * 1000;
-                }
+            if ($attemptStatus['unlock'] !== null) {
+                $quizUnlocks[(string) $mIdx] = $attemptStatus['unlock'];
             }
         }
 
@@ -1521,12 +1518,16 @@ class StudentController extends Controller
             $nextRequirement = $quiz->lesson_id && $result['passed'] && ! $lessonCompleted
                 ? $this->nextRequiredLessonAssessment(CourseLesson::query()->findOrFail($quiz->lesson_id), $enrollment)
                 : ['url' => null, 'pending_review' => false];
+            $attemptStatus = $this->quizAttempts->retakeStatus($quiz, (int) $student->id);
 
             return response()->json([
                 'ok' => true,
                 'score' => $result['score'],
                 'passed' => $result['passed'],
-                'retake_unlock_at' => $result['unlock'],
+                'attempts_remaining' => $attemptStatus['remaining'],
+                'attempts_allowed' => $attemptStatus['allowed'],
+                'attempts_exhausted' => $attemptStatus['exhausted'],
+                'retake_unlock_at' => $attemptStatus['unlock'],
                 'lesson_completed' => $lessonCompleted,
                 'next_url' => $nextRequirement['url'],
                 'pending_review' => $nextRequirement['pending_review'],
@@ -2306,7 +2307,12 @@ class StudentController extends Controller
 
         return Storage::disk('public')->download(
             $relativePath,
-            Str::slug($certificate->title ?: 'certificate').'-'.$certificate->serial.'.pdf'
+            Str::slug($certificate->title ?: 'certificate').'-'.$certificate->serial.'.pdf',
+            [
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma' => 'no-cache',
+                'Expires' => '0',
+            ]
         );
     }
 

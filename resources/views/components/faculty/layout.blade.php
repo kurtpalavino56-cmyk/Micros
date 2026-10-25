@@ -25,7 +25,7 @@
 </head>
 <body {{ $attributes }}>
     @if ($shell)
-        @include('components.authenticated-topbar')
+        @include('components.authenticated-topbar', ['user' => auth()->user()])
         <div class="layout faculty-sidebar-layout">
             @include('components.faculty-sidebar')
             {{ $slot }}

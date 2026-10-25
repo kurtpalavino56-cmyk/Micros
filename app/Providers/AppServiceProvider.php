@@ -81,6 +81,13 @@ class AppServiceProvider extends ServiceProvider
                     $counts['notifications'] = app(UserNotificationService::class)->unreadCount($user);
 
                     if ($user->isAdmin()) {
+                        $counts['inbox'] = Complaint::query()
+                            ->where(function ($query) {
+                                $query->whereNull('admin_read_at')
+                                    ->orWhereRaw('COALESCE(last_reply_at, created_at) > admin_read_at');
+                            })
+                            ->count();
+
                         $counts['admin_course_reviews'] = Course::query()
                             ->where('approval_status', 'pending')
                             ->count();

@@ -15,7 +15,6 @@
         <header class="page-head faculty-page-heading">
             <div>
                 <h2 class="faculty-page-title">Analytics</h2>
-                <p class="live-line faculty-page-subtitle"><span class="dot" aria-hidden="true"></span><span><b class="count">{{ $onlineNow ?? 0 }}</b> of your learners active in the last 5 minutes</span></p>
             </div>
             <div class="head-actions">
                 <form class="course-filter" action="{{ route('faculty.analytics') }}" method="GET">
