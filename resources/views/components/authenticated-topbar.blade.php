@@ -21,7 +21,7 @@
     $inboxRoute = $isAdmin ? 'admin.complaints' : ($isFaculty ? 'faculty.inbox' : 'inbox.index');
 @endphp
 
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0..1,0" rel="stylesheet">
 <header class="auth-topbar {{ $isFaculty ? 'faculty-auth-topbar' : '' }} {{ $isStudent ? 'student-auth-topbar' : '' }} {{ $isAdmin ? 'admin-auth-topbar' : '' }}">
     <div class="auth-topbar-brand">
         @if ($isFaculty)
@@ -54,7 +54,7 @@
         @if (!$authUser?->isSubAdmin() || $authUser->canAccessAdminPage('complaints'))
             <a href="{{ route($inboxRoute) }}" class="auth-topbar-icon auth-topbar-inbox {{ request()->routeIs('admin.complaints*', 'faculty.inbox', 'inbox.index') ? 'is-active' : '' }}" title="Inbox" aria-label="Inbox">
                 <span class="material-symbols-rounded" aria-hidden="true">mail</span>
-                @if (!$isAdmin && ($unreadInboxCount ?? 0) > 0)
+                @if (($unreadInboxCount ?? 0) > 0)
                     <span class="auth-topbar-badge">{{ $unreadInboxCount }}</span>
                 @endif
             </a>
@@ -138,9 +138,10 @@
     .auth-notifications-head strong{font-size:15px;}.auth-notifications-head span{font-size:11px;color:#6b7280;}
     .auth-notifications-list{max-height:300px;overflow:auto;padding:4px 0;}
     .auth-notifications-item{display:block;padding:11px 16px;border-bottom:1px solid #f0f2f6;color:inherit;text-decoration:none;}.auth-notifications-item:hover{background:#f7f9ff;}.auth-notifications-item[data-notification-type="announcement"]{cursor:pointer;}    .auth-notifications-item strong{display:block;font-size:12px;}.auth-notifications-item p{margin:3px 0 0;color:#5f6b85;font-size:11px;line-height:1.4;}.auth-notifications-item time{display:block;margin-top:4px;color:#9aa3b5;font-size:10px;}.auth-notifications-item.is-unread{border-left:3px solid var(--gold);padding-left:13px;}
+    .auth-notifications-item p{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;overflow-wrap:anywhere;}
     .auth-notifications-status{padding:18px 16px;margin:0;color:#6b7280;font-size:12px;text-align:center;}
     .auth-notifications-all{display:block;padding:11px 16px;background:#f7f9ff;color:var(--navy);font-size:12px;font-weight:800;text-align:center;}
-    .auth-topbar-icon .material-symbols-rounded{font-size:24px;}
+    .auth-topbar-icon .material-symbols-rounded{font-size:24px;font-variation-settings:'FILL' 1;}
     .auth-topbar-badge{position:absolute;top:0;right:1px;background:#ef4444;color:#fff;border-radius:999px;font-size:10px;font-weight:800;padding:2px 5px;line-height:1.3;box-shadow:0 0 0 2px var(--navy);}
     .auth-profile{position:relative;margin-left:2px;padding-left:16px;}
     .auth-profile::before{position:absolute;top:50%;left:0;width:1px;height:30px;background:rgba(255,255,255,.3);content:"";transform:translateY(-50%);}

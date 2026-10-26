@@ -1,71 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audit Logs | UPSKILL Admin</title>
-    <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
-    <style>
-        :root{--navy:#0d1b6e;--ink:#18213d;--muted:#68758c;--line:#e2e7f0;--bg:#f6f8fc;--gold:#f4c430;--shadow:0 8px 24px rgba(13,27,110,.06);}
-        *{box-sizing:border-box;}
-        body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;}
-        .audit-main{padding:30px 32px 48px!important;}
-        .audit-content{max-width:1440px;margin:0 auto;}
-        .audit-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:20px;}
-        .audit-heading h1{margin:0 0 6px;color:#000;font-size:30px;}
-        .audit-heading p{margin:0;color:var(--muted);font-size:14px;line-height:1.5;}
-        .audit-count{flex:none;padding:8px 13px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--muted);font-size:13px;font-weight:700;}
-        .audit-card{margin-bottom:18px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:var(--shadow);}
-        .audit-layout{display:grid;grid-template-columns:minmax(0,1fr) 286px;gap:18px;align-items:start;}
-        .audit-filters{display:flex;flex-direction:column;gap:14px;padding:18px;}
-        .audit-filter-title{margin:0 0 2px;color:var(--ink);font-size:15px;}
-        .audit-field{display:flex;flex-direction:column;gap:6px;min-width:0;}
-        .audit-field label{color:#475467;font-size:12px;font-weight:700;}
-        .audit-field input,.audit-field select{width:100%;height:40px;padding:8px 10px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:var(--ink);font:inherit;font-size:14px;}
-        .audit-button{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:9px 15px;border:1px solid var(--navy);border-radius:8px;background:var(--navy);color:#fff;font:inherit;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;}
-        .audit-button:hover{background:#192b91;}
-        .audit-button.secondary{background:#fff;color:var(--navy);}
-        .audit-button.secondary:hover{background:#f2f4f8;}
-        .audit-actions{display:flex;gap:9px;flex-wrap:wrap;}
-        .audit-table-wrap{overflow-x:auto;}
-        .audit-table{width:100%;min-width:860px;border-collapse:collapse;}
-        .audit-table th,.audit-table td{padding:13px 15px;border-bottom:1px solid #edf0f5;text-align:left;vertical-align:top;font-size:13px;}
-        .audit-table th{background:#f9faff;color:#667085;font-size:11px;letter-spacing:.05em;text-transform:uppercase;}
-        .audit-table tr:last-child td{border-bottom:0;}
-        .audit-event{color:var(--ink);font-weight:700;}
-        .audit-meta{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.45;overflow-wrap:anywhere;}
-        .audit-method{display:inline-flex;padding:4px 7px;border-radius:6px;background:#f1f3f8;color:#475467;font-size:11px;font-weight:800;}
-        .audit-details-button{padding:7px 10px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--navy);font:inherit;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;}
-        .audit-details-button:hover{border-color:#c5cbe0;background:#f8f9fc;}
-        .audit-technical-modal{width:min(480px,calc(100% - 28px));max-width:none;max-height:calc(100% - 28px);padding:0;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);box-shadow:0 24px 70px rgba(10,20,55,.24);}
-        .audit-technical-modal::backdrop{background:rgba(15,23,42,.48);backdrop-filter:blur(2px);}
-        .audit-technical-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 20px;border-bottom:1px solid var(--line);}
-        .audit-technical-head h2{margin:0;color:var(--navy);font-size:17px;}
-        .audit-technical-head p{margin:5px 0 0;color:var(--muted);font-size:12px;line-height:1.45;}
-        .audit-technical-close{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 32px;border:0;border-radius:7px;background:#f3f5f9;color:#475467;font-size:20px;cursor:pointer;}
-        .audit-technical-body{display:grid;gap:14px;padding:20px;}
-        .audit-technical-item{display:grid;gap:5px;min-width:0;}
-        .audit-technical-item[hidden]{display:none;}
-        .audit-technical-label{color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
-        .audit-technical-value{color:var(--ink);font-size:13px;line-height:1.5;overflow-wrap:anywhere;}
-        .audit-role{display:inline-flex;margin-top:5px;padding:3px 8px;border-radius:999px;background:#eef1fb;color:var(--navy);font-size:10px;font-weight:700;text-transform:capitalize;}
-        .audit-change-button{min-height:25px;padding:4px 7px;border:1px solid #dfe4ee;border-radius:6px;background:#fff;color:var(--navy);font:inherit;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer;}
-        .audit-change-button:hover{border-color:#c5cbe0;background:#f8f9fc;}
-        .audit-changes-modal{width:min(760px,calc(100% - 28px));}
-        .audit-changes-table-wrap{max-height:min(60vh,520px);overflow:auto;padding:18px 20px;}
-        .audit-changes-table{width:100%;border-collapse:collapse;font-size:12px;}
-        .audit-changes-table th,.audit-changes-table td{padding:9px 10px;border:1px solid #edf0f5;text-align:left;vertical-align:top;overflow-wrap:anywhere;}
-        .audit-changes-table th{position:sticky;top:0;background:#f9faff;color:#667085;font-size:10px;text-transform:uppercase;letter-spacing:.04em;}
-        .audit-empty{padding:36px!important;color:var(--muted);text-align:center;}
-        .audit-pagination{padding:0 15px 8px;}
-        @media(max-width:1200px){.audit-layout{grid-template-columns:minmax(0,1fr);}.audit-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}.audit-filter-title,.audit-actions{grid-column:1/-1;}}
-        @media(max-width:700px){.audit-main{padding:22px 14px 40px!important;}.audit-heading{flex-direction:column;}.audit-heading h1{font-size:25px;}.audit-filters{display:flex;}.audit-actions{width:100%;}.audit-actions>*{flex:1;}}
-    </style>
-</head>
-<body>
-    @include('components.authenticated-topbar', ['user' => $user])
-    <div class="layout admin-layout">
-        @include('components.admin-sidebar')
+
+<x-admin.layout title="Audit Logs | UPSKILL Admin" page="admin-audit-logs" :user="$user" :use-auth-user="false">
+    <x-slot:head>
+        <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
+    </x-slot:head>
+<div class="layout admin-layout">
         <main class="main audit-main">
             <div class="audit-content">
                 <header class="audit-heading">
@@ -77,7 +15,7 @@
                 </header>
 
                 @if($errors->any())
-                    <div class="audit-card" role="alert" style="padding:14px 18px;color:#b42318;">{{ $errors->first() }}</div>
+                    <div class="audit-card adm-inline-admin-audit-logs-1" role="alert">{{ $errors->first() }}</div>
                 @endif
 
                 <div class="audit-layout">
@@ -240,6 +178,4 @@
             }
         })();
     </script>
-    @include('components.responsive')
-</body>
-</html>
+</x-admin.layout>

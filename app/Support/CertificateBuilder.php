@@ -6,6 +6,12 @@ use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Endroid\QrCode\Color\Color;
+use Endroid\QrCode\Encoding\Encoding;
+use Endroid\QrCode\ErrorCorrectionLevel;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\RoundBlockSizeMode;
+use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -100,9 +106,13 @@ class CertificateBuilder
             'UTF-8'
         );
         $courseDescription = trim(preg_replace('/\s+/', ' ', $courseDescription) ?? '');
+        $qrContent = $certificate?->serial
+            ? self::verifyUrl($certificate->serial)
+            : url('/explore');
 
         return [
             'course_title' => $course->title,
+            'pqf_level' => $course->pqf_level,
             // Raw, not defaulted: the certificate view falls back to the
             // course name for the credential line, and a hardcoded
             // "Certificate of Completion" here would print in its place.
@@ -135,9 +145,7 @@ class CertificateBuilder
             // the code points at the course page. It is a working QR from
             // the moment the designer opens; each issued certificate then
             // carries its own serial.
-            'qr_url' => $certificate?->serial
-                                ? self::qrUrl($certificate->serial)
-                                : self::qrFor(url('/explore')),
+            'qr_url' => self::qrDataUri($qrContent),
             'verify_url' => $certificate?->serial ? self::verifyUrl($certificate->serial) : null,
             'signature_img' => $course->certificate_signature,
             'signature_font' => self::fontStack($course->creator?->signature_font),
@@ -185,6 +193,7 @@ class CertificateBuilder
         $certificate->loadMissing(['user', 'course.creator']);
         $course = $certificate->course;
         $student = $certificate->user;
+        $qrContent = self::verifyUrl($certificate->serial);
 
         return [
             'institution' => 'Pangasinan State University – Lingayen Campus',
@@ -195,14 +204,14 @@ class CertificateBuilder
             'issuer_role' => self::ISSUER_ROLE,
             'learning_outcomes' => $certificate->learning_outcomes_snapshot ?? [],
             'competencies' => $certificate->competencies_snapshot ?? [],
-            'pqf_level' => $certificate->pqf_level_snapshot,
+            'pqf_level' => $certificate->pqf_level_snapshot ?: $course?->pqf_level,
             'credit_equivalency' => $certificate->credit_equivalency_snapshot,
             'learning_hours' => $certificate->learning_hours_snapshot,
             'issued_at' => optional($certificate->issued_at)->format('F j, Y'),
             'date_completed' => optional($certificate->issued_at)->format('F j, Y'),
             'serial' => $certificate->serial,
             'status' => $certificate->status,
-            'qr_url' => self::qrUrl($certificate->serial),
+            'qr_url' => self::qrDataUri($qrContent),
             'verify_url' => self::verifyUrl($certificate->serial),
             'signature_img' => optional($course)->certificate_signature,
             'signature_font' => self::fontStack(optional($course)->creator?->signature_font),
@@ -217,21 +226,39 @@ class CertificateBuilder
      * own snapshots plus the few non-snapshot display fields above —
      * never anything else from the live course.
      */
-    public static function renderPdf(Certificate $certificate, bool $includeRemoteQr = true): string
+    public static function renderPdf(Certificate $certificate): string
     {
         $data = self::pdfData($certificate);
-
-        if (! $includeRemoteQr) {
-            $data['qr_url'] = null;
-        }
+        $data['qr_url'] = self::qrDataUri(self::verifyUrl($certificate->serial));
 
         return Pdf::loadView('certificates.pdf', ['cert' => $data])
             ->setPaper('a4', 'landscape')
-            ->setOption([
-                'isRemoteEnabled' => $includeRemoteQr,
-                'allowedRemoteHosts' => $includeRemoteQr ? ['api.qrserver.com'] : [],
-            ])
+            ->setOption('isRemoteEnabled', false)
             ->output();
+    }
+
+    /** Generate a local QR image so browser and PDF rendering need no QR service. */
+    private static function qrDataUri(?string $content): ?string
+    {
+        if (! $content) {
+            return null;
+        }
+
+        return (new PngWriter)->write(self::makeQrCode($content))->getDataUri();
+    }
+
+    private static function makeQrCode(string $content): QrCode
+    {
+        return new QrCode(
+            data: $content,
+            encoding: new Encoding('UTF-8'),
+            errorCorrectionLevel: ErrorCorrectionLevel::Low,
+            size: 180,
+            margin: 10,
+            roundBlockSizeMode: RoundBlockSizeMode::Margin,
+            foregroundColor: new Color(0, 0, 0),
+            backgroundColor: new Color(255, 255, 255),
+        );
     }
 
     /**
@@ -257,7 +284,7 @@ class CertificateBuilder
             return $certificate;
         }
 
-        $pdf = self::renderPdf($certificate, includeRemoteQr: $refresh);
+        $pdf = self::renderPdf($certificate);
         Storage::disk('public')->put($relativePath, $pdf);
 
         $certificate->file_path = 'storage/'.$relativePath;

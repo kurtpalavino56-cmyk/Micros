@@ -4,7 +4,7 @@
             <div><h3 id="announcement-dialog-title"></h3><time id="announcement-dialog-time"></time></div>
             <button class="announcement-dialog-close" type="button" data-close-announcement aria-label="Close announcement">&times;</button>
         </header>
-        <div class="announcement-dialog-content ck-content" id="announcement-dialog-content"></div>
+        <div class="announcement-dialog-content ck-content rich-content" id="announcement-dialog-content"></div>
         <footer class="announcement-dialog-footer"><button type="button" data-close-announcement>Close</button></footer>
     </section>
 </div>

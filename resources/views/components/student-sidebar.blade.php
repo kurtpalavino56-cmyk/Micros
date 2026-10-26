@@ -55,10 +55,16 @@
 
         overflow-x: hidden;
         overflow-y: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
 
         transition:
             padding .25s ease,
             width .25s ease;
+    }
+
+    .layout.student-sidebar-layout .student-sidebar::-webkit-scrollbar {
+        display: none;
     }
 
 

@@ -1,81 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Certificates | UPSKILL Admin</title>
-    <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
-    <style>
-        :root { --navy:#0d1b6e; --text:#18213d; --muted:#68758c; --line:#e2e7f0; --bg:#f6f8fc; }
-        * { box-sizing:border-box; }
-        body { margin:0; background:var(--bg); color:var(--text); font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif; }
-        .cert-main { padding:26px 28px 42px!important; }
-        .cert-content { max-width:1320px; margin:0 auto; }
-        .cert-heading { margin-bottom:18px; }
-        .cert-heading h1 { margin:0 0 5px; color:#000; font-size:30px; }
-        .cert-heading p { margin:0; color:var(--muted); font-size:14px; }
-        .credential-tabs{display:flex;gap:22px;margin:0 0 16px;border-bottom:1px solid var(--line);}
-        .credential-tab{display:inline-flex;align-items:center;padding:11px 4px;border-bottom:3px solid transparent;color:var(--muted);font-size:14px;font-weight:700;text-decoration:none;}
-        .credential-tab:hover{color:var(--navy);}
-        .credential-tab.active{border-bottom-color:var(--navy);color:var(--navy);}
-        .credential-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:0;background:transparent;border:0;border-radius:0;}
-        .credential-filters input,.credential-filters select{min-height:40px;padding:8px 11px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:var(--text);font:inherit;font-size:13px;}
-        .credential-filters input{flex:1 1 280px;min-width:200px;}
-        .credential-filters select{flex:0 1 170px;}
-        .credential-filter-submit,.credential-filter-clear{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:8px 13px;border:1px solid var(--navy);border-radius:8px;background:var(--navy);color:#fff;font:inherit;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;}
-        .credential-filter-clear{border-color:var(--line);background:#fff;color:var(--text);}
-        .notice { margin-bottom:16px; padding:12px 15px; border-radius:10px; font-size:13px; }
-        .notice.success { background:#ecfdf3; color:#067647; }
-        .notice.error { background:#fff1f2; color:#b42318; }
-        .table-wrap { overflow:auto; background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:0 8px 24px rgba(13,27,110,.05); }
-        table { width:100%; border-collapse:collapse; min-width:880px; }
-        th,td { padding:11px 14px; border-bottom:1px solid #edf0f5; text-align:left; vertical-align:middle; font-size:13px; }
-        th { background:#f9faff; color:#667085; font-size:11px; letter-spacing:.05em; text-transform:uppercase; }
-        tr:last-child td { border-bottom:0; }
-        .primary { color:#18213d; font-weight:700; }
-        .secondary { margin-top:4px; color:var(--muted); font-size:12px; }
-        .status { display:inline-flex; padding:4px 9px; border-radius:999px; background:#ecfdf3; color:#067647; font-size:11px; font-weight:800; text-transform:capitalize; }
-        .status.revoked { background:#fff1f2; color:#b42318; }
-        .revoke-button,.view-revocation-button { border:1px solid transparent; border-radius:8px; padding:7px 10px; background:#b42318; color:#fff; font:inherit; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
-        .revoke-button:hover { background:#912018; }
-        .revoke-button:disabled { border-color:#cbd0da; background:#e4e7ec; color:#667085; cursor:not-allowed; }
-        .view-revocation-button { border-color:#dce4f0; background:#fff; color:var(--navy); }
-        .view-revocation-button:hover { background:#f5f7fb; }
-        .empty { padding:36px!important; color:var(--muted); text-align:center; }
-        .cert-modal-overlay { position:fixed; inset:0; z-index:3000; display:flex; align-items:center; justify-content:center; padding:14px; background:rgba(15,23,42,.48); backdrop-filter:blur(2px); }
-        .cert-modal-overlay[hidden],.cert-modal[hidden] { display:none; }
-        .cert-modal { width:min(520px,calc(100% - 28px)); max-height:calc(100% - 28px); overflow:auto; padding:0; border:1px solid var(--line); border-radius:14px; background:#fff; color:var(--text); box-shadow:0 24px 70px rgba(10,20,55,.24); }
-        .cert-modal-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:17px 19px; border-bottom:1px solid var(--line); }
-        .cert-modal-head h2 { margin:0; color:var(--navy); font-size:18px; }
-        .cert-modal-head p { margin:5px 0 0; color:var(--muted); font-size:12px; line-height:1.45; }
-        .cert-modal-close { width:32px; height:32px; flex:0 0 32px; border:0; border-radius:7px; background:#f3f5f9; color:#475467; font-size:20px; cursor:pointer; }
-        .cert-modal-body { display:grid; gap:12px; padding:19px; }
-        .cert-modal-body[hidden] { display:none; }
-        .cert-modal-body label { color:#344054; font-size:12px; font-weight:700; }
-        .cert-modal-body textarea { width:100%; min-height:110px; padding:10px 11px; border:1px solid #d0d5dd; border-radius:8px; font:inherit; font-size:13px; resize:vertical; }
-        .cert-modal-actions { display:flex; justify-content:flex-end; gap:8px; padding-top:4px; }
-        .cert-cancel-button { border:1px solid var(--line); border-radius:8px; padding:7px 11px; background:#fff; color:var(--text); font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
-        .cert-confirm-copy { margin:0; padding:19px 19px 4px; color:var(--text); font-size:13px; line-height:1.55; }
-        .revocation-details { display:grid; gap:12px; padding:19px; }
-        .revocation-details div { display:grid; gap:4px; }
-        .revocation-details dt { color:var(--muted); font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
-        .revocation-details dd { margin:0; color:var(--text); font-size:13px; line-height:1.5; overflow-wrap:anywhere; }
-        @media(max-width:1024px) { .cert-main { padding:24px 18px 40px!important; } }
-        @media(max-width:600px) {
-            .cert-heading h1 { font-size:26px; }
-            .cert-modal-actions>* { flex:1; }
-            .credential-tabs { gap:16px; }
-            .credential-filters input,
-            .credential-filters select,
-            .credential-filter-submit,
-            .credential-filter-clear { flex:1 1 100%; width:100%; min-width:0; }
-        }
-    </style>
-</head>
-<body>
-    @include('components.authenticated-topbar', ['user' => $user])
-    <div class="layout admin-layout">
-        @include('components.admin-sidebar')
+
+<x-admin.layout title="Certificates | UPSKILL Admin" page="admin-certificates" :user="$user" :use-auth-user="false">
+    <x-slot:head>
+        <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
+    </x-slot:head>
+<div class="layout admin-layout">
         <main class="main cert-main">
             <div class="cert-content">
                 <header class="cert-heading">
@@ -172,7 +100,7 @@
             @csrf
             <input type="hidden" name="credential_type" id="revoke-credential-type" value="{{ old('credential_type') }}">
             <input type="hidden" name="credential_id" id="revoke-credential-id" value="{{ old('credential_id') }}">
-            <header class="cert-modal-head" style="margin:-19px -19px 4px;">
+            <header class="cert-modal-head adm-inline-admin-certificates-1">
                 <div>
                     <h2 id="revoke-credential-title">Revoke credential</h2>
                     <p>Enter a reason for revoking <strong id="revoke-credential-name"></strong> (<span id="revoke-credential-identifier"></span>).</p>
@@ -181,7 +109,7 @@
             </header>
             <label for="revocation-reason">Reason for revocation</label>
             <textarea id="revocation-reason" name="revocation_reason" minlength="5" maxlength="1000" required placeholder="Explain why this credential is being revoked">{{ old('revocation_reason') }}</textarea>
-            @error('revocation_reason')<span class="notice error" role="alert" style="margin:0;padding:0;background:none;">{{ $message }}</span>@enderror
+            @error('revocation_reason')<span class="notice error adm-inline-admin-certificates-2" role="alert">{{ $message }}</span>@enderror
             <div class="cert-modal-actions">
                 <button class="cert-cancel-button" type="button" data-close-cert-modal>Cancel</button>
                 <button class="revoke-button" id="submit-revoke-reason" type="submit" disabled>Revoke</button>
@@ -196,7 +124,7 @@
                 </div>
             </header>
             <p class="cert-confirm-copy">Are you sure you want to revoke this <strong id="confirm-revoke-kind">credential</strong>?</p>
-            <div class="cert-modal-actions" style="padding:14px 19px 19px;">
+            <div class="cert-modal-actions adm-inline-admin-certificates-3">
                 <button class="cert-cancel-button" type="button" data-cancel-revoke>Cancel</button>
                 <button class="revoke-button" type="button" data-confirm-revoke>Revoke credential</button>
             </div>
@@ -333,6 +261,4 @@
             @endif
         })();
     </script>
-    @include('components.responsive')
-</body>
-</html>
+</x-admin.layout>

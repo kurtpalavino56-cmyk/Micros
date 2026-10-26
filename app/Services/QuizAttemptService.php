@@ -6,6 +6,7 @@ use App\Models\AnalyticsEvent;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\QuizAttemptAnswer;
+use App\Models\QuizAttemptGrant;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -43,25 +44,34 @@ class QuizAttemptService
             ->count();
     }
 
-    /** @return array{allowed: int, used: int, exhausted: bool, unlock: int|null} */
+    /** @return array{allowed: int, used: int, remaining: int|null, exhausted: bool, unlock: int|null} */
     public function retakeStatus(Quiz $quiz, int $userId): array
     {
         $lastAttempt = $this->latestAttempt($quiz, $userId);
-        $allowed = $this->attemptsAllowed($quiz);
+        $baseLimit = $this->attemptsAllowed($quiz);
         $used = $this->attemptsUsed($quiz, $userId);
+        $editedAt = $this->lastEditedAt($quiz);
+        $extraAttempts = QuizAttemptGrant::query()
+            ->where('student_id', $userId)
+            ->where('quiz_id', $quiz->id)
+            ->when($editedAt, fn ($query) => $query->where('created_at', '>=', $editedAt))
+            ->sum('extra_attempts');
+        // A zero base limit means unlimited; a grant must never make it finite.
+        $allowed = $baseLimit === 0 ? 0 : $baseLimit + (int) $extraAttempts;
         $exhausted = $allowed > 0 && $used >= $allowed;
         $unlock = null;
 
         if (! $exhausted && $lastAttempt && ! $lastAttempt->passed) {
             $submittedAt = $lastAttempt->submitted_at ?? $lastAttempt->created_at;
-            $editedAt = $this->lastEditedAt($quiz);
             $stale = $editedAt && $submittedAt && $submittedAt->lt($editedAt);
             if (! $stale && $submittedAt && $submittedAt->copy()->addMinutes(5)->isFuture()) {
                 $unlock = $submittedAt->copy()->addMinutes(5)->getTimestamp() * 1000;
             }
         }
 
-        return compact('allowed', 'used', 'exhausted', 'unlock');
+        $remaining = $allowed > 0 ? max(0, $allowed - $used) : null;
+
+        return compact('allowed', 'used', 'remaining', 'exhausted', 'unlock');
     }
 
     /** @param array<string, mixed> $result */

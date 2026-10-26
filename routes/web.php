@@ -346,6 +346,10 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':student',
 // FACULTY ROUTES
 // ══════════════════════════════════════════════════════════════════════════
 
+// Shared faculty/admin action with explicit course ownership checks in the controller.
+Route::post('/Faculty-students/{id}/attempt-grants', [FacultyController::class, 'grantQuizAttempts'])
+    ->whereNumber('id')->middleware(['auth', PreventBackHistory::class])->name('faculty.students.course.attempt-grants');
+
 Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty', RecordAuditActions::class])->group(function () {
     Route::get('/Faculty-dashboard', [FacultyController::class, 'dashboard'])->name('faculty.dashboard');
 
@@ -369,6 +373,8 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty',
         ->whereNumber('id')->whereIn('format', ['pdf', 'word', 'excel'])->name('faculty.students.course.export');
     Route::get('/Faculty-students/{id}/enrollments/{enrollment}/review', [FacultyController::class, 'reviewEnrollment'])
         ->whereNumber(['id', 'enrollment'])->name('faculty.students.enrollments.review');
+    Route::post('/Faculty-students/{id}/enrollments/{enrollment}/remove', [FacultyController::class, 'removeStudentFromCourse'])
+        ->whereNumber(['id', 'enrollment'])->name('faculty.students.enrollments.remove');
 
     Route::get('/Faculty-mycourses', [FacultyController::class, 'courses'])->name('faculty.courses');
     Route::get('/Faculty-mycourses/manage/{id?}', [FacultyController::class, 'manage'])

@@ -1,159 +1,20 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Analytics | Upskill</title>
-    <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
+<x-faculty.layout title="Analytics | Upskill" data-faculty-page="faculty-analytics" class="analytics-shell">
+    <x-slot:head><link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-<style>
-    :root{--navy:#13176b;--gold:#dba617;--gold-dark:#b8860b;--teal:#2fb3ab;--ink:#101010;--muted:#7b8494;--line:#e6e8f0;--bg:#f5f6fa;--good:#157f5b;--bad:#b42318;--warn:#9a6700;}
-    *{box-sizing:border-box;}
-    body{font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);margin:0;background:var(--bg);}
-    a{text-decoration:none;color:inherit;} button{font-family:inherit;cursor:pointer;}
-    :focus-visible{outline:3px solid var(--gold);outline-offset:2px;border-radius:6px;}
-    .layout{display:grid;grid-template-columns:264px 1fr;min-height:calc(100vh - 74px);align-items:start;}
-    .main{padding:28px 32px 64px;min-width:0;}
-    .faculty-analytics-page{max-width:1320px;margin:0 auto;display:grid;gap:20px;}
-    h2,h3{font-family:"Plus Jakarta Sans",Inter,sans-serif;color:var(--ink);margin:0;}
-    .num,.tnum{font-variant-numeric:tabular-nums;}
 
-    /* Toolbar */
-    .page-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
-    .page-head h2{font-size:28px;}
-    .live-line{display:flex;align-items:center;gap:9px;margin:6px 0 0;color:var(--muted);font-size:13px;}
-    .live-line b{color:var(--ink);}
-    .dot{position:relative;width:8px;height:8px;border-radius:50%;background:var(--good);flex-shrink:0;}
-    .dot::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--good);animation:ping 2s ease-out infinite;}
-    @keyframes ping{from{transform:scale(1);opacity:.6}to{transform:scale(2.6);opacity:0}}
-    .head-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-    .course-filter{display:flex;align-items:center;gap:8px;}
-    .course-filter label{font-size:12px;font-weight:600;color:var(--muted);}
-    .course-filter select{min-height:40px;max-width:min(100%,320px);padding:0 32px 0 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font:600 13px Inter,sans-serif;}
-    .download-report-btn{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px;border-radius:10px;background:var(--navy);color:#fff;font-weight:600;font-size:13px;transition:background .15s,color .15s;}
-    .download-report-btn:hover{background:var(--gold);color:var(--navy);}
-    .download-report-btn svg{width:16px;height:16px;}
-
-    /* Cards */
-    .card{background:#fff;border:1px solid var(--line);border-radius:14px;min-width:0;}
-    .card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);background:#f9fafb;flex-wrap:wrap;}
-    .card-head h3{font-size:15px;}
-    .card-head .sub{font-size:12px;color:var(--muted);}
-    .card-body{padding:20px;}
-
-    /* KPIs */
-    .stat-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;}
-    .kpi{padding:18px 20px;}
-    .kpi .label{font-size:12px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:8px;}
-    .kpi .num{display:block;margin-top:8px;font-family:"Plus Jakarta Sans",Inter,sans-serif;font-size:32px;font-weight:800;line-height:1;color:var(--ink);}
-    .kpi .note{margin-top:8px;font-size:12px;color:var(--muted);}
-    .kpi .note b{color:var(--ink);}
-    .kpi.live{border-top:3px solid var(--good);} .kpi.a{border-top:3px solid var(--navy);} .kpi.b{border-top:3px solid var(--gold);} .kpi.c{border-top:3px solid var(--teal);}
-
-    .split{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:20px;}
-
-    /* Chart + summary stats */
-    .mini-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
-    .mini-stats div{background:var(--bg);border-radius:10px;padding:10px 12px;}
-    .mini-stats span{display:block;font-size:11px;color:var(--muted);font-weight:600;}
-    .mini-stats b{display:block;margin-top:2px;font-size:18px;color:var(--ink);}
-    .up{color:var(--good)!important;} .down{color:var(--bad)!important;}
-    .chart-wrap{position:relative;overflow-x:auto;}
-    .chart-wrap svg{display:block;width:100%;height:auto;min-width:480px;}
-    .hit{cursor:crosshair;fill:transparent;}
-    .tip{position:absolute;pointer-events:none;background:var(--navy);color:#fff;border-radius:8px;padding:7px 10px;font-size:12px;line-height:1.35;transform:translate(-50%,-100%);margin-top:-10px;opacity:0;transition:opacity .1s;white-space:nowrap;z-index:3;}
-    .tip.show{opacity:1;} .tip b{display:block;font-size:14px;}
-
-    /* Learner demographics */
-    .demographics-groups{display:grid;gap:20px;}
-    .demographics-group h4{margin:0 0 12px;color:var(--ink);font-size:13px;}
-    .demographics-bars{display:grid;gap:11px;}
-    .demographic-row{display:grid;grid-template-columns:minmax(86px,1fr) minmax(60px,1.5fr) 82px;align-items:center;gap:9px;}
-    .demographic-label,.demographic-value{font-size:11px;color:var(--muted);}
-    .demographic-value{min-width:36px;color:var(--ink);font-weight:700;text-align:right;}
-    .demographic-track{height:9px;overflow:hidden;border-radius:999px;background:#edf0f6;}
-    .demographic-fill{height:100%;min-width:0;border-radius:inherit;background:linear-gradient(90deg,var(--navy),#7b80d6);}
-    .demographics-empty{padding:16px 0;color:var(--muted);font-size:13px;text-align:center;}
-
-    /* Learner success */
-    .success-bar{display:flex;height:14px;border-radius:99px;overflow:hidden;gap:2px;background:var(--line);}
-    .success-bar span{display:block;height:100%;}
-    .success-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:16px;}
-    .s-item{display:flex;gap:10px;align-items:flex-start;}
-    .s-swatch{width:10px;height:10px;border-radius:3px;margin-top:6px;flex-shrink:0;}
-    .s-num{font-size:20px;font-weight:700;color:var(--ink);} .s-num small{font-size:12px;font-weight:600;color:var(--muted);margin-left:6px;}
-    .s-label{font-size:12px;color:var(--muted);}
-
-    /* Table */
-    .toolbar{display:flex;align-items:center;gap:10px;}
-    .toolbar input{min-height:36px;width:220px;max-width:100%;padding:0 12px;border:1px solid var(--line);border-radius:8px;font:500 13px Inter,sans-serif;color:var(--ink);}
-    .table-scroll{overflow-x:auto;}
-    .course-outcomes{width:100%;min-width:960px;border-collapse:separate;border-spacing:0;font-size:13px;}
-    .course-outcomes th{position:sticky;top:0;background:#fafbfd;padding:0;border-bottom:1px solid var(--line);text-align:right;}
-    .course-outcomes th button{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:flex-end;gap:4px;width:100%;padding:12px 14px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap;}
-    .course-outcomes th button:hover{color:var(--navy);}
-    .course-outcomes th button:focus-visible{outline:3px solid var(--gold);outline-offset:-3px;}
-    .course-outcomes th.text button{justify-content:flex-start;}
-    .course-outcomes th[aria-sort="ascending"] button::after{content:"▲";font-size:9px;color:var(--navy);}
-    .course-outcomes th[aria-sort="descending"] button::after{content:"▼";font-size:9px;color:var(--navy);}
-    .course-outcomes td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:right;color:var(--ink);font-variant-numeric:tabular-nums;}
-    .course-outcomes th:first-child,.course-outcomes td:first-child{position:sticky;left:0;text-align:left;min-width:220px;z-index:1;}
-    .course-outcomes td:first-child{background:#fff;font-weight:600;color:var(--ink);}
-    .course-outcomes th:first-child{background:#fafbfd;z-index:2;}
-    .course-outcomes tbody tr:hover td{background:#f8f9ff;}
-    .course-outcomes tfoot td{font-weight:700;color:var(--ink);background:#fafbfd;border-bottom:none;}
-    .course-outcomes tfoot td:first-child{background:#fafbfd;}
-    .cell{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
-    .cell i{display:block;height:4px;width:70px;border-radius:99px;background:linear-gradient(90deg,var(--c,var(--navy)) var(--w),var(--line) var(--w));}
-    .pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:700;}
-    .pill.warn{background:#fff3d1;color:var(--warn);} .pill.ok{background:#e4f6ee;color:var(--good);} .pill.new{background:#e8e9fb;color:var(--navy);}
-    .star{color:var(--gold-dark);} .na{color:#a3a9bb;}
-    .table-note{padding:10px 20px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);}
-
-    /* Comments */
-    .comments{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;}
-    .comment{border:1px solid var(--line);border-radius:12px;padding:14px;}
-    .comment-top{display:flex;justify-content:space-between;gap:6px 12px;flex-wrap:wrap;font-size:13px;}
-    .comment-top strong{color:var(--ink);}
-    .comment p{margin:6px 0 0;color:var(--ink);font-size:14px;line-height:1.55;}
-    .empty-state{border:1px dashed #cfd3e2;border-radius:12px;padding:24px 16px;text-align:center;color:var(--muted);font-size:13px;line-height:1.5;}
-    .empty-state button{margin-top:8px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;font-weight:600;color:var(--navy);}
-
-    @media (max-width:1100px){.split{grid-template-columns:1fr;}}
-    @media (max-width:980px){.layout{grid-template-columns:1fr;} .main{padding:20px 16px 56px;} .stat-cards{grid-template-columns:repeat(2,minmax(0,1fr));} .mini-stats{grid-template-columns:repeat(2,1fr);}}
-    @media (max-width:520px){.stat-cards{grid-template-columns:1fr;} .head-actions,.course-filter,.course-filter select,.download-report-btn,.toolbar,.toolbar input{width:100%;} .course-filter{flex-direction:column;align-items:flex-start;} .download-report-btn{justify-content:center;}}
-    @media (prefers-reduced-motion:reduce){.dot::after,.skeleton{animation:none;}}
-</style>
 @include('components.analytics-design')
-<style>
-    .analytics-shell .faculty-analytics-page .page-head.faculty-page-heading h2.faculty-page-title {
-        color: #101010;
-        font-family: 'Plus Jakarta Sans', Inter, ui-sans-serif, system-ui, sans-serif;
-        font-size: 27px;
-        font-weight: 800;
-        letter-spacing: -.04em;
-    }
-</style>
-</head>
-<body class="analytics-shell">
+    </x-slot:head>
 
-@include('components.authenticated-topbar')
-
-<div class="layout faculty-sidebar-layout">
-
-    @include('components.faculty-sidebar')
-
-    <main class="main">
+<main class="main">
         <div class="faculty-analytics-page">
 
         {{-- Toolbar --}}
         <header class="page-head faculty-page-heading">
             <div>
                 <h2 class="faculty-page-title">Analytics</h2>
-                <p class="live-line faculty-page-subtitle"><span class="dot" aria-hidden="true"></span><span><b class="count">{{ $onlineNow ?? 0 }}</b> of your learners active in the last 5 minutes</span></p>
             </div>
             <div class="head-actions">
                 <form class="course-filter" action="{{ route('faculty.analytics') }}" method="GET">
@@ -404,8 +265,8 @@
 
         </div>
     </main>
-</div>
 
+    <x-slot:scripts>
 <script>
     // ---- Live learner count ----
     const liveUrl = '{{ route('faculty.analytics.live', $selectedCourseId ? ['course_id' => $selectedCourseId] : []) }}';
@@ -468,11 +329,7 @@
 <button id="back-to-top-btn" type="button" title="Back to top" aria-label="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'});">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
 </button>
-<style>
-    #back-to-top-btn{position:fixed;right:26px;bottom:26px;z-index:2000;width:44px;height:44px;border-radius:50%;border:none;background:#13176b;color:#fff;display:none;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(19,23,107,.3);transition:background .2s;}
-    #back-to-top-btn:hover{background:#dba617;}
-    #back-to-top-btn svg{width:20px;height:20px;}
-</style>
+
 <script>
     (function () {
         var b = document.getElementById('back-to-top-btn');
@@ -482,5 +339,5 @@
 </script>
 
 @include('components.responsive')
-</body>
-</html>
+    </x-slot:scripts>
+</x-faculty.layout>

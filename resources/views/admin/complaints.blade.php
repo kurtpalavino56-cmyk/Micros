@@ -3,174 +3,17 @@
     Admin › Inbox — Help Center messages from students, faculty, and visitors.
     Expects: $threads, $selected (Complaint|null), $unreadCount.
 --}}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Inbox | UPSKILL Admin</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    {{-- Browser tab icon (favicon) --}}
-    <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    @vite(['resources/js/app.js', 'resources/css/inbox-reply.css'])
-<style>
-    :root{--navy:#13176b;--gold:#dba617;--muted:#6b7280;--line:#e5e7eb;--green:#15803d;
-          --red:#ef4444;--shadow:0 10px 25px rgba(19,23,107,.08);--topbar-h:60px;}
-    *{box-sizing:border-box;}
-    body{font-family:Inter,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--navy);margin:0;background:#f5f7ff;}
-    a{text-decoration:none;color:inherit;}
-    button{font-family:inherit;cursor:pointer;}
-    
-    /* Matches the padding the other admin pages use (30px 34px 44px), so
-       the heading is not flush against the sidebar. */
-    .wrap{max-width:1440px;margin:0 auto;padding:20px 34px 42px;}
-    .page-heading{font-size:1.6rem;font-weight:800;margin:0 0 4px;}
-    .page-sub{color:var(--muted);font-size:.92rem;margin:0 0 16px;}
-    .grid{display:grid;grid-template-columns:minmax(300px,360px) minmax(0,1fr);gap:16px;align-items:start;}
-    .panel{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 24px rgba(19,23,107,.06);overflow:hidden;}
-    .panel-hd{min-height:54px;padding:14px 18px;background:#f8faff;border-bottom:1px solid #e8ebf2;font-weight:800;font-size:14px;
-        display:flex;align-items:center;justify-content:space-between;}
-    .count-pill{background:var(--red);color:#fff;border-radius:999px;font-size:11px;
-        font-weight:800;padding:3px 9px;}
-    .thread{display:block;padding:15px 17px;border-left:3px solid transparent;border-bottom:1px solid var(--line);transition:background .15s ease,border-color .15s ease;}
-    .thread:last-child{border-bottom:none;}
-    .thread:hover{background:#f7f9ff;border-left-color:#c5d0ee;}
-    .thread.active{background:#eef2ff;border-left-color:var(--navy);}
-    .thread-top{display:flex;align-items:center;gap:8px;margin-bottom:3px;}
-    .thread-subject{font-weight:800;font-size:14px;flex:1;min-width:0;overflow:hidden;
-        text-overflow:ellipsis;white-space:nowrap;}
-    .dot{width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;}
-    .thread-badges{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px;}
-    .thread-meta{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);
-        min-width:0;}
-    .thread-who{font-weight:700;color:#4b5563;overflow:hidden;text-overflow:ellipsis;
-        white-space:nowrap;max-width:150px;}
-    .thread-dot{opacity:.6;}
-    .clip{font-size:12px;line-height:1;}
-    .status{display:inline-block;font-size:10px;font-weight:800;padding:3px 9px;
-        border-radius:999px;line-height:1.3;white-space:nowrap;}
-    .status.open{background:#fef3c7;color:#92400e;}
-    .status.resolved{background:#e8f7ef;color:var(--green);}
-    /* Where the message came from */
-    .origin{display:inline-block;font-size:10px;font-weight:800;padding:3px 9px;
-        border-radius:999px;letter-spacing:.4px;text-transform:uppercase;line-height:1.3;
-        white-space:nowrap;}
-    .origin.student{background:#e9ebfb;color:var(--navy);border:1px solid #c9cdf0;}
-    .origin.faculty{background:#e7f5f3;color:#12635e;border:1px solid #b9e2dc;}
-    .origin.visitor{background:#fdf3d7;color:#a16207;border:1px solid #f0dc9a;}
-    /* Attachment preview */
-    .attach{margin-top:10px;}
-    .attach img{max-width:260px;max-height:200px;border-radius:12px;border:1px solid var(--line);
-        cursor:zoom-in;display:block;transition:transform .15s ease;}
-    .attach img:hover{transform:scale(1.02);}
-    .attach-name{font-size:11.5px;color:var(--muted);margin-top:5px;}
-    .attach-file{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);
-        border-radius:10px;padding:9px 13px;font-size:12.5px;font-weight:700;color:var(--navy);
-        background:#f7f9ff;}
-    /* Lightbox */
-    #lightbox{position:fixed;inset:0;background:rgba(8,11,45,.88);display:none;
-        align-items:center;justify-content:center;z-index:9999;padding:32px;}
-    #lightbox.open{display:flex;}
-    #lightbox img{max-width:92vw;max-height:88vh;border-radius:10px;box-shadow:0 24px 60px rgba(0,0,0,.5);}
-    #lightbox .lb-close{position:absolute;top:20px;right:26px;background:#fff;border:none;
-        border-radius:999px;width:40px;height:40px;font-size:20px;font-weight:800;color:var(--navy);
-        cursor:pointer;line-height:1;}
-    .msgs{padding:22px 24px;min-height:250px;max-height:520px;overflow-y:auto;}
-    .msg{margin-bottom:16px;display:flex;}
-    .msg > div{display:flex;flex:0 1 min(80%,600px);flex-direction:column;width:min(80%,600px);min-width:0;max-width:min(80%,600px);}
-    .msg.from-admin > div{margin-right:0;align-items:flex-end;}
-    .msg.from-admin .msg-who{text-align:right;}
-    .msg .bubble{display:inline-block;align-self:flex-start;width:fit-content;min-width:48px;max-width:100%;padding:12px 15px;border-radius:14px;font-size:14px;
-        line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;}
-    .msg .bubble p{margin:0 0 8px;}
-    .msg .bubble p:last-child{margin-bottom:0;}
-    .msg .bubble > :first-child{margin-top:0;}
-    .msg .bubble > :last-child{margin-bottom:0;}
-    .msg.from-admin .bubble{align-self:flex-end;}
-    .msg.from-student .bubble{background:#f1f3fb;color:#1f2937;border-bottom-left-radius:4px;}
-    .msg.from-admin{justify-content:flex-end;}
-    .msg.from-admin .bubble{background:var(--navy);color:#fff;border-bottom-right-radius:4px;}
-    .msg-who{font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:700;line-height:1.4;}
-    .reply-box{border-top:1px solid var(--line);padding:16px 24px 20px;}
-    textarea{width:100%;border:1.5px solid #c9ccdb;border-radius:12px;padding:12px 14px;
-        font-size:14px;font-family:inherit;min-height:96px;resize:vertical;color:var(--navy);}
-    textarea:focus{outline:none;border-color:var(--navy);}
-    .reply-actions{display:flex;justify-content:space-between;align-items:center;
-        gap:10px;margin-top:12px;flex-wrap:wrap;}
-    .btn-navy{background:var(--navy);color:#fff;border:none;border-radius:999px;
-        padding:11px 24px;font-weight:800;font-size:13.5px;}
-    .btn-ghost{background:#fff;border:1.5px solid var(--line);color:var(--navy);
-        border-radius:999px;padding:10px 18px;font-weight:700;font-size:13px;}
-    .alert{padding:11px 14px;border-radius:12px;margin-bottom:18px;font-size:14px;
-        background:#ecfdf3;border:1px solid #a7f3d0;color:#065f46;}
-    .alert-warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e;}
-    .mail-note{font-size:12px;color:var(--muted);margin-top:8px;}
-    .empty{color:var(--muted);text-align:center;padding:44px 12px;font-size:14px;}
-    .detail-hd{padding:18px 24px;border-bottom:1px solid var(--line);}
-    .detail-hd h2{margin:0 0 5px;font-size:17px;}
-    .detail-hd .who{font-size:12.5px;color:var(--muted);}
-    .thread-filters{display:grid;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);background:#fff;}
-    .thread-search,.thread-filter-select{width:100%;min-height:40px;padding:9px 11px;border:1px solid #cbd5e1;
-        border-radius:9px;background:#fff;color:#172554;font:inherit;font-size:13px;}
-    .thread-search:focus,.thread-filter-select:focus{outline:2px solid rgba(19,23,107,.2);border-color:var(--navy);}
-    .thread-filter-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-    .thread-filter-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--muted);font-size:11.5px;}
-    .thread-filter-clear{border:0;padding:0;background:none;color:var(--navy);font-size:11.5px;font-weight:700;text-decoration:underline;}
-    .thread-filter-empty{display:none;padding:20px 14px;color:var(--muted);font-size:13px;text-align:center;}
-    .thread-filter-empty.is-visible{display:block;}
-    .thread[hidden]{display:none;}
-    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
-    .inbox-page .page-heading{font-size:1.75rem;letter-spacing:-.035em;color:#000;}
-    .inbox-page .page-sub{margin-bottom:0;line-height:1.55;}
-    .inbox-page .grid{margin-top:22px;}
-    .inbox-page .detail-hd{background:#f8faff;}
-    .inbox-page .detail-hd h2{font-size:18px;line-height:1.35;color:#111a3c;}
-    .inbox-page .detail-hd-top{display:flex;align-items:center;justify-content:space-between;gap:16px;}
-    .inbox-page .detail-hd-top h2{min-width:0;margin:0;}
-    .inbox-page .resolve-form{flex:0 0 auto;}
-    .inbox-page .resolve-form .btn-ghost{white-space:nowrap;}
-    .inbox-page .btn-navy{border-radius:9px;transition:background .15s ease,transform .15s ease;}
-    .inbox-page .btn-navy:hover{background:#20278a;transform:translateY(-1px);}
-    .inbox-page .reply-attachment-picker{display:flex;align-items:center;justify-content:center;width:44px;height:44px;
-        border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--navy);cursor:pointer;}
-    .inbox-page .reply-attachment-picker:hover{background:#f7f9ff;border-color:#c5d0ee;}
-    .inbox-page .reply-attachment-picker svg{width:20px;height:20px;}
-    .inbox-page .reply-attachment-input{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
-    .inbox-page .reply-attachment-name{grid-column:1/-1;margin:0;color:var(--muted);font-size:12px;}
-    .inbox-page .reply-field-compose{grid-template-columns:44px minmax(0,1fr) auto;align-items:end;}
-    .inbox-page .visitor-reply-compose{grid-template-columns:minmax(0,1fr) auto;align-items:center;}
-    .inbox-page .visitor-reply-compose .reply-actions{grid-column:2;align-self:stretch;justify-content:flex-end;margin:0;}
-    .inbox-page .reply-field-compose textarea{width:100%;height:44px;min-height:44px;max-height:112px;min-width:0;margin:0;padding:11px 14px;
-        border:1.5px solid #c9ccdb;border-radius:10px;font:inherit;font-size:14px;line-height:20px;color:var(--navy);resize:none;overflow-y:hidden;}
-    .inbox-page .reply-field-compose textarea:focus{outline:none;border-color:var(--navy);}
-    .inbox-page .reply-field-compose .reply-attachment-picker,.inbox-page .reply-field-compose .reply-actions{align-self:end;}
-    .inbox-page .reply-attachment-error{grid-column:1/-1;color:#b42318;font-size:12px;}
-    .inbox-page .reply-field-compose .mail-note{grid-column:1/-1;}
-    .inbox-page .reply-attachment-preview{margin-top:8px;}
-    .inbox-page .reply-attachment-preview img{display:block;max-width:180px;max-height:140px;border:1px solid var(--line);border-radius:8px;}
-    @media(max-width:1000px){.inbox-page .grid{grid-template-columns:1fr;}}
-    @media(max-width:680px){
-        .wrap{padding:20px 0 32px;}
-        .msg .bubble{max-width:88%;}
-        .attach img{max-width:100%;}
-        .reply-actions .btn-navy,.reply-box .btn-ghost{width:100%;}
-        .inbox-page .detail-hd-top{align-items:flex-start;flex-direction:column;gap:10px;}
-        .inbox-page .resolve-form,.inbox-page .resolve-form .btn-ghost{width:100%;}
-        .detail-hd h2{font-size:16px;}
-        .page-heading{font-size:1.45rem;}
-        .thread-filter-row{grid-template-columns:1fr;}
-        .msgs{min-height:180px;max-height:55vh;padding:17px 15px;}
-        .detail-hd,.reply-box{padding-right:16px;padding-left:16px;}
-    }
-</style>
-</head>
-<body>
-@include('components.authenticated-topbar', ['user' => auth()->user()])
+<x-admin.layout title="Inbox | UPSKILL Admin" page="admin-complaints">
+    <x-slot:head>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+            {{-- Browser tab icon (favicon) --}}
+            <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
+            <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
 
+            @vite(['resources/js/app.js', 'resources/css/inbox-reply.css'])
+    </x-slot:head>
 <div class="wrap inbox-page">
     <h1 class="page-heading">Inbox</h1>
     <p class="page-sub">Message threads from students, faculty, and website visitors. Reply here to continue the conversation.</p>
@@ -268,8 +111,8 @@
                         From {{ $selected->senderName() }}
                         @if ($selected->isFromVisitor())
                             @if ($selected->guest_email)
-                                (<a href="mailto:{{ $selected->guest_email }}"
-                                    style="text-decoration:underline;">{{ $selected->guest_email }}</a>)
+                                (<a href="mailto:{{ $selected->guest_email }}" class="adm-inline-admin-complaints-1"
+                                   >{{ $selected->guest_email }}</a>)
                             @endif
                         @else
                             ({{ $selected->user->user_code ?? '—' }})
@@ -445,10 +288,7 @@
 </script>
 
 {{-- Shared Admin sidebar styling (floating card + section pills) --}}
-@include('components.admin-sidebar')
-
 {{-- Shared responsiveness layer (drawer nav + grid stacking) --}}
-@include('components.responsive')
 <script>
     const replyAttachmentInput = document.getElementById('admin-reply-attachment');
     if (replyAttachmentInput) {
@@ -487,5 +327,4 @@
         resizeReplyText();
     }
 </script>
-</body>
-</html>
+</x-admin.layout>

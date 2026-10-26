@@ -12,109 +12,12 @@
             ->id, ->code, ->is_used (bool), ->used_by_name (string|null),
             ->used_at (Carbon|null), ->created_at (Carbon)
 --}}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Faculty Codes | Upskill Admin</title>
-    {{-- Browser tab icon (favicon) --}}
-    <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
-<style>
-    :root{
-        --navy:#13176b;
-        --navy-deep:#0c0f4d;
-        --gold:#dba617;
-        --ink:#13176b;
-        --text-muted:#6b7280;
-        --white:#ffffff;
-        --border:#e5e7eb;
-        --radius-card:16px;
-        --sidebar-w:225px;
-        --shadow:0 10px 25px rgba(19,23,107,0.08);
-    }
-    *{box-sizing:border-box;}
-    body{font-family:"Segoe UI", Roboto, Helvetica, Arial, sans-serif;color:var(--ink);margin:0;background:#f5f7fe;}
-    a{text-decoration:none;color:inherit;}
-    button{font-family:inherit;cursor:pointer;}
-
-    /* ── Topbar ── */
-    
-
-    /* ── Layout / Sidebar ── */
-
-    /* ── Main ── */
-    .main{flex:1;margin-left:var(--sidebar-w);padding:28px;display:flex;flex-direction:column;gap:18px;}
-
-    .page-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
-    .page-title{font-size:1.35rem;font-weight:800;margin:0;color:#000;}
-    .page-sub{font-size:0.85rem;color:var(--text-muted);margin:4px 0 0;}
-
-    .btn-generate{display:inline-flex;align-items:center;gap:8px;background:var(--navy);color:#fff;border:none;border-radius:10px;padding:11px 20px;font-weight:700;font-size:0.9rem;transition:background 0.2s, transform 0.2s;}
-    .btn-generate:hover{background:var(--navy-deep);transform:translateY(-1px);}
-
-    .alert-success{background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;border-radius:10px;padding:11px 16px;font-size:0.88rem;font-weight:600;max-width:780px;}
-
-    /* Stats strip */
-    .code-stats{display:flex;gap:14px;flex-wrap:wrap;}
-    .code-stat{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-card);box-shadow:var(--shadow);padding:16px 22px;min-width:150px;}
-    .code-stat .num{font-size:1.6rem;font-weight:800;line-height:1.1;}
-    .code-stat .lbl{font-size:0.78rem;color:var(--text-muted);font-weight:600;margin-top:2px;}
-    .code-stat .num.green{color:#15803d;}
-    .code-stat .num.red{color:#b91c1c;}
-
-    /* Table */
-    .table-card{width:100%;max-width:980px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-card);box-shadow:var(--shadow);overflow:hidden;}
-    .um-table{width:100%;border-collapse:collapse;}
-    .um-table thead tr{background:#fafbff;border-bottom:1px solid var(--border);}
-    .um-table thead th{text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);padding:13px 16px;font-weight:700;}
-    .um-table thead th:first-child{padding-left:22px;}
-    .um-table thead th:last-child{padding-right:22px;}
-    .um-table tbody tr{border-bottom:1px solid #f1f3fb;}
-    .um-table tbody tr:last-child{border-bottom:none;}
-    .um-table tbody tr:hover{background:#f7f9ff;}
-    .um-table tbody td{padding:13px 16px;font-size:0.88rem;}
-    .um-table tbody td:first-child{padding-left:22px;}
-    .um-table tbody td:last-child{padding-right:22px;}
-
-    .code-pill{font-family:Consolas, "Courier New", monospace;font-weight:700;background:#eef1ff;color:var(--navy);padding:4px 12px;border-radius:999px;font-size:0.85rem;letter-spacing:0.05em;}
-
-    /* Green / Red usage indicator */
-    .status-badge{display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:0.82rem;}
-    .status-dot{width:10px;height:10px;border-radius:50%;display:inline-block;}
-    .status-available{color:#15803d;}
-    .status-available .status-dot{background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,0.15);}
-    .status-used{color:#b91c1c;}
-    .status-used .status-dot{background:#ef4444;box-shadow:0 0 0 4px rgba(239,68,68,0.15);}
-
-    .btn-copy{background:#eef1ff;border:1px solid #dbe2ff;color:var(--navy);border-radius:8px;padding:6px 12px;font-size:0.78rem;font-weight:700;transition:background 0.2s;}
-    .btn-copy:hover{background:#dbe2ff;}
-    .btn-delete{background:#fff1f2;border:1px solid #fecdd3;color:#b91c1c;border-radius:8px;padding:6px 12px;font-size:0.78rem;font-weight:700;transition:background 0.2s;}
-    .btn-delete:hover{background:#ffe4e6;}
-
-    .empty-state{width:100%;max-width:980px;padding:32px 24px;border-radius:var(--radius-card);background:var(--white);border:1.5px solid var(--border);color:var(--text-muted);text-align:center;}
-    .empty-state h4{margin:0 0 6px;color:var(--ink);}
-    .empty-state p{margin:0;font-size:0.88rem;}
-
-    @media (max-width:768px){
-        .main{padding-top:22px;padding-bottom:40px;}
-        .page-head{align-items:stretch;}
-        .page-head form,.btn-generate{width:100%;justify-content:center;}
-        .code-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
-        .code-stat{min-width:0;padding:12px 14px;}
-        .code-stat .num{font-size:1.3rem;}
-        /* The table scrolls inside its card instead of squeezing columns. */
-        .um-table{min-width:620px;}
-    }
-    @media (max-width:420px){
-        .code-stats{grid-template-columns:1fr;}
-    }
-</style>
-</head>
-<body>
-@include('components.authenticated-topbar', ['user' => auth()->user()])
-<style>.topbar{display:none!important;}.wrap{margin-top:0!important;}</style>
+<x-admin.layout title="Faculty Codes | Upskill Admin" page="admin-faculty-codes">
+    <x-slot:head>
+        {{-- Browser tab icon (favicon) --}}
+            <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
+            <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
+    </x-slot:head>
 @if(false)
 
 {{-- ════════════════════════════════════ TOP NAV ══════════════════════════════════ --}}
@@ -122,8 +25,8 @@
     <a href="{{ route('Homepage') }}" class="topbar-brand">
         <div class="brand-logo">
             <img src="{{ asset('Images/PSU-Logo.png') }}" alt="PSU Logo"
-                 width="38" height="38"
-                 style="width:38px;height:38px;object-fit:contain;border-radius:50%;">
+                 width="38" height="38" class="adm-inline-admin-faculty-codes-1"
+                >
         </div>
         UPSKILL
     </a>
@@ -145,9 +48,9 @@
             </svg>
             @endunless
         </a>
-        <form action="{{ route('logout') }}" method="POST" style="display:inline-flex;align-items:center;">
+        <form action="{{ route('logout') }}" method="POST" class="adm-inline-admin-faculty-codes-2">
             @csrf
-            <button type="submit" style="background:#fff1f2;border:1px solid #fecdd3;color:#b91c1c;border-radius:999px;padding:8px 12px;font-weight:700;cursor:pointer;">Logout</button>
+            <button type="submit" class="adm-inline-admin-faculty-codes-3">Logout</button>
         </form>
     </div>
 </nav>
@@ -227,18 +130,18 @@
                         <td>
                             @if ($code->is_used)
                                 {{ $code->used_by_name ?? '—' }}
-                                <div style="font-size:0.75rem;color:var(--text-muted);">{{ $code->used_at?->format('M j, Y g:i A') }}</div>
+                                <div class="adm-inline-admin-faculty-codes-4">{{ $code->used_at?->format('M j, Y g:i A') }}</div>
                             @else
-                                <span style="color:var(--text-muted);">—</span>
+                                <span class="adm-inline-admin-faculty-codes-5">—</span>
                             @endif
                         </td>
                         <td>{{ $code->created_at?->format('M j, Y') }}</td>
                         <td>
-                            <div style="display:flex;gap:8px;align-items:center;">
+                            <div class="adm-inline-admin-faculty-codes-6">
                                 <button type="button" class="btn-copy" onclick="copyCode(this, '{{ $code->code }}')">Copy</button>
                                 @unless ($code->is_used)
                                     <form method="POST" action="{{ route('admin.facultycodes.delete', $code->id) }}"
-                                          onsubmit="return confirm('Delete this unused code?');" style="margin:0;">
+                                          onsubmit="return confirm('Delete this unused code?');" class="adm-inline-admin-faculty-codes-7">
                                         @csrf
                                         <button type="submit" class="btn-delete">Delete</button>
                                     </form>
@@ -289,11 +192,7 @@
         onclick="window.scrollTo({top:0,behavior:'smooth'});">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
 </button>
-<style>
-    #back-to-top-btn{position:fixed;right:26px;bottom:26px;z-index:2000;width:48px;height:48px;border-radius:50%;border:none;background:#13176b;color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 22px rgba(19,23,107,.35);transition:transform .15s ease,background .2s ease;}
-    #back-to-top-btn:hover{background:#dba617;transform:translateY(-3px);}
-    #back-to-top-btn svg{width:22px;height:22px;}
-</style>
+
 <script>
     (function () {
         var btn = document.getElementById('back-to-top-btn');
@@ -307,9 +206,5 @@
 </script>
 
 {{-- Shared Admin sidebar styling (floating card + section pills) --}}
-    @include('components.admin-sidebar')
-    
         {{-- Shared responsiveness layer (drawer nav + grid stacking) --}}
-    @include('components.responsive')
-</body>
-</html>
+</x-admin.layout>

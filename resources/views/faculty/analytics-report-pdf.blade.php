@@ -182,6 +182,10 @@
         letter-spacing: .3px;
     }
 
+    .data-table th.course-column {
+        width: 22%;
+    }
+
     .data-table td {
         padding: 6px;
         border-bottom: 1px solid #edf0f5;
@@ -472,7 +476,7 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th style="width: 22%;">Course</th>
+                    <th class="course-column">Course</th>
                     <th class="num">Enrolled</th>
                     <th class="num">Completed</th>
                     <th class="num">Completion</th>

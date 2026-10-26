@@ -358,6 +358,7 @@ function hideAllViews() {
     // the clock keeps running, so leaving mid-quiz is not a way to pause it.
     if (_quizTimerId) { clearInterval(_quizTimerId); _quizTimerId = null; }
     if (_inlineAssessmentTimer) { clearInterval(_inlineAssessmentTimer); _inlineAssessmentTimer = null; }
+    if (_inlineCooldownTimer) { clearInterval(_inlineCooldownTimer); _inlineCooldownTimer = null; }
     var badge = document.getElementById('qh-timer');
     if (badge) badge.style.display = 'none';
 }
@@ -375,6 +376,7 @@ var LESSON_TRACKING_BASE = @json(url('/courses/'.$course->id.'/lessons'));
 var _lessonOpenedAt = 0;
 var _lessonStartRequest = Promise.resolve({ok:false});
 var _inlineAssessmentTimer = null;
+var _inlineCooldownTimer = null;
 var _serverUnlocks = {!! json_encode($quiz_unlocks ?? new \stdClass()) !!};   // moduleIdx â†’ retake unlock timestamp (ms), from the server
 var _serverUnlocksAuthoritative = true;   // this list is complete: anything absent from it is unlocked
 var _quizAttempts = {!! json_encode($quiz_attempts ?? new \stdClass()) !!};   // moduleIdx â†’ {allowed, used, remaining, exhausted}
@@ -1370,6 +1372,7 @@ async function openInlineAssessment(url) {
     const lessonCard = document.querySelector('#view-lesson .lesson-card');
     const continueButton = document.getElementById('btn-lesson-continue');
     const flowStatus = document.getElementById('lesson-flow-status');
+    if (_inlineCooldownTimer) { clearInterval(_inlineCooldownTimer); _inlineCooldownTimer = null; }
     continueButton.style.display = 'none';
     flowStatus.style.display = 'none';
     lessonCard.style.display = 'none';
@@ -1396,12 +1399,13 @@ async function openInlineAssessment(url) {
         }
 
         const canContinue = panel.dataset.canContinue === '1';
-        setLessonNextStatus(panel.querySelector('.quiz-cooldown')
+        setLessonNextStatus(panel.querySelector('[data-quiz-cooldown]:not([hidden])')
             ? 'Check quiz availability'
             : (panel.dataset.assessmentKind === 'activity' && panel.querySelector('.is-pending') ? 'Check review status' : 'Next'));
         continueButton.style.display = canContinue ? '' : 'none';
         continueButton.disabled = false;
         startInlineQuizTimer(panel);
+        startInlineQuizCooldown(panel);
         host.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (error) {
         content.innerHTML = '<div class="inline-assessment-panel inline-assessment-feedback is-warning" role="alert"></div>';
@@ -1438,6 +1442,28 @@ function startInlineQuizTimer(panel) {
     };
     render();
     _inlineAssessmentTimer = window.setInterval(render, 1000);
+}
+
+function startInlineQuizCooldown(panel) {
+    const notice = panel.querySelector('[data-quiz-cooldown]');
+    const unlockAt = Number(panel.dataset.cooldownUntil || 0);
+    if (!notice || !unlockAt) return;
+    if (_inlineCooldownTimer) window.clearInterval(_inlineCooldownTimer);
+
+    const render = function () {
+        const remaining = unlockAt - Date.now();
+        if (remaining <= 0) {
+            window.clearInterval(_inlineCooldownTimer);
+            _inlineCooldownTimer = null;
+            openInlineAssessment(panel.dataset.assessmentUrl);
+            return;
+        }
+
+        notice.textContent = 'Retake after: ' + formatCooldown(remaining);
+    };
+
+    render();
+    _inlineCooldownTimer = window.setInterval(render, 1000);
 }
 
 document.getElementById('inline-assessment-content').addEventListener('submit', function (event) {
@@ -1499,8 +1525,19 @@ async function submitInlineAssessment(form, timeExpired) {
             feedback.classList.add(result.passed ? 'is-success' : 'is-warning');
             feedback.textContent = result.passed
                 ? 'You passed with ' + result.score + '%. ' + (result.lesson_completed ? 'This lesson is complete.' : 'Continue to the next required item.')
-                : 'You scored ' + result.score + '%. You did not meet the passing score; the retake cooldown and attempt limit still apply.';
-            panel.dataset.canContinue = result.passed || result.retake_unlock_at ? '1' : '0';
+                : 'You scored ' + result.score + '%. You did not meet the passing score. ' + (result.attempts_remaining === null ? 'Your attempts are unlimited.' : 'You have ' + result.attempts_remaining + ' attempt' + (result.attempts_remaining === 1 ? '' : 's') + ' remaining.');
+            panel.dataset.cooldownUntil = String(result.retake_unlock_at || 0);
+            panel.dataset.canContinue = result.passed || (result.retake_unlock_at && !result.attempts_exhausted) ? '1' : '0';
+            const cooldownNotice = panel.querySelector('[data-quiz-cooldown]');
+            if (cooldownNotice) {
+                cooldownNotice.hidden = !result.retake_unlock_at || result.attempts_exhausted;
+                if (!cooldownNotice.hidden) {
+                    startInlineQuizCooldown(panel);
+                } else if (_inlineCooldownTimer) {
+                    window.clearInterval(_inlineCooldownTimer);
+                    _inlineCooldownTimer = null;
+                }
+            }
             setLessonNextStatus(result.passed ? 'Next' : (result.retake_unlock_at ? 'Check quiz availability' : 'Next'));
         } else if (result.status === 'submitted') {
             feedback = document.createElement('div');

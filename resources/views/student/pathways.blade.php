@@ -15,7 +15,7 @@
                         <h2>Your pathway journey starts when you choose one</h2>
                         <p>You have not selected a pathway yet. Browse the pathways available whenever you are ready. Meanwhile, these course suggestions use the skills you selected in your profile.</p>
                     </div>
-                    <button type="button" class="gold-button ui-button ui-button--primary" data-open-pathway-picker>Select a pathway <span aria-hidden="true">&gt;</span></button>
+                    <button type="button" class="gold-button ui-button ui-button--primary" data-open-pathway-picker>Select a pathway <span aria-hidden="true">›</span></button>
                 </section>
             @else
                 <div class="selected-pathway-head">
@@ -112,7 +112,7 @@
                 <div class="recommendations-head ui-card-header"><div class="ui-card-header__content"><h3 class="ui-section-title" id="recommendations-title">Recommended courses</h3><p>Ranked using the skills you want to learn and your course progress.</p></div><a class="outline-button ui-button ui-button--secondary" href="{{ route('courses.browse') }}">Browse all</a></div>
                 <div class="recommendations-grid">
                     @forelse($recommendations as $rec)
-                        <div class="rec-item"><div><strong>{{ $rec['title'] }}</strong><span>{{ $rec['completion'] }}% complete</span></div><a href="{{ route('courses.show', $rec['course_id']) }}">View course &gt;</a></div>
+                        <div class="rec-item"><div><strong>{{ $rec['title'] }}</strong><span>{{ $rec['completion'] }}% complete</span></div><a href="{{ route('courses.show', $rec['course_id']) }}">View course ›</a></div>
                     @empty
                         <p class="empty-rec">No matching published courses are available right now. Browse all courses to explore what is available.</p>
                     @endforelse

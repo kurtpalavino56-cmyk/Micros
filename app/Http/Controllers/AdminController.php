@@ -1486,6 +1486,85 @@ class AdminController extends Controller
             'average_completion' => round((float) (clone $enrollmentTable)->avg('enrollments.progress_percent')),
         ];
 
+        $trendCurrentStart = $periodStart ?: now()->copy()->subDays(30);
+        $trendCurrentEnd = now();
+        $trendWindowSeconds = $trendCurrentStart->diffInSeconds($trendCurrentEnd);
+        $trendPreviousStart = $trendCurrentStart->copy()->subSeconds($trendWindowSeconds);
+        $trendPreviousEnd = $trendCurrentStart->copy();
+        $getTrendCounts = function (callable $query, string $dateColumn, ?string $distinctColumn = null) use ($trendCurrentStart, $trendCurrentEnd, $trendPreviousStart, $trendPreviousEnd): array {
+            $countInRange = function ($start, $end) use ($query, $dateColumn, $distinctColumn): int {
+                $builder = $query()->where($dateColumn, '>=', $start)->where($dateColumn, '<', $end);
+
+                return (int) ($distinctColumn ? $builder->distinct()->count($distinctColumn) : $builder->count());
+            };
+
+            return [
+                'current' => $countInRange($trendCurrentStart, $trendCurrentEnd),
+                'previous' => $countInRange($trendPreviousStart, $trendPreviousEnd),
+            ];
+        };
+        $learnerTrend = $getTrendCounts(function () use ($applyCourseFilters) {
+            $query = DB::table('enrollments')->join('courses', 'courses.id', '=', 'enrollments.course_id');
+            $applyCourseFilters($query);
+
+            return $query;
+        }, 'enrollments.enrolled_at', 'enrollments.user_id');
+        $courseTrend = $getTrendCounts(function () use ($applyCourseFilters) {
+            $query = Course::query();
+            $applyCourseFilters($query);
+
+            return $query;
+        }, 'courses.created_at');
+        $completionTrend = $getTrendCounts(function () use ($applyCourseFilters) {
+            $query = DB::table('enrollments')->join('courses', 'courses.id', '=', 'enrollments.course_id')
+                ->where('enrollments.completion_status', MicrocredentialCompletionService::STATUS_COMPLETED);
+            $applyCourseFilters($query);
+
+            return $query;
+        }, 'enrollments.completed_at');
+        $credentialTrend = $getTrendCounts(function () use ($applyCourseFilters) {
+            $query = DB::table('certificates')->join('courses', 'courses.id', '=', 'certificates.course_id')
+                ->where('certificates.status', 'active');
+            $applyCourseFilters($query);
+
+            return $query;
+        }, 'certificates.issued_at');
+        $activeLearnerTrend = $getTrendCounts(function () use ($studentRole, $applyAnalyticsEventFilters) {
+            $query = DB::table('analytics_events')
+                ->whereIn('analytics_events.user_id', User::query()->select('id')->where('role_id', $studentRole));
+            $applyAnalyticsEventFilters($query);
+
+            return $query;
+        }, 'analytics_events.occurred_at', 'analytics_events.user_id');
+        $assessmentTrend = function () use ($applyCourseFilters, $trendCurrentStart, $trendCurrentEnd, $trendPreviousStart, $trendPreviousEnd): array {
+            $averageInRange = function ($start, $end) use ($applyCourseFilters): ?float {
+                $query = DB::table('quiz_attempts')
+                    ->join('quizzes', 'quizzes.id', '=', 'quiz_attempts.quiz_id')
+                    ->join('courses', 'courses.id', '=', 'quizzes.course_id')
+                    ->whereNotNull('quiz_attempts.score')
+                    ->whereRaw('COALESCE(quiz_attempts.submitted_at, quiz_attempts.created_at) >= ?', [$start])
+                    ->whereRaw('COALESCE(quiz_attempts.submitted_at, quiz_attempts.created_at) < ?', [$end]);
+                $applyCourseFilters($query);
+
+                $average = $query->avg('quiz_attempts.score');
+
+                return $average === null ? null : (float) $average;
+            };
+
+            return [
+                'current' => $averageInRange($trendCurrentStart, $trendCurrentEnd),
+                'previous' => $averageInRange($trendPreviousStart, $trendPreviousEnd),
+            ];
+        };
+        $stats['trends'] = [
+            'learners' => $learnerTrend,
+            'active_learners' => $activeLearnerTrend,
+            'courses' => $courseTrend,
+            'completions' => $completionTrend,
+            'credentials' => $credentialTrend,
+            'assessment_score' => $assessmentTrend(),
+        ];
+
         $coursePerformanceQuery = Course::query()
             ->leftJoin('enrollments', 'courses.id', '=', 'enrollments.course_id')
             ->leftJoinSub(
@@ -1573,6 +1652,10 @@ class AdminController extends Controller
             $query->where('certificates.status', 'active');
         });
         $assessmentScores = (clone $quizScores)->pluck('score');
+        $finalExamAverage = (clone $quizScores)
+            ->join('course_modules', 'course_modules.id', '=', 'quizzes.module_id')
+            ->where('course_modules.is_final', true)
+            ->avg('quiz_attempts.score');
         $assessmentCount = $assessmentScores->count();
         $passedAttempts = (clone $quizScores)->where('quiz_attempts.passed', true)->count();
         $passRate = $assessmentScores->count() > 0
@@ -1663,6 +1746,7 @@ class AdminController extends Controller
 
         return view('admin.analytics-report', [
             'stats' => $stats,
+            'trendPeriodLabel' => $period === 'all' ? 'vs prior 30 days' : 'vs preceding period',
             'coursePerformance' => $coursePerformance,
             'progress' => $progress,
             'activity' => $activity,
@@ -1671,6 +1755,7 @@ class AdminController extends Controller
             'assessment' => [
                 'total' => $assessmentCount,
                 'average' => $assessmentScores->count() ? (int) round((float) $assessmentScores->avg()) : null,
+                'final_exam_average' => $finalExamAverage !== null ? (int) round((float) $finalExamAverage) : null,
                 'pass_rate' => $passRate,
                 'highest' => $assessmentScores->max() !== null ? (int) $assessmentScores->max() : null,
                 'lowest' => $assessmentScores->min() !== null ? (int) $assessmentScores->min() : null,
@@ -2312,12 +2397,12 @@ class AdminController extends Controller
             'name' => ['required', 'string', 'max:150', 'unique:pathways,name'],
             'description' => ['nullable', 'string', 'max:1000'],
             'course_ids' => ['nullable', 'array'],
-            'course_ids.*' => ['integer', 'exists:courses,id'],
+            'course_ids.*' => ['integer', 'distinct', 'exists:courses,id'],
         ]);
         $pathway = Pathway::create([
             'name' => trim($data['name']), 'description' => $data['description'] ?? null, 'is_active' => true,
         ]);
-        $pathway->courses()->sync($data['course_ids'] ?? []);
+        $this->syncPathwayCourses($pathway, $data['course_ids'] ?? []);
 
         return back()->with('success', 'Pathway created.');
     }
@@ -2330,13 +2415,13 @@ class AdminController extends Controller
             'description' => ['nullable', 'string', 'max:1000'],
             'is_active' => ['nullable', 'boolean'],
             'course_ids' => ['nullable', 'array'],
-            'course_ids.*' => ['integer', 'exists:courses,id'],
+            'course_ids.*' => ['integer', 'distinct', 'exists:courses,id'],
         ]);
         $pathway->update([
             'name' => trim($data['name']), 'description' => $data['description'] ?? null,
             'is_active' => $request->boolean('is_active'),
         ]);
-        $pathway->courses()->sync($data['course_ids'] ?? []);
+        $this->syncPathwayCourses($pathway, $data['course_ids'] ?? []);
 
         return back()->with('success', 'Pathway updated.');
     }
@@ -2348,5 +2433,16 @@ class AdminController extends Controller
         $pathway->delete();
 
         return back()->with('success', 'Pathway deleted.');
+    }
+
+    /** Persist courses in the exact sequence selected by the administrator. */
+    private function syncPathwayCourses(Pathway $pathway, array $courseIds): void
+    {
+        $orderedCourses = [];
+        foreach (array_values($courseIds) as $index => $courseId) {
+            $orderedCourses[(int) $courseId] = ['order' => $index + 1];
+        }
+
+        $pathway->courses()->sync($orderedCourses);
     }
 }

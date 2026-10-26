@@ -202,6 +202,13 @@ class UserNotificationService
         $entityType = $notification->entity_type;
         $entityId = $notification->entity_id;
 
+        if ($entityType === 'course_removal' && $entityId) {
+            return route('courses.show', [
+                'id' => $entityId,
+                'removal_notice' => $notification->id,
+            ]);
+        }
+
         if ($entityType === 'course' && $course) {
             return match ((int) $user->role_id) {
                 User::ROLE_ADMIN, User::ROLE_SUPERADMIN, User::ROLE_SUBADMIN => route('admin.courses.show', $entityId),

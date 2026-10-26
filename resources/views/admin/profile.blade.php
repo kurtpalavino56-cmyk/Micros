@@ -16,446 +16,14 @@
 
     Expects: $user (UserPresenter::admin)
 --}}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Profile | Upskill</title>
-    {{-- Browser tab icon (favicon) --}}
-    <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
-<style>
-
-    :root{
-        --navy:#13176b;
-        --navy-deep:#0c0f4d;
-        --gold:#dba617;
-        --gold-dark:#c4930f;
-        --cyan:#7fe9e3;
-        --thumb:#d8e3f8;
-        --ink:#13176b;
-        --muted:#6b7280;
-        --line:#e5e7eb;
-        --green:#16a34a;
-        --shadow: 0 10px 25px rgba(19,23,107,0.08);
-    }
-    *{box-sizing:border-box;}
-    body{font-family:"Segoe UI", Roboto, Helvetica, Arial, sans-serif;color:var(--ink);margin:0;background:#fff;}
-    a{text-decoration:none;color:inherit;}
-    button{font-family:inherit;cursor:pointer;}
-
-    /* Topbar */
-   
-    /* Layout */
-    .layout{display:grid;grid-template-columns:264px 1fr;min-height:calc(100vh - 74px);align-items:start;}
-
-    /* Sidebar */
-    .sidebar{background:var(--navy);padding:26px 16px;display:flex;flex-direction:column;gap:6px;margin:24px 10px 24px 24px;border-radius:22px;box-shadow:0 16px 34px rgba(19,23,107,0.28);height:fit-content;position:sticky;top:20px;}
-    .side-link{display:flex;align-items:center;gap:14px;padding:14px;border-radius:14px;font-weight:700;font-size:16px;color:#fff;transition:color .15s ease;}
-    .side-link svg{width:26px;height:26px;flex-shrink:0;}
-    .side-link.active{background:var(--cyan);color:var(--navy);}
-    .side-icon-box{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(255,255,255,0.14);}
-    .side-icon-box svg{color:#fff;width:22px;height:22px;transition:color .15s ease;}
-    .side-link.active .side-icon-box{background:var(--navy);}
-    .side-link.plain .side-icon-box{background:transparent;}
-    .side-link.plain .side-icon-box svg{color:#fff;width:26px;height:26px;}
-    /* hover: text + icon turn gold (non-active links) */
-    .side-link:not(.active):hover{color:var(--gold);}
-    .side-link:not(.active):hover .side-icon-box svg{color:var(--gold);}
-    .side-divider{border:none;border-top:1px solid rgba(255,255,255,0.25);margin:18px 6px;}
-
-    /* Main */
-    .main{flex:1 1 auto;min-width:0;padding:28px 30px 60px;}
-    /* Grid/flex children can't shrink below content unless min-width is
-       reset — without these the page overflows at every width. */
-    .layout > *,
-    .two-col > *,
-    .charts-grid > *,
-    .profile-card > *{min-width:0;}
-    .panel{min-width:0;}
-    .page-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:28px;}
-    .page-head h2{font-size:30px;margin:0 0 6px;color:#000;}
-    .page-head p{margin:0;color:var(--muted);font-size:15px;font-weight:600;}
-    .page-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-    .btn-edit-profile{background:#fff;border:1.5px solid var(--line);color:var(--navy);font-weight:800;padding:12px 28px;border-radius:12px;font-size:15px;box-shadow:var(--shadow);transition:border-color .2s;}
-    .btn-edit-profile:hover{border-color:var(--navy);}
-    .btn-logout{background:#fff1f2;border:1.5px solid #fecdd3;color:#b91c1c;font-weight:800;padding:12px 28px;border-radius:12px;font-size:15px;box-shadow:var(--shadow);}
-    .btn-logout:hover{background:#fee2e2;border-color:#f43f5e;}
-
-    /* Panels (same pattern as dashboard side panels) */
-    .panel{border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:28px;background:#fff;}
-    .panel-head{background:var(--gold);color:var(--navy);font-weight:800;font-size:20px;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
-    .panel-head .range{font-size:12px;font-weight:700;background:rgba(255,255,255,0.55);padding:6px 14px;border-radius:999px;}
-    .panel-head .head-ico{display:flex;align-items:center;gap:10px;}
-    .panel-head .head-ico svg{width:22px;height:22px;}
-    .panel-body{padding:22px;}
-
-    /* ── ① Profile identity card ──────────────────────────────────────── */
-    .profile-card{border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:24px;display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap;margin-bottom:28px;}
-    .avatar-ring{width:90px;height:90px;border-radius:50%;border:3px solid var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#fff;overflow:hidden;background-size:cover;background-position:center;}
-    .avatar-ring svg{width:50px;height:50px;color:var(--navy);}
-    .identity{flex:1 1 auto;min-width:0;}
-    .identity h3{margin:0 0 12px;font-size:22px;color:var(--navy);display:flex;flex-wrap:wrap;align-items:center;gap:10px;line-height:1.25;}
-    .identity-grid{display:flex;flex-wrap:wrap;gap:14px 28px;color:var(--muted);font-size:14px;}
-    .id-item{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);min-width:0;overflow-wrap:anywhere;}
-    .id-item svg{width:18px;height:18px;color:var(--navy);flex-shrink:0;}
-    .role-pill{display:inline-block;background:var(--cyan);color:var(--navy);font-weight:800;font-size:12px;padding:5px 16px;border-radius:999px;white-space:nowrap;flex-shrink:0;}
-
-    /* Two-column: About me | Settings */
-    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:0;}
-
-    .about-row{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:10px 0;border-bottom:1px dashed var(--line);}
-    .about-row:last-child{border-bottom:none;}
-    .about-label{display:flex;align-items:center;gap:10px;font-weight:800;font-size:14px;color:var(--navy);flex-shrink:0;}
-    .about-label svg{width:18px;height:18px;flex-shrink:0;}
-    .about-value{font-size:14px;font-weight:700;color:var(--ink);text-align:right;min-width:0;overflow-wrap:anywhere;}
-    .about-value.link-blue{color:#1d4ed8;}
-    .about-intro{font-size:12px;color:var(--muted);line-height:1.6;margin:0 0 14px;font-weight:600;}
-
-    .set-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 0;border-bottom:1px dashed var(--line);}
-    .set-row:last-child{border-bottom:none;}
-    .set-label{display:flex;align-items:center;gap:10px;font-weight:800;font-size:14px;color:var(--navy);flex-shrink:0;min-width:120px;}
-    .set-label svg{width:18px;height:18px;flex-shrink:0;}
-    .set-value{font-size:14px;font-weight:700;color:var(--ink);flex:1;min-width:120px;overflow-wrap:anywhere;}
-    .btn-change{background:#fff;border:1.5px solid var(--navy);color:var(--navy);font-weight:700;padding:7px 20px;border-radius:999px;font-size:12px;}
-    .set-select{flex:1;min-width:150px;border:1.5px solid #c9ccdb;border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700;color:var(--ink);background:#fff;outline:none;font-family:inherit;}
-
-    /* ── ② Performance + Activity charts ─────────────────────────────── */
-    .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:28px;}
-
-    .chart{display:flex;align-items:flex-end;gap:14px;height:190px;padding-top:26px;}
-    .chart .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:8px;min-width:0;}
-    .chart .bar-wrap{width:100%;max-width:52px;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative;}
-    .chart .bar{width:100%;border-radius:10px 10px 4px 4px;background:var(--navy);transition:opacity .15s ease;}
-    .chart .bar:hover{opacity:.85;}
-    .chart .bar.gold{background:var(--gold);}
-    .chart .bar-value{position:absolute;top:-24px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:800;color:var(--navy);background:var(--cyan);padding:3px 8px;border-radius:999px;white-space:nowrap;}
-    .chart .axis-label{font-size:12px;font-weight:700;color:var(--muted);}
-
-    /* ── ② Courses table ──────────────────────────────────────────────── */
-    .filter-chip{background:#fff;border:1.5px solid var(--navy);color:var(--navy);font-weight:700;padding:7px 20px;border-radius:999px;font-size:12px;display:inline-flex;align-items:center;gap:8px;}
-    .filter-chip svg{width:14px;height:14px;}
-    .courses-table{width:100%;border-collapse:collapse;}
-    .courses-table th{font-size:12px;font-weight:800;color:var(--muted);text-transform:none;text-align:left;padding:10px 12px;border-bottom:1.5px solid var(--line);white-space:nowrap;}
-    .courses-table td{padding:16px 12px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:14px;font-weight:700;color:var(--ink);}
-    .courses-table tr:last-child td{border-bottom:none;}
-    .tbl-course{display:flex;align-items:center;gap:14px;min-width:230px;}
-    .tbl-thumb{width:52px;height:52px;border-radius:12px;background:var(--thumb);flex-shrink:0;background-size:cover;background-position:center;}
-    .tbl-course h4{margin:0 0 4px;font-size:15px;color:var(--navy);}
-    .tbl-sub{font-size:11px;color:var(--muted);font-weight:700;}
-    .tbl-sub .cat{color:var(--gold-dark);}
-    .rating{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
-    .rating svg{width:16px;height:16px;color:var(--gold);flex-shrink:0;}
-    .progress-cell{display:flex;align-items:center;gap:10px;min-width:150px;}
-    .progress-track{flex:1;height:8px;border-radius:999px;background:#e8eaf6;overflow:hidden;min-width:80px;}
-    .progress-fill{height:100%;border-radius:999px;background:var(--navy);}
-    .progress-pct{font-size:12px;font-weight:800;color:var(--navy);white-space:nowrap;}
-    .status-pill{display:inline-block;font-size:12px;font-weight:700;padding:6px 18px;border-radius:999px;white-space:nowrap;}
-    .status-pill.active{background:#86efac;color:#14532d;}
-    .status-pill.archived{background:#e5e7eb;color:#374151;}
-    .status-pill.draft{background:#fde68a;color:#713f12;}
-    .empty-state{border:1px dashed var(--line);border-radius:16px;padding:30px;text-align:center;color:var(--muted);font-size:14px;}
-
-    /* ===== EDIT PROFILE MODAL (design from Student_Profile) ===== */
-    .modal-overlay{
-        position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;
-        display:flex;justify-content:flex-end;
-        opacity:0;visibility:hidden;
-        transition:opacity .3s ease,visibility .3s ease;
-    }
-    .modal-overlay.open{opacity:1;visibility:visible;}
-    .modal-panel{
-        width:520px;max-width:95vw;height:100vh;height:100dvh;max-height:100dvh;
-        background:#fff;display:flex;flex-direction:column;
-        box-shadow:-12px 0 50px rgba(19,23,107,.18);
-        transform:translateX(100%);
-        transition:transform .38s cubic-bezier(.16,1,.3,1);
-        overflow:hidden;
-    }
-    .modal-overlay.open .modal-panel{transform:translateX(0);}
-    .modal-header{
-        padding:22px 28px 16px;border-bottom:1px solid var(--line);
-        display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
-        background:#fff;
-    }
-    .modal-header-left{display:flex;align-items:center;gap:12px;}
-    .modal-header-left svg{width:22px;height:22px;color:var(--navy);}
-    .modal-header h3{color:var(--navy);margin:0;font-size:20px;font-weight:800;}
-    .modal-header p{margin:2px 0 0;color:var(--muted);font-size:12px;}
-    .modal-close{
-        width:36px;height:36px;border-radius:50%;
-        border:1.5px solid var(--line);background:#fff;
-        color:var(--navy);font-size:22px;line-height:1;
-        display:flex;align-items:center;justify-content:center;cursor:pointer;
-        transition:background .2s,border-color .2s;flex-shrink:0;
-    }
-    .modal-close:hover{background:var(--line);}
-    .modal-tabs{
-        display:flex;gap:0;border-bottom:1px solid var(--line);
-        padding:0 28px;flex-shrink:0;background:#fff;
-    }
-    .tab-btn{
-        background:none;border:none;
-        padding:13px 14px;font-size:13.5px;font-weight:700;
-        color:var(--muted);cursor:pointer;
-        border-bottom:3px solid transparent;margin-bottom:-1px;
-        transition:color .2s,border-color .2s;white-space:nowrap;
-    }
-    .tab-btn.active{color:var(--navy);border-bottom-color:var(--navy);}
-    .tab-btn:hover:not(.active){color:var(--navy);}
-    #editProfileForm{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;}
-    .modal-body{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:24px 28px;scrollbar-width:thin;}
-    .tab-content{display:none;}
-    .tab-content.active{display:block;}
-    .avatar-upload-area{
-        display:flex;align-items:center;gap:18px;
-        padding:18px;border:2px dashed var(--line);border-radius:14px;
-        margin-bottom:24px;background:#fafbff;
-    }
-    .avatar-preview{
-        width:70px;height:70px;border-radius:50%;border:3px solid var(--navy);
-        display:flex;align-items:center;justify-content:center;
-        background-size:cover;background-position:center;flex-shrink:0;
-        overflow:hidden;background-color:#f0f3ff;
-    }
-    .avatar-preview svg{width:38px;height:38px;color:var(--navy);}
-    .avatar-upload-text p{margin:0 0 8px;color:var(--muted);font-size:12.5px;line-height:1.5;}
-    .btn-upload-avatar{
-        background:var(--navy);color:#fff;border:none;border-radius:8px;
-        padding:8px 16px;font-size:12.5px;font-weight:700;cursor:pointer;
-        font-family:inherit;display:inline-flex;align-items:center;gap:6px;
-        transition:background .2s;
-    }
-    .btn-upload-avatar:hover{background:var(--navy-deep);}
-    .form-group{margin-bottom:18px;}
-    .form-group label{display:block;font-weight:700;color:var(--navy);font-size:12.5px;margin-bottom:6px;letter-spacing:.3px;}
-    .form-group input,.form-group select,.form-group textarea{
-        width:100%;border:1.5px solid var(--line);border-radius:10px;
-        padding:10px 13px;font-size:14px;font-family:inherit;
-        color:var(--navy);background:#fff;outline:none;
-        transition:border-color .2s,box-shadow .2s;
-    }
-    .form-group input:focus,.form-group select:focus,.form-group textarea:focus{
-        border-color:var(--navy);box-shadow:0 0 0 3px rgba(19,23,107,.08);
-    }
-    .form-group textarea{resize:vertical;min-height:78px;line-height:1.5;}
-    .form-group .hint{color:var(--muted);font-size:11.5px;margin:4px 0 0;}
-    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-    .form-divider{border:none;border-top:1px solid var(--line);margin:22px 0;}
-    .form-section-label{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin:0 0 14px;}
-    .form-errors{
-        background:#fef2f2;border:1px solid #fecaca;border-radius:10px;
-        padding:12px 15px;margin-bottom:20px;color:#b91c1c;font-size:12.5px;line-height:1.6;
-    }
-    .form-errors ul{margin:0;padding-left:18px;}
-    .pwd-wrap{position:relative;}
-    .pwd-wrap input{padding-right:44px;}
-    .pwd-toggle{
-        position:absolute;right:12px;top:50%;transform:translateY(-50%);
-        background:none;border:none;cursor:pointer;color:var(--muted);
-        padding:0;display:flex;align-items:center;
-    }
-    .pwd-toggle svg{width:17px;height:17px;}
-    .settings-info-box{
-        background:#f0f3ff;border-radius:10px;padding:12px 15px;
-        margin-bottom:20px;display:flex;gap:10px;align-items:flex-start;
-    }
-    .settings-info-box svg{width:16px;height:16px;color:var(--navy);flex-shrink:0;margin-top:1px;}
-    .settings-info-box p{margin:0;color:var(--navy);font-size:12.5px;line-height:1.5;}
-    .modal-footer{
-        padding:16px 28px;border-top:1px solid var(--line);
-        display:flex;gap:10px;justify-content:flex-end;flex-shrink:0;background:#fff;
-    }
-    .btn-cancel-modal{
-        background:#fff;border:1.5px solid var(--line);color:var(--navy);
-        font-weight:700;padding:10px 22px;border-radius:10px;font-size:14px;cursor:pointer;
-        font-family:inherit;transition:border-color .2s;
-    }
-    .btn-cancel-modal:hover{border-color:var(--navy);}
-    .btn-save{
-        background:var(--navy);color:#fff;border:none;
-        font-weight:700;padding:10px 26px;border-radius:10px;font-size:14px;cursor:pointer;
-        font-family:inherit;transition:background .2s;display:flex;align-items:center;gap:7px;
-    }
-    .btn-save:hover{background:var(--navy-deep);}
-    .btn-save svg{width:16px;height:16px;}
-
-    @media (max-width:1180px){
-        .two-col{grid-template-columns:1fr;}
-        .charts-grid{grid-template-columns:1fr;}
-    }
-    @media (max-width:980px){
-        .layout{grid-template-columns:1fr;}
-        .sidebar{flex-direction:column;position:static;margin:14px;border-radius:16px;}
-        .courses-table-wrap{overflow-x:auto;}
-    }
-
-    /* ── Phone / tablet: same flexible treatment Student_Profile gets ─── */
-    @media (max-width:768px){
-        /* Nothing may push the page wider than the screen. Scoped to
-           mobile because overflow-x on html/body would break the
-           sticky sidebar at desktop widths. */
-        html,body{overflow-x:hidden;}
-
-        .main{padding:20px 16px 48px;}
-        .topbar{padding:12px 16px;gap:12px;flex-wrap:wrap;}
-        .brand h1{font-size:20px;}
-        .search-box{min-width:0;flex:1;}
-        .panel-head{font-size:17px;padding:12px 16px;}
-        .panel-body{padding:18px;}
-        .profile-card{padding:20px;gap:18px;}
-
-        /* Charts breathe instead of squeezing bars to nothing */
-        .chart{height:170px;gap:8px;}
-
-        /* Courses table → stacked cards. No horizontal scrolling. */
-        .courses-table-wrap{overflow-x:visible;}
-        .courses-table,
-        .courses-table tbody,
-        .courses-table tr,
-        .courses-table td{display:block;width:100%;}
-        .courses-table thead{display:none;}
-        .courses-table tr{
-            border:1px solid var(--line);border-radius:14px;
-            padding:14px;margin-bottom:14px;
-        }
-        .courses-table td{border-bottom:none;padding:7px 0;}
-        .courses-table td[data-label]::before{
-            content:attr(data-label);display:block;
-            font-size:11px;font-weight:800;color:var(--muted);
-            text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;
-        }
-        .courses-table td[data-label="Course"]::before{display:none;}
-        .tbl-course{min-width:0;}
-        .progress-cell{min-width:0;}
-
-        /* Edit-profile modal: one field per row, full-bleed panel */
-        .form-row{grid-template-columns:1fr;}
-        .modal-panel{width:100%;max-width:100%;}
-        .modal-body{padding:18px 16px;}
-    }
-
-    @media (max-width:520px){
-        .main{padding:16px 12px 40px;}
-        .panel-body{padding:16px;}
-        .panel-head{font-size:16px;}
-        .about-row{gap:2px;}
-        .about-value{text-align:left;}
-        .set-label{min-width:0;}
-        .set-value{flex:1 1 100%;min-width:0;}
-        .identity h3{gap:8px;}
-        .avatar-ring{width:80px;height:80px;}
-        .avatar-ring svg{width:44px;height:44px;}
-        .identity h3{font-size:20px;}
-        .identity-grid{gap:10px 18px;}
-        .chart{height:150px;}
-        .brand .logo{width:38px;height:38px;}
-        .brand h1{font-size:18px;}
-        .icon-cluster{gap:8px;}
-    }
-
-/* ── Canonical admin topbar ───────────────────────────────────────────── */
-/* components/admin-sidebar supplies the authoritative geometry with
-   !important; these are local fallbacks so the header still reads correctly
-   if that partial is ever removed from this page. */
-.topbar-brand{display:inline-flex;align-items:center;gap:12px;color:#fff;
-    font-size:1.05rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;
-    /* Not a link here — no pointer affordance. */
-    cursor:default;user-select:none;}
-.brand-logo{width:34px;height:34px;border-radius:50%;background:#fff;
-    display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
-.brand-logo img{width:100%;height:100%;object-fit:contain;}
-.topbar-right{display:flex;align-items:center;gap:10px;}
-.avatar-btn{width:40px;height:40px;border-radius:50%;background-color:#fff;
-    background-size:cover;background-position:center;overflow:hidden;
-    color:var(--navy);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
-
-/* ── Admin panel/card density ─────────────────────────────────────────── */
-/* The faculty geometry is built for pages with charts and tables. These
-   panels hold four short rows, so the default header height and the
-   space-between that pushed the icon to the far edge both looked wrong. */
-.panel-head{
-    padding:11px 18px !important;
-    justify-content:flex-start !important;
-    gap:10px !important;
-    font-size:16px !important;
-}
-.panel-head h4{margin:0;font-size:16px;font-weight:800;}
-.panel-head .head-ico{width:26px;height:26px;flex-shrink:0;}
-.panel-head .head-ico svg{width:16px;height:16px;}
-.panel-body{padding:16px 18px !important;}
-
-/* Identity card: the avatar and the details sat in a very tall band. */
-.profile-card{padding:18px 22px !important;gap:20px !important;}
-.avatar-ring{width:92px !important;height:92px !important;}
-.identity h3{margin:0 0 8px !important;}
-.identity-grid{gap:8px 18px !important;}
-
-/* The brand is deliberately not a link on this page. */
-.brand.static-brand { cursor: default; user-select: none; }
-/* Inline validation errors, matching the faculty form-errors panel. */
-.field-err{font-size:12.5px;font-weight:600;color:#b91c1c;background:#fff1f2;
-    border:1px solid #fecdd3;border-radius:8px;padding:6px 10px;margin-top:6px;}
-.hint-muted{font-size:12px;color:var(--muted);margin-top:6px;}
-.btn-remove-avatar{background:#fff;border:1.5px solid #fecdd3;color:#b91c1c;
-    border-radius:999px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;}
-.btn-remove-avatar:hover{background:#fff1f2;}
-
-    .admin-profile-page{max-width:1180px;margin:0 auto;}
-    .admin-profile-page .page-head{align-items:flex-end;margin-bottom:22px;}
-    .admin-profile-page .page-head h2{font-size:30px;color:#101010;letter-spacing:-.02em;}
-    .admin-profile-page .page-head p{font-size:14px;font-weight:400;color:var(--muted);}
-    .admin-profile-page .page-actions .btn-edit-profile,
-    .admin-profile-page .page-actions .btn-logout{min-height:42px;padding:0 20px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:none;}
-    .admin-profile-page .page-actions .btn-edit-profile{background:var(--navy);border:1px solid var(--navy);color:#fff;}
-    .admin-profile-page .page-actions .btn-edit-profile:hover{background:var(--navy-deep);}
-    .admin-profile-page .page-actions .btn-logout{background:#fff;border:1px solid var(--line);color:#b42318;}
-    .admin-profile-page .profile-hero{margin-bottom:20px;padding:0;border:1px solid var(--line);border-radius:18px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04);overflow:hidden;}
-    .admin-profile-page .profile-hero-cover{height:96px;background:linear-gradient(120deg,#fff3c4 0%,#fff8df 62%,#fefcf3 100%);}
-    .admin-profile-page .profile-hero-body{display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap;padding:0 28px 26px;}
-    .admin-profile-page .admin-avatar-wrap{position:relative;flex:0 0 auto;margin-top:-48px;}
-    .admin-profile-page .avatar-ring{width:104px!important;height:104px!important;border:4px solid #fff;box-shadow:0 0 0 1px var(--line),0 4px 12px rgba(16,24,40,.1);background:#eef0fb center/cover no-repeat;}
-    .admin-profile-page .avatar-edit{position:absolute;right:0;bottom:2px;display:flex;width:32px;height:32px;align-items:center;justify-content:center;padding:0;border:3px solid #fff;border-radius:50%;background:var(--navy);color:#fff;cursor:pointer;}
-    .admin-profile-page .avatar-edit:hover{background:var(--gold);color:var(--navy);}
-    .admin-profile-page .avatar-edit svg{width:14px;height:14px;}
-    .admin-profile-page .identity{flex:1 1 320px;padding-top:16px;}
-    .admin-profile-page .identity h3{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px!important;font-size:24px;letter-spacing:-.01em;color:#101010;}
-    .admin-profile-page .role-pill{background:#fff4d1;color:#7a5600;font:600 12px Inter,Arial,sans-serif;padding:4px 12px;}
-    .admin-profile-page .identity-grid{gap:10px 24px;}
-    .admin-profile-page .id-item{color:#101010;font-size:14px;}
-    .admin-profile-page .id-item svg{width:16px;height:16px;color:var(--muted);}
-    .admin-profile-page .two-col{gap:20px;margin-bottom:0;}
-    .admin-profile-page .profile-info-panel{margin-bottom:0!important;padding:0;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);overflow:hidden;}
-    .admin-profile-page .profile-info-panel .panel-head{padding:18px 24px!important;border-bottom:1px solid var(--line);background:#f9fafb;color:#101010;font-size:17px!important;}
-    .admin-profile-page .profile-info-panel .panel-head .head-ico svg{color:#101010;}
-    .admin-profile-page .profile-info-panel .panel-head h4{font-size:16px;font-weight:600;}
-    .admin-profile-page .profile-info-panel .panel-body{padding:8px 24px 22px!important;}
-    .admin-profile-page .about-intro{margin:8px 0 10px;color:#101010;font-size:14px;font-weight:400;}
-    .admin-profile-page .about-row,.admin-profile-page .set-row{padding:14px 0;border-bottom:1px solid var(--line);}
-    .admin-profile-page .about-row:last-child,.admin-profile-page .set-row:last-child{border-bottom:0;padding-bottom:0;}
-    .admin-profile-page .about-label,.admin-profile-page .set-label{color:#667085;font-size:13px;font-weight:500;}
-    .admin-profile-page .about-value,.admin-profile-page .set-value{color:#101010;font-size:14px;font-weight:600;}
-    .admin-profile-page .btn-change{border:1px solid var(--line);color:var(--navy);font-weight:600;padding:6px 16px;}
-    @media(max-width:980px){
-        .layout > .main{padding:24px 16px 32px;}
-        .admin-profile-page .two-col{grid-template-columns:1fr;}
-    }
-    @media(max-width:640px){
-        .admin-profile-page .profile-hero-body{padding:0 18px 22px;}
-        .admin-profile-page .profile-info-panel .panel-head{padding:16px 18px!important;}
-        .admin-profile-page .profile-info-panel .panel-body{padding:6px 18px 18px!important;}
-        .admin-profile-page .avatar-ring{width:80px!important;height:80px!important;}
-        .admin-profile-page .avatar-ring svg{width:44px;height:44px;}
-        .admin-profile-page .identity{flex-basis:100%;}
-    }
-</style>
-</head>
-<body>
-
+<x-admin.layout title="Admin Profile | Upskill" page="admin-profile">
+    <x-slot:head>
+        {{-- Browser tab icon (favicon) --}}
+            <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
+            <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
+    </x-slot:head>
 {{-- ===== SUCCESS TOAST ===== --}}
 <x-flash-toast :message="session('success')" />
-@include('components.authenticated-topbar', ['user' => auth()->user()])
 <div class="layout">
 
     {{-- Admin sidebar — same collapsible sections as every other admin page --}}
@@ -469,10 +37,6 @@
                 <p>Manage your administrative information and account details</p>
             </div>
             <div class="page-actions">
-                <form action="{{ route('logout') }}" method="POST" style="display:inline;">
-                    @csrf
-                    <button class="btn-logout" type="submit">Logout</button>
-                </form>
                 <button class="btn-edit-profile" type="button" onclick="openEditModal('personal')">Edit Profile</button>
             </div>
         </div>
@@ -714,11 +278,11 @@
                     <div class="form-divider"></div>
 
                     <div class="form-section-label">Change Password</div>
-                    <p class="hint-muted" style="margin-bottom:14px;">Leave these blank to keep your current password.</p>
+                    <p class="hint-muted adm-inline-admin-profile-2">Leave these blank to keep your current password.</p>
 
                     <div class="form-group">
                         <label for="current_password">Current Password</label>
-                        <div style="position:relative;display:flex;align-items:center;">
+                        <div class="adm-inline-admin-profile-3">
                             <input id="current_password" name="current_password" type="password" autocomplete="current-password" placeholder="••••••••">
                             <button type="button" class="pwd-toggle" onclick="togglePwd('current_password', this)" aria-label="Show password">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -729,7 +293,7 @@
 
                     <div class="form-group">
                         <label for="password">New Password</label>
-                        <div style="position:relative;display:flex;align-items:center;">
+                        <div class="adm-inline-admin-profile-4">
                             <input id="password" name="password" type="password" autocomplete="new-password" placeholder="At least 8 characters">
                             <button type="button" class="pwd-toggle" onclick="togglePwd('password', this)" aria-label="Show password">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -740,7 +304,7 @@
 
                     <div class="form-group">
                         <label for="password_confirmation">Confirm New Password</label>
-                        <div style="position:relative;display:flex;align-items:center;">
+                        <div class="adm-inline-admin-profile-5">
                             <input id="password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" placeholder="Repeat the new password">
                             <button type="button" class="pwd-toggle" onclick="togglePwd('password_confirmation', this)" aria-label="Show password">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -856,11 +420,7 @@ openEditModal(@json(
         onclick="window.scrollTo({top:0,behavior:'smooth'});">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
 </button>
-<style>
-    #back-to-top-btn{position:fixed;right:26px;bottom:26px;z-index:2000;width:48px;height:48px;border-radius:50%;border:none;background:#13176b;color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 22px rgba(19,23,107,.35);transition:transform .15s ease,background .2s ease;}
-    #back-to-top-btn:hover{background:#dba617;transform:translateY(-3px);}
-    #back-to-top-btn svg{width:22px;height:22px;}
-</style>
+
 <script>
     (function () {
         var btn = document.getElementById('back-to-top-btn');
@@ -882,9 +442,5 @@ openEditModal(@json(
 </script>
 
 {{-- Shared Admin sidebar styling (floating card + section pills) --}}
-@include('components.admin-sidebar')
-
 {{-- Shared responsiveness layer (drawer nav + grid stacking) --}}
-@include('components.responsive')
-</body>
-</html>
+</x-admin.layout>

@@ -8,6 +8,8 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/css/app.css',
+                'resources/css/admin.css',
+                'resources/css/faculty.css',
                 'resources/js/app.js',
                 'resources/css/flash-toast.css',
                 'resources/js/flash-toast.js',

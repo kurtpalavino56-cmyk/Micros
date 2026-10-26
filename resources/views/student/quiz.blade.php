@@ -31,7 +31,7 @@
         @if($status['exhausted'])
             <div class="quiz-notice quiz-fail">You have used all allowed attempts for this quiz.</div>
         @elseif($status['unlock'])
-            <div class="quiz-notice quiz-fail">You can retake this quiz after the 24-hour cooldown.</div>
+            <div class="quiz-notice quiz-fail" id="quiz-cooldown" data-unlock-at="{{ (int) $status['unlock'] }}" role="status" aria-live="polite"></div>
         @else
             <form id="quiz-attempt-form" method="POST" action="{{ route('quiz.submit', $quiz->id) }}">
                 @csrf
@@ -72,6 +72,30 @@
                     return;
                 }
                 remaining -= 1;
+            };
+            render();
+            interval = window.setInterval(render, 1000);
+        })();
+    </script>
+@endif
+@if($status['unlock'])
+    <script>
+        (() => {
+            const notice = document.getElementById('quiz-cooldown');
+            if (!notice) return;
+            const unlockAt = Number(notice.dataset.unlockAt || 0);
+            let interval = null;
+            const render = () => {
+                const remaining = Math.max(0, unlockAt - Date.now());
+                if (remaining <= 0) {
+                    window.clearInterval(interval);
+                    window.location.reload();
+                    return;
+                }
+                const totalSeconds = Math.ceil(remaining / 1000);
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
+                notice.textContent = `Retake available in ${minutes}m ${String(seconds).padStart(2, '0')}s.`;
             };
             render();
             interval = window.setInterval(render, 1000);

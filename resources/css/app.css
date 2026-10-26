@@ -2879,7 +2879,8 @@ body.app-shell.page-courses-browse{
         flex-shrink:0;cursor:pointer;transition:background .18s ease,color .18s ease,border-color .18s ease,transform .18s ease;}
     body.app-shell.page-courses-browse .btn-recommended svg{width:17px;height:17px;}
     body.app-shell.page-courses-browse .btn-recommended:hover{transform:translateY(-1px);}
-    body.app-shell.page-courses-browse .btn-recommended.is-on{background:var(--gold,var(--color-psu-gold-500));border-color:var(--gold,var(--color-psu-gold-500));color:var(--ui-brand-dark);}
+    body.app-shell.page-courses-browse .btn-recommended.is-on,
+    body.app-shell.page-courses-browse .btn-recommended.is-on:hover{background:var(--ui-accent-yellow)!important;border-color:var(--ui-accent-yellow)!important;color:var(--ui-brand-dark)!important;}
     body.app-shell.page-courses-browse .btn-recommended.is-on svg{fill:rgba(12,15,77,.18);}
 
     /* Course grid */
@@ -3304,6 +3305,9 @@ body.app-shell.page-course-description{
         --c-good-bg:var(--ui-success-surface);
         --c-danger:var(--ui-danger);
     }
+body.app-shell.page-course-description .course-removal-notice{margin:0 0 18px;padding:14px 17px;border:1px solid #fecaca;border-radius:var(--ui-radius-md);background:#fef2f2;color:#7f1d1d;}
+body.app-shell.page-course-description .course-removal-notice strong{display:block;margin-bottom:4px;font-weight:800;}
+body.app-shell.page-course-description .course-removal-notice p{margin:0;font-size:var(--text-sm);line-height:1.55;}
 
 
     /* ── Page layout ─────────────────────────────────────────── */
@@ -4182,6 +4186,18 @@ body.app-shell.page-course-description .tag-feat {
     color: var(--course-hero-color);
 }
 
+/* Keep Browse Courses category and level chips visibly distinct from the
+   shared neutral badge surface. */
+body.app-shell.page-courses-browse .browse-card .tag-category.ui-badge {
+    background: var(--ui-brand-blue);
+    color: var(--ui-on-brand);
+}
+
+body.app-shell.page-courses-browse .browse-card .tag-level.ui-badge {
+    background: var(--ui-accent-yellow);
+    color: var(--ui-brand-dark);
+}
+
 body.app-shell.page-course-description .hero-desc {
     color: var(--course-hero-description);
 }
@@ -4838,7 +4854,10 @@ body.page-course-player .app-main--course-player {
     body.page-course-player .inline-assessment-loading-spinner{width:20px;height:20px;flex:0 0 20px;border:2px solid var(--course-player-line);border-top-color:var(--course-player-navy);border-radius:50%;animation:course-player-spin .75s linear infinite;}
     @keyframes course-player-spin{to{transform:rotate(360deg);}}
     body.page-course-player .inline-assessment-header{padding-bottom:16px;border-bottom:1px solid var(--course-player-line);margin-bottom:18px;}
+    body.page-course-player .inline-assessment-header-top{display:flex;align-items:center;justify-content:space-between;gap:16px;}
     body.page-course-player .inline-assessment-eyebrow{display:block;margin-bottom:7px;color:var(--course-player-muted);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
+    body.page-course-player .inline-quiz-cooldown{color:var(--course-player-muted);font-size:13px;font-weight:700;text-align:right;white-space:nowrap;}
+    body.page-course-player .inline-quiz-cooldown[hidden]{display:none;}
     body.page-course-player .inline-assessment-header h2{margin:0;color:var(--course-player-navy);font-size:22px;font-weight:800;line-height:1.3;}
     body.page-course-player .inline-assessment-header p{margin:7px 0 0;color:var(--course-player-muted);font-size:14px;}
     body.page-course-player .inline-assessment-instructions{margin:0 0 18px;color:var(--course-player-color-hex-334155);font-size:15px;line-height:1.65;}
@@ -4882,6 +4901,8 @@ body.page-course-player .app-main--course-player {
         body.page-course-player #lb-desc .lesson-pdf-embed__frame{height:55vh;min-height:320px;}
         body.page-course-player .inline-assessment-panel{padding:19px 17px;}
         body.page-course-player .inline-assessment-header h2{font-size:19px;}
+        body.page-course-player .inline-assessment-header-top{align-items:flex-start;}
+        body.page-course-player .inline-quiz-cooldown{white-space:normal;}
     }
 
     /* â”€â”€ VIEW 3: Quiz (3 questions) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
