@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Certificate;
 use App\Models\CompetencyProgress;
 use App\Models\Course;
+use App\Models\CourseReview;
 use App\Models\Enrollment;
 use App\Models\QuizAttempt;
 use App\Models\User;
@@ -60,6 +61,8 @@ class MicrocredentialCompletionService
     public const STATUS_ASSESSMENT_PENDING = 'assessment_pending';
 
     public const STATUS_MASTERED = 'mastered';
+
+    public const STATUS_REVIEW_PENDING = 'review_pending';
 
     // Covers "mastery reached, awaiting required institutional sign-off" —
     // whether that sign-off is faculty verification, academic-unit
@@ -203,7 +206,14 @@ class MicrocredentialCompletionService
             current: $enrollment->academic_unit_confirmation_status,
         );
 
-        $enrollment->completion_status = $this->deriveCompletionStatus($enrollment);
+        // Course review is a learner-facing completion gate. Learning
+        // evidence may be complete before this step, but institutional
+        // verification must not start until the learner submits it.
+        $courseReviewSubmitted = CourseReview::query()
+            ->where('course_id', $enrollment->course_id)
+            ->where('user_id', $enrollment->user_id)
+            ->exists();
+        $enrollment->completion_status = $this->deriveCompletionStatus($enrollment, $courseReviewSubmitted);
 
         // `is_completed` is a legacy column. It no longer means anything
         // on its own: it is only ever a mirror of the authoritative
@@ -919,7 +929,7 @@ class MicrocredentialCompletionService
         return in_array($status, [self::NOT_REQUIRED, ...$satisfiedValues], true);
     }
 
-    private function deriveCompletionStatus(Enrollment $enrollment): string
+    private function deriveCompletionStatus(Enrollment $enrollment, bool $courseReviewSubmitted): string
     {
         if (! $enrollment->lessons_completed || ! $enrollment->quizzes_completed) {
             return self::STATUS_IN_PROGRESS;
@@ -950,6 +960,10 @@ class MicrocredentialCompletionService
 
         if (! $masteryGatesSatisfied) {
             return self::STATUS_MASTERED;
+        }
+
+        if (! $courseReviewSubmitted) {
+            return self::STATUS_REVIEW_PENDING;
         }
 
         // Faculty verification and academic-unit confirmation are checked

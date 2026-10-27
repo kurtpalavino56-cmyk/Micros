@@ -93,21 +93,22 @@
                                 <span class="status-dot"></span>
                             </div>
                         @elseif($sequenceItem->kind === 'activity')
-                            <a class="lesson-assessment-link lesson-activity-link module-learning-step module-sequence-step" data-module-content-step="1" data-module="{{ $mIndex }}" data-module-order="{{ $sequenceItem->order }}" data-required="{{ $sequenceItem->item->is_required ? '1' : '0' }}" data-completed="{{ $sequenceItem->item->is_completed ? '1' : '0' }}" data-step-title="{{ $sequenceItem->item->title }}" href="{{ route('lesson-activities.show', $sequenceItem->item->id) }}"
+                            <a class="lesson-assessment-link lesson-activity-link module-learning-step module-sequence-step {{ $sequenceItem->item->is_completed ? 'lesson-correct' : '' }}" data-module-content-step="1" data-module="{{ $mIndex }}" data-module-order="{{ $sequenceItem->order }}" data-required="{{ $sequenceItem->item->is_required ? '1' : '0' }}" data-completed="{{ $sequenceItem->item->is_completed ? '1' : '0' }}" data-step-title="{{ $sequenceItem->item->title }}" href="{{ route('lesson-activities.show', $sequenceItem->item->id) }}"
                                onclick="openModuleItemFromSidebar(event, this.href, @js($sequenceItem->item->title), {{ $mIndex }}, {{ $sequenceItem->order }});">
                                 {{ Illuminate\Support\Str::headline($sequenceItem->item->activity_type) }}: {{ $sequenceItem->item->title }}{{ $sequenceItem->item->is_required ? ' · Required' : ' · Optional' }}
                             </a>
                         @else
-                            <a class="lesson-assessment-link lesson-quiz-link module-learning-step module-sequence-step" data-module-content-step="1" data-module="{{ $mIndex }}" data-module-order="{{ $sequenceItem->order }}" data-required="1" data-completed="{{ $sequenceItem->item->is_completed ? '1' : '0' }}" data-step-title="{{ $sequenceItem->item->title }}" href="{{ route('quiz.show', $sequenceItem->item->id) }}"
+                            <a class="lesson-assessment-link lesson-quiz-link module-learning-step module-sequence-step {{ $sequenceItem->item->is_completed ? 'lesson-correct' : '' }}" data-module-content-step="1" data-module="{{ $mIndex }}" data-module-order="{{ $sequenceItem->order }}" data-required="1" data-completed="{{ $sequenceItem->item->is_completed ? '1' : '0' }}" data-quiz-id="{{ $sequenceItem->item->id }}" data-step-title="{{ $sequenceItem->item->title }}" href="{{ route('quiz.show', $sequenceItem->item->id) }}"
                                onclick="openModuleItemFromSidebar(event, this.href, @js($sequenceItem->item->title), {{ $mIndex }}, {{ $sequenceItem->order }});">
                                 Quiz: {{ $sequenceItem->item->title }} · pass {{ $sequenceItem->item->passing_score }}%
+                                <span class="quiz-retake-countdown" data-quiz-retake-status="{{ $sequenceItem->item->id }}" role="timer" aria-live="polite" hidden></span>
                             </a>
                         @endif
                     @endforeach
 
 
                     @if(($module->quiz ?? false) && count($module->quiz->questions ?? []) > 0)
-                    <div class="quiz-row" data-step-title="{{ $module->quiz->title }}">
+                    <div class="quiz-row" id="quiz-row-{{ $mIndex }}" data-step-title="{{ $module->quiz->title }}">
                         <div>
                             <div class="quiz-info-title">{{ $module->quiz->title }}</div>
                             <div class="quiz-info-sub">
@@ -118,6 +119,7 @@
                                 @else
                                     - No time limit
                                 @endif
+                                <span class="quiz-retake-countdown" data-quiz-retake-status="{{ $module->quiz->id }}" role="timer" aria-live="polite" hidden></span>
                             </div>
                         </div>
                         {{-- Starts LOCKED; JS unlocks after all lessons marked complete --}}
@@ -155,25 +157,8 @@
 
             {{-- Hero banner --}}
             <div class="welcome-hero">
-                <div class="welcome-hero-badge">Course Module</div>
                 <h1 class="welcome-hero-title" id="wh-mod-title">{{ $modules->first()->title ?? 'the Course' }}</h1>
                 <p class="welcome-hero-sub">Complete lessons, activities, and assessments in order to unlock the next step.</p>
-            </div>
-
-            {{-- Stats strip (no icons) --}}
-            <div class="welcome-stats-strip">
-                <div class="wss-item">
-                    <span class="wss-num" id="ws-mod">{{ $modules->count() }}</span>
-                    <span class="wss-lbl">Modules</span>
-                </div>
-                <div class="wss-item">
-                    <span class="wss-num" id="ws-les">{{ $total_lessons ?? 0 }}</span>
-                    <span class="wss-lbl">Lessons</span>
-                </div>
-                <div class="wss-item">
-                    <span class="wss-num" id="ws-assess">{{ $current_module->assessment_count ?? 0 }}</span>
-                    <span class="wss-lbl">Assessments</span>
-                </div>
             </div>
 
             <div class="module-description-content rich-content" id="wm-description" aria-label="Module description" hidden></div>
@@ -221,12 +206,21 @@
             <div class="lesson-header-btn">
                 <span id="qh-title">Quiz</span>
                 <span id="qh-timer" class="quiz-timer" style="display:none;"></span>
-
+                <div class="quiz-score-result" id="quiz-score-result"></div>
             </div>
             <div class="quiz-card" id="quiz-questions-container">
                 {{-- Populated by JS --}}
             </div>
-            <div class="quiz-score-result" id="quiz-score-result"></div>
+            <nav class="lesson-step-nav quiz-review-step-nav" id="quiz-review-step-nav" aria-label="Quiz review navigation" style="display:none;">
+                <button class="lesson-step-nav__back" id="quiz-review-step-back" type="button" onclick="goToPreviousLearningStep()" hidden>
+                    <span class="material-symbols-rounded" aria-hidden="true">arrow_back</span>
+                    <span class="lesson-step-nav__copy"><strong>Back</strong><span id="quiz-review-back-target"></span></span>
+                </button>
+                <button class="btn-lesson-continue" id="quiz-review-step-next" type="button" onclick="goToNextLearningStep()">
+                    <span class="material-symbols-rounded" aria-hidden="true">arrow_forward</span>
+                    <span class="lesson-step-nav__copy"><strong>Next</strong><span id="quiz-review-next-target">Next learning step</span></span>
+                </button>
+            </nav>
             <button class="btn-quiz-submit" id="btn-quiz-submit" onclick="submitQuiz(false)" type="button">Submit</button>
             <button class="btn-next-module" id="btn-next-module" onclick="goToNextModule()" type="button">
                 Continue to Next Module &#x2192;
@@ -380,6 +374,8 @@ var _inlineCooldownTimer = null;
 var _serverUnlocks = {!! json_encode($quiz_unlocks ?? new \stdClass()) !!};   // moduleIdx â†’ retake unlock timestamp (ms), from the server
 var _serverUnlocksAuthoritative = true;   // this list is complete: anything absent from it is unlocked
 var _quizAttempts = {!! json_encode($quiz_attempts ?? new \stdClass()) !!};   // moduleIdx â†’ {allowed, used, remaining, exhausted}
+var _quizRetakeStatuses = {!! json_encode($quiz_retake_statuses ?? new \stdClass()) !!}; // quizId â†’ {unlock, exhausted, passed}
+var _sidebarCooldownTimerId = null;
 var _pendingQuizSubmit = null;   // last quiz result awaiting server confirmation
 var _saveTimer = null;
 var _serverProgressPercent = {{ (int) ($progress_percent ?? 0) }};
@@ -542,6 +538,7 @@ function saveProgress(immediate) {
                 });
             }
 
+            syncAllQuizRetakeNotices();
             const finalGroup = Array.from(document.querySelectorAll('.module-group[data-final-exam="1"]'))[0];
             if (COURSE_EVALUATION_ELIGIBLE && finalGroup) {
                 const finalIndex = Array.from(document.querySelectorAll('.module-group:not(.course-review-nav)')).indexOf(finalGroup);
@@ -640,6 +637,7 @@ function restoreProgress(saved) {
         if (pct >= (data.passingScore || 75)) {
             var group = document.getElementById('mg-' + i);
             if (group && group.dataset.finalExam === '1') group.dataset.finalPassed = '1';
+            markModuleLearningStepComplete(document.getElementById('quiz-row-' + i));
             if (doneBtn) {
                 doneBtn.classList.remove('unlocked', 'locked');
                 doneBtn.classList.add('viewed');
@@ -696,6 +694,7 @@ function restoreProgress(saved) {
         }
     });
 
+    syncAllQuizRetakeNotices();
     updateProgress();
 }
 
@@ -925,11 +924,22 @@ function renderCourseRecap() {
                 answer.className = 'course-recap-entry';
                 answer.textContent = activity.title + ' — ' + (activity.answer || (activity.file_submitted ? 'File submission received.' : 'No response recorded.'));
                 if (activity.file_submitted && activity.file_url) {
+                    const fileActions = document.createElement('span');
+                    fileActions.className = 'submitted-file-actions';
+                    const viewLink = document.createElement('a');
+                    viewLink.href = activity.file_view_url;
+                    viewLink.textContent = 'View submitted file';
+                    viewLink.className = 'submitted-file-button submitted-file-button--primary';
+                    viewLink.target = '_blank';
+                    viewLink.rel = 'noopener';
+                    fileActions.appendChild(viewLink);
                     const fileLink = document.createElement('a');
                     fileLink.href = activity.file_url;
-                    fileLink.textContent = ' View submitted file';
+                    fileLink.textContent = 'Download submitted file';
+                    fileLink.className = 'submitted-file-button submitted-file-button--secondary';
                     fileLink.rel = 'noopener';
-                    answer.appendChild(fileLink);
+                    fileActions.appendChild(fileLink);
+                    answer.appendChild(fileActions);
                 }
                 lessonSection.appendChild(answer);
             });
@@ -1016,9 +1026,6 @@ function showModuleWelcome(title, lessonCount, modCount, assessmentCount, modIdx
     _curModIdx = modIdx;
 
     document.getElementById('wh-mod-title').textContent = title;
-    document.getElementById('ws-mod').textContent       = modCount;
-    document.getElementById('ws-les').textContent       = lessonCount;
-    document.getElementById('ws-assess').textContent    = assessmentCount;
     renderModuleDescription(MODULE_DESCRIPTIONS[modIdx] || '');
 
     hideAllViews();
@@ -1230,6 +1237,12 @@ function getLearningSteps(moduleIndex) {
     return module ? Array.from(module.querySelectorAll('.lesson-item, .lesson-assessment-link, .quiz-row')) : [];
 }
 
+function markModuleLearningStepComplete(step) {
+    if (!step) return;
+    step.dataset.completed = '1';
+    step.classList.add('lesson-correct');
+}
+
 function getLearningStepTitle(step) {
     if (step.classList.contains('lesson-item')) {
         return step.querySelector('.lesson-title-text').textContent.trim();
@@ -1269,6 +1282,21 @@ function updateLearningStepNavigation() {
     navigation.classList.toggle('is-first-lesson', !previousStep);
     backTarget.textContent = previousStep ? getLearningStepTitle(previousStep) : '';
     nextTarget.textContent = nextStep ? getLearningStepTitle(nextStep) : 'Course review or completion';
+
+    const reviewBackButton = document.getElementById('quiz-review-step-back');
+    const reviewBackTarget = document.getElementById('quiz-review-back-target');
+    const reviewNextTarget = document.getElementById('quiz-review-next-target');
+    const reviewNavigation = document.getElementById('quiz-review-step-nav');
+    if (reviewBackButton && reviewBackTarget && reviewNextTarget && reviewNavigation) {
+        reviewBackButton.hidden = !previousStep;
+        reviewBackTarget.textContent = previousStep ? getLearningStepTitle(previousStep) : '';
+        const nextStepModule = nextStep?.closest('.module-group');
+        const nextModuleTitle = nextStepModule?.querySelector('.module-num')?.textContent.trim();
+        reviewNextTarget.textContent = nextStep
+            ? (nextStepModule !== currentModule && nextModuleTitle ? nextModuleTitle : getLearningStepTitle(nextStep))
+            : 'Course review or completion';
+        reviewNavigation.classList.toggle('is-first-lesson', !previousStep);
+    }
 }
 
 function goToPreviousLearningStep() {
@@ -1284,6 +1312,33 @@ function goToPreviousLearningStep() {
     }
 
     previousStep.querySelector('.btn-quiz-sm')?.click();
+}
+
+function goToNextLearningStep() {
+    if (!_curSidebarStepEl) return;
+
+    const nextStep = getNextLearningStep(_curSidebarStepEl);
+    if (nextStep) {
+        const currentModule = _curSidebarStepEl.closest('.module-group');
+        const nextModule = nextStep.closest('.module-group');
+        if (nextModule && nextModule !== currentModule) {
+            nextModule.querySelector('.module-title-area')?.click();
+            scrollLearningTop();
+            return;
+        }
+
+        if (nextStep.classList.contains('lesson-item') || nextStep.classList.contains('lesson-assessment-link')) {
+            nextStep.click();
+            return;
+        }
+
+        nextStep.querySelector('.btn-quiz-sm')?.click();
+        return;
+    }
+
+    if (COURSE_EVALUATION_ELIGIBLE || HAS_COURSE_REVIEW) {
+        openCourseReview();
+    }
 }
 
 function setLessonNextStatus(status) {
@@ -1351,6 +1406,8 @@ function openModuleItemFromSidebar(event, assessmentUrl, title, modIdx, moduleOr
     _curModIdx = modIdx;
     _curLessonEl = null;
     _moduleContentContext = { modIdx: modIdx, moduleOrder: Number(moduleOrder), nextUrl: null, pendingReview: false, retryRequired: false };
+    hideAllViews();
+    document.getElementById('view-lesson').style.display = 'flex';
     const continueButton = document.getElementById('btn-lesson-continue');
     continueButton.onclick = continueModuleContent;
     document.querySelectorAll('.module-learning-step.active').forEach(step => step.classList.remove('active'));
@@ -1520,7 +1577,8 @@ function startInlineQuizCooldown(panel) {
             return;
         }
 
-        notice.textContent = 'Retake after: ' + formatCooldown(remaining);
+        notice.innerHTML = '<span class="inline-quiz-cooldown-label">Retake after:</span> '
+            + '<span class="inline-quiz-cooldown-time">' + formatCooldown(remaining) + '</span>';
     };
 
     render();
@@ -1576,7 +1634,7 @@ async function submitInlineAssessment(form, timeExpired) {
                     if (!refreshedForm) {
                         const moduleStep = document.querySelector('#mg-' + _moduleContentContext?.modIdx + ' .module-learning-step[data-module-order="' + _moduleContentContext?.moduleOrder + '"]');
                         if (moduleStep && refreshedPanel.dataset.canContinue === '1') {
-                            moduleStep.dataset.completed = '1';
+                            markModuleLearningStepComplete(moduleStep);
                             checkQuizUnlock(_moduleContentContext.modIdx);
                         }
                         window.showFlashToast('Your submission was saved.', 'success');
@@ -1625,13 +1683,22 @@ async function submitInlineAssessment(form, timeExpired) {
                 : 'You scored ' + result.score + '%. You did not meet the passing score. ' + (result.attempts_remaining === null ? 'Your attempts are unlimited.' : 'You have ' + result.attempts_remaining + ' attempt' + (result.attempts_remaining === 1 ? '' : 's') + ' remaining.');
             panel.dataset.cooldownUntil = String(result.retake_unlock_at || 0);
             panel.dataset.canContinue = result.passed || (result.retake_unlock_at && !result.attempts_exhausted) ? '1' : '0';
+            const quizId = String(panel.dataset.assessmentId || '');
+            if (quizId) {
+                _quizRetakeStatuses[quizId] = {
+                    unlock: result.passed || result.attempts_exhausted ? null : Number(result.retake_unlock_at || 0),
+                    exhausted: !!result.attempts_exhausted,
+                    passed: !!result.passed
+                };
+                syncAllQuizRetakeNotices();
+            }
             if (_moduleContentContext && panel.dataset.moduleContentStep === '1') {
                 _moduleContentContext.nextUrl = result.passed ? (result.next_url || null) : null;
                 _moduleContentContext.pendingReview = !!result.pending_review;
                 _moduleContentContext.retryRequired = !result.passed;
                 if (result.passed) {
                     const moduleStep = document.querySelector('#mg-' + _moduleContentContext.modIdx + ' .module-learning-step[data-module-order="' + _moduleContentContext.moduleOrder + '"]');
-                    if (moduleStep) moduleStep.dataset.completed = '1';
+                    markModuleLearningStepComplete(moduleStep);
                     checkQuizUnlock(_moduleContentContext.modIdx);
                 }
             }
@@ -1658,7 +1725,7 @@ async function submitInlineAssessment(form, timeExpired) {
                 _moduleContentContext.pendingReview = !!result.pending_review;
                 if (!result.pending_review) {
                     const moduleStep = document.querySelector('#mg-' + _moduleContentContext.modIdx + ' .module-learning-step[data-module-order="' + _moduleContentContext.moduleOrder + '"]');
-                    if (moduleStep) moduleStep.dataset.completed = '1';
+                    markModuleLearningStepComplete(moduleStep);
                     checkQuizUnlock(_moduleContentContext.modIdx);
                 }
             }
@@ -1672,7 +1739,7 @@ async function submitInlineAssessment(form, timeExpired) {
                 _moduleContentContext.retryRequired = false;
                 if (!result.pending_review) {
                     const moduleStep = document.querySelector('#mg-' + _moduleContentContext.modIdx + ' .module-learning-step[data-module-order="' + _moduleContentContext.moduleOrder + '"]');
-                    if (moduleStep) moduleStep.dataset.completed = '1';
+                    markModuleLearningStepComplete(moduleStep);
                     checkQuizUnlock(_moduleContentContext.modIdx);
                 }
             }
@@ -1700,7 +1767,17 @@ async function submitInlineAssessment(form, timeExpired) {
                 const fileLink = document.createElement('a');
                 fileLink.href = result.file_url;
                 fileLink.textContent = 'Download submitted file';
-                submittedAnswer.appendChild(fileLink);
+                fileLink.className = 'submitted-file-button submitted-file-button--secondary';
+                const fileActions = document.createElement('div');
+                fileActions.className = 'submitted-file-actions';
+                const viewLink = document.createElement('a');
+                viewLink.href = result.file_view_url;
+                viewLink.textContent = 'View submitted file';
+                viewLink.className = 'submitted-file-button submitted-file-button--primary';
+                viewLink.target = '_blank';
+                viewLink.rel = 'noopener';
+                fileActions.append(viewLink, fileLink);
+                submittedAnswer.appendChild(fileActions);
             } else if (result.file_submitted) {
                 const fileNotice = document.createElement('p');
                 fileNotice.textContent = 'A file was included in this submission.';
@@ -1708,7 +1785,6 @@ async function submitInlineAssessment(form, timeExpired) {
             }
 
         }
-        panel.appendChild(feedback);
         continueButton.style.display = panel.dataset.canContinue === '1' ? '' : 'none';
         continueButton.disabled = false;
         if (result.lesson_completed && _curLessonEl) {
@@ -1944,6 +2020,8 @@ function handleQuizClick(modIdx) {
     // quiz must open fresh â€” never in review, which reveals the answers.
     const hasScore = _moduleScores[modIdx] !== undefined;
     const viewOnly = hasScore;
+    _curSidebarStepEl = document.getElementById('quiz-row-' + modIdx);
+    updateLearningStepNavigation();
 
     if (!hasScore && qbtn) {
         qbtn.classList.remove('viewed');
@@ -1953,7 +2031,7 @@ function handleQuizClick(modIdx) {
 
 /* â”€â”€ Build quiz view â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    viewOnly  = true  â†’ read-only review of past attempt
-   retakeOnly = true â†’ only show questions answered wrong
+   retakeOnly = true â†’ start a full retake attempt
 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function showQuizView(modIdx, viewOnly, retakeOnly, serverStarted) {
     _curModIdx = modIdx;
@@ -1965,6 +2043,8 @@ function showQuizView(modIdx, viewOnly, retakeOnly, serverStarted) {
 
     viewOnly = viewOnly || false;
     retakeOnly = retakeOnly || false;
+    const reviewNavigation = document.getElementById('quiz-review-step-nav');
+    if (reviewNavigation) reviewNavigation.style.display = viewOnly ? 'grid' : 'none';
     if (!viewOnly && !serverStarted) {
         const container = document.getElementById('quiz-questions-container');
         const submitButton = document.getElementById('btn-quiz-submit');
@@ -1985,26 +2065,13 @@ function showQuizView(modIdx, viewOnly, retakeOnly, serverStarted) {
     }
     const savedAnswers = _moduleAnswers[modIdx] || {};
     const review = _moduleReview[modIdx] || {};
-
-    var questionsToShow;
-    if (retakeOnly) {
-        questionsToShow = [];
-        data.questions.forEach(function(q) {
-            const result = review[String(q.id)];
-            if (result && result.correct === false) {
-                questionsToShow.push({ q: q });
-            }
-        });
-        if (questionsToShow.length === 0) {
-            questionsToShow = data.questions.map(function(q){ return { q: q }; });
-        }
-    } else {
-        questionsToShow = data.questions.map(function(q){ return { q: q }; });
-    }
+    const questionsToShow = data.questions.map(function(q){ return { q: q }; });
 
     _retakeQMap = questionsToShow.map(function(item){ return data.questions.indexOf(item.q); });
 
-    const suffix = viewOnly ? ' - Review' : (retakeOnly ? ' - Retake (Wrong Answers)' : '');
+    const suffix = viewOnly
+        ? ' - Review'
+        : (retakeOnly ? ' - Retake' : '');
     document.getElementById('qh-title').textContent = data.title + suffix;
 
     const container = document.getElementById('quiz-questions-container');
@@ -2049,9 +2116,6 @@ function showQuizView(modIdx, viewOnly, retakeOnly, serverStarted) {
             const selected = result?.answer || savedAnswers[String(q.id)] || savedAnswers[qi];
 
             if (viewOnly) {
-                if (result?.correct_answer && opt.letter === result.correct_answer) {
-                    div.classList.add('correct-ans');
-                }
                 if (selected && selected === opt.letter) {
                     div.classList.add(result?.correct ? 'correct-ans' : 'wrong-ans');
                 }
@@ -2085,7 +2149,7 @@ function showQuizView(modIdx, viewOnly, retakeOnly, serverStarted) {
         const pct = _moduleScores[modIdx] !== undefined ? Math.round((_moduleScores[modIdx] / total) * 100) : 0;
         const pass = pct >= (data.passingScore || 75);
         scoreEl.innerHTML = pass
-            ? '\u2713 Passed - Score: ' + correct + '/' + total
+            ? 'Passed - Score: ' + correct + '/' + total
             : 'Score: ' + correct + '/' + total + ' - Keep practicing!';
         scoreEl.className = 'quiz-score-result ' + (pass ? 'pass' : 'fail');
         scoreEl.style.display = 'block';
@@ -2259,11 +2323,23 @@ function submitQuiz(timeExpired) {
 function applyServerQuizSubmission(modIdx, submission) {
     if (!submission || submission.blocked) return;
 
+    const data = QUIZ_DATA[modIdx];
+    if (!data) return;
+
     _moduleScores[modIdx] = Number(submission.correct || 0);
     _moduleReview[modIdx] = submission.answers || {};
+    const quizId = String(data.quizId || '');
+    if (quizId) {
+        const budget = attemptBudget(modIdx);
+        _quizRetakeStatuses[quizId] = {
+            unlock: budget.exhausted || submission.passed ? null : Number(submission.unlock || 0),
+            exhausted: !!budget.exhausted,
+            passed: !!submission.passed
+        };
+        syncAllQuizRetakeNotices();
+    }
     updateProgress();
 
-    const data = QUIZ_DATA[modIdx];
     const correctCount = _moduleScores[modIdx];
     const pass = !!submission.passed;
     const scoreEl = document.getElementById('quiz-score-result');
@@ -2278,6 +2354,7 @@ function applyServerQuizSubmission(modIdx, submission) {
 
     if (pass) {
         clearRetakeCooldown(modIdx);
+        markModuleLearningStepComplete(document.getElementById('quiz-row-' + modIdx));
         const doneBtn = document.getElementById('qbtn-' + modIdx);
         if (doneBtn) {
             doneBtn.classList.remove('unlocked');
@@ -2402,6 +2479,53 @@ function formatCooldown(ms) {
     return (h > 0 ? h + 'h ' : '') + m + 'm ' + String(s).padStart(2, '0') + 's';
 }
 
+function syncQuizRetakeNotice(quizId) {
+    const status = _quizRetakeStatuses[String(quizId)];
+    const notices = document.querySelectorAll('[data-quiz-retake-status="' + String(quizId) + '"]');
+    if (!status || status.passed) {
+        notices.forEach(function (notice) { notice.hidden = true; });
+        return false;
+    }
+
+    if (status.exhausted) {
+        notices.forEach(function (notice) {
+            notice.textContent = 'No attempts remaining';
+            notice.hidden = false;
+        });
+        return false;
+    }
+
+    const unlockAt = Number(status.unlock || 0);
+    if (!unlockAt) {
+        notices.forEach(function (notice) { notice.hidden = true; });
+        return false;
+    }
+
+    const remaining = unlockAt - Date.now();
+    notices.forEach(function (notice) {
+        notice.textContent = remaining > 0
+            ? 'Retake available in ' + formatCooldown(remaining)
+            : 'Retake available now';
+        notice.hidden = false;
+    });
+
+    return remaining > 0;
+}
+
+function syncAllQuizRetakeNotices() {
+    let countdownActive = false;
+    Object.keys(_quizRetakeStatuses || {}).forEach(function (quizId) {
+        countdownActive = syncQuizRetakeNotice(quizId) || countdownActive;
+    });
+
+    if (countdownActive && !_sidebarCooldownTimerId) {
+        _sidebarCooldownTimerId = window.setInterval(syncAllQuizRetakeNotices, 1000);
+    } else if (!countdownActive && _sidebarCooldownTimerId) {
+        window.clearInterval(_sidebarCooldownTimerId);
+        _sidebarCooldownTimerId = null;
+    }
+}
+
 /* Show the retake button in the correct state (locked countdown or clickable),
    and keep the countdown ticking until it unlocks. */
 function attemptBudget(modIdx) {
@@ -2436,12 +2560,12 @@ function showRetakeButton(modIdx) {
         if (remaining > 0) {
             btn.classList.add('cooldown');
             btn.disabled  = true;
-             btn.innerHTML = retakeLabel;
-                          + '<span class="cooldown-timer">Available in ' + formatCooldown(remaining) + '</span>';
+            btn.innerHTML = retakeLabel
+                + '<span class="cooldown-timer">Available in ' + formatCooldown(remaining) + '</span>';
         } else {
             btn.classList.remove('cooldown');
             btn.disabled  = false;
-            btn.innerHTML = retakeLabel
+            btn.textContent = retakeLabel;
             if (_cooldownTimerId) { clearInterval(_cooldownTimerId); _cooldownTimerId = null; }
         }
     }
@@ -2453,7 +2577,7 @@ function showRetakeButton(modIdx) {
     btn.style.display = 'block';
 }
 
-/* â”€â”€ Retake quiz (wrong questions only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â”€â”€ Retake quiz â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function retakeQuiz() {
     // Hard guard: no attempts left means the quiz is closed for good.
     if (attemptBudget(_curModIdx).exhausted) {

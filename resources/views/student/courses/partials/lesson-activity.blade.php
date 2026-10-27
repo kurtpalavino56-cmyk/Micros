@@ -22,10 +22,6 @@
         <div class="inline-assessment-feedback is-pending" role="status">
             Your assignment is waiting for faculty review. Continue will check the result; the lesson completes when it passes.
         </div>
-    @elseif($activityAccepted)
-        <div class="inline-assessment-feedback is-success" role="status">
-            Activity accepted. Continue to the next required item.
-        </div>
     @elseif($latestSubmission?->status === 'needs_revision')
         <div class="inline-assessment-feedback is-warning" role="status">
             Your instructor requested a revision. Review the feedback below and submit an updated response.
@@ -39,7 +35,10 @@
                 <p>{{ $latestSubmission->response_text }}</p>
             @endif
             @if($latestSubmission->submission_path)
-                <a href="{{ route('lesson-activities.download', $latestSubmission->id) }}">Download submitted file</a>
+                <div class="submitted-file-actions">
+                    <a class="submitted-file-button submitted-file-button--primary" href="{{ route('lesson-activities.view', $latestSubmission->id) }}" target="_blank" rel="noopener">View submitted file</a>
+                    <a class="submitted-file-button submitted-file-button--secondary" href="{{ route('lesson-activities.download', $latestSubmission->id) }}">Download submitted file</a>
+                </div>
             @endif
         </section>
     @endif
@@ -65,7 +64,10 @@
                     @if($submission->score !== null)<span>{{ $submission->score }} / {{ $activity->max_points ?? '—' }}</span>@endif
                     @if($submission->feedback)<p>{{ $submission->feedback }}</p>@endif
                     @if($submission->submission_path)
-                        <a href="{{ route('lesson-activities.download', $submission->id) }}">Download submitted file</a>
+                        <div class="submitted-file-actions">
+                            <a class="submitted-file-button submitted-file-button--primary" href="{{ route('lesson-activities.view', $submission->id) }}" target="_blank" rel="noopener">View submitted file</a>
+                            <a class="submitted-file-button submitted-file-button--secondary" href="{{ route('lesson-activities.download', $submission->id) }}">Download submitted file</a>
+                        </div>
                     @endif
                 </div>
             @endforeach

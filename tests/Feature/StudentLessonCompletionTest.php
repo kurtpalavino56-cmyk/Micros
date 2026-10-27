@@ -221,3 +221,39 @@ test('the course player can open the selected reflection and lesson quiz from th
         ->assertOk();
     expect($quizResponse->json('html'))->toContain('Lesson Quiz');
 });
+
+test('opening a module quiz works when its module has no activities', function () {
+    [$student, $course, $lesson] = lessonTrackingFixture();
+    $lesson->delete();
+    $quiz = Quiz::create([
+        'course_id' => $course->id,
+        'module_id' => $lesson->module_id,
+        'title' => 'Module Quiz',
+        'passing_score' => 70,
+        'attempts' => 'Unlimited',
+        'is_active' => true,
+        'is_summative' => false,
+        'module_order' => 1,
+    ]);
+    QuizQuestion::create([
+        'quiz_id' => $quiz->id,
+        'question' => 'A question?',
+        'type' => 'Multiple Choice',
+        'options' => ['A', 'B'],
+        'correct_answer' => 'A',
+        'points' => 1,
+    ]);
+    Enrollment::create([
+        'user_id' => $student->id,
+        'course_id' => $course->id,
+        'enrolled_at' => now(),
+        'progress_percent' => 0,
+        'progress_state' => [],
+    ]);
+
+    $response = $this->actingAs($student)
+        ->getJson(route('quiz.show', $quiz->id))
+        ->assertOk();
+
+    expect($response->json('html'))->toContain('Module Quiz');
+});

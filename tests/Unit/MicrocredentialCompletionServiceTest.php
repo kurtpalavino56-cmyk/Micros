@@ -1,19 +1,28 @@
 <?php
 
+use App\Models\Badge;
+use App\Models\Certificate;
+use App\Models\CompetencyCategory;
 use App\Models\CompetencyProgress;
 use App\Models\CompetencyUnit;
-use App\Models\CompetencyCategory;
 use App\Models\Course;
 use App\Models\CourseLesson;
 use App\Models\CourseModule;
+use App\Models\CourseReview;
 use App\Models\Enrollment;
 use App\Models\LearningOutcome;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\QuizQuestion;
+use App\Models\StackingFramework;
+use App\Models\StackingFrameworkRequirement;
 use App\Models\User;
+use App\Models\UserStackingProgress;
 use App\Services\MicrocredentialCompletionService;
+use App\Services\StudentProgressService;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 
 uses(RefreshDatabase::class);
 
@@ -121,11 +130,74 @@ function makeReadyEnrollment(array $courseOverrides = [], bool $withCompetency =
         'progress_state' => [],
     ]);
 
+    CourseReview::create([
+        'course_id' => $course->id,
+        'user_id' => $student->id,
+        'rating' => 5,
+        'answers' => [],
+    ]);
+
     $service = app(MicrocredentialCompletionService::class);
     $enrollment = $service->evaluate($enrollment);
 
     return [$course, $enrollment->fresh(), $student, $service];
 }
+
+test('institutional verification waits until the course review is submitted', function () {
+    $student = User::factory()->create();
+    $course = Course::create([
+        'title' => 'Review Gate Course',
+        'slug' => 'review-gate-course-'.uniqid(),
+        'description' => 'A course for testing the review gate',
+        'category' => 'Development',
+        'level' => 'Beginner',
+        'is_published' => true,
+        'requires_faculty_verification' => false,
+    ]);
+    $module = CourseModule::create(['course_id' => $course->id, 'title' => 'Module One', 'order' => 1]);
+    $lesson = CourseLesson::create([
+        'course_id' => $course->id,
+        'module_id' => $module->id,
+        'title' => 'Lesson One',
+        'type' => 'Text',
+        'order' => 1,
+    ]);
+    DB::table('lesson_completions')->insert([
+        'user_id' => $student->id,
+        'lesson_id' => $lesson->id,
+        'completed_at' => now(),
+        'server_verified_at' => now(),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+    $enrollment = Enrollment::create([
+        'user_id' => $student->id,
+        'course_id' => $course->id,
+        'enrolled_at' => now(),
+        'progress_percent' => 100,
+        'progress_state' => [],
+    ]);
+    $service = app(MicrocredentialCompletionService::class);
+
+    $waitingForReview = $service->evaluate($enrollment);
+
+    expect($waitingForReview->completion_status)->toBe(MicrocredentialCompletionService::STATUS_REVIEW_PENDING)
+        ->and($waitingForReview->faculty_verification_status)->toBe('pending');
+
+    expect(fn () => $service->recordAcademicUnitConfirmation($waitingForReview, User::factory()->create()->id, 'confirmed'))
+        ->toThrow(DomainException::class);
+
+    CourseReview::create([
+        'course_id' => $course->id,
+        'user_id' => $student->id,
+        'rating' => 5,
+        'answers' => [],
+    ]);
+
+    $waitingForInstitutionalReview = $service->evaluate($waitingForReview->fresh());
+
+    expect($waitingForInstitutionalReview->completion_status)->toBe(MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION);
+});
 
 test('academic-unit confirmation changes pending to confirmed and records user and timestamp', function () {
     [$course, $enrollment, $student, $service] = makeReadyEnrollment();
@@ -223,7 +295,7 @@ test('repeated academic-unit confirmation issues the badge and certificate exact
     [$course, $enrollment, $student, $service] = makeReadyEnrollment();
     $officer = User::factory()->create();
 
-    $badge = \App\Models\Badge::create(['name' => 'Repeat Confirm Badge', 'is_active' => true]);
+    $badge = Badge::create(['name' => 'Repeat Confirm Badge', 'is_active' => true]);
     $course->badge_id = $badge->id;
     $course->certificate_enabled = true;
     $course->save();
@@ -279,7 +351,7 @@ test('confirming academic-unit review completes the enrollment and issues badge 
     [$course, $enrollment, $student, $service] = makeReadyEnrollment();
     $officer = User::factory()->create();
 
-    $badge = \App\Models\Badge::create(['name' => 'Test Badge', 'is_active' => true]);
+    $badge = Badge::create(['name' => 'Test Badge', 'is_active' => true]);
     $course->badge_id = $badge->id;
     $course->certificate_enabled = true;
     $course->save();
@@ -323,7 +395,7 @@ test('credential issuance remains idempotent across repeated evaluate/issue call
     [$course, $enrollment, $student, $service] = makeReadyEnrollment();
     $officer = User::factory()->create();
 
-    $badge = \App\Models\Badge::create(['name' => 'Idempotency Badge', 'is_active' => true]);
+    $badge = Badge::create(['name' => 'Idempotency Badge', 'is_active' => true]);
     $course->badge_id = $badge->id;
     $course->certificate_enabled = true;
     $course->save();
@@ -470,14 +542,14 @@ test('a completed enrollment keeps its original completed_at and institutional a
     $stamp = $completed->completed_at;
     expect($stamp)->not->toBeNull();
 
-    \Illuminate\Support\Carbon::setTestNow(now()->addDays(3));
+    Carbon::setTestNow(now()->addDays(3));
     try {
         addUnfinishedContent($course);
         $service->evaluate($completed->fresh());
         // An identical repeat by someone else is an idempotent no-op.
         $service->recordAcademicUnitConfirmation($completed->fresh(), $laterOfficer->id, 'confirmed');
     } finally {
-        \Illuminate\Support\Carbon::setTestNow();
+        Carbon::setTestNow();
     }
 
     $after = $enrollment->fresh();
@@ -490,19 +562,19 @@ test('normal evaluation cannot regress a completed enrollment even when its evid
     [$course, $enrollment, $student, $service] = makeReadyEnrollment();
     $officer = User::factory()->create();
 
-    $badge = \App\Models\Badge::create(['name' => 'Terminal Badge', 'is_active' => true]);
+    $badge = Badge::create(['name' => 'Terminal Badge', 'is_active' => true]);
     $course->badge_id = $badge->id;
     $course->certificate_enabled = true;
     $course->save();
 
-    $framework = \App\Models\StackingFramework::create([
+    $framework = StackingFramework::create([
         'name' => 'Terminal Framework',
         'status' => 'approved',
         'is_active' => true,
         'required_count' => 1,
         'sequence_required' => false,
     ]);
-    \App\Models\StackingFrameworkRequirement::create([
+    StackingFrameworkRequirement::create([
         'stacking_framework_id' => $framework->id,
         'course_id' => $course->id,
         'order' => 1,
@@ -511,7 +583,7 @@ test('normal evaluation cannot regress a completed enrollment even when its evid
 
     $service->recordAcademicUnitConfirmation($enrollment, $officer->id, 'confirmed');
 
-    $stackingStatus = fn () => \App\Models\UserStackingProgress::where('user_id', $student->id)
+    $stackingStatus = fn () => UserStackingProgress::where('user_id', $student->id)
         ->where('stacking_framework_id', $framework->id)
         ->value('status');
 
@@ -574,7 +646,7 @@ test('a rejected enrollment cannot be pushed forward by a later decision (docume
     // writes nothing, so the record can never claim `confirmed` while the
     // status stays `rejected`.
     expect(fn () => $service->recordAcademicUnitConfirmation($rejected->fresh(), $officer->id, 'confirmed'))
-        ->toThrow(\DomainException::class);
+        ->toThrow(DomainException::class);
 
     $after = $enrollment->fresh();
     expect($after->completion_status)->toBe(MicrocredentialCompletionService::STATUS_REJECTED)
@@ -600,7 +672,7 @@ test('faculty verification is refused before mastery is reached and records noth
 
         foreach (['verified', 'rejected'] as $decision) {
             expect(fn () => $service->recordFacultyVerification($enrollment, $faculty->id, $decision))
-                ->toThrow(\DomainException::class);
+                ->toThrow(DomainException::class);
         }
 
         $after = $enrollment->fresh();
@@ -618,7 +690,7 @@ test('academic-unit confirmation is refused before mastery is reached and record
 
         foreach (['confirmed', 'rejected'] as $decision) {
             expect(fn () => $service->recordAcademicUnitConfirmation($enrollment, $officer->id, $decision))
-                ->toThrow(\DomainException::class);
+                ->toThrow(DomainException::class);
         }
 
         $after = $enrollment->fresh();
@@ -640,7 +712,7 @@ test('institutional decisions are refused while an optional mastery gate is stil
     expect($enrollment->completion_status)->toBe(MicrocredentialCompletionService::STATUS_MASTERED);
 
     expect(fn () => $service->recordAcademicUnitConfirmation($enrollment, $officer->id, 'confirmed'))
-        ->toThrow(\DomainException::class);
+        ->toThrow(DomainException::class);
 
     expect($enrollment->fresh()->academic_unit_confirmation_status)->not->toBe('confirmed');
 });
@@ -653,7 +725,7 @@ test('a decision on a completed enrollment is refused unless it repeats the one 
     $completed = $enrollment->fresh();
 
     expect(fn () => $service->recordAcademicUnitConfirmation($completed, $officer->id, 'rejected'))
-        ->toThrow(\DomainException::class);
+        ->toThrow(DomainException::class);
 
     $after = $enrollment->fresh();
     expect($after->completion_status)->toBe(MicrocredentialCompletionService::STATUS_COMPLETED)
@@ -688,7 +760,7 @@ test('certificate issuance returns the winning row when a concurrent issue takes
     $course->save();
 
     $raced = false;
-    \App\Models\Certificate::creating(function () use ($student, $course, &$raced) {
+    Certificate::creating(function () use ($student, $course, &$raced) {
         if ($raced) {
             return;
         }
@@ -710,7 +782,7 @@ test('certificate issuance returns the winning row when a concurrent issue takes
     try {
         $result = $service->issueCertificateIfEligible($enrollment->fresh());
     } finally {
-        \App\Models\Certificate::flushEventListeners();
+        Certificate::flushEventListeners();
     }
 
     expect($raced)->toBeTrue()
@@ -759,7 +831,7 @@ test('the database rejects a second certificate for the same user and course', f
     DB::table('certificates')->insert($row('UNIQ-TEST-0001', $student->id, $courseA->id));
 
     expect(fn () => DB::table('certificates')->insert($row('UNIQ-TEST-0002', $student->id, $courseA->id)))
-        ->toThrow(\Illuminate\Database\QueryException::class);
+        ->toThrow(QueryException::class);
 
     // Different course, or different user, is still fine.
     DB::table('certificates')->insert($row('UNIQ-TEST-0003', $student->id, $courseB->id));
@@ -803,7 +875,7 @@ test('reaching 100% learning progress does not touch is_completed or completion_
         'progress_state' => ['module_scores' => [0 => 1]],
     ]);
 
-    $percent = app(\App\Services\StudentProgressService::class)
+    $percent = app(StudentProgressService::class)
         ->syncEnrollmentProgress($course->fresh(), $enrollment->fresh());
 
     $after = $enrollment->fresh();
@@ -826,4 +898,3 @@ test('official completion issues the automatic certificate even when the legacy 
         ->and(DB::table('certificates')->where('user_id', $student->id)->where('course_id', $course->id)->count())->toBe(1)
         ->and(DB::table('certificates')->where('user_id', $student->id)->where('course_id', $course->id)->value('title'))->toBe('Certificate of Completion');
 });
-

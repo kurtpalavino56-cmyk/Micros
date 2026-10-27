@@ -47,17 +47,26 @@
         .record-work{margin-top:11px;padding:11px 12px;border-left:3px solid #d8deea;border-radius:0 8px 8px 0;background:#fafbfc;}
         .record-work h3{margin:0;color:var(--record-ink);font-size:.8rem;}
         .record-work p{margin:7px 0 0;color:#475467;font-size:.78rem;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;}
-        .record-work a{display:inline-flex;margin-top:8px;color:var(--record-blue);font-size:.78rem;font-weight:700;text-decoration:none;}
-        .record-work a:hover{text-decoration:underline;}
+        .record-file-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+        .record-work .record-file-button{display:inline-flex;align-items:center;padding:7px 10px;border:1px solid var(--record-blue);border-radius:5px;background:#fff;color:var(--record-blue);font-size:.78rem;font-weight:700;text-decoration:none;}
+        .record-work .record-file-button--primary{background:var(--record-blue);color:#fff;}
+        .record-work .record-file-button:hover{text-decoration:none;filter:brightness(.95);}
         .record-attempt{margin-top:9px;padding-top:9px;border-top:1px solid var(--record-line);}
         .record-answers{margin:8px 0 0;padding-left:18px;color:#475467;font-size:.76rem;line-height:1.5;}
         .record-answers li{margin-top:5px;}
         .record-answers .correct{color:#166534;}.record-answers .incorrect{color:#b42318;}
         .record-footer{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:16px;}
-        .record-button{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:8px 14px;border:1px solid var(--record-blue);border-radius:8px;background:var(--record-blue);color:#fff;font:inherit;font-size:.8rem;font-weight:700;text-decoration:none;}
+        .record-button{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:8px 14px;border:1px solid var(--record-blue);border-radius:8px;background:var(--record-blue);color:#fff;font:inherit;font-size:.8rem;font-weight:700;text-decoration:none;cursor:pointer;}
         .record-button:hover{background:#093f85;}
         .record-button.secondary{border-color:var(--record-line);background:#fff;color:var(--record-ink);}
         .record-button.danger{border-color:#c0352d;background:#c0352d;color:#fff;}
+        .record-confirmation-dialog{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(92vw,440px);max-height:calc(100dvh - 32px);overflow:auto;margin:0;border:1px solid var(--record-line);border-radius:12px;padding:0;color:var(--record-ink);box-shadow:0 20px 60px rgba(9,37,95,.24);}
+        .record-confirmation-dialog::backdrop{background:rgba(15,23,42,.48);}
+        .record-confirmation-content{padding:22px;}
+        .record-confirmation-content h2{margin:0;color:var(--record-navy);font-size:1.05rem;}
+        .record-confirmation-content p{margin:10px 0 20px;color:var(--record-muted);font-size:.88rem;line-height:1.55;}
+        .record-confirmation-actions{display:flex;justify-content:flex-end;gap:8px;}
+        .record-confirmation-actions button{cursor:pointer;}
         @media(max-width:1000px){.record-stats{grid-template-columns:repeat(2,minmax(0,1fr));}}
         @media(max-width:700px){.record-main{padding:22px 14px 40px!important;}.record-header{flex-direction:column;}.record-stats{gap:9px;}.record-section{padding:16px 14px;}
             .record-lesson-head,.record-module-head{flex-wrap:wrap;}
@@ -89,7 +98,7 @@
                 </header>
 
                 <section class="record-stats" aria-label="Student course progress summary">
-                    <div class="record-stat"><strong>{{ (int) $enrollment->progress_percent }}%</strong><span>Course progress</span><div class="record-progress"><span style="width:{{ max(0, min(100, (int) $enrollment->progress_percent)) }}%"></span></div></div>
+                    <div class="record-stat"><strong>{{ (int) $enrollment->progress_percent }}%</strong><span>Course progress</span></div>
                     <div class="record-stat"><strong>{{ $completedLessons }} / {{ $totalLessons }}</strong><span>Lessons completed</span></div>
                     <div class="record-stat"><strong>{{ $completedActivities }} / {{ $totalActivities }}</strong><span>Activities submitted</span></div>
                     <div class="record-stat"><strong>{{ $passedQuizzes }} / {{ $totalQuizzes }}</strong><span>Quizzes passed</span></div>
@@ -102,7 +111,6 @@
                         <article class="record-module">
                             <header class="record-module-head">
                                 <span>{{ $module->title }}</span>
-                                @if($moduleQuiz)<span>{{ $moduleQuiz->title }}</span>@endif
                             </header>
                             <div class="record-module-content">
                                 @forelse($module->lessons as $lesson)
@@ -132,7 +140,10 @@
                                                         @if($submission->response_text)<p>{{ $submission->response_text }}</p>@endif
                                                         @if($submission->feedback)<p><strong>Feedback:</strong> {{ $submission->feedback }}</p>@endif
                                                         @if($submission->submission_path)
-                                                            <a href="{{ $reviewRole === 'faculty' ? route('faculty.lesson-activities.download', $submission->id) : route('admin.enrollments.submissions.download', $submission->id) }}">Download submitted file</a>
+                                                            <div class="record-file-actions">
+                                                                <a class="record-file-button record-file-button--primary" href="{{ $reviewRole === 'faculty' ? route('faculty.lesson-activities.view', $submission->id) : route('admin.enrollments.submissions.view', $submission->id) }}" target="_blank" rel="noopener">View submitted file</a>
+                                                                <a class="record-file-button" href="{{ $reviewRole === 'faculty' ? route('faculty.lesson-activities.download', $submission->id) : route('admin.enrollments.submissions.download', $submission->id) }}">Download submitted file</a>
+                                                            </div>
                                                         @endif
                                                     </div>
                                                 @empty
@@ -158,7 +169,7 @@
                                                 <div class="record-attempt"><span class="record-pill {{ in_array($submission->status, ['passed', 'completed'], true) ? 'done' : 'waiting' }}">{{ ucfirst($submission->status) }}</span><span class="record-meta">Attempt {{ $submission->attempt_number }} · {{ $submission->submitted_at?->format('M j, Y g:i A') ?? 'Submission time unavailable' }}</span>
                                                     @if($submission->response_text)<p>{{ $submission->response_text }}</p>@endif
                                                     @if($submission->feedback)<p><strong>Feedback:</strong> {{ $submission->feedback }}</p>@endif
-                                                    @if($submission->submission_path)<a href="{{ $reviewRole === 'faculty' ? route('faculty.lesson-activities.download', $submission->id) : route('admin.enrollments.submissions.download', $submission->id) }}">Download submitted file</a>@endif
+                                                    @if($submission->submission_path)<div class="record-file-actions"><a class="record-file-button record-file-button--primary" href="{{ $reviewRole === 'faculty' ? route('faculty.lesson-activities.view', $submission->id) : route('admin.enrollments.submissions.view', $submission->id) }}" target="_blank" rel="noopener">View submitted file</a><a class="record-file-button" href="{{ $reviewRole === 'faculty' ? route('faculty.lesson-activities.download', $submission->id) : route('admin.enrollments.submissions.download', $submission->id) }}">Download submitted file</a></div>@endif
                                                 </div>
                                             @empty<div class="record-meta">No submission recorded.</div>@endforelse
                                         </div>
@@ -183,11 +194,11 @@
                     @if($reviewRole === 'faculty')
                         <a class="record-button secondary" href="{{ route('faculty.students.course', ['id' => $course->id, 'filter' => 'needs_review']) }}">Back to verification queue</a>
                         @if($enrollment->faculty_verification_actionable ?? false)
-                            <form method="POST" action="{{ route('faculty.enrollments.verify', $enrollment->id) }}" onsubmit="return confirm('Verify that this learner completed the course requirements?');">
+                            <form method="POST" action="{{ route('faculty.enrollments.verify', $enrollment->id) }}">
                                 @csrf
                                 <button class="record-button" type="submit" name="decision" value="verified">Verify completion</button>
                             </form>
-                            <form method="POST" action="{{ route('faculty.enrollments.verify', $enrollment->id) }}" onsubmit="return confirm('Reject this course completion for this learner?');">
+                            <form method="POST" action="{{ route('faculty.enrollments.verify', $enrollment->id) }}">
                                 @csrf
                                 <button class="record-button danger" type="submit" name="decision" value="rejected">Reject</button>
                             </form>
@@ -203,9 +214,78 @@
                         @endif
                     @endif
                 </footer>
+                <dialog class="record-confirmation-dialog" id="record-confirmation-dialog" aria-labelledby="record-confirmation-title" aria-describedby="record-confirmation-message">
+                    <div class="record-confirmation-content">
+                        <h2 id="record-confirmation-title">Confirm review action</h2>
+                        <p id="record-confirmation-message"></p>
+                        <div class="record-confirmation-actions">
+                            <button class="record-button secondary" id="record-confirmation-cancel" type="button">Cancel</button>
+                            <button class="record-button" id="record-confirmation-accept" type="button">Confirm</button>
+                        </div>
+                    </div>
+                </dialog>
             </div>
         </main>
     </div>
     @include('components.responsive')
+    <script>
+        (function () {
+            const dialog = document.getElementById('record-confirmation-dialog');
+            const message = document.getElementById('record-confirmation-message');
+            const acceptButton = document.getElementById('record-confirmation-accept');
+            const cancelButton = document.getElementById('record-confirmation-cancel');
+            let pendingForm = null;
+            let pendingSubmitter = null;
+
+            document.querySelectorAll('.record-footer form').forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (form.dataset.confirmed === '1') {
+                        delete form.dataset.confirmed;
+                        return;
+                    }
+
+                    event.preventDefault();
+                    pendingForm = form;
+                    pendingSubmitter = event.submitter;
+                    const decision = pendingSubmitter ? pendingSubmitter.value : '';
+                    const isRejection = decision === 'rejected';
+                    const isVerification = decision === 'verified';
+                    message.textContent = isRejection
+                        ? 'Reject this course completion for this learner?'
+                        : (isVerification
+                            ? 'Verify that this learner completed the course requirements?'
+                            : 'Confirm this course completion for this learner?');
+                    acceptButton.textContent = isRejection ? 'Reject' : (isVerification ? 'Verify completion' : 'Confirm');
+                    acceptButton.classList.toggle('danger', isRejection);
+                    dialog.showModal();
+                });
+            });
+
+            acceptButton.addEventListener('click', function () {
+                if (!pendingForm) {
+                    return;
+                }
+
+                const form = pendingForm;
+                const submitter = pendingSubmitter;
+                pendingForm = null;
+                pendingSubmitter = null;
+                dialog.close();
+                form.dataset.confirmed = '1';
+                form.requestSubmit(submitter || undefined);
+            });
+
+            cancelButton.addEventListener('click', function () {
+                pendingForm = null;
+                pendingSubmitter = null;
+                dialog.close();
+            });
+
+            dialog.addEventListener('close', function () {
+                pendingForm = null;
+                pendingSubmitter = null;
+            });
+        }());
+    </script>
 </body>
 </html>

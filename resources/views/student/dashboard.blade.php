@@ -35,7 +35,7 @@
         @endphp
         <header class="page-header ui-page-header student-page-heading">
             <div class="ui-page-header__content">
-                <h2 class="ui-page-title">{{ $timeGreeting }}, {{ $user->name ?? 'Student' }}!</h2>
+                <h2 class="ui-page-title">{{ $timeGreeting }}, {{ $user->username ?: ($user->name ?? 'Student') }}!</h2>
                 <p class="ui-page-subtitle">Build in-demand skills, earn microcredentials, and take the next step in your Microcredential journey.</p>
                 <p class="student-dashboard__student-id">Student ID: {{ $user->student_id ?? '—' }}</p>
             </div>
