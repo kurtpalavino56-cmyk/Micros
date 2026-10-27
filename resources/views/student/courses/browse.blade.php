@@ -79,16 +79,19 @@
         <div class="courses-grid">
             @forelse ($courses as $course)
                 <a href="{{ route('courses.show', $course->id) }}" class="browse-card ui-card-surface">
-                    <div class="card-thumb" @if($course->thumbnail_url) style="background-image:url('{{ $course->thumbnail_url }}')" @endif></div>
+                    <div class="card-thumb" @if($course->thumbnail_url) style="background-image:url('{{ $course->thumbnail_url }}')" @endif>
+                        @if($course->category || $course->level)
+                            <div class="tags">
+                                @if($course->category)
+                                    <span class="tag tag-category ui-badge">{{ $course->category }}</span>
+                                @endif
+                                @if($course->level)
+                                    <span class="tag tag-level ui-badge">{{ $course->level }}</span>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
                     <div class="card-body">
-                        <div class="tags">
-                            @if($course->category)
-                                <span class="tag tag-category ui-badge">{{ $course->category }}</span>
-                            @endif
-                            @if($course->level)
-                                <span class="tag tag-level ui-badge">{{ $course->level }}</span>
-                            @endif
-                        </div>
                         <h3>{{ $course->title }}</h3>
                         @php
                             $descPreview = \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags((string) ($course->description ?? ''))))), 120);

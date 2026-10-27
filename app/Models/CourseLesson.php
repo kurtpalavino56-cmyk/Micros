@@ -18,6 +18,7 @@ class CourseLesson extends Model
         'file_url',
         'file_name',
         'order',
+        'module_order',
     ];
 
     public function course(): BelongsTo

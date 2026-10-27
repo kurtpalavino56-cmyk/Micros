@@ -42,7 +42,7 @@
       <div class="psucert__corner psucert__corner--bottom"></div>
 
       <div class="psucert__crest">
-        <img src="{{ asset('Images/PSU-Logo-Certificate.jpg') }}" alt="Pangasinan State University">
+        <img src="{{ asset('Images/PSU-Logo.png') }}" alt="Pangasinan State University">
       </div>
 
       <div class="psucert__qr">

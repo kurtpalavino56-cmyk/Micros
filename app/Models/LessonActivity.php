@@ -10,6 +10,8 @@ class LessonActivity extends Model
 {
     protected $fillable = [
         'lesson_id',
+        'module_id',
+        'module_order',
         'title',
         'activity_type',
         'instructions',
@@ -33,6 +35,11 @@ class LessonActivity extends Model
     public function lesson(): BelongsTo
     {
         return $this->belongsTo(CourseLesson::class, 'lesson_id');
+    }
+
+    public function module(): BelongsTo
+    {
+        return $this->belongsTo(CourseModule::class, 'module_id');
     }
 
     public function submissions(): HasMany

@@ -36,6 +36,7 @@ use App\Support\SkillCatalog;
 use App\Support\UserPresenter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -72,13 +73,16 @@ class FacultyController extends Controller
 
         $toGradeByCourse = DB::table('lesson_activity_submissions')
             ->join('lesson_activities', 'lesson_activities.id', '=', 'lesson_activity_submissions.lesson_activity_id')
-            ->join('course_lessons', 'course_lessons.id', '=', 'lesson_activities.lesson_id')
-            ->whereIn('course_lessons.course_id', $ownedCourseIds)
+            ->leftJoin('course_lessons', 'course_lessons.id', '=', 'lesson_activities.lesson_id')
+            ->leftJoin('course_modules', 'course_modules.id', '=', 'lesson_activities.module_id')
+            ->where(function ($query) use ($ownedCourseIds): void {
+                $query->whereIn('course_lessons.course_id', $ownedCourseIds)->orWhereIn('course_modules.course_id', $ownedCourseIds);
+            })
             ->where('lesson_activities.is_active', true)
             ->where('lesson_activities.activity_type', 'assignment')
             ->where('lesson_activity_submissions.status', 'submitted')
-            ->groupBy('course_lessons.course_id')
-            ->selectRaw('course_lessons.course_id, COUNT(*) as submission_count')
+            ->groupByRaw('COALESCE(course_lessons.course_id, course_modules.course_id)')
+            ->selectRaw('COALESCE(course_lessons.course_id, course_modules.course_id) as course_id, COUNT(*) as submission_count')
             ->pluck('submission_count', 'course_id');
 
         $verificationCourseIds = $courses
@@ -581,7 +585,7 @@ class FacultyController extends Controller
         $course = $this->ownedCourse($id);
         abort_unless((int) $enrollment->course_id === (int) $course->id, 404);
 
-        $enrollment->load(['user', 'course.modules.lessons.activities']);
+        $enrollment->load(['user', 'course.modules.lessons.activities', 'course.modules.activities', 'course.modules.quizzes']);
         $institutionalLabel = CompletionStatusPresenter::institutionalLabel(
             $enrollment->completion_status,
             $enrollment->faculty_verification_status,
@@ -609,7 +613,10 @@ class FacultyController extends Controller
             ->keyBy('lesson_id');
         $activitySubmissions = LessonActivitySubmission::with('reviewer')
             ->where('user_id', $enrollment->user_id)
-            ->whereHas('activity.lesson', fn ($query) => $query->where('course_id', $course->id))
+            ->whereHas('activity', function ($activity) use ($course): void {
+                $activity->whereHas('lesson', fn ($lesson) => $lesson->where('course_id', $course->id))
+                    ->orWhereHas('module', fn ($module) => $module->where('course_id', $course->id));
+            })
             ->latest('submitted_at')
             ->get()
             ->groupBy('lesson_activity_id');
@@ -626,8 +633,9 @@ class FacultyController extends Controller
             ->get()
             ->groupBy('quiz_id');
         $lessonQuizzes = $quizzes->whereNotNull('lesson_id')->groupBy('lesson_id');
-        $moduleQuizzes = $quizzes->whereNotNull('module_id')->keyBy('module_id');
-        $activityCount = $modules->sum(fn ($module) => $module->lessons->sum(fn ($lesson) => $lesson->activities->count()));
+        $moduleQuizzes = $quizzes->whereNotNull('module_id')->where('is_summative', true)->keyBy('module_id');
+        $moduleLearningQuizzes = $quizzes->whereNotNull('module_id')->where('is_summative', false)->groupBy('module_id');
+        $activityCount = $modules->sum(fn ($module) => $module->lessons->sum(fn ($lesson) => $lesson->activities->count()) + $module->activities->count());
         $completedActivities = $activitySubmissions->keys()->count();
         $passedQuizzes = $quizAttempts->flatten(1)->where('passed', true)->pluck('quiz_id')->unique()->count();
 
@@ -641,6 +649,7 @@ class FacultyController extends Controller
             'quizzes' => $quizzes,
             'lessonQuizzes' => $lessonQuizzes,
             'moduleQuizzes' => $moduleQuizzes,
+            'moduleLearningQuizzes' => $moduleLearningQuizzes,
             'quizAttempts' => $quizAttempts,
             'completedLessons' => $lessonCompletions->count(),
             'totalLessons' => $lessonIds->count(),
@@ -931,8 +940,9 @@ class FacultyController extends Controller
                     ->selectRaw('COUNT(DISTINCT quiz_attempts.user_id)'),
                 'pending_reviews_count' => DB::table('lesson_activity_submissions')
                     ->join('lesson_activities', 'lesson_activities.id', '=', 'lesson_activity_submissions.lesson_activity_id')
-                    ->join('course_lessons', 'course_lessons.id', '=', 'lesson_activities.lesson_id')
-                    ->whereColumn('course_lessons.course_id', 'courses.id')
+                    ->leftJoin('course_lessons', 'course_lessons.id', '=', 'lesson_activities.lesson_id')
+                    ->leftJoin('course_modules', 'course_modules.id', '=', 'lesson_activities.module_id')
+                    ->whereRaw('COALESCE(course_lessons.course_id, course_modules.course_id) = courses.id')
                     ->where('lesson_activities.is_active', true)
                     ->where('lesson_activities.activity_type', 'assignment')
                     ->where('lesson_activity_submissions.status', 'submitted')
@@ -1100,6 +1110,8 @@ class FacultyController extends Controller
                 'submissions as pending_submissions_count' => fn ($submissions) => $submissions->where('status', 'submitted'),
             ]),
             'modules.quiz.questions',
+            'modules.quizzes.questions',
+            'modules.activities' => fn ($query) => $query->where('is_active', true)->withCount('submissions'),
         ]);
 
         // Modules — idx/key carry the real ids so every Blade form
@@ -1118,6 +1130,7 @@ class FacultyController extends Controller
                     'id' => $l->id,
                     'key' => 'les-'.$l->id,
                     'title' => $l->title,
+                    'module_order' => $l->module_order,
                     'meta' => 'Text'.($l->duration ? ' · '.$l->duration : ''),
                     'file_url' => $l->file_url,
                     'file_name' => $l->file_name,
@@ -1146,6 +1159,24 @@ class FacultyController extends Controller
                         'pending_submissions_count' => $activity->pending_submissions_count,
                     ])->values(),
                 ])->values(),
+                'activities' => $m->activities->where('is_active', true)->map(fn (LessonActivity $activity) => (object) [
+                    'id' => $activity->id,
+                    'title' => $activity->title,
+                    'activity_type' => $activity->activity_type,
+                    'instructions' => $activity->instructions,
+                    'is_required' => $activity->is_required,
+                    'max_points' => $activity->max_points,
+                    'passing_percent' => $activity->passing_percent,
+                    'submissions_count' => $activity->submissions_count,
+                    'module_order' => $activity->module_order,
+                ])->sortBy('module_order')->values(),
+                'learning_quizzes' => $m->quizzes->where('is_active', true)->map(fn (Quiz $quiz) => (object) [
+                    'id' => $quiz->id,
+                    'title' => $quiz->title,
+                    'questions_count' => $quiz->questions->count(),
+                    'passing_score' => $quiz->passing_score,
+                    'module_order' => $quiz->module_order,
+                ])->sortBy('module_order')->values(),
                 'quiz' => $m->quiz ? (object) [
                     'title' => $m->quiz->title,
                     'questions_count' => $m->quiz->questions->count(),
@@ -1205,7 +1236,10 @@ class FacultyController extends Controller
                 ->whereHas('activity', fn ($query) => $query
                     ->where('is_active', true)
                     ->where('activity_type', 'assignment')
-                    ->whereHas('lesson', fn ($lessonQuery) => $lessonQuery->where('course_id', $course->id)))
+                    ->where(function ($scope) use ($course): void {
+                        $scope->whereHas('lesson', fn ($lesson) => $lesson->where('course_id', $course->id))
+                            ->orWhereHas('module', fn ($module) => $module->where('course_id', $course->id));
+                    }))
                 ->count(),
         ]);
     }
@@ -1225,7 +1259,10 @@ class FacultyController extends Controller
                 ->where('id', $activityId)
                 ->where('is_active', true)
                 ->where('activity_type', 'assignment')
-                ->whereHas('lesson', fn ($query) => $query->where('course_id', $course->id))
+                ->where(function ($query) use ($course): void {
+                    $query->whereHas('lesson', fn ($lesson) => $lesson->where('course_id', $course->id))
+                        ->orWhereHas('module', fn ($module) => $module->where('course_id', $course->id));
+                })
                 ->firstOrFail();
         } else {
             $activityId = null;
@@ -1235,14 +1272,17 @@ class FacultyController extends Controller
             ->whereHas('activity', fn ($query) => $query
                 ->where('is_active', true)
                 ->where('activity_type', 'assignment')
-                ->whereHas('lesson', fn ($lessonQuery) => $lessonQuery->where('course_id', $course->id)));
+                ->where(function ($scope) use ($course): void {
+                    $scope->whereHas('lesson', fn ($lesson) => $lesson->where('course_id', $course->id))
+                        ->orWhereHas('module', fn ($module) => $module->where('course_id', $course->id));
+                }));
 
         $pendingCount = (clone $courseSubmissions)->where('status', 'submitted')->count();
         $reviewedCount = (clone $courseSubmissions)->whereIn('status', ['passed', 'needs_revision'])->count();
         $allCount = (clone $courseSubmissions)->count();
 
         $submissions = (clone $courseSubmissions)
-            ->with(['activity.lesson.module', 'student', 'reviewer'])
+            ->with(['activity.lesson.module', 'activity.module', 'student', 'reviewer'])
             ->when($activityId, fn ($query) => $query->where('lesson_activity_id', $activityId))
             ->when($status === 'pending', fn ($query) => $query->where('status', 'submitted'))
             ->when($status === 'reviewed', fn ($query) => $query->whereIn('status', ['passed', 'needs_revision']))
@@ -1900,9 +1940,14 @@ class FacultyController extends Controller
         return $this->assessmentBuilderView($course, $module, 'final-exam');
     }
 
-    private function assessmentBuilderView(Course $course, CourseModule $module, string $mode): View
+    private function assessmentBuilderView(Course $course, CourseModule $module, string $mode, ?int $quizId = null): View
     {
-        $quizModel = Quiz::with('questions')->where('module_id', $module->id)->first();
+        $quizModel = $mode === 'module-quiz' && $quizId === null
+            ? null
+            : Quiz::with('questions')->where('module_id', $module->id)
+                ->where('is_summative', $mode !== 'module-quiz')
+                ->when($quizId !== null, fn ($query) => $query->whereKey($quizId))
+                ->first();
         $quiz = $quizModel ? (object) [
             'title' => $quizModel->title,
             'items' => $quizModel->questions->count(),
@@ -1932,6 +1977,7 @@ class FacultyController extends Controller
             'moduleIdx' => $module->id,
             'moduleTitle' => $module->title,
             'isFinalModule' => $module->is_final,
+            'moduleQuizId' => $quizId,
             'quiz' => $quiz,
         ]);
     }
@@ -1974,6 +2020,60 @@ class FacultyController extends Controller
             ->with('success', $questionsChanged
                 ? 'Quiz saved. The questions changed, so students may attempt it again.'
                 : 'Quiz saved. The new settings apply to students immediately.');
+    }
+
+    public function moduleQuizCreate(int $id, int $moduleIndex): View
+    {
+        $course = $this->ownedCourse($id);
+        $module = CourseModule::where('course_id', $course->id)->where('is_final', false)->findOrFail($moduleIndex);
+
+        return $this->assessmentBuilderView($course, $module, 'module-quiz');
+    }
+
+    public function moduleQuizEdit(int $id, int $moduleIndex, int $quizId): View
+    {
+        $course = $this->ownedCourse($id);
+        $module = CourseModule::where('course_id', $course->id)->where('is_final', false)->findOrFail($moduleIndex);
+        $quiz = Quiz::where('module_id', $module->id)->whereNull('lesson_id')->where('is_summative', false)->findOrFail($quizId);
+
+        return $this->assessmentBuilderView($course, $module, 'module-quiz', $quiz->id);
+    }
+
+    public function storeModuleQuiz(Request $request, int $id, int $moduleIndex, QuizManagementService $quizManagementService)
+    {
+        $course = $this->ownedCourse($id);
+        $module = CourseModule::where('course_id', $course->id)->where('is_final', false)->findOrFail($moduleIndex);
+        $questionsChanged = $quizManagementService->saveRegularForModule($request, $course, $module);
+        $this->returnCourseToDraft($course);
+
+        return redirect()->route('faculty.courses.manage', $course->id)->with('success', $questionsChanged
+            ? 'Module quiz saved. The questions changed, so students may need a new attempt.'
+            : 'Module quiz saved.');
+    }
+
+    public function updateModuleQuiz(Request $request, int $id, int $moduleIndex, int $quizId, QuizManagementService $quizManagementService): RedirectResponse
+    {
+        $course = $this->ownedCourse($id);
+        $module = CourseModule::where('course_id', $course->id)->where('is_final', false)->findOrFail($moduleIndex);
+        $quiz = Quiz::where('module_id', $module->id)->whereNull('lesson_id')->where('is_summative', false)->findOrFail($quizId);
+        $questionsChanged = $quizManagementService->saveRegularForModule($request, $course, $module, $quiz);
+        $this->returnCourseToDraft($course);
+
+        return redirect()->route('faculty.courses.manage', $course->id)->with('success', $questionsChanged
+            ? 'Module quiz saved. The questions changed, so students may need a new attempt.'
+            : 'Module quiz saved.');
+    }
+
+    public function destroyModuleQuiz(int $id, int $moduleIndex, int $quizId): RedirectResponse
+    {
+        $course = $this->ownedCourse($id);
+        $module = CourseModule::where('course_id', $course->id)->where('is_final', false)->findOrFail($moduleIndex);
+        $quiz = Quiz::where('module_id', $module->id)->whereNull('lesson_id')->where('is_summative', false)->findOrFail($quizId);
+        $title = $quiz->title;
+        $quiz->delete();
+        $this->returnCourseToDraft($course);
+
+        return redirect()->route('faculty.courses.manage', $course->id)->with('success', '"'.$title.'" was deleted.');
     }
 
     public function storeFinalExamQuiz(Request $request, int $id, int $moduleId, QuizManagementService $quizManagementService)
@@ -2080,11 +2180,48 @@ class FacultyController extends Controller
         return redirect()->route('faculty.courses.manage', $course->id)->with('success', 'Lesson activity added.');
     }
 
+    public function storeModuleActivity(Request $request, int $id, int $moduleId)
+    {
+        $course = $this->ownedCourse($id);
+        $module = CourseModule::where('course_id', $course->id)->where('is_final', false)->findOrFail($moduleId);
+        $validator = Validator::make($request->all(), [
+            'title' => ['required', 'string', 'max:255'],
+            'activity_type' => ['required', 'string', 'in:practice,reflection,assignment'],
+            'instructions' => ['nullable', 'string', 'max:10000'],
+            'max_points' => ['nullable', 'required_if:activity_type,assignment', 'integer', 'min:1', 'max:10000'],
+            'passing_percent' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput()->with('open_module_content', $module->id);
+        }
+
+        $data = $validator->validated();
+        $data['instructions'] = RichTextSanitizer::sanitize($data['instructions'] ?? '');
+        $activity = LessonActivity::create([
+            ...$data,
+            'lesson_id' => null,
+            'module_id' => $module->id,
+            'module_order' => $module->nextContentOrder(),
+            'is_required' => $request->boolean('is_required'),
+            'max_points' => $data['max_points'] ?? null,
+            'passing_percent' => $data['passing_percent'] ?? null,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+        $module->quiz()->update(['module_order' => $activity->module_order + 1000000]);
+        $this->returnCourseToDraft($course);
+
+        return redirect()->route('faculty.courses.manage', $course->id)->with('success', 'Module activity added.');
+    }
+
     public function updateLessonActivity(Request $request, int $id, int $activityId)
     {
         $course = $this->ownedCourse($id);
         $activity = LessonActivity::query()
-            ->whereHas('lesson', fn ($query) => $query->where('course_id', $course->id))
+            ->where(function ($query) use ($course): void {
+                $query->whereHas('lesson', fn ($lesson) => $lesson->where('course_id', $course->id))
+                    ->orWhereHas('module', fn ($module) => $module->where('course_id', $course->id));
+            })
             ->where('is_active', true)
             ->findOrFail($activityId);
         $validator = Validator::make($request->all(), [
@@ -2114,14 +2251,17 @@ class FacultyController extends Controller
     {
         $course = $this->ownedCourse($id);
         $activity = LessonActivity::query()
-            ->whereHas('lesson', fn ($query) => $query->where('course_id', $course->id))
+            ->where(function ($query) use ($course): void {
+                $query->whereHas('lesson', fn ($lesson) => $lesson->where('course_id', $course->id))
+                    ->orWhereHas('module', fn ($module) => $module->where('course_id', $course->id));
+            })
             ->where('is_active', true)
             ->findOrFail($activityId);
         $activity->update(['is_active' => false]);
         $this->returnCourseToDraft($course);
 
         return redirect()->route('faculty.courses.manage', $course->id)
-            ->with('success', 'Activity removed from the lesson. Existing submissions were retained.');
+            ->with('success', 'Activity removed from the course. Existing submissions were retained.');
     }
 
     public function reorderModules(Request $request, int $id)
@@ -2165,9 +2305,65 @@ class FacultyController extends Controller
 
         DB::transaction(function () use ($module, $items): void {
             foreach ($items as $position => $lessonId) {
-                CourseLesson::where('module_id', $module->id)->whereKey($lessonId)->update(['order' => $position + 1]);
+                $lessonOrder = ($position + 1) * 1000000;
+                CourseLesson::where('module_id', $module->id)->whereKey($lessonId)->update([
+                    'order' => $position + 1,
+                    'module_order' => $lessonOrder,
+                ]);
+                LessonActivity::where('lesson_id', $lessonId)->update([
+                    'module_order' => DB::raw($lessonOrder.' + sort_order * 10'),
+                ]);
+                Quiz::where('lesson_id', $lessonId)->update([
+                    'module_order' => DB::raw($lessonOrder.' + sort_order * 10'),
+                ]);
             }
         });
+        $this->returnCourseToDraft($course);
+
+        return response()->json(['saved' => true]);
+    }
+
+    public function reorderModuleItems(Request $request, int $id, int $moduleId): JsonResponse
+    {
+        $course = $this->ownedCourse($id);
+        $module = CourseModule::where('course_id', $course->id)->where('is_final', false)->findOrFail($moduleId);
+        $items = $request->validate([
+            'items' => ['required', 'array'],
+            'items.*.type' => ['required', 'in:lesson,activity,quiz'],
+            'items.*.id' => ['required', 'integer'],
+        ])['items'];
+
+        $submittedKeys = collect($items)->map(fn (array $item): string => $item['type'].':'.(int) $item['id']);
+        abort_unless($submittedKeys->unique()->count() === $submittedKeys->count(), 422);
+
+        $expectedKeys = $module->lessons()->pluck('id')->map(fn ($lessonId): string => 'lesson:'.(int) $lessonId)
+            ->concat($module->activities()->where('is_active', true)->pluck('id')->map(fn ($activityId): string => 'activity:'.(int) $activityId))
+            ->concat($module->quizzes()->where('is_active', true)->pluck('id')->map(fn ($quizId): string => 'quiz:'.(int) $quizId))
+            ->sort()->values();
+        abort_unless($submittedKeys->sort()->values()->all() === $expectedKeys->all(), 422);
+
+        DB::transaction(function () use ($module, $items): void {
+            $lessonPosition = 0;
+            foreach ($items as $position => $item) {
+                $moduleOrder = ($position + 1) * 1000000;
+                if ($item['type'] === 'lesson') {
+                    $lessonPosition++;
+                    CourseLesson::where('module_id', $module->id)->whereKey($item['id'])->update([
+                        'order' => $lessonPosition,
+                        'module_order' => $moduleOrder,
+                    ]);
+                } elseif ($item['type'] === 'activity') {
+                    LessonActivity::where('module_id', $module->id)->whereNull('lesson_id')->where('is_active', true)->whereKey($item['id'])
+                        ->update(['module_order' => $moduleOrder]);
+                } else {
+                    Quiz::where('module_id', $module->id)->whereNull('lesson_id')->where('is_summative', false)->where('is_active', true)->whereKey($item['id'])
+                        ->update(['module_order' => $moduleOrder]);
+                }
+            }
+
+            $module->quiz()->update(['module_order' => (count($items) + 1) * 1000000]);
+        });
+
         $this->returnCourseToDraft($course);
 
         return response()->json(['saved' => true]);
@@ -2212,7 +2408,10 @@ class FacultyController extends Controller
         UserNotificationService $userNotifications,
     ) {
         $course = $this->ownedCourse($id);
-        $activity = LessonActivity::query()->whereHas('lesson', fn ($query) => $query->where('course_id', $course->id))->findOrFail($activityId);
+        $activity = LessonActivity::query()->where(function ($query) use ($course): void {
+            $query->whereHas('lesson', fn ($lesson) => $lesson->where('course_id', $course->id))
+                ->orWhereHas('module', fn ($module) => $module->where('course_id', $course->id));
+        })->findOrFail($activityId);
         abort_unless($activity->activity_type === 'assignment', 404);
         $submission = LessonActivitySubmission::query()
             ->where('lesson_activity_id', $activity->id)
@@ -2244,7 +2443,9 @@ class FacultyController extends Controller
         $enrollment = Enrollment::query()->where('user_id', $submission->user_id)->where('course_id', $course->id)->first();
         if ($enrollment) {
             if ($submission->status === 'passed') {
-                $studentProgress->completeLessonIfRequirementsSatisfied($course, $activity->lesson, $enrollment);
+                if ($activity->lesson) {
+                    $studentProgress->completeLessonIfRequirementsSatisfied($course, $activity->lesson, $enrollment);
+                }
             }
 
             $studentProgress->syncEnrollmentProgress($course, $enrollment);

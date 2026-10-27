@@ -51,13 +51,13 @@
                             @php
                                 $activity = $submission->activity;
                                 $lesson = $activity->lesson;
-                                $module = $lesson->module;
+                                $module = $lesson?->module ?? $activity->module;
                             @endphp
                             <article class="review-submission" id="submission-{{ $submission->id }}">
                                 <header class="submission-top">
                                     <div>
                                         <div class="submission-course-path">
-                                            <span>{{ $module->title ?? 'Module' }}</span><span>{{ $lesson->title }}</span>
+                                            <span>{{ $module->title ?? 'Module' }}</span>@if($lesson)<span>{{ $lesson->title }}</span>@else<span>Module activity</span>@endif
                                         </div>
                                         <h2 class="submission-title">{{ $activity->title }}</h2>
                                         <div class="submission-student">{{ $submission->student->name ?? 'Learner' }}</div>

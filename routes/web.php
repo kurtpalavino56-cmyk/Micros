@@ -420,6 +420,8 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty',
         ->whereNumber('id')->whereNumber('moduleIndex')->name('faculty.lesson.delete');
     Route::post('/Faculty-mycourses/manage/{id}/lessons/{lessonId}/activities', [FacultyController::class, 'storeLessonActivity'])
         ->whereNumber('id')->whereNumber('lessonId')->name('faculty.lesson-activity.store');
+    Route::post('/Faculty-mycourses/manage/{id}/modules/{moduleId}/activities', [FacultyController::class, 'storeModuleActivity'])
+        ->whereNumber('id')->whereNumber('moduleId')->name('faculty.module-activity.store');
     Route::post('/Faculty-mycourses/manage/{id}/activities/{activityId}/update', [FacultyController::class, 'updateLessonActivity'])
         ->whereNumber('id')->whereNumber('activityId')->name('faculty.lesson-activity.update');
     Route::post('/Faculty-mycourses/manage/{id}/activities/{activityId}/remove', [FacultyController::class, 'destroyLessonActivity'])
@@ -428,6 +430,8 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty',
         ->whereNumber('id')->name('faculty.modules.reorder');
     Route::post('/Faculty-mycourses/manage/{id}/modules/{moduleId}/reorder/lessons', [FacultyController::class, 'reorderLessons'])
         ->whereNumber('id')->whereNumber('moduleId')->name('faculty.lessons.reorder');
+    Route::post('/Faculty-mycourses/manage/{id}/modules/{moduleId}/reorder/items', [FacultyController::class, 'reorderModuleItems'])
+        ->whereNumber('id')->whereNumber('moduleId')->name('faculty.module-items.reorder');
     Route::post('/Faculty-mycourses/manage/{id}/lessons/{lessonId}/reorder/assessments', [FacultyController::class, 'reorderLessonAssessments'])
         ->whereNumber('id')->whereNumber('lessonId')->name('faculty.lesson-assessments.reorder');
     Route::post('/Faculty-mycourses/{id}/activity-reviews/{activityId}/submissions/{submissionId}', [FacultyController::class, 'reviewLessonActivitySubmission'])
@@ -439,6 +443,16 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty',
         ->whereNumber('id')->whereNumber('moduleIndex')->name('faculty.quiz.create');
     Route::post('/Faculty-mycourses/manage/{id}/modules/{moduleIndex}/quiz', [FacultyController::class, 'storeQuiz'])
         ->whereNumber('id')->whereNumber('moduleIndex')->name('faculty.quiz.store');
+    Route::get('/Faculty-mycourses/manage/{id}/modules/{moduleIndex}/learning-quiz/create', [FacultyController::class, 'moduleQuizCreate'])
+        ->whereNumber('id')->whereNumber('moduleIndex')->name('faculty.module-quiz.create');
+    Route::get('/Faculty-mycourses/manage/{id}/modules/{moduleIndex}/learning-quiz/{quizId}/edit', [FacultyController::class, 'moduleQuizEdit'])
+        ->whereNumber('id')->whereNumber('moduleIndex')->whereNumber('quizId')->name('faculty.module-quiz.edit');
+    Route::post('/Faculty-mycourses/manage/{id}/modules/{moduleIndex}/learning-quiz', [FacultyController::class, 'storeModuleQuiz'])
+        ->whereNumber('id')->whereNumber('moduleIndex')->name('faculty.module-quiz.store');
+    Route::post('/Faculty-mycourses/manage/{id}/modules/{moduleIndex}/learning-quiz/{quizId}', [FacultyController::class, 'updateModuleQuiz'])
+        ->whereNumber('id')->whereNumber('moduleIndex')->whereNumber('quizId')->name('faculty.module-quiz.update');
+    Route::post('/Faculty-mycourses/manage/{id}/modules/{moduleIndex}/learning-quiz/{quizId}/delete', [FacultyController::class, 'destroyModuleQuiz'])
+        ->whereNumber('id')->whereNumber('moduleIndex')->whereNumber('quizId')->name('faculty.module-quiz.destroy');
     // #8 — delete a module's quiz
     Route::post('/Faculty-mycourses/manage/{id}/modules/{moduleIndex}/quiz/delete', [FacultyController::class, 'destroyQuiz'])
         ->whereNumber('id')->whereNumber('moduleIndex')->name('faculty.quiz.destroy');

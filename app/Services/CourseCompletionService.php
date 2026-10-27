@@ -16,6 +16,8 @@ class CourseCompletionService
     {
         $course->loadMissing([
             'modules.quiz.questions',
+            'modules.quizzes.questions',
+            'modules.activities',
             'modules.lessons.quizzes.questions',
             'modules.lessons.activities',
             'learningOutcomes',
@@ -38,31 +40,31 @@ class CourseCompletionService
             }
         }
 
-        foreach ($lessons as $lesson) {
-            foreach ($lesson->activities->where('is_active', true)->where('is_required', true) as $activity) {
-                if ($enrollment->enrolled_at && $activity->created_at && $activity->created_at->gt($enrollment->enrolled_at)) {
-                    continue;
-                }
+        foreach ($lessons->flatMap(fn ($lesson) => $lesson->activities)->merge(
+            $course->modules->flatMap(fn ($module) => $module->activities)
+        )->where('is_active', true)->where('is_required', true) as $activity) {
+            if ($enrollment->enrolled_at && $activity->created_at && $activity->created_at->gt($enrollment->enrolled_at)) {
+                continue;
+            }
 
-                $acceptedStatuses = $activity->activity_type === 'assignment'
-                    ? ['passed']
-                    : ['completed', 'passed'];
+            $acceptedStatuses = $activity->activity_type === 'assignment'
+                ? ['passed']
+                : ['completed', 'passed'];
 
-                if (! $activity->submissions()
-                    ->where('user_id', $enrollment->user_id)
-                    ->whereIn('status', $acceptedStatuses)
-                    ->exists()) {
-                    return false;
-                }
+            if (! $activity->submissions()
+                ->where('user_id', $enrollment->user_id)
+                ->whereIn('status', $acceptedStatuses)
+                ->exists()) {
+                return false;
             }
         }
 
-        $quizzes = $course->modules->flatMap(fn ($module) => collect([$module->quiz])->merge(
+        $quizzes = $course->modules->flatMap(fn ($module) => collect([$module->quiz])->merge($module->quizzes)->merge(
             $module->lessons->flatMap(fn ($lesson) => $lesson->quizzes)
         ))->filter(fn ($quiz) => $quiz && $quiz->questions->isNotEmpty());
 
         foreach ($quizzes as $quiz) {
-            if ($quiz->lesson_id && $enrollment->enrolled_at && $quiz->created_at && $quiz->created_at->gt($enrollment->enrolled_at)) {
+            if ((! $quiz->is_summative || $quiz->lesson_id) && $enrollment->enrolled_at && $quiz->created_at && $quiz->created_at->gt($enrollment->enrolled_at)) {
                 continue;
             }
 

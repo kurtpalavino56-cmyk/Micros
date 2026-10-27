@@ -163,12 +163,16 @@ class RecordAuditActions
             $model = Enrollment::with(['course', 'user'])->find($this->parameterId($parameters['enrollment'] ?? null));
             $type = 'enrollment';
         } elseif ($routeName === 'faculty.lesson-activity.review') {
-            $model = LessonActivitySubmission::with(['activity.lesson.course', 'student'])->find($this->parameterId($parameters['submissionId'] ?? null));
+            $model = LessonActivitySubmission::with(['activity.lesson.course', 'activity.module.course', 'student'])->find($this->parameterId($parameters['submissionId'] ?? null));
             $type = 'assignment submission';
         } elseif ($routeName === 'faculty.lesson-activity.store') {
             $lessonId = $this->parameterId($parameters['lessonId'] ?? null);
             $model = $lessonId ? LessonActivity::with('lesson.course')->where('lesson_id', $lessonId)->where('title', $request->input('title'))->latest('id')->first() : null;
             $type = 'lesson activity';
+        } elseif ($routeName === 'faculty.module-activity.store') {
+            $moduleId = $this->parameterId($parameters['moduleId'] ?? null);
+            $model = $moduleId ? LessonActivity::with(['module.course'])->where('module_id', $moduleId)->whereNull('lesson_id')->where('title', $request->input('title'))->latest('id')->first() : null;
+            $type = 'module activity';
         } elseif ($routeName === 'faculty.module.store') {
             $model = $id ? CourseModule::with('course')->where('course_id', $id)->where('title', $request->input('module_title'))->latest('id')->first() : null;
             $type = 'module';

@@ -90,7 +90,7 @@ class UserNotificationService
             ->whereIn('id', $storedRecords->where('entity_type', 'enrollment')->pluck('entity_id')->filter()->all())
             ->get()
             ->keyBy('id');
-        $submissionTargets = LessonActivitySubmission::with('activity.lesson.course')
+        $submissionTargets = LessonActivitySubmission::with(['activity.lesson.course', 'activity.module.course'])
             ->whereIn('id', $storedRecords->where('entity_type', 'activity_submission')->pluck('entity_id')->filter()->all())
             ->get()
             ->keyBy('id');
@@ -229,8 +229,10 @@ class UserNotificationService
 
         if ($entityType === 'activity_submission' && $submission?->activity) {
             if ($user->isFaculty()) {
+                $course = $submission->activity->lesson?->course ?? $submission->activity->module?->course;
+
                 return route('faculty.activities.reviews', [
-                    'id' => $submission->activity->lesson->course_id,
+                    'id' => $course?->id,
                     'activity_id' => $submission->lesson_activity_id,
                 ]).'#submission-'.$submission->id;
             }

@@ -1,14 +1,15 @@
 @php
     $latestSubmission = $submissions->first();
+    $previousSubmissions = $submissions->skip(1)->values();
     $activityAccepted = in_array($latestSubmission?->status, ['completed', 'passed'], true);
     $activityPendingReview = $latestSubmission?->status === 'submitted';
-    $canContinue = $lesson_completed || $activityAccepted || $activityPendingReview;
+    $canContinue = $lesson_completed || $activityAccepted || ($activityPendingReview && empty($module_content_step));
 @endphp
-<section class="inline-assessment-panel" data-assessment-kind="activity" data-assessment-id="{{ $activity->id }}" data-can-continue="{{ $canContinue ? '1' : '0' }}">
+<section class="inline-assessment-panel" data-assessment-kind="activity" data-assessment-id="{{ $activity->id }}" data-refresh-url="{{ route('lesson-activities.show', $activity->id) }}" data-module-order="{{ $module_order ?? '' }}" data-module-content-step="{{ ! empty($module_content_step) ? '1' : '0' }}" data-next-url="{{ $module_next_url ?? '' }}" data-can-continue="{{ $canContinue ? '1' : '0' }}">
     <header class="inline-assessment-header">
         <span class="inline-assessment-eyebrow">{{ $activity->is_required ? 'Required activity' : 'Optional activity' }}</span>
         <h2>{{ $activity->title }}</h2>
-        <p>{{ $activity->lesson->title }} · {{ Illuminate\Support\Str::headline($activity->activity_type) }}@if($activity->activity_type === 'assignment') · {{ $activity->max_points ?? 0 }} points · pass {{ $activity->passing_percent ?? 70 }}%@endif</p>
+        <p>{{ $activity->lesson?->title ?? $activity->module?->title }} · {{ Illuminate\Support\Str::headline($activity->activity_type) }}@if($activity->activity_type === 'assignment') · {{ $activity->max_points ?? 0 }} points · pass {{ $activity->passing_percent ?? 70 }}%@endif</p>
     </header>
 
     @if($activity->instructions)
@@ -55,10 +56,10 @@
         </form>
     @endif
 
-    @if($submissions->isNotEmpty())
+    @if($previousSubmissions->isNotEmpty())
         <details class="inline-assessment-attempts">
-            <summary>Previous submissions ({{ $submissions->count() }})</summary>
-            @foreach($submissions as $submission)
+            <summary>Previous submissions ({{ $previousSubmissions->count() }})</summary>
+            @foreach($previousSubmissions as $submission)
                 <div class="inline-assessment-attempt">
                     <strong>Attempt {{ $submission->attempt_number }} · {{ Illuminate\Support\Str::headline($submission->status) }}</strong>
                     @if($submission->score !== null)<span>{{ $submission->score }} / {{ $activity->max_points ?? '—' }}</span>@endif

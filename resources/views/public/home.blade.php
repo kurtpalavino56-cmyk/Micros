@@ -22,7 +22,7 @@
         overflow: visible;
         background: url("{{ asset('Images/Legacy_bldg.jpg') }}") right center / cover no-repeat;
         color: var(--landing-navy);
-        padding: 5.5rem 0 4.5rem;
+        padding: 6rem 0 5rem;
     }
 
     .hero::before,
@@ -57,19 +57,22 @@
         gap: 2.5rem;
     }
 
+    .hero__inner--no-featured {
+        grid-template-columns: 1fr;
+    }
+
     .container.hero__inner {
         width: min(94%, 1320px);
         max-width: 1320px;
     }
 
     .hero__eyebrow {
-        display: inline-flex;
-        align-items: left;
+        display: block;
         gap: 0.5rem;
         /* background: var(--gold); */
         color: var(--landing-royal-blue);
         border-radius: 999px;
-        padding: 0.58rem 1.2rem;
+        padding: 0;
         font-size: 1rem;
         text-transform: uppercase;
         letter-spacing: 0.12em;
@@ -79,7 +82,7 @@
 
     .hero__title {
         font-family: var(--font-display);
-        font-size: clamp(2.5rem, 5vw, 4rem);
+        font-size: clamp(2.75rem, 6vw, 4.75rem);
         line-height: 0.94;
         letter-spacing: -0.05em;
         color: var(--landing-navy);
@@ -94,8 +97,8 @@
     .hero__title .hero__brand-skill { color: var(--landing-gold); }
 
     .hero__subtitle {
-        max-width: 620px;
-        font-size: 1.12rem;
+        max-width: 700px;
+        font-size: 1.2rem;
         color: rgba(7,20,63,.78);
         margin-bottom: 2rem;
     }
@@ -118,7 +121,7 @@
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
         column-gap: 1rem;
-        max-width: 700px;
+        max-width: 800px;
     }
 
     .hero__stat {
@@ -138,7 +141,7 @@
 
     .hero__stat-num {
         font-family: var(--font-display);
-        font-size: clamp(1.6rem, 3vw, 2.2rem);
+        font-size: clamp(1.8rem, 3.3vw, 2.5rem);
         font-weight: 800;
         color: var(--landing-royal-blue);
         line-height: 1;
@@ -646,31 +649,20 @@
     }
 
     .why__icon {
-        display: grid;
-        width: 52px;
-        height: 52px;
-        border-radius: 14px;
-        place-items: center;
+        display: block;
         margin-bottom: 1rem;
-        background: #e8edff;
+        line-height: 0;
     }
 
     .why__icon svg {
-        width: 28px;
-        height: 28px;
+        display: block;
+        width: 40px;
+        height: 40px;
         color: #3155d9;
     }
 
     .why__card:nth-child(2) .why__icon svg {
         color: #159a78;
-    }
-
-    .why__card:nth-child(2) .why__icon {
-        background: #e4f7f1;
-    }
-
-    .why__card:nth-child(3) .why__icon {
-        background: #fff2d8;
     }
 
     .why__card:nth-child(3) .why__icon svg {
@@ -699,7 +691,7 @@
         content: "";
         position: absolute;
         inset: 0;
-        background: linear-gradient(180deg, rgba(7,21,80,0.88), rgba(10,31,110,0.82));
+        background: linear-gradient(180deg, rgba(7,21,80,0.68), rgba(10,31,110,0.62));
     }
 
     .how-it-works > .container {
@@ -1144,10 +1136,10 @@
     $heroCourses = $featuredCourses;
 @endphp
 <section class="hero">
-    <div class="container hero__inner">
+    <div class="container hero__inner {{ count($heroCourses) === 0 ? 'hero__inner--no-featured' : '' }}">
         <div>
             <div class="hero__eyebrow">The Official Platform for PSU Microcredential</div>
-            <h1 class="hero__title">Learn smarter. <span><span class="hero__brand-up">UP</span><span class="hero__brand-skill">Skill</span></span> faster.</h1>
+            <h1 class="hero__title">Learn smarter.<br><span><span class="hero__brand-up">UP</span><span class="hero__brand-skill">Skill</span></span> faster.</h1>
             <p class="hero__subtitle">Explore practical microcredentials designed for students, people, and professionals who want to build real-world skills at PSU.</p>
 
             <div class="hero__actions">
@@ -1175,11 +1167,12 @@
             </div>
         </div>
 
+        @if(count($heroCourses) > 0)
         <div class="hero__panel" aria-label="Course highlights">
             <div class="hero__panel-shell">
                 <div class="hero__panel-body">
                     <div class="hero__carousel" data-carousel role="region" aria-label="Course highlights" aria-roledescription="carousel">
-                        @forelse ($heroCourses as $course)
+                        @foreach ($heroCourses as $course)
                             <a class="hero__slide {{ $loop->first ? 'is-active' : '' }}" href="{{ $course['slug'] ?? route('explore') }}" aria-label="View course: {{ $course['title'] ?? 'Explore our courses' }}" aria-hidden="{{ $loop->first ? 'false' : 'true' }}">
                                 <div class="hero-course-visual" @if(!empty($course['image'])) style="background-image: url('{{ $course['image'] }}')" @endif></div>
                                 <div class="hero-course-content">
@@ -1195,14 +1188,7 @@
                                     </div>
                                 </div>
                             </a>
-                        @empty
-                            <div class="hero-course-empty">
-                                <div class="hero-course-tags"><span>PSU Microcredentials</span></div>
-                                <h2 class="hero-course-title">Find your next skill</h2>
-                                <p>Explore practical courses designed to help you build skills for what comes next.</p>
-                                <a class="hero-course-link" href="{{ route('explore') }}">Browse all courses <span aria-hidden="true">→</span></a>
-                            </div>
-                        @endforelse
+                        @endforeach
                         @if(count($heroCourses) >= 2)
                             @if(count($heroCourses) >= 3)
                                 <button class="hero__side-hit hero__side-hit--prev" type="button" aria-label="Show previous featured course"></button>
@@ -1220,6 +1206,7 @@
                 </div>
             </div>
         </div>
+        @endif
     </div>
 </section>
 
@@ -1257,7 +1244,7 @@
             <article class="why__card">
                 <div class="why__icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M9 4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2h4a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3h4V4Zm2 2h2V5h-2v1Zm-6 2a1 1 0 0 0-1 1v2h7v-1h2v1h7V9a1 1 0 0 0-1-1H5Zm15 5h-5v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-1H4v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5Zm-9 0v1h2v-1h-2Z"/>
+                        <path d="M8 5V3.5A2.5 2.5 0 0 1 10.5 1h3A2.5 2.5 0 0 1 16 3.5V5h3a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3h3Zm2.5 0h3V3.5h-3V5ZM5 7a1 1 0 0 0-1 1v2h16V8a1 1 0 0 0-1-1H5Zm15 5H4v6a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-6Zm-9 0h2v2h-2v-2Z"/>
                     </svg>
                 </div>
                 <h3>Career-ready learning</h3>
@@ -1267,7 +1254,7 @@
             <article class="why__card">
                 <div class="why__icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 3.1c-2.7-2-6.4-2.2-9.4-.7A1.1 1.1 0 0 0 2 3.4v15.1c0 .8.9 1.3 1.6.9 2.6-1.5 5.8-1.3 8.2.5l.2.1.2-.1c2.4-1.8 5.6-2 8.2-.5.7.4 1.6-.1 1.6-.9V3.4c0-.4-.2-.8-.6-1-3-1.5-6.7-1.3-9.4.7Zm-1 13.6c-2.2-1.2-4.8-1.5-7-.8V4.1c2.2-.9 4.8-.6 7 .7v11.9Zm9-.8c-2.2-.7-4.8-.4-7 .8V4.8c2.2-1.3 4.8-1.6 7-.7v11.8Z"/>
+                        <path d="M2 3.2C5.4 1.6 9.1 2.1 12 4c2.9-1.9 6.6-2.4 10-.8v16.1c-3.5-1.2-7-.7-10 1.2-3-1.9-6.5-2.4-10-1.2V3.2Zm2 1.3v13.3c2.7-.6 5.4-.2 7 1V5.6c-2-1.3-4.6-1.7-7-1.1Zm9 1.1v13.2c1.6-1.2 4.3-1.6 7-1V4.5c-2.4-.6-5-.2-7 1.1Z"/>
                     </svg>
                 </div>
                 <h3>Flexible study paths</h3>
