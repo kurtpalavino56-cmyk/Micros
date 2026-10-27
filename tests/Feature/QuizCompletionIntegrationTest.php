@@ -4,6 +4,7 @@ use App\Models\Badge;
 use App\Models\Course;
 use App\Models\CourseLesson;
 use App\Models\CourseModule;
+use App\Models\CourseReview;
 use App\Models\Enrollment;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
@@ -53,7 +54,7 @@ function makeQuizIntegrationCourse(array $courseOverrides = []): array
 
 // ── A. Passing final quiz + all lessons completed ────────────────────────
 
-test('passing the final quiz with all lessons completed automatically triggers completion evaluation', function () {
+test('passing the final quiz with all lessons completed waits for the course review before institutional verification', function () {
     [$course, $module, $lesson, $quiz] = makeQuizIntegrationCourse();
     $student = User::factory()->create();
     $this->actingAs($student);
@@ -75,10 +76,54 @@ test('passing the final quiz with all lessons completed automatically triggers c
         ->and($enrollment->quizzes_completed)->toBeTrue()
         ->and($enrollment->quiz_mastery_met)->toBeTrue()
         ->and($enrollment->academic_unit_confirmation_status)->toBe('pending')
-        ->and($enrollment->completion_status)->toBe(MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
+        ->and($enrollment->completion_status)->toBe(MicrocredentialCompletionService::STATUS_REVIEW_PENDING)
         ->and($enrollment->is_completed)->toBeFalse()
         ->and(DB::table('user_badges')->count())->toBe(0)
         ->and(DB::table('certificates')->count())->toBe(0);
+
+    CourseReview::create([
+        'course_id' => $course->id,
+        'user_id' => $student->id,
+        'rating' => 5,
+        'answers' => [],
+    ]);
+
+    $this->post(route('courses.complete', $course->id))
+        ->assertOk()
+        ->assertJson(['ok' => true, 'pending_review' => true]);
+
+    expect($enrollment->fresh()->completion_status)->toBe(MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION);
+});
+
+test('a failed regular quiz response shows the student answer without exposing the correct answer', function () {
+    [$course, $module, $lesson, $quiz] = makeQuizIntegrationCourse();
+    $student = User::factory()->create();
+    Enrollment::create([
+        'user_id' => $student->id,
+        'course_id' => $course->id,
+        'enrolled_at' => now(),
+        'progress_state' => [],
+    ]);
+    DB::table('lesson_completions')->insert([
+        'user_id' => $student->id,
+        'lesson_id' => $lesson->id,
+        'completed_at' => now(),
+        'server_verified_at' => now(),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+    $question = $quiz->questions()->firstOrFail();
+
+    $response = $this->actingAs($student)->postJson(route('courses.progress', $course->id), [
+        'completed_lessons' => [(string) $lesson->id],
+        'quiz_results' => [0 => ['answers' => [(string) $question->id => 'B']]],
+    ])->assertOk()
+        ->assertJsonPath("quiz_submissions.0.answers.{$question->id}.answer", 'B')
+        ->assertJsonPath("quiz_submissions.0.answers.{$question->id}.correct", false)
+        ->assertJsonMissingPath("quiz_submissions.0.answers.{$question->id}.correct_answer");
+
+    expect($question->correct_answer)->toBe('A')
+        ->and($response->json("quiz_submissions.0.answers.{$question->id}"))->not->toHaveKey('correct_answer');
 });
 
 // ── B. Failing quiz ────────────────────────────────────────────────────
@@ -144,11 +189,9 @@ test('passing the quiz on a course requiring faculty verification stops at facul
     $enrollment = Enrollment::where('user_id', $student->id)->where('course_id', $course->id)->first();
 
     expect($enrollment->faculty_verification_status)->toBe('pending')
-        // Must NOT have skipped ahead to academic-unit confirmation being
-        // the only thing shown as pending — faculty is genuinely the
-        // first outstanding gate here, though both remain independent
-        // fields and academic-unit confirmation is also initialized.
-        ->and($enrollment->completion_status)->toBe(MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
+        // Faculty and academic-unit fields are initialized, but neither
+        // institutional review can begin before course-review submission.
+        ->and($enrollment->completion_status)->toBe(MicrocredentialCompletionService::STATUS_REVIEW_PENDING)
         ->and(DB::table('user_badges')->count())->toBe(0)
         ->and(DB::table('certificates')->count())->toBe(0);
 });
@@ -172,6 +215,16 @@ test('after academic-unit confirmation exactly one badge and one certificate are
 
     $enrollment = Enrollment::where('user_id', $student->id)->where('course_id', $course->id)->first();
     expect(DB::table('user_badges')->count())->toBe(0);
+
+    CourseReview::create([
+        'course_id' => $course->id,
+        'user_id' => $student->id,
+        'rating' => 5,
+        'answers' => [],
+    ]);
+    $this->post(route('courses.complete', $course->id))
+        ->assertOk()
+        ->assertJson(['ok' => true, 'pending_review' => true]);
 
     $admin = User::factory()->admin()->create();
     app(MicrocredentialCompletionService::class)->recordAcademicUnitConfirmation($enrollment->fresh(), $admin->id, 'confirmed');

@@ -635,6 +635,18 @@
         :where(body[data-admin-page="admin-courses-enrollments"]) .enrollment-button.confirm{border-color:var(--enrollment-blue);background:var(--enrollment-blue);color:#fff;}
         :where(body[data-admin-page="admin-courses-enrollments"]) .enrollment-button.confirm:hover{background:#093f85;}
         :where(body[data-admin-page="admin-courses-enrollments"]) .enrollment-button:hover{background:#f5f7fa;}
+        :where(body[data-admin-page="admin-courses-enrollments"]) .enrollment-button.grant{border-color:var(--enrollment-blue);color:var(--enrollment-blue);}
+        :where(body[data-admin-page="admin-courses-enrollments"]) .enrollment-button.grant:hover{background:#edf4ff;}
+        :where(body[data-admin-page="admin-courses-enrollments"]) .grant-redo-dialog{position:fixed;inset:0;margin:auto;width:min(92vw,480px);max-height:min(90vh,640px);overflow:auto;border:1px solid var(--enrollment-line);border-radius:12px;padding:0;color:var(--enrollment-ink);box-shadow:0 20px 60px rgba(9,37,95,.24);}
+        :where(body[data-admin-page="admin-courses-enrollments"]) .grant-redo-dialog::backdrop{background:rgba(15,23,42,.48);}
+        :where(body[data-admin-page="admin-courses-enrollments"]) .grant-redo-dialog form{display:grid;gap:12px;padding:22px;}
+        :where(body[data-admin-page="admin-courses-enrollments"]) .grant-redo-dialog h2{margin:0;color:var(--enrollment-navy);font-size:1.1rem;}
+        :where(body[data-admin-page="admin-courses-enrollments"]) .grant-redo-dialog p{margin:0;color:var(--enrollment-muted);font-size:.86rem;line-height:1.5;}
+        :where(body[data-admin-page="admin-courses-enrollments"]) .grant-redo-dialog label{font-size:.82rem;font-weight:700;}
+        :where(body[data-admin-page="admin-courses-enrollments"]) .grant-redo-dialog textarea{width:100%;min-height:100px;padding:10px 12px;border:1px solid var(--enrollment-line);border-radius:7px;font:inherit;resize:vertical;}
+        :where(body[data-admin-page="admin-courses-enrollments"]) .grant-redo-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px;}
+        :where(body[data-admin-page="admin-courses-enrollments"]) .grant-redo-actions .grant{background:var(--enrollment-blue);color:#fff;}
+        :where(body[data-admin-page="admin-courses-enrollments"]) .grant-redo-actions .grant:hover{background:#093f85;}
         :where(body[data-admin-page="admin-courses-enrollments"]) .enrollment-empty{padding:36px 20px;color:var(--enrollment-muted);font-size:.9rem;text-align:center;}
         :where(body[data-admin-page="admin-courses-enrollments"]) .enrollment-pagination{border-top:1px solid var(--enrollment-line);}
         @media(max-width:700px){:where(body[data-admin-page="admin-courses-enrollments"]) .enrollment-main{padding:22px 14px 40px!important;}:where(body[data-admin-page="admin-courses-enrollments"]) .enrollment-heading{flex-direction:column;}:where(body[data-admin-page="admin-courses-enrollments"]) .enrollment-heading h1{font-size:1.35rem;}:where(body[data-admin-page="admin-courses-enrollments"]) .enrollment-counts{justify-content:flex-start;}:where(body[data-admin-page="admin-courses-enrollments"]) .enrollment-filter-row{align-items:stretch;flex-direction:column;gap:10px;padding-bottom:12px;}:where(body[data-admin-page="admin-courses-enrollments"]) .enrollment-tabs{gap:14px;}:where(body[data-admin-page="admin-courses-enrollments"]) .enrollment-course-filter{width:100%;flex-wrap:wrap;}:where(body[data-admin-page="admin-courses-enrollments"]) .enrollment-course-filter label{width:100%;}:where(body[data-admin-page="admin-courses-enrollments"]) .enrollment-course-filter select{flex:1;min-width:0;}}

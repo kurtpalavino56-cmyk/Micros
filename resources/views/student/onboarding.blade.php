@@ -20,11 +20,10 @@
         </div>
 
         @if ($errors->any())
-            <div class="validation-message" id="server-errors">
-                <ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
-            </div>
-        @else
-            <div class="validation-message" id="server-errors" aria-live="assertive"></div>
+            @include('components.flash-toast', [
+                'message' => implode(' · ', $errors->all()),
+                'type' => 'error',
+            ])
         @endif
 
         <form method="POST" action="{{ route('profile.complete') }}" id="student-onboarding-form" novalidate>

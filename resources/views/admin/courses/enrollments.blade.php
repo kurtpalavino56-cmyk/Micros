@@ -89,6 +89,9 @@
                                                 @if($enrollment->academic_confirmation_actionable)
                                                     <a class="enrollment-button review" href="{{ route('admin.enrollments.show', $enrollment->id) }}">Review</a>
                                                 @endif
+                                                @if($filter === 'denied' && $enrollment->grant_redo_actionable)
+                                                    <button class="enrollment-button grant" type="button" data-grant-redo-url="{{ route('admin.enrollments.grant-redo', $enrollment->id) }}" data-student-name="{{ $enrollment->student_name }}" data-course-title="{{ $enrollment->course_title }}">Grant another chance</button>
+                                                @endif
                                             </div>
                                         </td>
                                     </tr>
@@ -100,7 +103,42 @@
                     </div>
                     @include('components.pagination', ['paginator' => $enrollments, 'ariaLabel' => 'Enrollment pagination'])
                 </section>
+                <dialog class="grant-redo-dialog" id="grant-redo-dialog" aria-labelledby="grant-redo-title" aria-describedby="grant-redo-description">
+                    <form method="POST" id="grant-redo-form" action="">
+                        @csrf
+                        <h2 id="grant-redo-title">Grant another chance</h2>
+                        <p id="grant-redo-description"></p>
+                        <label for="grant-redo-reason">Reason for granting another chance</label>
+                        <textarea id="grant-redo-reason" name="reason" rows="4" maxlength="1000" required></textarea>
+                        <div class="grant-redo-actions">
+                            <button class="enrollment-button" type="button" id="grant-redo-cancel">Cancel</button>
+                            <button class="enrollment-button grant" type="submit">Grant and reset progress</button>
+                        </div>
+                    </form>
+                </dialog>
             </div>
         </main>
     </div>
+    <script>
+        (function () {
+            const dialog = document.getElementById('grant-redo-dialog');
+            const form = document.getElementById('grant-redo-form');
+            const description = document.getElementById('grant-redo-description');
+            const reason = document.getElementById('grant-redo-reason');
+
+            document.querySelectorAll('[data-grant-redo-url]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    form.action = button.dataset.grantRedoUrl;
+                    description.textContent = button.dataset.studentName + ' will have to restart ' + button.dataset.courseTitle + ' from the beginning. Explain why this new attempt is being granted.';
+                    reason.value = '';
+                    dialog.showModal();
+                    reason.focus();
+                });
+            });
+
+            document.getElementById('grant-redo-cancel').addEventListener('click', function () {
+                dialog.close();
+            });
+        }());
+    </script>
 </x-admin.layout>

@@ -174,6 +174,63 @@ test('completion service includes the final module quiz in quiz mastery', functi
     expect($enrollment->fresh()->quiz_mastery_met)->toBeTrue();
 });
 
+test('a failed final exam response shows the student answer without exposing the correct answer', function () {
+    [, $student, $course] = finalExamEvaluationFixture();
+    $module = CourseModule::create(['course_id' => $course->id, 'title' => 'Final Exam', 'order' => 1, 'is_final' => true]);
+    $quiz = finalExamEvaluationQuiz($course, $module, 'Final Exam');
+    $question = $quiz->questions()->firstOrFail();
+    Enrollment::create([
+        'user_id' => $student->id,
+        'course_id' => $course->id,
+        'enrolled_at' => now(),
+        'progress_state' => [],
+    ]);
+
+    $response = $this->actingAs($student)->postJson(route('courses.progress', $course->id), [
+        'completed_lessons' => [],
+        'quiz_results' => [0 => ['answers' => [(string) $question->id => 'B']]],
+    ])->assertOk()
+        ->assertJsonPath("quiz_submissions.0.answers.{$question->id}.answer", 'B')
+        ->assertJsonPath("quiz_submissions.0.answers.{$question->id}.correct", false)
+        ->assertJsonMissingPath("quiz_submissions.0.answers.{$question->id}.correct_answer");
+
+    expect($question->correct_answer)->toBe('A')
+        ->and($response->json("quiz_submissions.0.answers.{$question->id}"))->not->toHaveKey('correct_answer');
+});
+
+test('the course player provides a visible retake countdown for a failed final exam', function () {
+    [, $student, $course] = finalExamEvaluationFixture();
+    $module = CourseModule::create(['course_id' => $course->id, 'title' => 'Final Exam', 'order' => 1, 'is_final' => true]);
+    $quiz = finalExamEvaluationQuiz($course, $module, 'Final Exam');
+    $question = $quiz->questions()->firstOrFail();
+    Enrollment::create([
+        'user_id' => $student->id,
+        'course_id' => $course->id,
+        'enrolled_at' => now(),
+        'progress_state' => [],
+    ]);
+    $attempt = QuizAttempt::create([
+        'user_id' => $student->id,
+        'quiz_id' => $quiz->id,
+        'score' => 0,
+        'passed' => false,
+        'started_at' => now(),
+        'submitted_at' => now(),
+    ]);
+    QuizAttemptAnswer::create([
+        'quiz_attempt_id' => $attempt->id,
+        'question_id' => $question->id,
+        'answer' => 'B',
+        'is_correct' => false,
+    ]);
+
+    $response = $this->actingAs($student)->get(route('courses.learn', $course->id))->assertOk();
+
+    expect($response->viewData('quiz_retake_statuses')[(string) $quiz->id]['unlock'])->toBeGreaterThan(now()->getTimestamp() * 1000)
+        ->and($response->viewData('quiz_retake_statuses')[(string) $quiz->id]['passed'])->toBeFalse();
+    $response->assertSee('data-quiz-retake-status="'.$quiz->id.'"', false);
+});
+
 test('students may submit one course evaluation only after passing the final exam', function () {
     [, $student, $course] = finalExamEvaluationFixture();
     $module = CourseModule::create(['course_id' => $course->id, 'title' => 'Final Exam', 'order' => 1, 'is_final' => true]);

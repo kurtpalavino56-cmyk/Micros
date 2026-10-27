@@ -94,6 +94,7 @@ class AppServiceProvider extends ServiceProvider
                         $counts['admin_completion_reviews'] = Enrollment::query()
                             ->where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
                             ->where('academic_unit_confirmation_status', 'pending')
+                            ->whereHas('course.reviews', fn ($query) => $query->whereColumn('course_reviews.user_id', 'enrollments.user_id'))
                             ->count();
                     }
 

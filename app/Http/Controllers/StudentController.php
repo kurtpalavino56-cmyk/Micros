@@ -46,6 +46,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * StudentController — every Student_* page, now fed entirely from the
@@ -903,6 +904,28 @@ class StudentController extends Controller
             }
         }
 
+        $courseQuizzes = $course->modules
+            ->flatMap(fn ($module) => collect([$module->quiz])
+                ->merge($module->quizzes)
+                ->merge($module->lessons->flatMap(fn (CourseLesson $lesson) => $lesson->quizzes)))
+            ->filter(fn ($quiz): bool => $quiz instanceof Quiz)
+            ->unique('id')
+            ->values();
+        $quizRetakeStatuses = $courseQuizzes->mapWithKeys(function (Quiz $quiz) use ($auth): array {
+            $status = $this->quizAttempts->retakeStatus($quiz, (int) $auth->id);
+            $latestAttempt = QuizAttempt::query()
+                ->where('user_id', $auth->id)
+                ->where('quiz_id', $quiz->id)
+                ->latest('submitted_at')
+                ->first();
+
+            return [(string) $quiz->id => [
+                'unlock' => $status['unlock'],
+                'exhausted' => $status['exhausted'],
+                'passed' => (bool) $latestAttempt?->passed,
+            ]];
+        })->all();
+
         // Faculty may have added or removed questions since the student last
         // played. Recompute against the CURRENT quizzes (minus any scores
         // invalidated by an edit) and persist it, so the course cards, the
@@ -981,6 +1004,7 @@ class StudentController extends Controller
                                 'answer' => $submission?->response_text,
                                 'file_submitted' => (bool) $submission?->submission_path,
                                 'file_url' => $submission ? route('lesson-activities.download', $submission->id) : null,
+                                'file_view_url' => $submission ? route('lesson-activities.view', $submission->id) : null,
                                 'status' => $submission?->status,
                             ];
                         })->values()->all(),
@@ -1048,6 +1072,7 @@ class StudentController extends Controller
             ],
             'quiz_unlocks' => (object) $quizUnlocks,
             'quiz_attempts' => (object) $quizAttempts,
+            'quiz_retake_statuses' => $quizRetakeStatuses,
         ]);
     }
 
@@ -1751,6 +1776,9 @@ class StudentController extends Controller
                 'file_url' => $submission->submission_path
                     ? route('lesson-activities.download', $submission->id)
                     : null,
+                'file_view_url' => $submission->submission_path
+                    ? route('lesson-activities.view', $submission->id)
+                    : null,
                 'progress_percent' => (int) $enrollment->fresh()->progress_percent,
                 'progress_breakdown' => $this->progressService->progressBreakdown($course, (int) $student->id, $enrollment->enrolled_at),
             ]);
@@ -1857,11 +1885,13 @@ class StudentController extends Controller
     {
         $module->loadMissing(['activities.submissions', 'quizzes.questions', 'quiz.questions']);
 
-        $requirements = $module->activities->where('is_active', true)
+        $requirements = $module->activities->where('is_active', true)->toBase()
             ->map(fn ($item) => ['type' => 'activity', 'order' => (int) $item->module_order, 'item' => $item])
-            ->merge($module->quizzes->where('is_active', true)->filter(fn (Quiz $quiz): bool => $quiz->questions->isNotEmpty())
+            ->concat($module->quizzes->where('is_active', true)
+                ->filter(fn (Quiz $quiz): bool => $quiz->questions->isNotEmpty())
                 ->map(fn ($item) => ['type' => 'quiz', 'order' => (int) $item->module_order, 'item' => $item]))
-            ->sortBy('order');
+            ->sortBy('order')
+            ->values();
 
         foreach ($requirements as $requirement) {
             if ($requirement['order'] <= $moduleOrder) {
@@ -1902,6 +1932,26 @@ class StudentController extends Controller
         abort_unless($submission->submission_path && Storage::disk('local')->exists($submission->submission_path), 404);
 
         return Storage::disk('local')->download($submission->submission_path, basename($submission->submission_path));
+    }
+
+    public function viewLessonActivitySubmission(int $submissionId): BinaryFileResponse
+    {
+        $student = Auth::user();
+        $submission = LessonActivitySubmission::with(['activity.lesson.course', 'activity.module.course'])->findOrFail($submissionId);
+        $isStudentOwner = (int) $submission->user_id === (int) $student->id;
+        $course = $submission->activity->lesson?->course ?? $submission->activity->module?->course;
+        $isFacultyOwner = $student->isFaculty() && $course && (int) $course->created_by === (int) $student->id;
+        abort_unless($isStudentOwner || $isFacultyOwner, 403);
+        abort_unless($submission->submission_path && Storage::disk('local')->exists($submission->submission_path), 404);
+
+        $path = Storage::disk('local')->path($submission->submission_path);
+        $mimeType = Storage::disk('local')->mimeType($submission->submission_path) ?: 'application/octet-stream';
+
+        return response()->file($path, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="'.addslashes(basename($submission->submission_path)).'"',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     // ── Real-time progress saving ───────────────────────────────────────
@@ -2211,6 +2261,12 @@ class StudentController extends Controller
                 $submission['message'] = $submission['unlock'] !== null
                     ? 'This quiz is in its retake lockout period.'
                     : 'No attempt is currently available. Check the attempt limit and retake lockout.';
+            }
+            if (isset($submission['answers']) && is_array($submission['answers'])) {
+                foreach ($submission['answers'] as &$answer) {
+                    unset($answer['correct_answer']);
+                }
+                unset($answer);
             }
             $quizSubmissions[(string) $moduleIndex] = $submission;
             if (! $submission['blocked'] && (int) $quiz->time_limit > 0) {

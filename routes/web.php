@@ -204,12 +204,16 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':admin', R
         ->whereNumber('enrollment')->name('admin.enrollments.show');
     Route::get('/Admin-enrollments/submissions/{submission}/download', [AdminController::class, 'downloadEnrollmentSubmission'])
         ->whereNumber('submission')->name('admin.enrollments.submissions.download');
+    Route::get('/Admin-enrollments/submissions/{submission}/view', [AdminController::class, 'viewEnrollmentSubmission'])
+        ->whereNumber('submission')->name('admin.enrollments.submissions.view');
     Route::get('/Admin-courses/{id}', [AdminController::class, 'showCourse'])
         ->whereNumber('id')->name('admin.courses.show');
     Route::get('/Admin-courses/{id}/enrollments', [AdminController::class, 'courseEnrollmentReviews'])
         ->whereNumber('id')->name('admin.courses.enrollments');
     Route::post('/Admin-courses/{id}/enrollments/{enrollment}/academic-confirm', [AdminController::class, 'academicConfirmEnrollment'])
         ->whereNumber(['id', 'enrollment'])->name('admin.enrollments.academic-confirm');
+    Route::post('/Admin-enrollments/{enrollment}/grant-redo', [AdminController::class, 'grantEnrollmentRedo'])
+        ->whereNumber('enrollment')->name('admin.enrollments.grant-redo');
     Route::post('/Admin-courses/{id}/approve', [AdminController::class, 'approveCourse'])
         ->whereNumber('id')->name('admin.courses.approve');
     Route::post('/Admin-courses/{id}/deny', [AdminController::class, 'denyCourse'])
@@ -316,6 +320,8 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':student',
         ->whereNumber('id')->name('lesson-activities.submit');
     Route::get('/lesson-activity-submissions/{submissionId}/download', [StudentController::class, 'downloadLessonActivitySubmission'])
         ->whereNumber('submissionId')->name('lesson-activities.download');
+    Route::get('/lesson-activity-submissions/{submissionId}/view', [StudentController::class, 'viewLessonActivitySubmission'])
+        ->whereNumber('submissionId')->name('lesson-activities.view');
 
     Route::get('/courses/enrolled', [StudentController::class, 'enrolledCourses'])->name('courses.enrolled');
     Route::get('/badges', [StudentController::class, 'badges'])->name('badges.index');
@@ -438,6 +444,8 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty',
         ->whereNumber('id')->whereNumber('activityId')->whereNumber('submissionId')->name('faculty.lesson-activity.review');
     Route::get('/Faculty-lesson-activity-submissions/{submissionId}/download', [StudentController::class, 'downloadLessonActivitySubmission'])
         ->whereNumber('submissionId')->name('faculty.lesson-activities.download');
+    Route::get('/Faculty-lesson-activity-submissions/{submissionId}/view', [StudentController::class, 'viewLessonActivitySubmission'])
+        ->whereNumber('submissionId')->name('faculty.lesson-activities.view');
 
     Route::get('/Faculty-mycourses/manage/{id}/modules/{moduleIndex}/quiz/create', [FacultyController::class, 'quizCreate'])
         ->whereNumber('id')->whereNumber('moduleIndex')->name('faculty.quiz.create');

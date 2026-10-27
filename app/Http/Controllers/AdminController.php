@@ -40,6 +40,7 @@ use App\Support\UserPresenter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -51,6 +52,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -207,11 +209,14 @@ class AdminController extends Controller
         $pendingCompletionReviewsThisWeek = Enrollment::where(
             'completion_status',
             MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION
-        )->where('academic_unit_confirmation_status', 'pending')->where('updated_at', '>=', $weekStart)->count();
+        )->where('academic_unit_confirmation_status', 'pending')
+            ->whereHas('course.reviews', fn (Builder $query) => $query->whereColumn('course_reviews.user_id', 'enrollments.user_id'))
+            ->where('updated_at', '>=', $weekStart)->count();
         $pendingCompletionReviewsLastWeek = Enrollment::where(
             'completion_status',
             MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION
         )->where('academic_unit_confirmation_status', 'pending')->where('updated_at', '>=', $previousWeekStart)
+            ->whereHas('course.reviews', fn (Builder $query) => $query->whereColumn('course_reviews.user_id', 'enrollments.user_id'))
             ->where('updated_at', '<', $weekStart)->count();
         $credentialsThisMonth = DB::table('user_badges')->where('status', 'active')
             ->where('earned_at', '>=', $monthStart)->count()
@@ -226,6 +231,7 @@ class AdminController extends Controller
             MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION
         )
             ->where('academic_unit_confirmation_status', 'pending')
+            ->whereHas('course.reviews', fn (Builder $query) => $query->whereColumn('course_reviews.user_id', 'enrollments.user_id'))
             ->count();
 
         $stats = [
@@ -1145,6 +1151,22 @@ class AdminController extends Controller
         return Storage::disk('local')->download($submission->submission_path, basename($submission->submission_path));
     }
 
+    public function viewEnrollmentSubmission(LessonActivitySubmission $submission): BinaryFileResponse
+    {
+        $submission->load(['activity.lesson.course', 'activity.module.course']);
+        abort_unless($submission->activity?->lesson?->course || $submission->activity?->module?->course, 404);
+        abort_unless($submission->submission_path && Storage::disk('local')->exists($submission->submission_path), 404);
+
+        $path = Storage::disk('local')->path($submission->submission_path);
+        $mimeType = Storage::disk('local')->mimeType($submission->submission_path) ?: 'application/octet-stream';
+
+        return response()->file($path, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="'.addslashes(basename($submission->submission_path)).'"',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
     private function enrollmentReviewPage(?object $course, ?int $courseId, ?Request $request = null): View
     {
         $filter = $request?->query('filter', 'all') ?? 'all';
@@ -1190,7 +1212,8 @@ class AdminController extends Controller
         return match ($filter) {
             'pending' => $query
                 ->where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
-                ->where('academic_unit_confirmation_status', 'pending'),
+                ->where('academic_unit_confirmation_status', 'pending')
+                ->whereHas('course.reviews', fn (Builder $reviewQuery) => $reviewQuery->whereColumn('course_reviews.user_id', 'enrollments.user_id')),
             'approved' => $query
                 ->where('completion_status', MicrocredentialCompletionService::STATUS_COMPLETED)
                 ->where('academic_unit_confirmation_status', 'confirmed'),
@@ -1225,8 +1248,106 @@ class AdminController extends Controller
             'faculty_verified_by' => $enrollment->facultyVerifier->name ?? null,
             'academic_unit_confirmed_by' => $enrollment->academicUnitConfirmer->name ?? null,
             'academic_confirmation_actionable' => $actionable,
+            'grant_redo_actionable' => $enrollment->completion_status === MicrocredentialCompletionService::STATUS_REJECTED
+                || $enrollment->faculty_verification_status === 'rejected'
+                || $enrollment->academic_unit_confirmation_status === 'rejected',
             'institutional_label' => $institutionalLabel,
         ];
+    }
+
+    public function grantEnrollmentRedo(
+        Request $request,
+        Enrollment $enrollment,
+        UserNotificationService $userNotifications,
+    ): RedirectResponse {
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $submissionPaths = [];
+        $courseTitle = '';
+        $enrollment = DB::transaction(function () use ($enrollment, &$submissionPaths, &$courseTitle): Enrollment {
+            $lockedEnrollment = Enrollment::query()
+                ->with('course')
+                ->lockForUpdate()
+                ->findOrFail($enrollment->id);
+            $isRejected = $lockedEnrollment->completion_status === MicrocredentialCompletionService::STATUS_REJECTED
+                || $lockedEnrollment->faculty_verification_status === 'rejected'
+                || $lockedEnrollment->academic_unit_confirmation_status === 'rejected';
+
+            abort_unless($isRejected && $lockedEnrollment->course, 404);
+
+            $course = $lockedEnrollment->course;
+            $courseTitle = $course->title;
+            $lessonIds = DB::table('course_lessons')->where('course_id', $course->id)->pluck('id');
+            $moduleIds = DB::table('course_modules')->where('course_id', $course->id)->pluck('id');
+            $activityIds = DB::table('lesson_activities')
+                ->where(function ($query) use ($lessonIds, $moduleIds): void {
+                    $query->whereIn('lesson_id', $lessonIds)
+                        ->orWhereIn('module_id', $moduleIds);
+                })
+                ->pluck('id');
+            $quizIds = DB::table('quizzes')->where('course_id', $course->id)->pluck('id');
+
+            $submissions = DB::table('lesson_activity_submissions')
+                ->where('user_id', $lockedEnrollment->user_id)
+                ->whereIn('lesson_activity_id', $activityIds);
+            $submissionPaths = (clone $submissions)->whereNotNull('submission_path')->pluck('submission_path')->all();
+            $submissions->delete();
+
+            DB::table('lesson_completions')
+                ->where('user_id', $lockedEnrollment->user_id)
+                ->whereIn('lesson_id', $lessonIds)
+                ->delete();
+            DB::table('quiz_attempts')
+                ->where('user_id', $lockedEnrollment->user_id)
+                ->whereIn('quiz_id', $quizIds)
+                ->delete();
+            DB::table('course_reviews')
+                ->where('user_id', $lockedEnrollment->user_id)
+                ->where('course_id', $course->id)
+                ->delete();
+
+            $lockedEnrollment->fill([
+                'enrolled_at' => now(),
+                'is_completed' => false,
+                'progress_percent' => 0,
+                'progress_state' => [],
+                'completion_status' => MicrocredentialCompletionService::STATUS_IN_PROGRESS,
+                'lessons_completed' => false,
+                'quizzes_completed' => false,
+                'quiz_mastery_met' => false,
+                'competency_mastery_met' => false,
+                'manual_assessment_status' => $course->manual_assessment_required ? 'pending' : 'not_required',
+                'attendance_status' => $course->attendance_requirement_enabled ? 'pending' : 'not_required',
+                'performance_status' => $course->performance_requirement_enabled ? 'pending' : 'not_required',
+                'administrative_status' => $course->admin_requirement_enabled ? 'pending' : 'not_required',
+                'faculty_verification_status' => $course->requires_faculty_verification ? 'pending' : 'not_required',
+                'faculty_verified_by' => null,
+                'faculty_verified_at' => null,
+                'academic_unit_confirmation_status' => 'pending',
+                'academic_unit_confirmed_by' => null,
+                'academic_unit_confirmed_at' => null,
+                'completed_at' => null,
+            ])->save();
+
+            return $lockedEnrollment;
+        });
+
+        foreach ($submissionPaths as $submissionPath) {
+            Storage::disk('local')->delete($submissionPath);
+        }
+
+        $userNotifications->createForUser(
+            (int) $enrollment->user_id,
+            'Another course attempt was granted',
+            'You may now retake "'.$courseTitle.'" from the beginning. Your previous course progress was reset. Reason: '.$data['reason'],
+            'enrollment',
+            'enrollment',
+            (int) $enrollment->id,
+        );
+
+        return redirect()->back()->with('success', 'Another course attempt was granted and progress was reset.');
     }
 
     /**
