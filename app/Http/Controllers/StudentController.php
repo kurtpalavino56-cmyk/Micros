@@ -1389,6 +1389,24 @@ class StudentController extends Controller
         return false;
     }
 
+    /**
+     * Module order is nullable and uses spaced values. Only relative order matters.
+     */
+    private function moduleOrderOrNull(mixed $value): ?int
+    {
+        return $value === null || $value === '' ? null : (int) $value;
+    }
+
+    /**
+     * Unknown candidate positions count as earlier so they remain a prerequisite.
+     */
+    private function precedesModuleOrder(mixed $candidate, int $target): bool
+    {
+        $candidateOrder = $this->moduleOrderOrNull($candidate);
+
+        return $candidateOrder === null || $candidateOrder < $target;
+    }
+
     private function quizIsUnlockedForStudent(Quiz $quiz, int $userId): bool
     {
         $course = Course::with(['modules.quiz', 'modules.quizzes.questions', 'modules.activities.submissions', 'modules.lessons.quizzes.questions', 'modules.lessons.activities'])
@@ -1397,6 +1415,14 @@ class StudentController extends Controller
         if (! $enrollment) {
             return false;
         }
+
+        $isModuleLevelQuiz = $quiz->lesson_id === null;
+        $quizOrder = $this->moduleOrderOrNull($quiz->module_order);
+        if ($isModuleLevelQuiz && ! $quiz->is_summative && $quizOrder === null) {
+            return false;
+        }
+
+        $requiredThroughOrder = ($quiz->is_summative || $quizOrder === null) ? PHP_INT_MAX : $quizOrder;
         $targetModuleId = $quiz->module_id ?: $quiz->lesson?->module_id;
         $targetModuleIndex = $course->modules->search(fn ($module): bool => (int) $module->id === (int) $targetModuleId);
         if ($targetModuleIndex === false) {
@@ -1405,10 +1431,17 @@ class StudentController extends Controller
 
         foreach ($course->modules->take($targetModuleIndex + 1) as $moduleIndex => $module) {
             foreach ($module->lessons as $lesson) {
-                if ((int) $lesson->id === (int) $quiz->lesson_id) {
+                if ($quiz->lesson_id !== null && (int) $lesson->id === (int) $quiz->lesson_id) {
                     return ($this->lessonIsServerVerified((int) $lesson->id, $userId)
                             || session()->has($this->lessonContinuedSessionKey($userId, (int) $course->id, (int) $lesson->id)))
                         && $this->lessonRequirementsBeforeQuizSatisfied($lesson, $quiz, $userId);
+                }
+
+                if ($moduleIndex === $targetModuleIndex
+                    && $isModuleLevelQuiz
+                    && ! $quiz->is_summative
+                    && ! $this->precedesModuleOrder($lesson->module_order, $requiredThroughOrder)) {
+                    continue;
                 }
 
                 if (! $this->lessonIsServerVerified((int) $lesson->id, $userId)
@@ -1436,14 +1469,24 @@ class StudentController extends Controller
             return false;
         }
 
-        $requiredThroughOrder = $quiz->is_summative ? PHP_INT_MAX : (int) $quiz->module_order;
-        foreach ($module->activities->where('is_active', true)->where('is_required', true)->where('module_order', '<', $requiredThroughOrder) as $activity) {
+        $earlierActivities = $module->activities
+            ->where('is_active', true)
+            ->where('is_required', true)
+            ->filter(fn ($candidate): bool => $this->precedesModuleOrder($candidate->module_order, $requiredThroughOrder));
+
+        foreach ($earlierActivities as $activity) {
             $acceptedStatuses = $activity->activity_type === 'assignment' ? ['passed'] : ['completed', 'passed'];
             if (! $activity->submissions()->where('user_id', $userId)->whereIn('status', $acceptedStatuses)->exists()) {
                 return false;
             }
         }
-        foreach ($module->quizzes->where('is_active', true)->where('module_order', '<', $requiredThroughOrder) as $earlierQuiz) {
+
+        $earlierQuizzes = $module->quizzes
+            ->where('is_active', true)
+            ->reject(fn ($candidate): bool => (int) $candidate->id === (int) $quiz->id)
+            ->filter(fn ($candidate): bool => $this->precedesModuleOrder($candidate->module_order, $requiredThroughOrder));
+
+        foreach ($earlierQuizzes as $earlierQuiz) {
             if ($earlierQuiz->questions->isNotEmpty() && ! QuizAttempt::query()->where('quiz_id', $earlierQuiz->id)
                 ->where('user_id', $userId)->where('passed', true)->whereNotNull('submitted_at')->exists()) {
                 return false;
@@ -1831,6 +1874,11 @@ class StudentController extends Controller
             return false;
         }
 
+        $activityOrder = $this->moduleOrderOrNull($activity->module_order);
+        if ($activityOrder === null) {
+            return false;
+        }
+
         $modules = $course->modules->reject(fn (CourseModule $candidate): bool => $candidate->is_final)->values();
         $moduleIndex = $modules->search(fn (CourseModule $candidate): bool => (int) $candidate->id === (int) $module->id);
         if ($moduleIndex === false) {
@@ -1843,7 +1891,9 @@ class StudentController extends Controller
             }
         }
 
-        $lessonIds = $module->lessons->pluck('id');
+        $lessonIds = $module->lessons
+            ->filter(fn ($lesson): bool => $this->precedesModuleOrder($lesson->module_order, $activityOrder))
+            ->pluck('id');
         if ($lessonIds->isNotEmpty()) {
             $verifiedCount = DB::table('lesson_completions')->where('user_id', $userId)->whereIn('lesson_id', $lessonIds)
                 ->whereNotNull('server_verified_at')->distinct()->count('lesson_id');
@@ -1852,14 +1902,25 @@ class StudentController extends Controller
             }
         }
 
-        foreach ($module->activities->where('is_active', true)->where('is_required', true)->where('module_order', '<', $activity->module_order) as $previousActivity) {
+        $earlierActivities = $module->activities
+            ->where('is_active', true)
+            ->where('is_required', true)
+            ->reject(fn ($candidate): bool => (int) $candidate->id === (int) $activity->id)
+            ->filter(fn ($candidate): bool => $this->precedesModuleOrder($candidate->module_order, $activityOrder));
+
+        foreach ($earlierActivities as $previousActivity) {
             $accepted = $previousActivity->activity_type === 'assignment' ? ['passed'] : ['completed', 'passed'];
             if (! $previousActivity->submissions()->where('user_id', $userId)->whereIn('status', $accepted)->exists()) {
                 return false;
             }
         }
 
-        foreach ($module->quizzes->where('is_active', true)->where('module_order', '<', $activity->module_order) as $previousQuiz) {
+        $earlierQuizzes = $module->quizzes
+            ->where('is_active', true)
+            ->where('is_summative', false)
+            ->filter(fn ($candidate): bool => $this->precedesModuleOrder($candidate->module_order, $activityOrder));
+
+        foreach ($earlierQuizzes as $previousQuiz) {
             if ($previousQuiz->questions->isNotEmpty() && ! QuizAttempt::query()->where('quiz_id', $previousQuiz->id)
                 ->where('user_id', $userId)->where('passed', true)->whereNotNull('submitted_at')->exists()) {
                 return false;
