@@ -64,47 +64,47 @@
                 </div>
 
                 <div class="lesson-list {{ $mIndex===0?'open':'' }}" id="mod-{{ $mIndex }}">
-                    @foreach($module->lessons ?? [] as $lIndex => $lesson)
-                        @php $isVid = strtolower($lesson->type??'')  === 'video'; @endphp
-                        <div class="lesson-item"
-                             id="li-{{ $mIndex }}-{{ $lIndex }}"
-                             data-module="{{ $mIndex }}"
-                             data-lid="{{ $lesson->id }}"
-                             onclick="loadLesson(
-                                 @js($lesson->type ?? 'Text'),
-                                 @js($lesson->title),
-                                 @js($lesson->description ?? $lesson->title),
-                                 @js($lesson->duration ?? '15m'),
-                                 {{ $mIndex }}, {{ $lIndex }},
-                                 @js($lesson->content ?? $lesson->description ?? '')
-                             )">
-                            <span class="lesson-title-text">{{ $lesson->title }}</span>
-                            <span class="lesson-meta">{{ $lesson->type }} - {{ $lesson->duration }}</span>
-                            <span class="status-dot"></span>
-                        </div>
-                        @php
-                            $assessmentItems = collect($lesson->activities ?? [])->map(fn ($activity) => (object) [
-                                'kind' => 'activity', 'sort_order' => $activity->sort_order ?? 0, 'item' => $activity,
-                            ]);
-                            if ($lesson->lesson_quiz ?? null) {
-                                $assessmentItems->push((object) ['kind' => 'quiz', 'sort_order' => $lesson->lesson_quiz->sort_order ?? 0, 'item' => $lesson->lesson_quiz]);
-                            }
-                            $assessmentItems = $assessmentItems->sortBy('sort_order')->values();
-                        @endphp
-                        @foreach($assessmentItems as $assessment)
-                            @if($assessment->kind === 'quiz')
-                                <a class="lesson-assessment-link lesson-quiz-link" data-step-title="{{ $assessment->item->title }}" href="{{ route('quiz.show', $assessment->item->id) }}"
-                                   onclick="event.preventDefault(); event.stopPropagation(); openLessonAssessmentFromSidebar({{ $mIndex }}, {{ $lIndex }}, this.href);">
-                                    Take lesson quiz: {{ $assessment->item->title }} · pass {{ $assessment->item->passing_score }}%
-                                </a>
-                            @else
-                                <a class="lesson-assessment-link lesson-activity-link" data-step-title="{{ $assessment->item->title }}" href="{{ route('lesson-activities.show', $assessment->item->id) }}"
-                                   onclick="event.preventDefault(); event.stopPropagation(); openLessonAssessmentFromSidebar({{ $mIndex }}, {{ $lIndex }}, this.href);">
-                                    {{ Illuminate\Support\Str::headline($assessment->item->activity_type) }}: {{ $assessment->item->title }}{{ $assessment->item->is_required ? ' · Required' : ' · Optional' }}
-                                </a>
-                            @endif
-                        @endforeach
+                    @php
+                        $moduleSequence = collect($module->lessons ?? [])->values()->map(fn ($lesson, $lessonIndex) => (object) [
+                            'kind' => 'lesson', 'order' => $lesson->module_order, 'index' => $lessonIndex, 'item' => $lesson,
+                        ])
+                            ->merge(collect($module->activities ?? [])->map(fn ($activity) => (object) ['kind' => 'activity', 'order' => $activity->module_order, 'item' => $activity]))
+                            ->merge(collect($module->learning_quizzes ?? [])->map(fn ($quiz) => (object) ['kind' => 'quiz', 'order' => $quiz->module_order, 'item' => $quiz]))
+                            ->sortBy('order')->values();
+                    @endphp
+                    @foreach($moduleSequence as $sequenceItem)
+                        @if($sequenceItem->kind === 'lesson')
+                            @php $lesson = $sequenceItem->item; $lIndex = $sequenceItem->index; @endphp
+                            <div class="lesson-item module-sequence-step"
+                                 id="li-{{ $mIndex }}-{{ $lIndex }}"
+                                 data-module="{{ $mIndex }}"
+                                 data-module-order="{{ $sequenceItem->order }}"
+                                 data-lid="{{ $lesson->id }}"
+                                 onclick="loadLesson(
+                                     @js($lesson->type ?? 'Text'),
+                                     @js($lesson->title),
+                                     @js($lesson->description ?? $lesson->title),
+                                     @js($lesson->duration ?? '15m'),
+                                     {{ $mIndex }}, {{ $lIndex }},
+                                     @js($lesson->content ?? $lesson->description ?? '')
+                                 )">
+                                <span class="lesson-title-text">{{ $lesson->title }}</span>
+                                <span class="lesson-meta">{{ $lesson->type }} - {{ $lesson->duration }}</span>
+                                <span class="status-dot"></span>
+                            </div>
+                        @elseif($sequenceItem->kind === 'activity')
+                            <a class="lesson-assessment-link lesson-activity-link module-learning-step module-sequence-step" data-module-content-step="1" data-module="{{ $mIndex }}" data-module-order="{{ $sequenceItem->order }}" data-required="{{ $sequenceItem->item->is_required ? '1' : '0' }}" data-completed="{{ $sequenceItem->item->is_completed ? '1' : '0' }}" data-step-title="{{ $sequenceItem->item->title }}" href="{{ route('lesson-activities.show', $sequenceItem->item->id) }}"
+                               onclick="openModuleItemFromSidebar(event, this.href, @js($sequenceItem->item->title), {{ $mIndex }}, {{ $sequenceItem->order }});">
+                                {{ Illuminate\Support\Str::headline($sequenceItem->item->activity_type) }}: {{ $sequenceItem->item->title }}{{ $sequenceItem->item->is_required ? ' · Required' : ' · Optional' }}
+                            </a>
+                        @else
+                            <a class="lesson-assessment-link lesson-quiz-link module-learning-step module-sequence-step" data-module-content-step="1" data-module="{{ $mIndex }}" data-module-order="{{ $sequenceItem->order }}" data-required="1" data-completed="{{ $sequenceItem->item->is_completed ? '1' : '0' }}" data-step-title="{{ $sequenceItem->item->title }}" href="{{ route('quiz.show', $sequenceItem->item->id) }}"
+                               onclick="openModuleItemFromSidebar(event, this.href, @js($sequenceItem->item->title), {{ $mIndex }}, {{ $sequenceItem->order }});">
+                                Quiz: {{ $sequenceItem->item->title }} · pass {{ $sequenceItem->item->passing_score }}%
+                            </a>
+                        @endif
                     @endforeach
+
 
                     @if(($module->quiz ?? false) && count($module->quiz->questions ?? []) > 0)
                     <div class="quiz-row" data-step-title="{{ $module->quiz->title }}">
@@ -384,6 +384,7 @@ var _pendingQuizSubmit = null;   // last quiz result awaiting server confirmatio
 var _saveTimer = null;
 var _serverProgressPercent = {{ (int) ($progress_percent ?? 0) }};
 var _progressBreakdown = {!! json_encode($progress_breakdown ?? ['lessons' => ['completed' => 0, 'total' => 0], 'activities' => ['completed' => 0, 'total' => 0], 'quizzes' => ['completed' => 0, 'total' => 0]]) !!};
+var _moduleContentContext = null;
 var _serverQuizDeadlines = {};
 
 function initializeCourseEvaluationForm() {
@@ -1189,6 +1190,8 @@ function _prepLesson(title, desc, duration, modIdx, lesIdx, content) {
     _curLessonEl = el;
     _curModIdx   = modIdx;
     _curLesIdx   = lesIdx;
+    _moduleContentContext = null;
+    document.getElementById('btn-lesson-continue').onclick = function () { continueLesson(); };
 
     document.getElementById('lc-label').textContent = title;
 
@@ -1342,6 +1345,55 @@ function openLessonAssessmentFromSidebar(modIdx, lessonIdx, assessmentUrl) {
     continueLesson(assessmentUrl);
 }
 
+function openModuleItemFromSidebar(event, assessmentUrl, title, modIdx, moduleOrder) {
+    event.preventDefault();
+    event.stopPropagation();
+    _curModIdx = modIdx;
+    _curLessonEl = null;
+    _moduleContentContext = { modIdx: modIdx, moduleOrder: Number(moduleOrder), nextUrl: null, pendingReview: false, retryRequired: false };
+    const continueButton = document.getElementById('btn-lesson-continue');
+    continueButton.onclick = continueModuleContent;
+    document.querySelectorAll('.module-learning-step.active').forEach(step => step.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    showInlineAssessmentLoading(title);
+    openInlineAssessment(assessmentUrl);
+}
+
+function continueModuleContent() {
+    const context = _moduleContentContext;
+    const button = document.getElementById('btn-lesson-continue');
+    if (!context || button.disabled) return;
+    if (context.pendingReview || context.retryRequired) return;
+
+    const currentGroup = document.getElementById('mg-' + context.modIdx);
+    const orderedItems = Array.from(currentGroup?.querySelectorAll('.module-sequence-step[data-module-order]') || []);
+    const nextItem = orderedItems.find(item => Number(item.dataset.moduleOrder) > Number(context.moduleOrder));
+    if (nextItem) {
+        nextItem.click();
+        scrollLearningTop();
+        return;
+    }
+
+    if (startModuleAssessment(context.modIdx)) {
+        scrollLearningTop();
+        return;
+    }
+
+    const nextModule = context.modIdx + 1;
+    const nextGroup = document.getElementById('mg-' + nextModule);
+    const nextItemInModule = nextGroup?.querySelector('.module-sequence-step');
+    if (nextGroup && !nextGroup.classList.contains('module-locked') && nextItemInModule) {
+        nextItemInModule.click();
+        scrollLearningTop();
+        return;
+    }
+    if (nextGroup && !nextGroup.classList.contains('module-locked') && startModuleAssessment(nextModule)) {
+        scrollLearningTop();
+        return;
+    }
+    if (COURSE_EVALUATION_ELIGIBLE && !HAS_COURSE_REVIEW) openCourseReview();
+}
+
 function showInlineAssessmentLoading(title) {
     const host = document.getElementById('inline-assessment-host');
     const content = document.getElementById('inline-assessment-content');
@@ -1389,12 +1441,21 @@ async function openInlineAssessment(url) {
         content.innerHTML = payload.html;
         const panel = content.querySelector('[data-assessment-kind]');
         if (!panel) throw new Error('The assessment could not be displayed.');
+        if (_moduleContentContext && panel.dataset.moduleContentStep === '1') {
+            _moduleContentContext.moduleOrder = Number(panel.dataset.moduleOrder || _moduleContentContext.moduleOrder);
+            _moduleContentContext.nextUrl = panel.dataset.nextUrl || null;
+            _moduleContentContext.retryRequired = panel.dataset.retryRequired === '1';
+        }
         const assessmentLink = Array.from(document.querySelectorAll('.lesson-assessment-link'))
             .find(function (link) {
                 return link.href === new URL(url, window.location.href).href;
             });
         if (assessmentLink) {
             _curSidebarStepEl = assessmentLink;
+            if (assessmentLink.classList.contains('module-learning-step')) {
+                document.querySelectorAll('.module-learning-step.active').forEach(step => step.classList.remove('active'));
+                assessmentLink.classList.add('active');
+            }
             updateLearningStepNavigation();
         }
 
@@ -1502,7 +1563,43 @@ async function submitInlineAssessment(form, timeExpired) {
             },
             body: formData
         });
-        const result = await response.json();
+        const responseText = await response.text();
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            if (panel.dataset.assessmentKind === 'activity' && panel.dataset.refreshUrl) {
+                await openInlineAssessment(panel.dataset.refreshUrl);
+                const refreshedPanel = document.querySelector('#inline-assessment-content [data-assessment-kind="activity"]');
+                if (refreshedPanel) {
+                    const refreshedForm = refreshedPanel.querySelector('[data-assessment-form]');
+                    if (!refreshedForm) {
+                        const moduleStep = document.querySelector('#mg-' + _moduleContentContext?.modIdx + ' .module-learning-step[data-module-order="' + _moduleContentContext?.moduleOrder + '"]');
+                        if (moduleStep && refreshedPanel.dataset.canContinue === '1') {
+                            moduleStep.dataset.completed = '1';
+                            checkQuizUnlock(_moduleContentContext.modIdx);
+                        }
+                        window.showFlashToast('Your submission was saved.', 'success');
+                        return;
+                    }
+
+                    const refreshedError = refreshedForm.querySelector('[data-assessment-error]');
+                    const refreshedSubmitButton = refreshedForm.querySelector('button[type="submit"]');
+                    if (refreshedError) {
+                        refreshedError.textContent = 'The server returned an unreadable response. Check the activity status before submitting again.';
+                        refreshedError.hidden = false;
+                    }
+                    refreshedForm.dataset.submitting = '0';
+                    if (refreshedSubmitButton) {
+                        refreshedSubmitButton.disabled = false;
+                        refreshedSubmitButton.textContent = 'Submit activity';
+                    }
+                    return;
+                }
+            }
+
+            throw new Error('The server returned an unreadable response. Refresh the activity to check whether your submission was saved before trying again.');
+        }
         if (!response.ok || !result.ok) {
             const firstError = result.errors ? Object.values(result.errors).flat()[0] : null;
             throw new Error(firstError || result.message || 'Could not submit this assessment.');
@@ -1528,6 +1625,16 @@ async function submitInlineAssessment(form, timeExpired) {
                 : 'You scored ' + result.score + '%. You did not meet the passing score. ' + (result.attempts_remaining === null ? 'Your attempts are unlimited.' : 'You have ' + result.attempts_remaining + ' attempt' + (result.attempts_remaining === 1 ? '' : 's') + ' remaining.');
             panel.dataset.cooldownUntil = String(result.retake_unlock_at || 0);
             panel.dataset.canContinue = result.passed || (result.retake_unlock_at && !result.attempts_exhausted) ? '1' : '0';
+            if (_moduleContentContext && panel.dataset.moduleContentStep === '1') {
+                _moduleContentContext.nextUrl = result.passed ? (result.next_url || null) : null;
+                _moduleContentContext.pendingReview = !!result.pending_review;
+                _moduleContentContext.retryRequired = !result.passed;
+                if (result.passed) {
+                    const moduleStep = document.querySelector('#mg-' + _moduleContentContext.modIdx + ' .module-learning-step[data-module-order="' + _moduleContentContext.moduleOrder + '"]');
+                    if (moduleStep) moduleStep.dataset.completed = '1';
+                    checkQuizUnlock(_moduleContentContext.modIdx);
+                }
+            }
             const cooldownNotice = panel.querySelector('[data-quiz-cooldown]');
             if (cooldownNotice) {
                 cooldownNotice.hidden = !result.retake_unlock_at || result.attempts_exhausted;
@@ -1545,11 +1652,30 @@ async function submitInlineAssessment(form, timeExpired) {
             feedback.setAttribute('role', 'status');
             feedback.classList.add('is-pending');
             feedback.textContent = 'Assignment submitted. It must pass faculty review before this lesson can be completed.';
-            panel.dataset.canContinue = '1';
+            panel.dataset.canContinue = result.pending_review ? '0' : '1';
+            if (_moduleContentContext && panel.dataset.moduleContentStep === '1') {
+                _moduleContentContext.nextUrl = result.next_url || null;
+                _moduleContentContext.pendingReview = !!result.pending_review;
+                if (!result.pending_review) {
+                    const moduleStep = document.querySelector('#mg-' + _moduleContentContext.modIdx + ' .module-learning-step[data-module-order="' + _moduleContentContext.moduleOrder + '"]');
+                    if (moduleStep) moduleStep.dataset.completed = '1';
+                    checkQuizUnlock(_moduleContentContext.modIdx);
+                }
+            }
             setLessonNextStatus('Check review status');
             window.showFlashToast('Your assignment was submitted and is waiting for faculty review.', 'info');
         } else {
             panel.dataset.canContinue = '1';
+            if (_moduleContentContext && panel.dataset.moduleContentStep === '1') {
+                _moduleContentContext.nextUrl = result.next_url || null;
+                _moduleContentContext.pendingReview = !!result.pending_review;
+                _moduleContentContext.retryRequired = false;
+                if (!result.pending_review) {
+                    const moduleStep = document.querySelector('#mg-' + _moduleContentContext.modIdx + ' .module-learning-step[data-module-order="' + _moduleContentContext.moduleOrder + '"]');
+                    if (moduleStep) moduleStep.dataset.completed = '1';
+                    checkQuizUnlock(_moduleContentContext.modIdx);
+                }
+            }
             setLessonNextStatus('Next');
             window.showFlashToast(result.message || 'Your activity was submitted.', 'success');
         }
@@ -1686,7 +1812,10 @@ function continueLesson(assessmentUrl) {
 function checkQuizUnlock(modIdx) {
     const group   = document.getElementById('mg-' + modIdx);
     const lessons = Array.from(group.querySelectorAll('.lesson-item'));
-    const allDone = lessons.length === 0 || lessons.every(l => l.classList.contains('lesson-correct'));
+    const lessonsDone = lessons.length === 0 || lessons.every(l => l.classList.contains('lesson-correct'));
+    const moduleSteps = Array.from(group.querySelectorAll('.module-learning-step'));
+    const moduleStepsDone = moduleSteps.every(step => step.dataset.required !== '1' || step.dataset.completed === '1');
+    const allDone = lessonsDone && moduleStepsDone;
     const qbtn    = document.getElementById('qbtn-' + modIdx);
     if (allDone) {
         if (qbtn) {
@@ -1707,11 +1836,14 @@ function checkQuizUnlock(modIdx) {
 function checkModuleComplete(modIdx) {
     const group   = document.getElementById('mg-' + modIdx);
     const lessons = Array.from(group.querySelectorAll('.lesson-item'));
-    const allDone = lessons.every(l => l.classList.contains('lesson-correct'));
+    const lessonsDone = lessons.every(lesson => lesson.classList.contains('lesson-correct'));
+    const requiredItems = Array.from(group.querySelectorAll('.module-learning-step[data-required="1"]'));
+    const requiredItemsDone = requiredItems.every(item => item.dataset.completed === '1');
+    const allDone = lessonsDone && requiredItemsDone;
     const ta      = document.getElementById('mta-' + modIdx);
     const sub     = document.getElementById('msub-' + modIdx);
     const finalExamPassed = group.dataset.finalExam === '1' && group.dataset.finalPassed === '1';
-    if ((allDone && lessons.length > 0) || finalExamPassed) {
+    if ((allDone && (lessons.length + requiredItems.length > 0)) || finalExamPassed) {
         ta.classList.add('completed');
         ta.classList.remove('active');
         sub.innerHTML = '<span style="color:var(--green);font-weight:800;">\u2713 Completed</span>';
@@ -1724,35 +1856,26 @@ function scrollLearningTop() {
 }
 
 function advanceAfterLesson() {
-    const all  = Array.from(document.querySelectorAll('.lesson-item'));
-    const idx  = all.indexOf(_curLessonEl);
-    const next = all[idx + 1];
+    const currentGroup = document.getElementById('mg-' + _curModIdx);
+    const orderedItems = Array.from(currentGroup?.querySelectorAll('.module-sequence-step') || []);
+    const currentIndex = orderedItems.indexOf(_curLessonEl);
+    const nextItem = currentIndex >= 0 ? orderedItems[currentIndex + 1] : null;
 
-    // Continue to the next lesson in the same module.
-    if (next && parseInt(next.dataset.module, 10) === _curModIdx) {
-        next.click();
+    if (nextItem) {
+        nextItem.click();
         scrollLearningTop();
         return;
     }
 
-    // The module quiz is the next learning activity after the final lesson.
-    // Do not send the student back to the module welcome screen first.
-    const quizData = QUIZ_DATA[_curModIdx];
-    if (quizData && quizData.questions && quizData.questions.length > 0) {
-        checkQuizUnlock(_curModIdx);
-        const quizButton = document.getElementById('qbtn-' + _curModIdx);
-        if (quizButton && !quizButton.classList.contains('locked')) {
-            handleQuizClick(_curModIdx);
-            scrollLearningTop();
-            return;
-        }
+    if (startModuleAssessment(_curModIdx)) {
+        scrollLearningTop();
+        return;
     }
 
-    // If there is no quiz, continue directly into the next unlocked module.
     const nextModIdx = _curModIdx + 1;
     const nextGroup = document.getElementById('mg-' + nextModIdx);
-    const nextFirst = document.querySelector('#mg-' + nextModIdx + ' .lesson-item');
     if (nextGroup && !nextGroup.classList.contains('module-locked')) {
+        const nextFirst = nextGroup.querySelector('.module-sequence-step');
         if (nextFirst) {
             nextFirst.click();
             scrollLearningTop();
@@ -2173,7 +2296,7 @@ function applyServerQuizSubmission(modIdx, submission) {
         if (hasNextMod) {
             unlockModule(modIdx + 1);
             const nb = document.getElementById('btn-next-module');
-            nb.textContent = 'Continue to Module ' + (modIdx + 2) + ' ->';
+            nb.textContent = 'Continue';
             nb.onclick = goToNextModule;
             nb.style.display = 'flex';
         } else if (COURSE_EVALUATION_ELIGIBLE && !HAS_COURSE_REVIEW) {

@@ -1164,6 +1164,16 @@
     :where(html[data-faculty-page="faculty-index"]) .btn-cancel-outline{padding:8px 13px;}
     :where(html[data-faculty-page="faculty-index"]) .module-add-lesson{display:flex;justify-content:center;margin:12px 0 0;}
     :where(html[data-faculty-page="faculty-index"]) .module-add-lesson .btn-secondary-action{min-height:32px;padding:6px 11px;font-size:11px;}
+    :where(html[data-faculty-page="faculty-index"]) .module-add-menu{position:relative;}
+    :where(html[data-faculty-page="faculty-index"]) .module-add-menu>summary{list-style:none;cursor:pointer;}
+    :where(html[data-faculty-page="faculty-index"]) .module-add-menu>summary::-webkit-details-marker{display:none;}
+    :where(html[data-faculty-page="faculty-index"]) .module-add-options{position:absolute;z-index:5;top:calc(100% + 5px);left:50%;display:grid;min-width:145px;transform:translateX(-50%);padding:5px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;box-shadow:0 8px 22px rgba(16,24,40,.12);}
+    :where(html[data-faculty-page="faculty-index"]) .module-add-options button,:where(html[data-faculty-page="faculty-index"]) .module-add-options a{display:block;padding:9px 10px;border:0;border-radius:5px;background:transparent;color:#344054;font:inherit;font-size:12px;text-align:left;text-decoration:none;cursor:pointer;}
+    :where(html[data-faculty-page="faculty-index"]) .module-add-options button:hover,:where(html[data-faculty-page="faculty-index"]) .module-add-options a:hover{background:#f2f4f7;color:var(--navy);}
+    :where(html[data-faculty-page="faculty-index"]) .module-activity-create-form{margin-top:12px;}
+    :where(html[data-faculty-page="faculty-index"]) .module-activity-card{margin-top:10px;}
+    :where(html[data-faculty-page="faculty-index"]) .activity-card.module-activity-card .activity-head{grid-template-columns:minmax(0,1fr) auto;}
+    :where(html[data-faculty-page="faculty-index"]) .module-learning-quiz{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px;}
     :where(html[data-faculty-page="faculty-index"]) .summative-assessment{margin:15px 0 0;padding:12px 0 0;border-top:1px solid #e5e7eb;border-radius:0;box-shadow:none;}
     :where(html[data-faculty-page="faculty-index"]) .summative-label{margin-bottom:7px;color:#667085;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;}
     :where(html[data-faculty-page="faculty-index"]) .summative-content{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
@@ -1530,7 +1540,7 @@
     :where(html[data-faculty-page="faculty-courses-index"]) .is-dragging{opacity:.45;} :where(html[data-faculty-page="faculty-courses-index"]) .is-drop-target{outline:2px dashed var(--gold);outline-offset:2px;}
 
     /* Module */
-    :where(html[data-faculty-page="faculty-courses-index"]) .module-card{position:relative;margin:0 0 18px;padding:20px 20px 18px 42px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:14px;box-shadow:var(--shadow);}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-card{--module-content-left-gutter:46px;--module-content-right-gutter:21px;position:relative;margin:0 0 18px;padding:20px 20px 18px 42px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:14px;box-shadow:var(--shadow);}
     :where(html[data-faculty-page="faculty-courses-index"]) .module-drag-handle{position:absolute;top:22px;left:12px;}
     :where(html[data-faculty-page="faculty-courses-index"]) .module-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding-bottom:14px;border-bottom:1px solid var(--line);}
     :where(html[data-faculty-page="faculty-courses-index"]) .module-heading-copy{min-width:0;}
@@ -1565,7 +1575,38 @@
     :where(html[data-faculty-page="faculty-courses-index"]) .lesson-collapse-btn[aria-expanded="false"] svg{transform:rotate(180deg);}
     :where(html[data-faculty-page="faculty-courses-index"]) .lesson-collapsible-content[hidden]{display:none;}
     :where(html[data-faculty-page="faculty-courses-index"]) .lessons-empty{padding:18px;text-align:center;color:var(--muted);font-size:14px;border:1px dashed #d0d5dd;border-radius:12px;background:var(--soft);}
-    :where(html[data-faculty-page="faculty-courses-index"]) .module-add-lesson{display:flex;justify-content:center;margin:14px 0 0;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-add-lesson{display:flex;justify-content:center;margin:14px 0 0 calc(var(--module-content-right-gutter) - var(--module-content-left-gutter));}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-add-menu{position:relative;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-add-menu>summary{list-style:none;cursor:pointer;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-add-menu>summary::-webkit-details-marker{display:none;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-add-options{position:absolute;z-index:5;top:calc(100% + 5px);left:50%;display:grid;min-width:145px;transform:translateX(-50%);padding:5px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;box-shadow:0 8px 22px rgba(16,24,40,.12);}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-add-options button,:where(html[data-faculty-page="faculty-courses-index"]) .module-add-options a{display:block;padding:9px 10px;border:0;border-radius:5px;background:transparent;color:#344054;font:inherit;font-size:12px;text-align:left;text-decoration:none;cursor:pointer;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-add-options button:hover,:where(html[data-faculty-page="faculty-courses-index"]) .module-add-options a:hover{background:#f2f4f7;color:var(--navy);}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-activity-create-form{margin-top:12px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-activity-card{margin-top:10px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .activity-card.module-activity-card .activity-head{grid-template-columns:minmax(0,1fr) auto;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-learning-quiz{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-content-sort-list{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-content-card{display:grid;grid-template-columns:18px 28px minmax(0,1fr) auto;align-items:center;gap:10px;padding:12px 14px;background:var(--soft);border:1px solid var(--line);border-radius:12px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-content-drag-handle{align-self:center;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-content-number{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#eef0fb;color:var(--navy);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-content-copy{display:flex;flex-direction:column;gap:2px;min-width:0;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-content-kind{color:var(--muted);font-size:12px;font-weight:600;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-content-copy>strong{color:#17202a;font-size:15px;font-weight:700;line-height:1.35;overflow-wrap:anywhere;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-content-meta{color:var(--muted);font-size:13px;line-height:1.4;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-content-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;white-space:nowrap;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-content-actions form{margin:0;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-content-action{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:6px 11px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:#344054;font:600 12px Inter,sans-serif;text-decoration:none;cursor:pointer;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-content-action:hover{border-color:#98a2b3;background:#f9fafb;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-content-action.is-danger{border-color:#fecdca;color:#b42318;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-content-action.is-danger:hover{background:#fff1f0;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-content-edit-form{grid-column:3/-1;width:100%;margin:4px 0 0;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-content-edit-form[hidden]{display:none;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-content-empty{padding:18px;text-align:center;color:var(--muted);font-size:14px;border:1px dashed #d0d5dd;border-radius:12px;background:var(--soft);}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-add-module-footer{display:flex;justify-content:center;margin:16px 0 8px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-authoring-add-button{box-sizing:border-box;width:120px;height:40px;min-height:40px;padding:8px 12px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-add-module-footer .btn-primary-action{border-color:#b8860b;background:#e5b82e;color:#17202a;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-add-module-footer .btn-primary-action:hover{background:var(--gold);}
 
     /* Activities + lesson assessment */
     :where(html[data-faculty-page="faculty-courses-index"]) .activity-panel{margin:0 0 0 38px;padding:12px 14px;background:#fff;border:1px solid var(--line);border-radius:10px;}
@@ -1598,6 +1639,7 @@
     :where(html[data-faculty-page="faculty-courses-index"]) .activity-form>label{display:flex;align-items:center;gap:8px;color:var(--text);font-size:13px;}
     :where(html[data-faculty-page="faculty-courses-index"]) .activity-form-context{display:flex;flex-direction:column;gap:3px;} :where(html[data-faculty-page="faculty-courses-index"]) .activity-form-context strong{color:#17202a;font-size:14px;} :where(html[data-faculty-page="faculty-courses-index"]) .activity-form-context span{color:var(--muted);font-size:13px;}
     :where(html[data-faculty-page="faculty-courses-index"]) .activity-form>.activity-actions:not(.full){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}
+    :where(html[data-faculty-page="faculty-courses-index"]) [data-assignment-fields][hidden]{display:none!important;}
     :where(html[data-faculty-page="faculty-courses-index"]) .activity-form .activity-actions.full{justify-content:flex-end;}
 
     /* Summative + final exam + quiz averages */
@@ -1659,15 +1701,20 @@
         :where(html[data-faculty-page="faculty-courses-index"]) .card-actions{flex-direction:row;flex-wrap:wrap;}
         :where(html[data-faculty-page="faculty-courses-index"]) .btn-action{flex:1 1 140px;min-width:0;}
         :where(html[data-faculty-page="faculty-courses-index"]) .readiness-panel{grid-template-columns:1fr;}
-        :where(html[data-faculty-page="faculty-courses-index"]) .module-card{padding-left:36px;} :where(html[data-faculty-page="faculty-courses-index"]) .module-drag-handle{left:10px;}
+        :where(html[data-faculty-page="faculty-courses-index"]) .module-card{--module-content-left-gutter:40px;padding-left:36px;} :where(html[data-faculty-page="faculty-courses-index"]) .module-drag-handle{left:10px;}
         :where(html[data-faculty-page="faculty-courses-index"]) .activity-panel{margin-left:0;}
     }
     @media (max-width:640px){
         :where(html[data-faculty-page="faculty-courses-index"]) .main{padding:16px 12px 42px;}
+        :where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-panel{align-items:stretch;flex-direction:column;padding:18px 26px 18px 16px;}
+        :where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-add-form{align-self:flex-end;}
         :where(html[data-faculty-page="faculty-courses-index"]) .course-banner{padding:18px 16px;} :where(html[data-faculty-page="faculty-courses-index"]) .banner-actions{width:100%;}
         :where(html[data-faculty-page="faculty-courses-index"]) .course-meta{gap:12px 20px;}
-        :where(html[data-faculty-page="faculty-courses-index"]) .module-card{padding:16px 12px 14px 30px;} :where(html[data-faculty-page="faculty-courses-index"]) .module-drag-handle{left:7px;top:18px;}
+        :where(html[data-faculty-page="faculty-courses-index"]) .module-card{--module-content-left-gutter:34px;--module-content-right-gutter:13px;padding:16px 12px 14px 30px;} :where(html[data-faculty-page="faculty-courses-index"]) .module-drag-handle{left:7px;top:18px;}
         :where(html[data-faculty-page="faculty-courses-index"]) .module-head{flex-direction:column;} :where(html[data-faculty-page="faculty-courses-index"]) .module-actions{align-self:flex-end;margin-top:-4px;}
+        :where(html[data-faculty-page="faculty-courses-index"]) .module-content-card{grid-template-columns:18px 26px minmax(0,1fr);padding:10px;}
+        :where(html[data-faculty-page="faculty-courses-index"]) .module-content-actions{grid-column:3;justify-content:flex-start;flex-wrap:wrap;}
+        :where(html[data-faculty-page="faculty-courses-index"]) .module-content-edit-form{grid-column:2/-1;}
         :where(html[data-faculty-page="faculty-courses-index"]) .lesson-sort-item{padding:10px;}
         :where(html[data-faculty-page="faculty-courses-index"]) .lesson-row{grid-template-columns:18px 26px minmax(0,1fr);}
         :where(html[data-faculty-page="faculty-courses-index"]) .lesson-actions{grid-column:3;justify-content:flex-start;flex-wrap:wrap;}
@@ -2831,9 +2878,11 @@
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-course-inline-error{background:#fdecea;border:1px solid #f2b8b5;color:#a93226;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;}
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-course-error-text{color:#b91c1c;}
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-inline-action{display:inline-block;margin-left:8px;}
-:where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-panel{margin-top:18px;padding:22px;border:1px solid #e5e7eb;border-radius:14px;background:#fff;}
+:where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-panel{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-top:18px;padding:22px 37px 22px 22px;border:1px solid #e5e7eb;border-radius:14px;background:#fff;}
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-title{margin:0 0 6px;}
-:where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-description{margin:0 0 16px;color:#667085;}
+:where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-copy{flex:1;min-width:0;}
+:where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-description{margin:0;color:#667085;}
+:where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-add-form{display:flex;flex:0 0 auto;justify-content:flex-end;}
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-meta{margin-top:4px;color:#667085;}
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-warning{margin-top:4px;color:#b45309;}

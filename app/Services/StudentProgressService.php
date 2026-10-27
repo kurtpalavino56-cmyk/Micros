@@ -149,6 +149,8 @@ class StudentProgressService
         );
         $course->loadMissing([
             'modules.quiz.questions',
+            'modules.quizzes.questions',
+            'modules.activities',
             'modules.lessons.quizzes.questions',
             'modules.lessons.activities',
         ]);
@@ -202,6 +204,8 @@ class StudentProgressService
     {
         $course->loadMissing([
             'modules.quiz.questions',
+            'modules.quizzes.questions',
+            'modules.activities',
             'modules.lessons.quizzes.questions',
             'modules.lessons.activities',
         ]);
@@ -220,6 +224,7 @@ class StudentProgressService
 
         $requiredActivities = $lessons
             ->flatMap(fn ($lesson) => $lesson->activities)
+            ->merge($course->modules->flatMap(fn ($module) => $module->activities))
             ->filter(fn ($activity) => $activity->is_active && $activity->is_required)
             ->values();
         $totalActivities = $requiredActivities->count();
@@ -263,7 +268,7 @@ class StudentProgressService
         }
 
         $quizzes = $course->modules
-            ->flatMap(fn ($module) => collect([$module->quiz])->merge(
+            ->flatMap(fn ($module) => collect([$module->quiz])->merge($module->quizzes)->merge(
                 $module->lessons->flatMap(fn ($lesson) => $lesson->quizzes)
             ))
             ->filter(fn ($quiz) => $quiz && ($quiz->relationLoaded('questions')

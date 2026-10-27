@@ -228,7 +228,9 @@
                     @endif
 
                     @if($is_completed ?? false)
-                        <div class="completion-state" role="status">Course completed ✓</div>
+                        <div class="enroll-actions">
+                            <a href="{{ route('courses.learn', $course->id) }}" class="btn-continue ui-button ui-button--primary">Review</a>
+                        </div>
                     @elseif($is_enrolled ?? false)
                         <div class="enroll-actions">
                             <a href="{{ route('courses.learn', $course->id) }}" class="btn-continue ui-button ui-button--primary">
@@ -387,18 +389,16 @@
                         <p class="course-outline-meta">{{ $modules->count() }} {{ Str::plural('module', $modules->count()) }} &middot; {{ $courseLessonCount }} {{ Str::plural('lesson', $courseLessonCount) }}</p>
 
                         @foreach($modules as $module)
-                            <div class="module">
-                                <div class="module-item">
+                            <details class="module" open>
+                                <summary class="module-item">
                                     <div class="module-num" aria-hidden="true">{{ $loop->iteration }}</div>
                                     <div class="module-info">
                                         <p class="module-title"><span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">Module {{ $loop->iteration }}: </span>{{ $module->title }}</p>
-                                        @if($module->description ?? false)
-                                            <p class="module-sub">{{ $module->description }}</p>
-                                        @endif
                                     </div>
                                     <span class="module-count">{{ $module->lessons->count() }} {{ Str::plural('lesson', $module->lessons->count()) }}</span>
-                                </div>
-                                @if($module->lessons->isNotEmpty())
+                                    <span class="module-toggle-icon" aria-hidden="true">⌄</span>
+                                </summary>
+                                @if($module->lessons->isNotEmpty() || $module->activities->isNotEmpty() || $module->learningQuizzes->isNotEmpty())
                                     <div class="course-module-lessons">
                                         @foreach($module->lessons as $lesson)
                                             <div class="course-module-lesson">
@@ -412,6 +412,18 @@
                                                 </div>
                                             @endforeach
                                         @endforeach
+                                        @foreach($module->activities as $activity)
+                                            <div class="course-module-lesson is-activity">
+                                                <span>{{ Illuminate\Support\Str::headline($activity->activity_type) }}: {{ $activity->title }}</span>
+                                                <small>Module activity{{ $activity->is_required ? ' · Required' : ' · Optional' }}</small>
+                                            </div>
+                                        @endforeach
+                                        @foreach($module->learningQuizzes as $learningQuiz)
+                                            <div class="course-module-lesson is-quiz">
+                                                <span>Quiz: {{ $learningQuiz->title }}</span>
+                                                <small>{{ $learningQuiz->questions_count }} {{ Str::plural('question', $learningQuiz->questions_count) }} · Pass {{ $learningQuiz->passing_score }}%</small>
+                                            </div>
+                                        @endforeach
                                     </div>
                                 @endif
                                 @if($module->quiz)
@@ -422,7 +434,7 @@
                                         </div>
                                     </div>
                                 @endif
-                            </div>
+                            </details>
                         @endforeach
 
                         @if($finalExam)

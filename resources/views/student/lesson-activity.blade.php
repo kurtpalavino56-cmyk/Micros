@@ -1,8 +1,8 @@
 <x-layout title="{{ $activity->title }} | UpSkill" shell="bare" page="lesson-activity">
 <section class="activity-shell">
-    <p><a href="{{ route('courses.learn', $activity->lesson->course_id) }}">← Back to course</a></p>
+    <p><a href="{{ route('courses.learn', $course->id) }}">← Back to course</a></p>
     <section class="activity-card">
-        <p>{{ $activity->lesson->course->title }} · {{ $activity->lesson->title }}</p>
+        <p>{{ $course->title }} · {{ $activity->lesson?->title ?? $activity->module?->title }}</p>
         <h1>{{ $activity->title }}</h1>
         <p>{{ Illuminate\Support\Str::headline($activity->activity_type) }}@if($activity->is_required) · Required for lesson completion @else · Optional @endif</p>
         @if($activity->instructions)<div class="up-ckeditor-wrapper"><div class="ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($activity->instructions) !!}</div></div>@endif
@@ -19,10 +19,10 @@
                 @if($activityResult['next_requirement_url'])
                     <p><a href="{{ $activityResult['next_requirement_url'] }}">Continue to the next activity or assessment</a></p>
                 @endif
-                <p><a href="{{ route('courses.learn', $activity->lesson->course_id) }}">Return to course</a></p>
+                <p><a href="{{ route('courses.learn', $course->id) }}">Return to course</a></p>
             </div>
         @elseif($lesson_completed)
-            <p class="activity-note" role="status"><strong>This lesson is complete.</strong> <a href="{{ route('courses.learn', $activity->lesson->course_id) }}">Return to course</a></p>
+            <p class="activity-note" role="status"><strong>This lesson is complete.</strong> <a href="{{ route('courses.learn', $course->id) }}">Return to course</a></p>
         @elseif($submissions->first()?->status === 'submitted')
             <p class="activity-note" role="status">Your assignment is waiting for faculty review. The lesson will complete automatically if it passes.</p>
         @endif

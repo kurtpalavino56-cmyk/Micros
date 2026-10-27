@@ -12,6 +12,7 @@ use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\RoundBlockSizeMode;
 use Endroid\QrCode\Writer\PngWriter;
+use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -89,6 +90,11 @@ class CertificateBuilder
     {
         return 'https://api.qrserver.com/v1/create-qr-code/?size='.$size.'x'.$size
              .'&data='.urlencode($url);
+    }
+
+    public static function qrDataUriFor(string $content): string
+    {
+        return (new SvgWriter)->write(self::makeQrCode($content))->getDataUri();
     }
 
     /**

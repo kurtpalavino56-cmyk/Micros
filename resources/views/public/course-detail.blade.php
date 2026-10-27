@@ -11,10 +11,11 @@
     .pc-hero h1,.pc-section > h2{font-family:inherit;letter-spacing:-.015em}
 
     /* Shell: hero + tabs on the left, card on the right starting at the hero's top */
-    .pc-shell{display:grid;grid-template-columns:minmax(0,1fr) 340px;grid-template-areas:"hero aside" "main aside";column-gap:3rem;align-items:start}
+    .pc-shell{display:grid;grid-template-columns:minmax(0,1fr) 340px;grid-template-areas:"left aside";column-gap:3rem;align-items:start}
+    .pc-left{grid-area:left;min-width:0}
 
     /* Hero: navy band runs full width behind the left column */
-    .pc-hero{grid-area:hero;position:relative;z-index:1;background:var(--pc-navy);color:#fff;padding:2.5rem 0 3rem;box-shadow:0 0 0 100vmax var(--pc-navy);clip-path:inset(0 -100vmax)}
+    .pc-hero{position:relative;z-index:1;background:var(--pc-navy);color:#fff;padding:2.5rem 0 3rem;box-shadow:0 0 0 100vmax var(--pc-navy);clip-path:inset(0 -100vmax)}
     .pc-hero__category{display:inline-block;margin:0 0 1rem;padding:.25rem .7rem;border-left:3px solid var(--pc-gold);font-size:.9rem;color:#f7e3a0}
     .pc-hero h1{font-size:clamp(2rem,4.2vw,3rem);line-height:1.12;font-weight:700;margin:0 0 1rem;color:#fff}
     .pc-hero__desc{font-size:1.08rem;line-height:1.6;color:rgba(255,255,255,.85);margin:0 0 1.5rem;max-width:60ch}
@@ -38,7 +39,7 @@
     .pc-aside__note{margin:1rem 0 0;font-size:.82rem;line-height:1.5;color:var(--pc-muted)}
 
     /* Tabs */
-    .pc-main{grid-area:main;min-width:0}
+    .pc-main{min-width:0}
     .pc-tabs{display:flex;gap:2rem;border-bottom:1px solid var(--pc-line);margin:0 0 2rem}
     .pc:not(.pc--js) .pc-tabs{display:none}
     .pc-tab{appearance:none;background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:1.1rem 0 .85rem;font:inherit;font-weight:600;color:var(--pc-muted);cursor:pointer}
@@ -70,7 +71,6 @@
     .pc-module[open] summary::after{content:"–"}
     .pc-module[open] summary{border-bottom:1px solid var(--pc-line)}
     .pc-module__count{margin-left:auto;font-weight:400;font-size:.85rem;color:var(--pc-muted);white-space:nowrap}
-    .pc-module__desc{margin:0;padding:.85rem 1.1rem 0;color:var(--pc-muted);font-size:.9rem;line-height:1.55}
     .pc-lessons{margin:0;padding:.4rem 1.1rem .6rem;list-style:none}
     .pc-lessons li{display:flex;align-items:baseline;gap:.75rem;padding:.55rem 0;border-bottom:1px solid #eef1f6}
     .pc-lessons li:last-child{border-bottom:0}
@@ -79,6 +79,9 @@
 
     @media(max-width:900px){
         .pc-shell{grid-template-columns:minmax(0,1fr);grid-template-areas:"hero" "aside" "main";column-gap:0}
+        .pc-left{display:contents}
+        .pc-hero{grid-area:hero}
+        .pc-main{grid-area:main}
         .pc-hero{padding:2rem 0}
         .pc-aside{position:static;margin-top:1.5rem}
         .pc-aside__img{display:none}
@@ -108,6 +111,7 @@
 <div class="pc">
     <div class="container">
          <div class="pc-shell">
+            <div class="pc-left">
             <header class="pc-hero">
                 <p class="pc-hero__category">{{ $course->category ?: 'Microcredential' }}@if($course->level) &middot; {{ $course->level }}@endif</p>
                 <h1>{{ $course->title }}</h1>
@@ -115,31 +119,11 @@
                     <p class="pc-hero__desc">{{ $shortDescription }}</p>
                 @endif
                 <ul class="pc-hero__facts">
-                    @if($instructorName)<li>Taught by <strong>{{ $instructorName }}</strong></li>@endif
+                    @if($instructorName)<li>Course writer <strong>{{ $instructorName }}</strong></li>@endif
                     @if($moduleCount)<li><strong>{{ $moduleCount }}</strong> {{ \Illuminate\Support\Str::plural('module', $moduleCount) }}</li>@endif
                     @if($lessonCount)<li><strong>{{ $lessonCount }}</strong> {{ \Illuminate\Support\Str::plural('lesson', $lessonCount) }}</li>@endif
                 </ul>
             </header>
-
-            <aside class="pc-aside" aria-label="Enroll and course details">
-                <div class="pc-aside__img" role="img" aria-label="{{ $course->title }} course image" style="background-image:url('{{ $thumb }}')"></div>
-                <div class="pc-aside__body">
-                    <a class="pc-btn pc-btn--primary" href="{{ $loginUrl }}">Sign in to enroll</a>
-                    <a class="pc-btn pc-btn--ghost" href="{{ route('register') }}">Create an account</a>
-
-                    <dl class="pc-details">
-                        @if($course->pqf_level)<div><dt>PQF level</dt><dd>Level {{ $course->pqf_level }}</dd></div>@endif
-                        @if($course->learning_hours || $course->duration)<div><dt>Estimated effort</dt><dd>{{ $course->learning_hours ? $course->learning_hours.' '.\Illuminate\Support\Str::plural('hour', $course->learning_hours) : $course->duration }}</dd></div>@endif
-                        @if($course->delivery_mode)<div><dt>Delivery</dt><dd>{{ \Illuminate\Support\Str::headline($course->delivery_mode) }}</dd></div>@endif
-                        @if($course->credit_bearing)<div><dt>Credit</dt><dd>{{ $course->credit_equivalency ?: 'Subject to institutional review' }}</dd></div>@endif
-                        @if($course->target_learners)<div><dt>Intended for</dt><dd>{{ $course->target_learners }}</dd></div>@endif
-                        @if($course->badge?->is_active)<div><dt>Badge</dt><dd>{{ $course->badge->name }}</dd></div>@endif
-                        @if($course->certificate_enabled)<div><dt>Certificate</dt><dd>On completion</dd></div>@endif
-                    </dl>
-
-                    <p class="pc-aside__note">You need an UpSkill PSU account to enroll. Look through the course first, then sign in or register when you’re ready.</p>
-                </div>
-            </aside>
 
         <main class="pc-main">
                 <div class="pc-tabs" role="tablist" aria-label="Course sections">
@@ -203,9 +187,6 @@
                                         <span>{{ $module->title }}</span>
                                         <span class="pc-module__count">{{ $module->lessons->count() }} {{ \Illuminate\Support\Str::plural('lesson', $module->lessons->count()) }}</span>
                                     </summary>
-                                    @if($module->description)
-                                        <p class="pc-module__desc">{{ strip_tags($module->description) }}</p>
-                                    @endif
                                     <ul class="pc-lessons">
                                         @foreach($module->lessons as $lesson)
                                             <li>
@@ -222,6 +203,28 @@
                     </section>
                 </div>
             </main>
+            </div>
+
+            <aside class="pc-aside" aria-label="Enroll and course details">
+                <div class="pc-aside__img" role="img" aria-label="{{ $course->title }} course image" style="background-image:url('{{ $thumb }}')"></div>
+                <div class="pc-aside__body">
+                    <a class="pc-btn pc-btn--primary" href="{{ $loginUrl }}">Sign in to enroll</a>
+                    <a class="pc-btn pc-btn--ghost" href="{{ route('register') }}">Create an account</a>
+
+                    <dl class="pc-details">
+                        @if($course->pqf_level)<div><dt>PQF level</dt><dd>Level {{ $course->pqf_level }}</dd></div>@endif
+                        @if($course->learning_hours || $course->duration)<div><dt>Estimated effort</dt><dd>{{ $course->learning_hours ? $course->learning_hours.' '.\Illuminate\Support\Str::plural('hour', $course->learning_hours) : $course->duration }}</dd></div>@endif
+                        @if($course->delivery_mode)<div><dt>Delivery</dt><dd>{{ \Illuminate\Support\Str::headline($course->delivery_mode) }}</dd></div>@endif
+                        @if($course->credit_bearing)<div><dt>Credit</dt><dd>{{ $course->credit_equivalency ?: 'Subject to institutional review' }}</dd></div>@endif
+                        @if($course->target_learners)<div><dt>Intended for</dt><dd>{{ $course->target_learners }}</dd></div>@endif
+                        @if($course->badge?->is_active)<div><dt>Badge</dt><dd>{{ $course->badge->name }}</dd></div>@endif
+                        @if($course->certificate_enabled)<div><dt>Certificate</dt><dd>On completion</dd></div>@endif
+                    </dl>
+
+                    <p class="pc-aside__note">You need an UpSkill PSU account to enroll. Look through the course first, then sign in or register when you’re ready.</p>
+                </div>
+            </aside>
+
         </div>
     </div>
 </div>

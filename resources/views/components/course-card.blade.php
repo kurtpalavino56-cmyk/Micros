@@ -23,13 +23,21 @@
         @else
             <div class="course-card__thumb-placeholder"></div>
         @endif
+        @if($tagsOnImage ?? false)
+            <div class="course-card__tags course-card__tags--overlay">
+                <span class="tag tag-teal">{{ $category }}</span>
+                <span class="tag tag-gold">{{ $level }}</span>
+            </div>
+        @endif
     </a>
 
     <div class="course-card__body">
-        <div class="course-card__tags">
-            <span class="tag tag-teal">{{ $category }}</span>
-            <span class="tag tag-gold">{{ $level }}</span>
-        </div>
+        @unless($tagsOnImage ?? false)
+            <div class="course-card__tags">
+                <span class="tag tag-teal">{{ $category }}</span>
+                <span class="tag tag-gold">{{ $level }}</span>
+            </div>
+        @endunless
 
         <h3 class="course-card__title">
             <a href="{{ $slug }}">{{ $title }}</a>

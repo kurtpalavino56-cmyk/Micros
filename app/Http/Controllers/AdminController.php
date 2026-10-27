@@ -914,7 +914,7 @@ class AdminController extends Controller
      */
     public function showCourse(CourseReadinessService $courseReadiness, int $id)
     {
-        $c = Course::with(['badge', 'creator', 'modules.lessons.quizzes.questions', 'modules.lessons.activities', 'modules.quiz.questions', 'learningOutcomes'])
+        $c = Course::with(['badge', 'creator', 'modules.lessons.quizzes.questions', 'modules.lessons.activities', 'modules.activities', 'modules.quizzes.questions', 'modules.quiz.questions', 'learningOutcomes'])
             ->withCount('enrollments')
             ->findOrFail($id);
 
@@ -1002,6 +1002,19 @@ class AdminController extends Controller
                 ])->values(),
                 'lesson_activities' => $l->activities,
             ])->values(),
+            'activities' => $m->activities->where('is_active', true)->values(),
+            'learning_quizzes' => $m->quizzes->where('is_active', true)->map(fn ($quiz) => (object) [
+                'title' => $quiz->title,
+                'questions_count' => $quiz->questions->count(),
+                'passing_score' => $quiz->passing_score,
+                'questions' => $quiz->questions->map(fn ($question) => (object) [
+                    'question' => $question->question,
+                    'type' => $question->type ?? 'Multiple Choice',
+                    'points' => (int) $question->points,
+                    'options' => $question->options ?? [],
+                    'correct_answer' => $question->correct_answer,
+                ])->values(),
+            ])->values(),
             'quiz' => $m->quiz ? (object) [
                 'title' => $m->quiz->title,
                 'questions_count' => $m->quiz->questions->count(),
@@ -1044,7 +1057,7 @@ class AdminController extends Controller
     /** Show the learning record and submitted work for one enrollment. */
     public function showEnrollmentReview(Enrollment $enrollment): View
     {
-        $enrollment->load(['user', 'course.modules.lessons.activities']);
+        $enrollment->load(['user', 'course.modules.lessons.activities', 'course.modules.activities', 'course.modules.quizzes']);
         $course = $enrollment->course;
         abort_if(! $course, 404);
 
@@ -1075,7 +1088,10 @@ class AdminController extends Controller
             ->keyBy('lesson_id');
         $activitySubmissions = LessonActivitySubmission::with('reviewer')
             ->where('user_id', $enrollment->user_id)
-            ->whereHas('activity.lesson', fn ($query) => $query->where('course_id', $course->id))
+            ->whereHas('activity', function ($activity) use ($course): void {
+                $activity->whereHas('lesson', fn ($lesson) => $lesson->where('course_id', $course->id))
+                    ->orWhereHas('module', fn ($module) => $module->where('course_id', $course->id));
+            })
             ->latest('submitted_at')
             ->get()
             ->groupBy('lesson_activity_id');
@@ -1092,8 +1108,9 @@ class AdminController extends Controller
             ->get()
             ->groupBy('quiz_id');
         $lessonQuizzes = $quizzes->whereNotNull('lesson_id')->groupBy('lesson_id');
-        $moduleQuizzes = $quizzes->whereNotNull('module_id')->keyBy('module_id');
-        $activityCount = $modules->sum(fn ($module) => $module->lessons->sum(fn ($lesson) => $lesson->activities->count()));
+        $moduleQuizzes = $quizzes->whereNotNull('module_id')->where('is_summative', true)->keyBy('module_id');
+        $moduleLearningQuizzes = $quizzes->whereNotNull('module_id')->where('is_summative', false)->groupBy('module_id');
+        $activityCount = $modules->sum(fn ($module) => $module->lessons->sum(fn ($lesson) => $lesson->activities->count()) + $module->activities->count());
         $completedActivities = $activitySubmissions->keys()->count();
         $passedQuizzes = $quizAttempts->flatten(1)->where('passed', true)->pluck('quiz_id')->unique()->count();
 
@@ -1107,6 +1124,7 @@ class AdminController extends Controller
             'quizzes' => $quizzes,
             'lessonQuizzes' => $lessonQuizzes,
             'moduleQuizzes' => $moduleQuizzes,
+            'moduleLearningQuizzes' => $moduleLearningQuizzes,
             'quizAttempts' => $quizAttempts,
             'completedLessons' => $lessonCompletions->count(),
             'totalLessons' => $lessonIds->count(),
@@ -1120,8 +1138,8 @@ class AdminController extends Controller
 
     public function downloadEnrollmentSubmission(LessonActivitySubmission $submission): StreamedResponse
     {
-        $submission->load('activity.lesson.course');
-        abort_unless($submission->activity?->lesson?->course, 404);
+        $submission->load(['activity.lesson.course', 'activity.module.course']);
+        abort_unless($submission->activity?->lesson?->course || $submission->activity?->module?->course, 404);
         abort_unless($submission->submission_path && Storage::disk('local')->exists($submission->submission_path), 404);
 
         return Storage::disk('local')->download($submission->submission_path, basename($submission->submission_path));

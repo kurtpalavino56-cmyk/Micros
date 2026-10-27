@@ -28,6 +28,7 @@ class CourseLessonService
             'file_url' => null,
             'file_name' => null,
             'order' => ((int) $module->lessons()->max('order')) + 1,
+            'module_order' => $module->nextContentOrder(),
         ]);
 
         $this->refreshLessonCount($course);

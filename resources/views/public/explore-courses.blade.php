@@ -51,8 +51,9 @@
         transform: translateY(-4px);
         box-shadow: 0 12px 30px rgba(10,31,110,0.14);
     }
-    .course-card__thumb { display: block; height: 170px; background: #e3e6f0; }
+    .course-card__thumb { display: block; position: relative; height: 170px; background: #e3e6f0; }
     .course-card__thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .course-card__thumb .course-card__tags--overlay { position: absolute; right: 18px; bottom: 16px; left: 18px; margin: 0; }
     .course-card__thumb-placeholder {
         width: 100%; height: 100%;
         background: linear-gradient(135deg, #e3e6f0, #cfd4ea);
@@ -123,7 +124,7 @@
         @if(count($courses))
             <div class="courses-grid">
                 @foreach($courses as $course)
-                    @include('components.course-card', ['course' => $course])
+                    @include('components.course-card', ['course' => $course, 'tagsOnImage' => true])
                 @endforeach
             </div>
 

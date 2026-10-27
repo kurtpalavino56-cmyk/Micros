@@ -157,7 +157,7 @@
     <div class="corner corner-bottom-gold"></div>
     <div class="corner corner-bottom-navy"></div>
 
-    <div class="crest"><img src="{{ public_path('Images/PSU-Logo-Certificate.jpg') }}" alt="Pangasinan State University"></div>
+    <div class="crest"><img src="{{ public_path('Images/PSU-Logo.png') }}" alt="Pangasinan State University"></div>
     <div class="qr">
         @if (!empty($cert['qr_url']))
             <img src="{{ $cert['qr_url'] }}" alt="">

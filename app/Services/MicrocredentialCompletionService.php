@@ -139,6 +139,8 @@ class MicrocredentialCompletionService
         $previousCompletionStatus = $enrollment->completion_status;
         $enrollment->loadMissing([
             'course.modules.quiz.questions',
+            'course.modules.quizzes.questions',
+            'course.modules.activities',
             'course.modules.lessons.quizzes.questions',
             'course.modules.lessons.activities',
             'course.lessons',
@@ -733,41 +735,38 @@ class MicrocredentialCompletionService
     private function allLessonsCompleted(Enrollment $enrollment): bool
     {
         $course = $enrollment->course;
-        $course->loadMissing('modules.lessons.activities');
+        $course->loadMissing(['modules.lessons.activities', 'modules.activities']);
         $lessonIds = $course->modules
             ->flatMap(fn ($module) => $module->lessons)
             ->pluck('id')
             ->unique();
 
-        if ($lessonIds->isEmpty()) {
-            // No lessons configured: this gate cannot block completion.
-            return true;
+        if ($lessonIds->isNotEmpty()) {
+            $completedCount = DB::table('lesson_completions')
+                ->where('user_id', $enrollment->user_id)
+                ->whereIn('lesson_id', $lessonIds)
+                ->whereNotNull('server_verified_at')
+                ->distinct('lesson_id')
+                ->count('lesson_id');
+
+            if ($completedCount < $lessonIds->count()) {
+                return false;
+            }
         }
 
-        $completedCount = DB::table('lesson_completions')
-            ->where('user_id', $enrollment->user_id)
-            ->whereIn('lesson_id', $lessonIds)
-            ->whereNotNull('server_verified_at')
-            ->distinct('lesson_id')
-            ->count('lesson_id');
-
-        if ($completedCount < $lessonIds->count()) {
-            return false;
-        }
-
-        foreach ($course->modules->flatMap(fn ($module) => $module->lessons) as $lesson) {
-            foreach ($lesson->activities->where('is_active', true)->where('is_required', true) as $activity) {
-                if ($enrollment->enrolled_at && $activity->created_at && $activity->created_at->gt($enrollment->enrolled_at)) {
-                    continue;
-                }
-                $acceptableStatuses = $activity->activity_type === 'assignment' ? ['passed'] : ['completed', 'passed'];
-                $hasCompletion = $activity->submissions()
-                    ->where('user_id', $enrollment->user_id)
-                    ->whereIn('status', $acceptableStatuses)
-                    ->exists();
-                if (! $hasCompletion) {
-                    return false;
-                }
+        $activities = $course->modules->flatMap(fn ($module) => $module->lessons->flatMap(fn ($lesson) => $lesson->activities)
+            ->merge($module->activities));
+        foreach ($activities->where('is_active', true)->where('is_required', true) as $activity) {
+            if ($enrollment->enrolled_at && $activity->created_at && $activity->created_at->gt($enrollment->enrolled_at)) {
+                continue;
+            }
+            $acceptableStatuses = $activity->activity_type === 'assignment' ? ['passed'] : ['completed', 'passed'];
+            $hasCompletion = $activity->submissions()
+                ->where('user_id', $enrollment->user_id)
+                ->whereIn('status', $acceptableStatuses)
+                ->exists();
+            if (! $hasCompletion) {
+                return false;
             }
         }
 
@@ -782,11 +781,11 @@ class MicrocredentialCompletionService
         $course = $enrollment->course;
 
         $requiredQuizzes = $course->modules
-            ->flatMap(fn ($module) => collect([$module->quiz])->merge(
+            ->flatMap(fn ($module) => collect([$module->quiz])->merge($module->quizzes)->merge(
                 $module->lessons->flatMap(fn ($lesson) => $lesson->quizzes)
             ))
             ->filter(fn ($quiz) => $quiz && $quiz->questions->isNotEmpty());
-        $requiredQuizzes = $requiredQuizzes->reject(fn ($quiz) => $quiz->lesson_id
+        $requiredQuizzes = $requiredQuizzes->reject(fn ($quiz) => (! $quiz->is_summative || $quiz->lesson_id)
             && $enrollment->enrolled_at
             && $quiz->created_at
             && $quiz->created_at->gt($enrollment->enrolled_at));

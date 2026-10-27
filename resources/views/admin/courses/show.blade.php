@@ -247,7 +247,7 @@
                             <button type="button" class="module-head" onclick="this.parentElement.classList.toggle('open')">
                                 <span class="module-index">{{ $loop->iteration }}</span>
                                 <span class="module-title">{{ $module->title }}</span>
-                                <span class="module-count">{{ $lCount }} {{ $lCount === 1 ? 'lesson' : 'lessons' }}@if ($module->quiz) · 1 quiz @endif</span>
+                                <span class="module-count">{{ $lCount }} {{ $lCount === 1 ? 'lesson' : 'lessons' }} · {{ count($module->activities) }} activities · {{ count($module->learning_quizzes) + (int) (bool) $module->quiz }} quizzes</span>
                                 <svg class="ico"><use href="#i-down"/></svg>
                             </button>
 
@@ -369,6 +369,21 @@
                                             <p class="lesson-desc lesson-empty">No content has been added to this lesson yet.</p>
                                         @endif
                                     </div>
+                                @endforeach
+
+                                @foreach($module->activities as $moduleActivity)
+                                    <section class="lesson-activity">
+                                        <div class="lesson-activity-head"><span>{{ $moduleActivity->title }} <span class="lesson-assessment-meta">({{ Illuminate\Support\Str::headline($moduleActivity->activity_type) }} · Module activity)</span></span><span class="lesson-activity-meta">{{ $moduleActivity->is_required ? 'Required' : 'Optional' }}@if($moduleActivity->activity_type === 'assignment') · {{ $moduleActivity->max_points ?? '—' }} points · Pass {{ $moduleActivity->passing_percent ?? 70 }}%@endif</span></div>
+                                        @if(filled($moduleActivity->instructions))<div class="activity-instructions up-ckeditor-wrapper"><div class="rich ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($moduleActivity->instructions) !!}</div></div>@else<p class="lesson-desc lesson-empty">No instructions have been added to this activity.</p>@endif
+                                    </section>
+                                @endforeach
+
+                                @foreach($module->learning_quizzes as $learningQuiz)
+                                    <section class="lesson-assessment"><div class="lesson-assessment-title"><span>{{ $learningQuiz->title }}</span><span class="lesson-assessment-meta">Module quiz · {{ $learningQuiz->questions_count }} questions · Pass {{ $learningQuiz->passing_score }}%</span></div>
+                                        @foreach($learningQuiz->questions as $qi => $question)
+                                            <div class="assessment-question"><div class="assessment-question-title">Q{{ $qi + 1 }}. {{ $question->question }}</div><div class="lesson-assessment-meta">{{ $question->type }}{{ $question->points ? ' · '.$question->points.' pts' : '' }}</div></div>
+                                        @endforeach
+                                    </section>
                                 @endforeach
 
                                 @if ($module->quiz)

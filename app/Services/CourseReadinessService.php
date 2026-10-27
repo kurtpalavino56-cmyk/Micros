@@ -18,6 +18,8 @@ class CourseReadinessService
             'modules.lessons.activities',
             'modules.lessons.quizzes.questions',
             'modules.quiz.questions',
+            'modules.quizzes.questions',
+            'modules.activities',
         ]);
 
         $modules = $course->modules;
@@ -40,6 +42,10 @@ class CourseReadinessService
             && $finalModule->quiz->questions->isNotEmpty());
         $hasAssessment = $modules->contains(function (CourseModule $module): bool {
             if ($module->quiz && $module->quiz->is_active && $module->quiz->questions->isNotEmpty()) {
+                return true;
+            }
+            if ($module->quizzes->contains(fn (Quiz $quiz): bool => $quiz->is_active && $quiz->questions->isNotEmpty())
+                || $module->activities->contains(fn (LessonActivity $activity): bool => $activity->is_active && $activity->is_required)) {
                 return true;
             }
 

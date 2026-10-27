@@ -520,6 +520,8 @@ class StudentController extends Controller
         $course = Course::with([
             'modules.lessons.quizzes.questions',
             'modules.quiz.questions',
+            'modules.activities',
+            'modules.quizzes.questions',
             'creator',
             'learningOutcomes',
             'badge',
@@ -567,6 +569,8 @@ class StudentController extends Controller
                     ->map($quizSummary)
                     ->values(),
             ])->values(),
+            'activities' => $module->activities->where('is_active', true)->values(),
+            'learningQuizzes' => $module->quizzes->where('is_active', true)->map($quizSummary)->values(),
             'quiz' => $module->quiz && $module->quiz->is_active ? $quizSummary($module->quiz) : null,
         ])->values();
 
@@ -743,7 +747,7 @@ class StudentController extends Controller
     public function learn(int $id, CourseEvaluationService $courseEvaluation)
     {
         $auth = Auth::user();
-        $course = Course::with(['modules.lessons.quizzes.questions', 'modules.lessons.activities.submissions', 'modules.quiz.questions'])->findOrFail($id);
+        $course = Course::with(['modules.lessons.quizzes.questions', 'modules.lessons.activities.submissions', 'modules.activities.submissions', 'modules.quizzes.questions', 'modules.quiz.questions'])->findOrFail($id);
         $enrollment = Enrollment::where('user_id', $auth->id)
             ->where('course_id', $course->id)
             ->first();
@@ -753,6 +757,16 @@ class StudentController extends Controller
                 ->withErrors(['enrollment' => 'Enroll in this course before opening its lessons.']);
         }
 
+        $moduleQuizIds = $course->modules->flatMap(fn ($module) => $module->quizzes->pluck('id'))->unique()->values();
+        $passedModuleQuizIds = $moduleQuizIds->isEmpty() ? collect() : QuizAttempt::query()
+            ->where('user_id', $auth->id)
+            ->whereIn('quiz_id', $moduleQuizIds)
+            ->where('passed', true)
+            ->whereNotNull('submitted_at')
+            ->distinct()
+            ->pluck('quiz_id')
+            ->map(fn ($quizId) => (int) $quizId);
+
         $modules = $course->modules->map(fn ($m) => (object) [
             'id' => $m->id,
             'title' => $m->title,
@@ -760,10 +774,13 @@ class StudentController extends Controller
             'description' => $m->description ?? '',
             'assessment_count' => $m->lessons->sum(fn (CourseLesson $lesson) => $lesson->activities->where('is_active', true)->count()
                 + $lesson->quizzes->where('is_active', true)->count()
-            ) + (int) ($m->quiz?->is_active ?? false),
+            ) + $m->activities->where('is_active', true)->count()
+                + $m->quizzes->where('is_active', true)->count()
+                + (int) ($m->quiz?->is_active ?? false),
             'lessons' => $m->lessons->map(fn (CourseLesson $l) => (object) [
                 'id' => $l->id,
                 'title' => $l->title,
+                'module_order' => $l->module_order,
                 'type' => 'Text',
                 'duration' => $l->duration,
                 'description' => $l->content ?: $l->title,
@@ -807,6 +824,26 @@ class StudentController extends Controller
                     ];
                 })->values()->all(),
             ] : null,
+            'activities' => $m->activities->where('is_active', true)->map(fn (LessonActivity $activity) => (object) [
+                'id' => $activity->id,
+                'title' => $activity->title,
+                'activity_type' => $activity->activity_type,
+                'is_required' => $activity->is_required,
+                'module_order' => $activity->module_order,
+                'is_completed' => $activity->submissions->where('user_id', $auth->id)->contains(fn ($submission) => in_array(
+                    $submission->status,
+                    $activity->activity_type === 'assignment' ? ['passed'] : ['completed', 'passed'],
+                    true,
+                )),
+            ])->values(),
+            'learning_quizzes' => $m->quizzes->where('is_active', true)->map(fn (Quiz $quiz) => (object) [
+                'id' => $quiz->id,
+                'title' => $quiz->title,
+                'passing_score' => $quiz->passing_score,
+                'questions_count' => $quiz->questions->count(),
+                'module_order' => $quiz->module_order,
+                'is_completed' => $passedModuleQuizIds->contains((int) $quiz->id),
+            ])->values(),
         ])->values();
 
         // Previously saved player state, so returning students pick up
@@ -1329,7 +1366,7 @@ class StudentController extends Controller
 
     private function quizIsUnlockedForStudent(Quiz $quiz, int $userId): bool
     {
-        $course = Course::with(['modules.quiz', 'modules.lessons.quizzes.questions', 'modules.lessons.activities'])
+        $course = Course::with(['modules.quiz', 'modules.quizzes.questions', 'modules.activities.submissions', 'modules.lessons.quizzes.questions', 'modules.lessons.activities'])
             ->findOrFail($quiz->course_id);
         $enrollment = Enrollment::query()->where('user_id', $userId)->where('course_id', $quiz->course_id)->first();
         if (! $enrollment) {
@@ -1360,9 +1397,35 @@ class StudentController extends Controller
                     return false;
                 }
             }
+            if ($moduleIndex < $targetModuleIndex && ! $this->moduleRequirementsComplete($module, $userId)) {
+                return false;
+            }
         }
 
-        return $quiz->module_id !== null;
+        if ($quiz->module_id === null) {
+            return false;
+        }
+
+        $module = $course->modules->firstWhere('id', $quiz->module_id);
+        if (! $module) {
+            return false;
+        }
+
+        $requiredThroughOrder = $quiz->is_summative ? PHP_INT_MAX : (int) $quiz->module_order;
+        foreach ($module->activities->where('is_active', true)->where('is_required', true)->where('module_order', '<', $requiredThroughOrder) as $activity) {
+            $acceptedStatuses = $activity->activity_type === 'assignment' ? ['passed'] : ['completed', 'passed'];
+            if (! $activity->submissions()->where('user_id', $userId)->whereIn('status', $acceptedStatuses)->exists()) {
+                return false;
+            }
+        }
+        foreach ($module->quizzes->where('is_active', true)->where('module_order', '<', $requiredThroughOrder) as $earlierQuiz) {
+            if ($earlierQuiz->questions->isNotEmpty() && ! QuizAttempt::query()->where('quiz_id', $earlierQuiz->id)
+                ->where('user_id', $userId)->where('passed', true)->whereNotNull('submitted_at')->exists()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1395,6 +1458,7 @@ class StudentController extends Controller
         $viewData = [
             'user' => UserPresenter::student($student),
             'quiz' => $quiz,
+            'module_order' => $quiz->module_order,
             'status' => $status,
             'latestAttempt' => $latestAttempt,
             'time_limit_seconds' => $timeLimitSeconds,
@@ -1403,7 +1467,13 @@ class StudentController extends Controller
                 : max(0, $timeLimitSeconds - (now()->timestamp - $quizStartedAt)),
         ];
 
-        if ($request->expectsJson() && $quiz->lesson_id) {
+        if ($request->expectsJson() && ($quiz->lesson_id || (! $quiz->is_summative && $quiz->module_id))) {
+            $viewData['module_content_step'] = ! $quiz->is_summative && ! $quiz->lesson_id;
+            $moduleEnrollment = Enrollment::query()->where('user_id', $student->id)->where('course_id', $quiz->course_id)->firstOrFail();
+            $viewData['module_next_url'] = $viewData['module_content_step'] && $quiz->module
+                ? $this->nextModuleRequirementAfter($quiz->module, (int) $quiz->module_order, $moduleEnrollment)['url']
+                : null;
+
             return response()->json([
                 'html' => view('student.courses.partials.lesson-quiz', $viewData)->render(),
             ]);
@@ -1497,7 +1567,7 @@ class StudentController extends Controller
         }
 
         $enrollment = Enrollment::query()->where('user_id', $student->id)->where('course_id', $quiz->course_id)->firstOrFail();
-        $course = Course::with(['modules.quiz.questions', 'modules.lessons.quizzes.questions', 'modules.lessons.activities'])->findOrFail($quiz->course_id);
+        $course = Course::with(['modules.quiz.questions', 'modules.quizzes.questions', 'modules.activities.submissions', 'modules.lessons.quizzes.questions', 'modules.lessons.activities'])->findOrFail($quiz->course_id);
         $lessonCompleted = false;
         $nextRequirement = ['url' => null, 'pending_review' => false];
 
@@ -1510,6 +1580,9 @@ class StudentController extends Controller
                 $nextRequirement = $this->nextRequiredLessonAssessment($lesson, $enrollment);
             }
         }
+        if (! $quiz->lesson_id && ! $quiz->is_summative && $quiz->module && $result['passed']) {
+            $nextRequirement = $this->nextModuleRequirementAfter($quiz->module, (int) $quiz->module_order, $enrollment);
+        }
 
         $this->progressService->syncEnrollmentProgress($course, $enrollment);
         $this->completionService->evaluate($enrollment);
@@ -1517,7 +1590,9 @@ class StudentController extends Controller
         if ($request->expectsJson()) {
             $nextRequirement = $quiz->lesson_id && $result['passed'] && ! $lessonCompleted
                 ? $this->nextRequiredLessonAssessment(CourseLesson::query()->findOrFail($quiz->lesson_id), $enrollment)
-                : ['url' => null, 'pending_review' => false];
+                : ((! $quiz->lesson_id && ! $quiz->is_summative && $quiz->module && $result['passed'])
+                    ? $this->nextModuleRequirementAfter($quiz->module, (int) $quiz->module_order, $enrollment)
+                    : ['url' => null, 'pending_review' => false]);
             $attemptStatus = $this->quizAttempts->retakeStatus($quiz, (int) $student->id);
 
             return response()->json([
@@ -1549,31 +1624,41 @@ class StudentController extends Controller
     public function showLessonActivity(int $id, Request $request)
     {
         $student = Auth::user();
-        $activity = LessonActivity::with(['lesson.course'])->where('is_active', true)->findOrFail($id);
+        $activity = LessonActivity::with(['lesson.course', 'module.course'])->where('is_active', true)->findOrFail($id);
+        $courseId = (int) ($activity->lesson?->course_id ?? $activity->module?->course_id);
         $enrollment = Enrollment::query()
             ->where('user_id', $student->id)
-            ->where('course_id', $activity->lesson->course_id)
+            ->where('course_id', $courseId)
             ->firstOrFail();
-        $course = Course::with(['modules.quiz.questions', 'modules.lessons.quizzes.questions', 'modules.lessons.activities'])
-            ->findOrFail($activity->lesson->course_id);
-        abort_unless(
-            $this->lessonIsUnlockedForStudent($course, $activity->lesson, (int) $student->id, $enrollment),
-            403,
-            'Complete the previous lessons and module assessment before opening this activity.'
-        );
-        abort_unless(
-            $this->lessonIsServerVerified((int) $activity->lesson_id, (int) $student->id)
-                || session()->has($this->lessonContinuedSessionKey((int) $student->id, (int) $activity->lesson->course_id, (int) $activity->lesson_id)),
-            403,
-            'Open the lesson and select Continue before starting its activities.'
-        );
+        $course = Course::with(['modules.quiz.questions', 'modules.quizzes.questions', 'modules.activities.submissions', 'modules.lessons.quizzes.questions', 'modules.lessons.activities'])
+            ->findOrFail($courseId);
+        if ($activity->lesson) {
+            abort_unless($this->lessonIsUnlockedForStudent($course, $activity->lesson, (int) $student->id, $enrollment), 403,
+                'Complete the previous lessons and module assessment before opening this activity.');
+            abort_unless(
+                $this->lessonIsServerVerified((int) $activity->lesson_id, (int) $student->id)
+                    || session()->has($this->lessonContinuedSessionKey((int) $student->id, $courseId, (int) $activity->lesson_id)),
+                403,
+                'Open the lesson and select Continue before starting its activities.'
+            );
+        } else {
+            abort_unless($activity->module && $this->moduleActivityIsUnlocked($course, $activity, $student->id), 403,
+                'Complete the earlier module content before opening this activity.');
+        }
         $submissions = $activity->submissions()->where('user_id', $student->id)->latest('attempt_number')->get();
 
         $viewData = [
             'user' => UserPresenter::student($student),
+            'course' => $course,
             'activity' => $activity,
             'submissions' => $submissions,
-            'lesson_completed' => $this->lessonIsServerVerified((int) $activity->lesson_id, (int) $student->id),
+            'module_order' => $activity->module_order,
+            'lesson_completed' => $activity->lesson_id !== null
+                && $this->lessonIsServerVerified((int) $activity->lesson_id, (int) $student->id),
+            'module_content_step' => $activity->lesson_id === null,
+            'module_next_url' => $activity->lesson_id === null && $activity->module
+                ? $this->nextModuleRequirement($activity, $enrollment)['url']
+                : null,
         ];
 
         if ($request->expectsJson()) {
@@ -1588,21 +1673,24 @@ class StudentController extends Controller
     public function submitLessonActivity(int $id, Request $request, UserNotificationService $userNotifications)
     {
         $student = Auth::user();
-        $activity = LessonActivity::with('lesson')->where('is_active', true)->findOrFail($id);
-        $enrollment = Enrollment::query()->where('user_id', $student->id)->where('course_id', $activity->lesson->course_id)->firstOrFail();
-        $course = Course::with(['modules.quiz.questions', 'modules.lessons.quizzes.questions', 'modules.lessons.activities'])
-            ->findOrFail($activity->lesson->course_id);
-        abort_unless(
-            $this->lessonIsUnlockedForStudent($course, $activity->lesson, (int) $student->id, $enrollment),
-            403,
-            'Complete the previous lessons and module assessment before submitting this activity.'
-        );
-        abort_unless(
-            $this->lessonIsServerVerified((int) $activity->lesson_id, (int) $student->id)
-                || $request->session()->has($this->lessonContinuedSessionKey((int) $student->id, (int) $activity->lesson->course_id, (int) $activity->lesson_id)),
-            403,
-            'Open the lesson and select Continue before submitting its activities.'
-        );
+        $activity = LessonActivity::with(['lesson', 'module'])->where('is_active', true)->findOrFail($id);
+        $courseId = (int) ($activity->lesson?->course_id ?? $activity->module?->course_id);
+        $enrollment = Enrollment::query()->where('user_id', $student->id)->where('course_id', $courseId)->firstOrFail();
+        $course = Course::with(['modules.quiz.questions', 'modules.quizzes.questions', 'modules.activities.submissions', 'modules.lessons.quizzes.questions', 'modules.lessons.activities'])
+            ->findOrFail($courseId);
+        if ($activity->lesson) {
+            abort_unless($this->lessonIsUnlockedForStudent($course, $activity->lesson, (int) $student->id, $enrollment), 403,
+                'Complete the previous lessons and module assessment before submitting this activity.');
+            abort_unless(
+                $this->lessonIsServerVerified((int) $activity->lesson_id, (int) $student->id)
+                    || $request->session()->has($this->lessonContinuedSessionKey((int) $student->id, $courseId, (int) $activity->lesson_id)),
+                403,
+                'Open the lesson and select Continue before submitting its activities.'
+            );
+        } else {
+            abort_unless($activity->module && $this->moduleActivityIsUnlocked($course, $activity, $student->id), 403,
+                'Complete the earlier module content before submitting this activity.');
+        }
         $data = $request->validate([
             'response_text' => ['nullable', 'string', 'max:20000', 'required_without:submission_file'],
             'submission_file' => ['nullable', 'file', 'mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,png,jpg,jpeg,zip', 'max:10240'],
@@ -1632,7 +1720,9 @@ class StudentController extends Controller
             );
         }
 
-        $lessonCompleted = $this->progressService->completeLessonIfRequirementsSatisfied($course, $activity->lesson, $enrollment);
+        $lessonCompleted = $activity->lesson
+            ? $this->progressService->completeLessonIfRequirementsSatisfied($course, $activity->lesson, $enrollment)
+            : false;
         if (! $lessonCompleted) {
             $this->syncEnrollmentProgress($course, $enrollment);
         } else {
@@ -1640,9 +1730,11 @@ class StudentController extends Controller
         }
 
         $this->completionService->evaluate($enrollment);
-        $nextRequirement = $lessonCompleted
-            ? ['url' => null, 'pending_review' => false]
-            : $this->nextRequiredLessonAssessment($activity->lesson, $enrollment);
+        $nextRequirement = $activity->lesson
+            ? ($lessonCompleted ? ['url' => null, 'pending_review' => false] : $this->nextRequiredLessonAssessment($activity->lesson, $enrollment))
+            : ($submission->status === 'submitted'
+                ? ['url' => null, 'pending_review' => true]
+                : $this->nextModuleRequirement($activity, $enrollment));
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -1672,13 +1764,140 @@ class StudentController extends Controller
         ]);
     }
 
+    private function moduleRequirementsComplete(CourseModule $module, int $userId): bool
+    {
+        foreach ($module->lessons as $lesson) {
+            if (! $this->lessonIsServerVerified((int) $lesson->id, $userId)
+                || ! $this->lessonRequirementsSatisfied($lesson, $userId)) {
+                return false;
+            }
+        }
+
+        foreach ($module->activities->where('is_active', true)->where('is_required', true) as $activity) {
+            $accepted = $activity->activity_type === 'assignment' ? ['passed'] : ['completed', 'passed'];
+            if (! $activity->submissions()->where('user_id', $userId)->whereIn('status', $accepted)->exists()) {
+                return false;
+            }
+        }
+
+        foreach ($module->quizzes->where('is_active', true) as $quiz) {
+            if ($quiz->questions->isNotEmpty() && ! QuizAttempt::query()->where('quiz_id', $quiz->id)
+                ->where('user_id', $userId)->where('passed', true)->whereNotNull('submitted_at')->exists()) {
+                return false;
+            }
+        }
+
+        if ($module->quiz && $module->quiz->questions()->exists()
+            && ! QuizAttempt::query()->where('quiz_id', $module->quiz->id)->where('user_id', $userId)
+                ->where('passed', true)->whereNotNull('submitted_at')->exists()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function moduleActivityIsUnlocked(Course $course, LessonActivity $activity, int $userId): bool
+    {
+        $module = $activity->module;
+        if (! $module || $module->is_final) {
+            return false;
+        }
+
+        $modules = $course->modules->reject(fn (CourseModule $candidate): bool => $candidate->is_final)->values();
+        $moduleIndex = $modules->search(fn (CourseModule $candidate): bool => (int) $candidate->id === (int) $module->id);
+        if ($moduleIndex === false) {
+            return false;
+        }
+
+        foreach ($modules->take($moduleIndex) as $previousModule) {
+            if (! $this->moduleRequirementsComplete($previousModule, $userId)) {
+                return false;
+            }
+        }
+
+        $lessonIds = $module->lessons->pluck('id');
+        if ($lessonIds->isNotEmpty()) {
+            $verifiedCount = DB::table('lesson_completions')->where('user_id', $userId)->whereIn('lesson_id', $lessonIds)
+                ->whereNotNull('server_verified_at')->distinct()->count('lesson_id');
+            if ($verifiedCount < $lessonIds->count()) {
+                return false;
+            }
+        }
+
+        foreach ($module->activities->where('is_active', true)->where('is_required', true)->where('module_order', '<', $activity->module_order) as $previousActivity) {
+            $accepted = $previousActivity->activity_type === 'assignment' ? ['passed'] : ['completed', 'passed'];
+            if (! $previousActivity->submissions()->where('user_id', $userId)->whereIn('status', $accepted)->exists()) {
+                return false;
+            }
+        }
+
+        foreach ($module->quizzes->where('is_active', true)->where('module_order', '<', $activity->module_order) as $previousQuiz) {
+            if ($previousQuiz->questions->isNotEmpty() && ! QuizAttempt::query()->where('quiz_id', $previousQuiz->id)
+                ->where('user_id', $userId)->where('passed', true)->whereNotNull('submitted_at')->exists()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** @return array{url: ?string, pending_review: bool} */
+    private function nextModuleRequirement(LessonActivity $activity, Enrollment $enrollment): array
+    {
+        $module = $activity->module;
+        if (! $module) {
+            return ['url' => null, 'pending_review' => false];
+        }
+
+        return $this->nextModuleRequirementAfter($module, (int) $activity->module_order, $enrollment);
+    }
+
+    /** @return array{url: ?string, pending_review: bool} */
+    private function nextModuleRequirementAfter(CourseModule $module, int $moduleOrder, Enrollment $enrollment): array
+    {
+        $module->loadMissing(['activities.submissions', 'quizzes.questions', 'quiz.questions']);
+
+        $requirements = $module->activities->where('is_active', true)
+            ->map(fn ($item) => ['type' => 'activity', 'order' => (int) $item->module_order, 'item' => $item])
+            ->merge($module->quizzes->where('is_active', true)->filter(fn (Quiz $quiz): bool => $quiz->questions->isNotEmpty())
+                ->map(fn ($item) => ['type' => 'quiz', 'order' => (int) $item->module_order, 'item' => $item]))
+            ->sortBy('order');
+
+        foreach ($requirements as $requirement) {
+            if ($requirement['order'] <= $moduleOrder) {
+                continue;
+            }
+            $item = $requirement['item'];
+            if ($requirement['type'] === 'activity') {
+                $accepted = $item->activity_type === 'assignment' ? ['passed'] : ['completed', 'passed'];
+                if ($item->submissions()->where('user_id', $enrollment->user_id)->whereIn('status', $accepted)->exists()) {
+                    continue;
+                }
+                $pending = $item->activity_type === 'assignment' && $item->submissions()->where('user_id', $enrollment->user_id)->where('status', 'submitted')->exists();
+
+                return ['url' => $pending ? null : route('lesson-activities.show', $item->id), 'pending_review' => $pending];
+            }
+            if (! QuizAttempt::query()->where('quiz_id', $item->id)->where('user_id', $enrollment->user_id)->where('passed', true)->whereNotNull('submitted_at')->exists()) {
+                return ['url' => route('quiz.show', $item->id), 'pending_review' => false];
+            }
+        }
+
+        if ($module->quiz && $module->quiz->is_active && $module->quiz->questions->isNotEmpty()
+            && (int) $module->quiz->module_order > $moduleOrder
+            && ! QuizAttempt::query()->where('quiz_id', $module->quiz->id)->where('user_id', $enrollment->user_id)->where('passed', true)->whereNotNull('submitted_at')->exists()) {
+            return ['url' => route('quiz.show', $module->quiz->id), 'pending_review' => false];
+        }
+
+        return ['url' => null, 'pending_review' => false];
+    }
+
     public function downloadLessonActivitySubmission(int $submissionId)
     {
         $student = Auth::user();
-        $submission = LessonActivitySubmission::with(['activity.lesson.course'])->findOrFail($submissionId);
+        $submission = LessonActivitySubmission::with(['activity.lesson.course', 'activity.module.course'])->findOrFail($submissionId);
         $isStudentOwner = (int) $submission->user_id === (int) $student->id;
-        $isFacultyOwner = $student->isFaculty()
-            && (int) $submission->activity->lesson->course->created_by === (int) $student->id;
+        $course = $submission->activity->lesson?->course ?? $submission->activity->module?->course;
+        $isFacultyOwner = $student->isFaculty() && $course && (int) $course->created_by === (int) $student->id;
         abort_unless($isStudentOwner || $isFacultyOwner, 403);
         abort_unless($submission->submission_path && Storage::disk('local')->exists($submission->submission_path), 404);
 
@@ -2216,7 +2435,7 @@ class StudentController extends Controller
                     ? route('students.index', ['credential_id' => $ub->credential_uid])
                     : null,
                 'verification_qr_url' => $ub->credential_uid
-                    ? CertificateBuilder::qrFor(route('students.index', ['credential_id' => $ub->credential_uid]), 180)
+                    ? CertificateBuilder::qrDataUriFor(route('students.index', ['credential_id' => $ub->credential_uid]))
                     : null,
                 'status' => $ub->status ?: 'active',
                 'revoked_at' => $ub->revoked_at,

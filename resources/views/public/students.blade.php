@@ -368,6 +368,9 @@
 
     .certfloat__btn:hover { background: #071550; }
     .badge-verify-title{margin:8px 44px 4px 0;color:var(--navy);font-family:var(--font-display);font-size:24px;font-weight:800;}
+    .badge-verify-artwork{display:grid;width:144px;height:144px;margin:12px auto;place-items:center;border:1px solid #e5eaf2;border-radius:18px;background:#f8faff;}
+    .badge-verify-artwork img{display:block;width:116px;height:116px;object-fit:contain;}
+    .badge-verify-artwork svg{width:64px;height:64px;color:var(--navy);}
     .badge-verify-description{margin:0 0 18px;color:var(--text-muted);font-size:14px;line-height:1.6;}
     .badge-verify-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
     .badge-verify-detail{padding:12px;border:1px solid #e5e7eb;border-radius:10px;background:#f8faff;overflow-wrap:anywhere;}
@@ -457,6 +460,13 @@
                     Verified Badge
                 </div>
             @endif
+            <div class="badge-verify-artwork">
+                @if(!empty($badgeCredential['icon_url']))
+                    <img src="{{ $badgeCredential['icon_url'] }}" alt="{{ $badgeCredential['name'] }} badge">
+                @else
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3l2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3z"/></svg>
+                @endif
+            </div>
             <h2 class="badge-verify-title">{{ $badgeCredential['name'] }}</h2>
             @if($badgeCredential['description'])
                 <p class="badge-verify-description">{{ $badgeCredential['description'] }}</p>

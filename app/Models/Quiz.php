@@ -12,6 +12,8 @@ class Quiz extends Model
         'course_id',
         'module_id',
         'lesson_id',
+        'is_summative',
+        'module_order',
         'title',
         'description',
         'passing_score',
@@ -27,6 +29,7 @@ class Quiz extends Model
     {
         return [
             'is_active' => 'boolean',
+            'is_summative' => 'boolean',
             'questions_changed_at' => 'datetime',
         ];
     }

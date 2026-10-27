@@ -149,6 +149,26 @@
                                     @if(!$moduleQuiz)<div class="record-empty">No lessons or assessments in this module.</div>@endif
                                 @endforelse
 
+                                @foreach($module->activities->where('lesson_id', null) as $activity)
+                                    @php $submissions = $activitySubmissions->get($activity->id, collect()); @endphp
+                                    <section class="record-lesson">
+                                        <div class="record-lesson-head"><div><div class="record-lesson-title">{{ $activity->title }} · {{ Illuminate\Support\Str::headline($activity->activity_type) }} (module activity)</div><div class="record-meta">{{ $activity->is_required ? 'Required' : 'Optional' }}</div></div></div>
+                                        <div class="record-work">
+                                            @forelse($submissions as $submission)
+                                                <div class="record-attempt"><span class="record-pill {{ in_array($submission->status, ['passed', 'completed'], true) ? 'done' : 'waiting' }}">{{ ucfirst($submission->status) }}</span><span class="record-meta">Attempt {{ $submission->attempt_number }} · {{ $submission->submitted_at?->format('M j, Y g:i A') ?? 'Submission time unavailable' }}</span>
+                                                    @if($submission->response_text)<p>{{ $submission->response_text }}</p>@endif
+                                                    @if($submission->feedback)<p><strong>Feedback:</strong> {{ $submission->feedback }}</p>@endif
+                                                    @if($submission->submission_path)<a href="{{ $reviewRole === 'faculty' ? route('faculty.lesson-activities.download', $submission->id) : route('admin.enrollments.submissions.download', $submission->id) }}">Download submitted file</a>@endif
+                                                </div>
+                                            @empty<div class="record-meta">No submission recorded.</div>@endforelse
+                                        </div>
+                                    </section>
+                                @endforeach
+
+                                @foreach($moduleLearningQuizzes->get($module->id, collect()) as $learningQuiz)
+                                    @include('admin.enrollments.partials.quiz-attempts', ['quiz' => $learningQuiz, 'attempts' => $quizAttempts->get($learningQuiz->id, collect())])
+                                @endforeach
+
                                 @if($moduleQuiz)
                                     @include('admin.enrollments.partials.quiz-attempts', ['quiz' => $moduleQuiz, 'attempts' => $quizAttempts->get($moduleQuiz->id, collect())])
                                 @endif

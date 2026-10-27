@@ -1,4 +1,4 @@
-﻿{{--
+{{--
     resources/views/faculty/My_Courses.blade.php
 
     Faculty â€º My Courses â€” ONE self-contained Blade view with TWO modes:
@@ -29,7 +29,7 @@
 --}}
 @php $mode = $mode ?? 'list'; @endphp
 @php $facultyBodyClass = request()->boolean('inline') ? 'inline-quiz' : ''; @endphp
-<x-faculty.layout title="{{ $mode === 'final-exam' ? (($quiz ?? null) ? 'Edit Final Exam' : 'Create Final Exam') : ($mode === 'quiz' ? 'Add Quiz' : ($mode === 'manage' ? 'Manage Course' : 'My Courses')) }} | Upskill" data-faculty-page="faculty-courses-index" class="{{ $facultyBodyClass }}" use-app-css use-app-js>
+<x-faculty.layout title="{{ $mode === 'final-exam' ? (($quiz ?? null) ? 'Edit Final Exam' : 'Create Final Exam') : (in_array($mode, ['quiz', 'module-quiz'], true) ? 'Add Quiz' : ($mode === 'manage' ? 'Manage Course' : 'My Courses')) }} | Upskill" data-faculty-page="faculty-courses-index" class="{{ $facultyBodyClass }}" use-app-css use-app-js>
     <x-slot:head><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -126,24 +126,7 @@
                         <h3 class="section-title">Course Modules</h3>
                         <p class="section-caption">Organize the lessons, activities, and assessments in this course.</p>
                     </div>
-                    <button class="btn-primary-action" type="button" id="toggle-module-create" aria-expanded="{{ $errors->has('module_title') || $errors->has('module_description') ? 'true' : 'false' }}" aria-controls="module-create-form" onclick="toggleModuleCreate()">+ Add Module</button>
                 </div>
-
-                {{-- Keep module creation in this page, but reveal it only when requested. --}}
-                <form class="add-module-card" id="module-create-form" style="display:{{ $errors->has('module_title') || $errors->has('module_description') ? 'flex' : 'none' }};" method="POST" action="{{ route('faculty.module.store', $course->id) }}">
-                    @csrf
-                    <label class="form-field-label" for="new-module-title">Module title</label>
-                    <input class="input-outline" id="new-module-title" type="text" name="module_title" placeholder="e.g. Web Page Foundations" value="{{ old('module_title') }}" required>
-                    <label class="form-field-label" for="module-description-new">Description</label>
-                    @include('components.rich-text-editor', ['name' => 'module_description', 'id' => 'module-description-new', 'value' => old('module_description'), 'placeholder' => 'Describe what this module covers...'])
-                    @if($errors->has('module_title') || $errors->has('module_description'))
-                        <div class="form-error" role="alert">{{ $errors->first('module_title') ?: $errors->first('module_description') }}</div>
-                    @endif
-                    <div class="module-create-actions">
-                        <button class="btn-secondary-action" type="button" onclick="toggleModuleCreate(false)">Cancel</button>
-                        <button class="btn-primary-action" type="submit">Create Module</button>
-                    </div>
-                </form>
 
                 <div class="sortable-list module-sort-list" data-order-kind="modules" data-order-url="{{ route('faculty.modules.reorder', $course->id) }}">
                 @forelse ($modules as $module)
@@ -151,7 +134,7 @@
                         @php
                             $moduleLessons = $module->lessons ?? collect();
                             $moduleLessonCount = $moduleLessons->count();
-                            $moduleActivityCount = $moduleLessons->sum(fn ($lesson) => collect($lesson->activities ?? [])->count());
+                            $moduleActivityCount = collect($module->activities ?? [])->count();
                             $moduleDurationMinutes = $moduleLessons->sum(fn ($lesson) => (int) ($lesson->duration_raw ?? 0));
                             $moduleDurationLabel = $moduleDurationMinutes >= 60
                                 ? intdiv($moduleDurationMinutes, 60).'h '.($moduleDurationMinutes % 60).'m'
@@ -216,162 +199,23 @@
                             </div>
                         </form>
 
-                        @php $showLessonForm = ($addLessonIndex ?? null) === $module->idx
-                            || (int) session('open_lesson_form') === (int) $module->idx; @endphp
-                        <div class="sortable-list lesson-sort-list" data-order-kind="lessons" data-parent-id="{{ $module->idx }}" data-order-url="{{ route('faculty.lessons.reorder', [$course->id, $module->idx]) }}">
-                        @forelse ($module->lessons ?? [] as $lesson)
-                            <div class="lesson-sort-item sortable-item" data-order-item data-order-id="{{ $lesson->id }}">
-                            <div class="lesson-row">
-                                <button class="drag-handle" type="button" draggable="true" title="Drag to reorder lesson" aria-label="Drag to reorder lesson">⋮⋮</button>
-                                <span class="lesson-number">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
-                                <div class="lesson-info">
-                                    <h4>{{ $lesson->title }}</h4>
-                                    <div class="sub">{{ 'Text'.($lesson->duration_raw ? ' · '.$lesson->duration_raw.' min' : '') }}</div>
-                                </div>
-                                <div class="lesson-actions">
-                                    <button type="button" class="lesson-action-btn" onclick="toggleLessonEdit({{ $lesson->id }})" title="Edit lesson">Edit</button>
-                                    <form method="POST" action="{{ route('faculty.lesson.delete', [$course->id, $module->idx, $lesson->key ?? 'seed-'.$loop->index]) }}" onsubmit="return confirm('Delete this lesson and its activities and quizzes? This cannot be undone.');">
-                                        @csrf
-                                        <button class="btn-icon-muted" type="submit" title="Delete lesson" aria-label="Delete lesson">
-                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 4v5m4-5v5"/></svg>
-                                        </button>
-                                    </form>
-                                    <button type="button" class="lesson-action-btn lesson-collapse-btn" aria-expanded="true" aria-controls="lesson-content-{{ $lesson->id }}" aria-label="Collapse lesson content" title="Collapse lesson" onclick="toggleLessonCollapse({{ $lesson->id }}, this)">
-                                        <span class="lesson-collapse-label">Collapse</span>
-                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="lesson-collapsible-content" id="lesson-content-{{ $lesson->id }}">
-                            {{-- Inline lesson editor stays with the lesson content,
-                                 before its activities and assessments. --}}
-                            @if($lesson->id ?? null)
-                                <form class="lesson-form lesson-edit-form" id="lesson-edit-{{ $lesson->id }}"
-                                      style="display:{{ session('open_lesson_edit') == $lesson->id ? 'flex' : 'none' }};"
-                                      method="POST"
-                                      action="{{ route('faculty.lesson.update', [$course->id, $module->idx, $lesson->id]) }}">
-                                    @csrf
-
-                                    <div class="row2">
-                                        <input class="input-outline" type="text" name="lesson_title"
-                                               placeholder="Lesson title *"
-                                               value="{{ old('lesson_title', $lesson->title) }}" required>
-                                    </div>
-
-                                    @include('components.rich-text-editor', [
-                                        'name' => 'lesson_content',
-                                        'id' => 'lesson-content-edit-'.$lesson->id,
-                                        'value' => old('lesson_content', $lesson->content),
-                                        'placeholder' => 'Write the lesson content...'
-                                    ])
-
-                                    @if ($errors->has('lesson_content') && (int) session('open_lesson_edit') === (int) $lesson->id)
-                                        <div class="fac-course-inline-error">
-                                            {{ $errors->first('lesson_content') }}
-                                        </div>
-                                    @endif
-
-                                    <div class="actions">
-                                        <input class="input-outline" type="number" name="duration"
-                                               placeholder="Duration ( Min )" min="0"
-                                               value="{{ old('duration', $lesson->duration_raw ?: '') }}">
-                                        <button class="btn-save-lesson" type="submit">Save Lesson</button>
-                                        <button class="btn-cancel-outline" type="button"
-                                                onclick="toggleLessonEdit({{ $lesson->id }})">Cancel</button>
-                                    </div>
-                                </form>
-                            @endif
-
-                            <section class="activity-panel" aria-label="Lesson activities">
-                                <div class="activity-head">
-                                    <strong>Activities</strong>
-                                    <button class="btn-primary-action btn-compact" type="button" onclick="toggleActivityForm({{ $lesson->id }}, true)">+ Add Activity</button>
-                                </div>
-                                @php
-                                    $lessonActivities = collect($lesson->activities ?? [])->sortBy('sort_order')->values();
-                                @endphp
-                                <div class="sortable-list assessment-sort-list" data-order-kind="assessments" data-parent-id="{{ $lesson->id }}" data-order-url="{{ route('faculty.lesson-assessments.reorder', [$course->id, $lesson->id]) }}">
-                                @forelse($lessonActivities as $activity)
-                                    <div class="assessment-sort-item activity-sort-item sortable-item" data-order-item data-order-type="activity" data-order-id="{{ $activity->id }}">
-                                    <article class="activity-card">
-                                        <div class="activity-head">
-                                            <button class="drag-handle activity-drag-handle" type="button" draggable="true" title="Drag to reorder activity" aria-label="Drag to reorder activity">⋮⋮</button>
-                                            <div class="activity-copy"><span class="activity-kind">{{ Illuminate\Support\Str::headline($activity->activity_type) }}</span><strong>{{ $activity->title }}</strong><div class="activity-meta">{{ $activity->is_required ? 'Required' : 'Optional' }}@if($activity->activity_type === 'assignment') · {{ $activity->max_points }} points · Pass {{ $activity->passing_percent ?? 70 }}%@endif</div></div>
-                                            <div class="activity-actions"><button class="btn-edit-inline" type="button" onclick="toggleActivityEdit({{ $activity->id }})">Edit</button>
-                                                <form method="POST" action="{{ route('faculty.lesson-activity.destroy', [$course->id, $activity->id]) }}" onsubmit="return confirm('Remove this activity? Students will no longer see it. Existing submissions will be retained.');">@csrf<button class="btn-delete-activity" type="submit">Remove</button></form>
-                                            </div>
-                                        </div>
-                                        <form class="activity-form activity-edit-form" id="activity-edit-{{ $activity->id }}" @if((int) session('open_activity_edit') !== (int) $activity->id) hidden @endif method="POST" action="{{ route('faculty.lesson-activity.update', [$course->id, $activity->id]) }}">@csrf
-                                            @if((int) session('open_activity_edit') === (int) $activity->id && $errors->any())<div class="full fac-course-error-text" role="alert">{{ $errors->first() }}</div>@endif
-                                            <input name="title" maxlength="255" value="{{ old('title', $activity->title) }}" placeholder="Activity title" required>
-                                            <select name="activity_type">@foreach(['practice'=>'Practice','reflection'=>'Reflection','assignment'=>'Assignment (faculty reviewed)'] as $type=>$label)<option value="{{ $type }}" @selected(old('activity_type', $activity->activity_type) === $type)>{{ $label }}</option>@endforeach</select>
-                                            @include('components.rich-text-editor', ['name' => 'instructions', 'id' => 'activity-instructions-edit-'.$activity->id, 'value' => old('instructions', $activity->instructions), 'placeholder' => 'Instructions and criteria'])
-                                            <label><input type="checkbox" name="is_required" value="1" @checked(old('is_required', $activity->is_required))> Required for lesson completion</label>
-                                            <div class="activity-actions"><input type="number" name="max_points" min="1" max="10000" placeholder="Points (assignment)" value="{{ old('max_points', $activity->max_points) }}"><input type="number" name="passing_percent" min="1" max="100" placeholder="Pass %" value="{{ old('passing_percent', $activity->passing_percent) }}"></div>
-                                            <div class="activity-actions full"><button class="btn-save-lesson" type="submit">Save Activity</button><button class="btn-cancel-outline" type="button" onclick="toggleActivityEdit({{ $activity->id }})">Cancel</button></div>
-                                        </form>
-                                    </article>
-                                    </div>
-                                @empty
-                                    <p class="activity-empty">No activities added to this lesson.</p>
-                                @endforelse
-                                @if($lesson->quiz ?? null)
-                                    <section class="assessment-sort-item lesson-assessment sortable-item" data-order-item data-order-type="quiz" data-order-id="{{ $lesson->quiz->id }}" aria-label="Lesson assessment">
-                                        <div class="assessment-label">Assessment</div>
-                                        <div class="lesson-quiz-row">
-                                            <button class="drag-handle activity-drag-handle" type="button" draggable="true" title="Drag to reorder lesson assessment" aria-label="Drag to reorder lesson assessment">⋮⋮</button>
-                                            <div><strong class="lesson-quiz-title">{{ $lesson->quiz->title }}</strong><div class="activity-meta">{{ $lesson->quiz->questions_count }} {{ Illuminate\Support\Str::plural('question', $lesson->quiz->questions_count) }} · Pass {{ $lesson->quiz->passing_score }}%</div></div>
-                                            <div class="activity-actions">
-                                                <a class="btn-edit-inline" href="{{ route('faculty.lesson-quiz.create', [$course->id, $lesson->id]) }}">Edit Quiz</a>
-                                            </div>
-                                        </div>
-                                    </section>
-                                @endif
-                                </div>
-                                @unless($lesson->quiz ?? null)
-                                    <div class="lesson-assessment-empty">
-                                        <div class="assessment-label">Assessment</div>
-                                        <span class="quiz-none">No lesson quiz created yet.</span>
-                                        <a class="btn-secondary-action btn-compact" href="{{ route('faculty.lesson-quiz.create', [$course->id, $lesson->id]) }}">+ Add Lesson Quiz</a>
-                                    </div>
-                                @endunless
-                                <form class="activity-form" id="activity-add-{{ $lesson->id }}" @if((int) session('open_activity_form') !== (int) $lesson->id) hidden @endif method="POST" action="{{ route('faculty.lesson-activity.store', [$course->id, $lesson->id]) }}">@csrf
-                                    @if((int) session('open_activity_form') === (int) $lesson->id && $errors->any())<div class="full fac-course-error-text" role="alert">{{ $errors->first() }}</div>@endif
-                                    <div class="activity-form-context"><strong>Add activity to this lesson</strong><span>{{ $lesson->title }}</span></div>
-                                    <input name="title" maxlength="255" value="{{ old('title') }}" placeholder="Activity title" required>
-                                    <select name="activity_type"><option value="practice" @selected(old('activity_type') === 'practice')>Practice</option><option value="reflection" @selected(old('activity_type') === 'reflection')>Reflection</option><option value="assignment" @selected(old('activity_type') === 'assignment')>Assignment (faculty reviewed)</option></select>
-                                    @include('components.rich-text-editor', ['name' => 'instructions', 'id' => 'activity-instructions-add-'.$lesson->id, 'value' => old('instructions'), 'placeholder' => 'Instructions and criteria'])
-                                    <label><input type="checkbox" name="is_required" value="1" @checked(old('is_required', true))> Required for lesson completion</label>
-                                    <div class="activity-actions"><input type="number" name="max_points" min="1" max="10000" value="{{ old('max_points') }}" placeholder="Points (assignment)"><input type="number" name="passing_percent" min="1" max="100" value="{{ old('passing_percent') }}" placeholder="Pass %"></div>
-                                    <div class="activity-actions full"><button class="btn-save-lesson" type="submit">Save Activity</button><button class="btn-cancel-outline" type="button" onclick="toggleActivityForm({{ $lesson->id }}, false)">Cancel</button></div>
-                                </form>
-                            </section>
-
-                            </div>{{-- /lesson-collapsible-content --}}
-
-                            </div>{{-- /lesson-sort-item --}}
-
-                        @empty
-                            <div class="lessons-empty" id="lessons-empty-{{ $module->idx }}">
-                                <span>This module has no lessons yet.</span>
-                            </div>
-                        @endforelse
-                        </div>{{-- /lesson-sort-list --}}
+                        @php
+    $showLessonForm = ($addLessonIndex ?? null) === $module->idx
+        || (int) session('open_lesson_form') === (int) $module->idx;
+    $moduleItems = collect($module->lessons ?? [])->map(fn ($lesson) => (object) ['type' => 'lesson', 'order' => $lesson->module_order, 'item' => $lesson])
+        ->merge(collect($module->activities ?? [])->map(fn ($activity) => (object) ['type' => 'activity', 'order' => $activity->module_order, 'item' => $activity]))
+        ->merge(collect($module->learning_quizzes ?? [])->map(fn ($quiz) => (object) ['type' => 'quiz', 'order' => $quiz->module_order, 'item' => $quiz]))
+        ->sortBy('order')->values();
+@endphp
 
                         <form class="lesson-form" id="lesson-form-{{ $module->idx }}"
                               style="display:{{ $showLessonForm ? 'flex' : 'none' }};"
                               method="POST" action="{{ route('faculty.lesson.store', [$course->id, $module->idx]) }}">
                             @csrf
                             <label class="form-field-label" for="lesson-title-add-{{ $module->idx }}">Lesson title</label>
-                            <input class="input-outline" id="lesson-title-add-{{ $module->idx }}" type="text" name="lesson_title" placeholder="e.g. HTML, CSS, and JavaScript" value="{{ old('lesson_title') }}" required>
+                            <input class="input-outline" id="lesson-title-add-{{ $module->idx }}" type="text" name="lesson_title" placeholder="e.g. Web Page Foundations" value="{{ old('lesson_title') }}" required>
                             <label class="form-field-label" for="lesson-content-add-{{ $module->idx }}">Description</label>
-                            @include('components.rich-text-editor', [
-                                'name' => 'lesson_content',
-                                'id' => 'lesson-content-add-'.$module->idx,
-                                'value' => old('lesson_content'),
-                                'placeholder' => 'Write the lesson content...'
-                            ])
+                            @include('components.rich-text-editor', ['name' => 'lesson_content', 'id' => 'lesson-content-add-'.$module->idx, 'value' => old('lesson_content'), 'placeholder' => 'Write the lesson content...'])
                             @if ($errors->has('lesson_content') && (int) session('open_lesson_form') === (int) $module->idx)
                                 <div class="form-error" role="alert">{{ $errors->first('lesson_content') }}</div>
                             @endif
@@ -384,8 +228,84 @@
                                 <button class="btn-primary-action" type="submit">Save Lesson</button>
                             </div>
                         </form>
+
+                        <form class="activity-form module-activity-create-form" id="module-activity-add-{{ $module->idx }}" @if((int) session('open_module_content') !== (int) $module->idx) hidden @endif method="POST" action="{{ route('faculty.module-activity.store', [$course->id, $module->idx]) }}">@csrf
+                            @if((int) session('open_module_content') === (int) $module->idx && $errors->any())<div class="full fac-course-error-text" role="alert">{{ $errors->first() }}</div>@endif
+                            <div class="activity-form-context"><strong>Add activity to this module</strong><span>{{ $module->title }}</span></div>
+                            <input name="title" maxlength="255" value="{{ old('title') }}" placeholder="Activity title" required>
+                            <select name="activity_type"><option value="practice" @selected(old('activity_type', 'practice') === 'practice')>Practice</option><option value="reflection" @selected(old('activity_type') === 'reflection')>Reflection</option><option value="assignment" @selected(old('activity_type') === 'assignment')>Assignment (faculty reviewed)</option></select>
+                            @include('components.rich-text-editor', ['name' => 'instructions', 'id' => 'module-activity-instructions-add-'.$module->idx, 'value' => old('instructions'), 'placeholder' => 'Instructions and criteria'])
+                            <label><input type="checkbox" name="is_required" value="1" @checked(old('is_required', true))> Required for module completion</label>
+                            <div class="activity-actions" data-assignment-fields><input type="number" name="max_points" min="1" max="10000" value="{{ old('max_points') }}" placeholder="Points (assignment)"><input type="number" name="passing_percent" min="1" max="100" value="{{ old('passing_percent') }}" placeholder="Pass %"></div>
+                            <div class="activity-actions full"><button class="btn-save-lesson" type="submit">Save Activity</button><button class="btn-cancel-outline" type="button" onclick="toggleModuleActivityForm({{ $module->idx }}, false)">Cancel</button></div>
+                        </form>
+
+                        <div class="sortable-list module-content-sort-list" data-order-kind="module-items" data-parent-id="{{ $module->idx }}" data-order-url="{{ route('faculty.module-items.reorder', [$course->id, $module->idx]) }}">
+                            @forelse($moduleItems as $moduleItem)
+                                @php $item = $moduleItem->item; @endphp
+                                <article class="module-content-card sortable-item module-content-card-{{ $moduleItem->type }}" data-order-item data-order-type="{{ $moduleItem->type }}" data-order-id="{{ $item->id }}">
+                                    <button class="drag-handle module-content-drag-handle" type="button" draggable="true" title="Drag to reorder {{ $moduleItem->type }}" aria-label="Drag to reorder {{ $moduleItem->type }}">⋮⋮</button>
+                                    <span class="module-content-number">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+                                    <div class="module-content-copy">
+                                        @if($moduleItem->type === 'lesson')
+                                            <span class="module-content-kind">Lesson</span>
+                                            <strong>{{ $item->title }}</strong>
+                                            <span class="module-content-meta">Text{{ $item->duration_raw ? ' · '.$item->duration_raw.' min' : '' }}</span>
+                                        @elseif($moduleItem->type === 'activity')
+                                            <span class="module-content-kind">{{ Illuminate\Support\Str::headline($item->activity_type) }} · Activity</span>
+                                            <strong>{{ $item->title }}</strong>
+                                            <span class="module-content-meta">{{ $item->is_required ? 'Required' : 'Optional' }} · {{ $item->submissions_count }} submissions</span>
+                                        @else
+                                            <span class="module-content-kind">Quiz</span>
+                                            <strong>{{ $item->title }}</strong>
+                                            <span class="module-content-meta">{{ $item->questions_count }} questions · Pass {{ $item->passing_score }}%</span>
+                                        @endif
+                                    </div>
+                                    <div class="module-content-actions">
+                                        @if($moduleItem->type === 'lesson')
+                                            <button class="module-content-action" type="button" onclick="toggleLessonEdit({{ $item->id }})">Edit</button>
+                                            <form method="POST" action="{{ route('faculty.lesson.delete', [$course->id, $module->idx, $item->key]) }}" onsubmit="return confirm('Remove this lesson? This cannot be undone.');">@csrf<button class="btn-icon-danger" type="submit" title="Remove lesson" aria-label="Remove lesson"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 4v5m4-5v5"/></svg></button></form>
+                                        @elseif($moduleItem->type === 'activity')
+                                            <button class="module-content-action" type="button" onclick="toggleActivityEdit({{ $item->id }})">Edit</button>
+                                            <form method="POST" action="{{ route('faculty.lesson-activity.destroy', [$course->id, $item->id]) }}" onsubmit="return confirm('Remove this activity? Existing submissions will be retained.');">@csrf<button class="btn-icon-danger" type="submit" title="Remove activity" aria-label="Remove activity"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 4v5m4-5v5"/></svg></button></form>
+                                        @else
+                                            <a class="module-content-action" href="{{ route('faculty.module-quiz.edit', [$course->id, $module->idx, $item->id]) }}">Edit</a>
+                                            <form method="POST" action="{{ route('faculty.module-quiz.destroy', [$course->id, $module->idx, $item->id]) }}" onsubmit="return confirm('Remove this quiz and its student attempts? This cannot be undone.');">@csrf<button class="btn-icon-danger" type="submit" title="Remove quiz" aria-label="Remove quiz"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 4v5m4-5v5"/></svg></button></form>
+                                        @endif
+                                    </div>
+
+                                    @if($moduleItem->type === 'lesson')
+                                        <form class="lesson-form lesson-edit-form module-content-edit-form" id="lesson-edit-{{ $item->id }}" style="display:none;" method="POST" action="{{ route('faculty.lesson.update', [$course->id, $module->idx, $item->id]) }}">@csrf
+                                            <div class="row2"><input class="input-outline" type="text" name="lesson_title" placeholder="Lesson title *" value="{{ old('lesson_title', $item->title) }}" required></div>
+                                            @include('components.rich-text-editor', ['name' => 'lesson_content', 'id' => 'lesson-content-edit-'.$item->id, 'value' => old('lesson_content', $item->content), 'placeholder' => 'Write the lesson content...'])
+                                            @if ($errors->has('lesson_content') && (int) session('open_lesson_edit') === (int) $item->id)<div class="fac-course-inline-error">{{ $errors->first('lesson_content') }}</div>@endif
+                                            <div class="actions"><input class="input-outline" type="number" name="duration" placeholder="Duration ( Min )" min="0" value="{{ old('duration', $item->duration_raw ?: '') }}"><button class="btn-save-lesson" type="submit">Save Lesson</button><button class="btn-cancel-outline" type="button" onclick="toggleLessonEdit({{ $item->id }})">Cancel</button></div>
+                                        </form>
+                                    @elseif($moduleItem->type === 'activity')
+                                        <form class="activity-form activity-edit-form module-content-edit-form" id="activity-edit-{{ $item->id }}" hidden method="POST" action="{{ route('faculty.lesson-activity.update', [$course->id, $item->id]) }}">@csrf
+                                            <input name="title" maxlength="255" value="{{ $item->title }}" placeholder="Activity title" required>
+                                            <select name="activity_type">@foreach(['practice'=>'Practice','reflection'=>'Reflection','assignment'=>'Assignment (faculty reviewed)'] as $type=>$label)<option value="{{ $type }}" @selected($item->activity_type === $type)>{{ $label }}</option>@endforeach</select>
+                                            @include('components.rich-text-editor', ['name' => 'instructions', 'id' => 'module-activity-instructions-edit-'.$item->id, 'value' => $item->instructions, 'placeholder' => 'Instructions and criteria'])
+                                            <label><input type="checkbox" name="is_required" value="1" @checked($item->is_required)> Required for module completion</label>
+                                            <div class="activity-actions" data-assignment-fields><input type="number" name="max_points" min="1" max="10000" value="{{ $item->max_points }}" placeholder="Points (assignment)"><input type="number" name="passing_percent" min="1" max="100" value="{{ $item->passing_percent }}" placeholder="Pass %"></div>
+                                            <div class="activity-actions full"><button class="btn-save-lesson" type="submit">Save Activity</button><button class="btn-cancel-outline" type="button" onclick="toggleActivityEdit({{ $item->id }})">Cancel</button></div>
+                                        </form>
+                                    @endif
+                                </article>
+                            @empty
+                                <div class="module-content-empty">This module has no learning items yet.</div>
+                            @endforelse
+                        </div>
+
                         <div class="module-add-lesson">
-                            <button class="btn-primary-action" type="button" onclick="toggleLessonForm({{ $module->idx }}, true)">+ Add Lesson</button>
+                            <details class="module-add-menu">
+                                <summary class="btn-primary-action module-authoring-add-button">+ Add</summary>
+                                <div class="module-add-options">
+                                    <button type="button" onclick="hideModuleAddMenu(this); toggleLessonForm({{ $module->idx }}, true)">Lesson</button>
+                                    <button type="button" onclick="hideModuleAddMenu(this); toggleModuleActivityForm({{ $module->idx }}, true)">Activity</button>
+                                    <a href="{{ route('faculty.module-quiz.create', [$course->id, $module->idx]) }}" onclick="hideModuleAddMenu(this)">Quiz</a>
+                                </div>
+                            </details>
                         </div>
 
                         {{-- The module quiz is the summative assessment for all lessons in this module. --}}
@@ -397,13 +317,13 @@
                                     <h4>{{ $module->quiz->title }}</h4>
                                     <div class="sub">{{ $module->quiz->questions_count }} {{ Illuminate\Support\Str::plural('question', $module->quiz->questions_count) }} · Pass {{ $module->quiz->passing_score }}%</div>
                                 </div>
-                                <a class="btn-edit-inline" href="{{ route('faculty.quiz.create', [$course->id, $module->idx]) }}">Edit Quiz</a>
+                                <a class="module-content-action" href="{{ route('faculty.quiz.create', [$course->id, $module->idx]) }}">Edit</a>
                                 <form method="POST"
                                       action="{{ route('faculty.quiz.destroy', [$course->id, $module->idx]) }}"
                                       class="fac-inline-action"
                                       onsubmit="return confirm('Delete this summative quiz and its student attempts? This cannot be undone.');">
                                     @csrf
-                                    <button class="btn-icon-danger" type="submit" title="Delete summative quiz" aria-label="Delete summative quiz"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 4v5m4-5v5"/></svg></button>
+                                    <button class="btn-icon-danger" type="submit" title="Remove summative assessment" aria-label="Remove summative assessment"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 4v5m4-5v5"/></svg></button>
                                 </form>
                             @else
                                 <span class="quiz-none">No summative assessment created yet.</span>
@@ -415,15 +335,34 @@
                 @empty
                     <div class="empty-modules">
                         <h4>No Modules yet</h4>
-                        <p>Add your first Module above</p>
+                        <p>Add your first module below</p>
                     </div>
                 @endforelse
                 </div>{{-- /module-sort-list --}}
+                <form class="add-module-card" id="module-create-form" style="display:{{ $errors->has('module_title') || $errors->has('module_description') ? 'flex' : 'none' }};" method="POST" action="{{ route('faculty.module.store', $course->id) }}">
+                    @csrf
+                    <label class="form-field-label" for="new-module-title">Module title</label>
+                    <input class="input-outline" id="new-module-title" type="text" name="module_title" placeholder="e.g. Web Page Foundations" value="{{ old('module_title') }}" required>
+                    <label class="form-field-label" for="module-description-new">Description</label>
+                    @include('components.rich-text-editor', ['name' => 'module_description', 'id' => 'module-description-new', 'value' => old('module_description'), 'placeholder' => 'Describe what this module covers...'])
+                    @if($errors->has('module_title') || $errors->has('module_description'))
+                        <div class="form-error" role="alert">{{ $errors->first('module_title') ?: $errors->first('module_description') }}</div>
+                    @endif
+                    <div class="module-create-actions">
+                        <button class="btn-secondary-action" type="button" onclick="toggleModuleCreate(false)">Cancel</button>
+                        <button class="btn-primary-action" type="submit">Create Module</button>
+                    </div>
+                </form>
+                <div class="module-add-module-footer">
+                    <button class="btn-primary-action module-authoring-add-button" type="button" id="toggle-module-create" aria-expanded="{{ $errors->has('module_title') || $errors->has('module_description') ? 'true' : 'false' }}" aria-controls="module-create-form" onclick="toggleModuleCreate()">+ Add Module</button>
+                </div>
                 <div id="reorder-status" aria-live="polite"></div>
 
                 <section class="panel fac-final-exam-panel" aria-labelledby="course-completion-title">
-                    <h3 id="course-completion-title" class="fac-final-exam-title">Course completion</h3>
-                    <p class="fac-final-exam-description">Add a separate course assessment that unlocks after students finish the course modules.</p>
+                    <div class="fac-final-exam-copy">
+                        <h3 id="course-completion-title" class="fac-final-exam-title">Course completion</h3>
+                        <p class="fac-final-exam-description">Add a separate course assessment that unlocks after students finish the course modules.</p>
+                    </div>
                     @if($finalModule)
                         <div class="fac-final-exam-header">
                             <div>
@@ -443,7 +382,7 @@
                             </div>
                         </div>
                     @else
-                        <form method="POST" action="{{ route('faculty.final-exam.store', $course->id) }}">
+                        <form class="fac-final-exam-add-form" method="POST" action="{{ route('faculty.final-exam.store', $course->id) }}">
                             @csrf
                             <button class="btn-primary-action" type="submit">Add final exam</button>
                         </form>
@@ -475,7 +414,7 @@
 
         </div>
 
-    @elseif (in_array($mode, ['quiz', 'final-exam'], true))
+    @elseif (in_array($mode, ['quiz', 'module-quiz', 'final-exam'], true))
 
         {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â• QUIZ BUILDER MODE â€” "Add Quiz : <module>" â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 
@@ -486,7 +425,7 @@
 
         {{-- âœ… Real form â€” Save Quiz stores everything (session for now) and
              returns to the Managing Course screen with the quiz in the module --}}
-        <form method="POST" action="{{ $mode === 'final-exam' ? route('faculty.final-exam.update', [$course->id, $moduleIdx]) : (!empty($lessonId) ? route('faculty.lesson-quiz.store', [$course->id, $lessonId]) : route('faculty.quiz.store', [$course->id, $moduleIdx])) }}">
+        <form method="POST" action="{{ $mode === 'final-exam' ? route('faculty.final-exam.update', [$course->id, $moduleIdx]) : ($mode === 'module-quiz' ? (!empty($moduleQuizId) ? route('faculty.module-quiz.update', [$course->id, $moduleIdx, $moduleQuizId]) : route('faculty.module-quiz.store', [$course->id, $moduleIdx])) : (!empty($lessonId) ? route('faculty.lesson-quiz.store', [$course->id, $lessonId]) : route('faculty.quiz.store', [$course->id, $moduleIdx]))) }}">
             @csrf
             @if(request()->boolean('inline'))<input type="hidden" name="inline" value="1">@endif
 
@@ -715,11 +654,19 @@
         }
     }
 
-    function toggleActivityForm(lessonId, show) {
-        var form = document.getElementById('activity-add-' + lessonId);
+    function toggleModuleActivityForm(moduleId, show) {
+        var form = document.getElementById('module-activity-add-' + moduleId);
         if (!form) return;
         form.hidden = typeof show === 'boolean' ? !show : !form.hidden;
-        if (!form.hidden) form.querySelector('input[name="title"]')?.focus();
+        if (!form.hidden) {
+            form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            form.querySelector('input[name="title"]')?.focus();
+        }
+    }
+
+    function hideModuleAddMenu(option) {
+        var menu = option.closest('.module-add-menu');
+        if (menu) menu.open = false;
     }
 
     function toggleActivityEdit(activityId) {
@@ -728,6 +675,25 @@
         form.hidden = !form.hidden;
         if (!form.hidden) form.querySelector('input[name="title"]')?.focus();
     }
+
+    function syncActivityScoringFields(form) {
+        var isAssignment = form.querySelector('[name="activity_type"]')?.value === 'assignment';
+        var fields = form.querySelector('[data-assignment-fields]');
+        if (!fields) return;
+        fields.hidden = !isAssignment;
+        fields.querySelectorAll('input').forEach(function (input) {
+            input.disabled = !isAssignment;
+        });
+    }
+
+    document.querySelectorAll('.module-activity-create-form, .activity-edit-form').forEach(function (form) {
+        var typeSelect = form.querySelector('[name="activity_type"]');
+        if (!typeSelect) return;
+        typeSelect.addEventListener('change', function () {
+            syncActivityScoringFields(form);
+        });
+        syncActivityScoringFields(form);
+    });
 
     document.querySelectorAll('[data-order-kind][data-order-url]').forEach(function (list) {
         var draggedItem = null;
@@ -817,7 +783,7 @@
             event.preventDefault();
             var kind = list.dataset.orderKind;
             var orderedItems = Array.from(list.querySelectorAll(':scope > [data-order-item]'));
-            queuedItems = kind === 'assessments'
+            queuedItems = kind === 'assessments' || kind === 'module-items'
                 ? orderedItems.map(function (item) { return { type: item.dataset.orderType, id: Number(item.dataset.orderId) }; })
                 : orderedItems.map(function (item) { return Number(item.dataset.orderId); });
             saveQueuedOrder();
@@ -1073,22 +1039,6 @@
             }, 5000);
         });
     });
-
-    function toggleLessonCollapse(lessonId, button) {
-        var content = document.getElementById('lesson-content-' + lessonId);
-        if (!content || !button) return;
-
-        var isExpanded = button.getAttribute('aria-expanded') === 'true';
-        var nextLabel = isExpanded ? 'Expand' : 'Collapse';
-
-        content.hidden = isExpanded;
-        button.setAttribute('aria-expanded', String(!isExpanded));
-        button.setAttribute('aria-label', nextLabel + ' lesson content');
-        button.setAttribute('title', nextLabel + ' lesson');
-
-        var label = button.querySelector('.lesson-collapse-label');
-        if (label) label.textContent = nextLabel;
-    }
 
     // Show / hide the inline lesson editor.
     function toggleLessonEdit(lessonId) {

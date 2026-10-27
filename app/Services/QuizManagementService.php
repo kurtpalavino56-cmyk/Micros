@@ -14,16 +14,29 @@ class QuizManagementService
 {
     public function save(Request $request, Course $course, CourseModule $module): bool
     {
-        return $this->persist($request, $course, ['module_id' => $module->id, 'lesson_id' => null]);
+        return $this->persist($request, $course, ['module_id' => $module->id, 'lesson_id' => null, 'is_summative' => true]);
+    }
+
+    public function saveRegularForModule(Request $request, Course $course, CourseModule $module, ?Quiz $quiz = null): bool
+    {
+        return $this->persist($request, $course, [
+            'module_id' => $module->id,
+            'lesson_id' => null,
+            'is_summative' => false,
+        ], $quiz, $quiz === null);
     }
 
     public function saveForLesson(Request $request, Course $course, CourseLesson $lesson): bool
     {
-        return $this->persist($request, $course, ['module_id' => null, 'lesson_id' => $lesson->id]);
+        return $this->persist($request, $course, [
+            'module_id' => $lesson->module_id,
+            'lesson_id' => $lesson->id,
+            'is_summative' => false,
+        ]);
     }
 
-    /** @param array{module_id: int|null, lesson_id: int|null} $scope */
-    private function persist(Request $request, Course $course, array $scope): bool
+    /** @param array{module_id: int|null, lesson_id: int|null, is_summative: bool} $scope */
+    private function persist(Request $request, Course $course, array $scope, ?Quiz $targetQuiz = null, bool $createNew = false): bool
     {
         $passing = (int) $request->input('passing_score', 0);
         if ($passing < 1 || $passing > 100) {
@@ -31,7 +44,7 @@ class QuizManagementService
         }
 
         $questions = $this->parseQuestions($request->input('questions', []));
-        $existingQuiz = Quiz::where($scope)->first();
+        $existingQuiz = $targetQuiz ?? ($createNew ? null : Quiz::where($scope)->first());
         $quizData = [
             'course_id' => $course->id,
             'title' => trim($request->input('quiz_title', '')) ?: 'Untitled Quiz',
@@ -48,7 +61,25 @@ class QuizManagementService
                     (int) Quiz::where('lesson_id', $scope['lesson_id'])->max('sort_order'),
                 ) + 1;
         }
-        $quiz = Quiz::updateOrCreate($scope, $quizData);
+        if (! $scope['is_summative']) {
+            $quizData['module_order'] = $existingQuiz?->module_order ?? CourseModule::findOrFail($scope['module_id'])->nextContentOrder();
+        }
+        if ($targetQuiz) {
+            $targetQuiz->update($scope + $quizData);
+            $quiz = $targetQuiz;
+        } elseif ($createNew) {
+            $quiz = Quiz::create($scope + $quizData);
+        } else {
+            $quiz = Quiz::updateOrCreate($scope, $quizData);
+        }
+
+        $module = CourseModule::findOrFail($scope['module_id']);
+        if (! $scope['is_summative']) {
+            $summativeQuiz = $module->quiz;
+            $summativeQuiz?->update(['module_order' => (int) $quiz->module_order + 1000]);
+        } else {
+            $quiz->update(['module_order' => $module->nextContentOrder()]);
+        }
 
         $existing = $quiz->questions()->orderBy('id')->get()
             ->map(fn ($question): array => [
