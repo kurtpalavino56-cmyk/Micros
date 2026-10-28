@@ -1042,13 +1042,13 @@ function renderModuleDescription(description) {
 }
 
 function continueFromWelcome() {
-    const group = document.getElementById('mg-' + _curModIdx);
-    const first = group?.querySelector('.lesson-item');
+    const first = getLearningSteps(_curModIdx)
+        .find(step => step.classList.contains('lesson-item')
+            || step.classList.contains('lesson-assessment-link'));
     if (first) {
         first.click();
         return;
     }
-
     if (!startModuleAssessment(_curModIdx)) {
         alert('This module has no lessons or active assessment available.');
     }

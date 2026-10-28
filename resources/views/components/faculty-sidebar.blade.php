@@ -17,8 +17,8 @@
         <span class="side-label">Create Courses</span>
     </a>
     <span class="sidebar-section-label">People</span>
-    <a href="{{ route('faculty.students') }}" class="side-link {{ request()->routeIs('faculty.students*') ? 'active' : '' }}">
-        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">groups</span></span><span class="side-label">Learner Progress</span>
+    <a href="{{ route('faculty.students') }}" class="side-link {{ request()->routeIs('faculty.students*') ? 'active' : '' }}" @if($facultyLearnerProgressNeedsAttention ?? false) title="Pending reviews or exhausted quiz attempts" @endif>
+        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">groups</span></span><span class="side-label">Learner Progress</span>@if($facultyLearnerProgressNeedsAttention ?? false)<span class="side-alert-dot" role="img" aria-label="Pending reviews or exhausted quiz attempts"></span>@endif
     </a>
     <span class="sidebar-section-label">Insights</span>
     <a href="{{ route('faculty.analytics') }}" class="side-link {{ request()->routeIs('faculty.analytics') ? 'active' : '' }}">

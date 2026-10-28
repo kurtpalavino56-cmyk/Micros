@@ -1045,6 +1045,8 @@
         :where(body[data-admin-page="admin-courses-show"]) .lesson-row > span:first-of-type { flex: 1; }
         :where(body[data-admin-page="admin-courses-show"]) .lesson-meta { font-size: .75rem; color: var(--muted); }
         :where(body[data-admin-page="admin-courses-show"]) .quiz-row { background: var(--yellow-soft); color: var(--yellow-text); font-weight: 600; }
+        :where(body[data-admin-page="admin-courses-show"]) .quiz-row--module { background: #f1f3f5; color: #475569; }
+        :where(body[data-admin-page="admin-courses-show"]) .quiz-row--final-exam { background: #e7f2ff; color: #164b7a; }
         :where(body[data-admin-page="admin-courses-show"]) .quiz-row span:last-child { font-size: .75rem; }
         :where(body[data-admin-page="admin-courses-show"]) .lesson-detail, :where(body[data-admin-page="admin-courses-show"]) .quiz-detail { display: none; padding: 10px 16px 12px 30px; border-top: 1px dashed var(--line); font-size: .82rem; color: var(--muted); background: #fbfcfe; }
         :where(body[data-admin-page="admin-courses-show"]) .lesson-detail.open, :where(body[data-admin-page="admin-courses-show"]) .quiz-detail.open { display: block; }

@@ -379,16 +379,39 @@
                                 @endforeach
 
                                 @foreach($module->learning_quizzes as $learningQuiz)
-                                    <section class="lesson-assessment"><div class="lesson-assessment-title"><span>{{ $learningQuiz->title }}</span><span class="lesson-assessment-meta">Module quiz · {{ $learningQuiz->questions_count }} questions · Pass {{ $learningQuiz->passing_score }}%</span></div>
+                                    <div class="quiz-row quiz-row--module" onclick="this.nextElementSibling.classList.toggle('open')">
+                                        <span>Module quiz: {{ $learningQuiz->title }}</span>
+                                        <span>{{ $learningQuiz->questions_count }} questions · Pass {{ $learningQuiz->passing_score }}%{{ $learningQuiz->time_limit ? ' · ' . $learningQuiz->time_limit . ' min' : '' }}</span>
+                                    </div>
+                                    <div class="quiz-detail open">
+                                        @if ($learningQuiz->instructions)
+                                            <div class="quiz-instructions up-ckeditor-wrapper"><div class="rich ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($learningQuiz->instructions) !!}</div></div>
+                                        @endif
                                         @foreach($learningQuiz->questions as $qi => $question)
-                                            <div class="assessment-question"><div class="assessment-question-title">Q{{ $qi + 1 }}. {{ $question->question }}</div><div class="lesson-assessment-meta">{{ $question->type }}{{ $question->points ? ' · '.$question->points.' pts' : '' }}</div></div>
+                                            <div class="quiz-question">
+                                                <div class="quiz-question-head">
+                                                    <span class="quiz-question-text">Q{{ $qi + 1 }}. {{ $question->question }}</span>
+                                                    <span class="quiz-question-meta">{{ $question->type }}{{ $question->points ? ' · '.$question->points.' pts' : '' }}</span>
+                                                </div>
+                                                @if (! empty($question->options))
+                                                    <ul class="quiz-options">
+                                                        @foreach ($question->options as $oi => $option)
+                                                            <li class="{{ $option === $question->correct_answer ? 'is-correct' : '' }}">
+                                                                {{ chr(65 + $oi) }}. {{ $option }}@if ($option === $question->correct_answer) (correct) @endif
+                                                            </li>
+                                                        @endforeach
+                                                    </ul>
+                                                @elseif ($question->correct_answer)
+                                                    <div class="quiz-answer">Answer: <strong>{{ $question->correct_answer }}</strong></div>
+                                                @endif
+                                            </div>
                                         @endforeach
-                                    </section>
+                                    </div>
                                 @endforeach
 
                                 @if ($module->quiz)
-                                    <div class="quiz-row" onclick="this.nextElementSibling.classList.toggle('open')">
-                                        <span>Quiz: {{ $module->quiz->title }}</span>
+                                    <div class="quiz-row{{ $module->is_final ? ' quiz-row--final-exam' : '' }}" onclick="this.nextElementSibling.classList.toggle('open')">
+                                        <span>{{ $module->is_final ? 'Final exam' : 'Summative quiz' }}: {{ $module->quiz->title }}</span>
                                         <span>{{ $module->quiz->questions_count }} questions · Pass {{ $module->quiz->passing_score }}%{{ $module->quiz->time_limit ? ' · ' . $module->quiz->time_limit . ' min' : '' }}</span>
                                     </div>
                                     <div class="quiz-detail">
