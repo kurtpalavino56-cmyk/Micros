@@ -5,7 +5,10 @@ namespace App\Providers;
 use App\Models\Complaint;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\Quiz;
+use App\Models\QuizAttempt;
 use App\Services\MicrocredentialCompletionService;
+use App\Services\QuizAttemptService;
 use App\Services\UserNotificationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -73,6 +76,7 @@ class AppServiceProvider extends ServiceProvider
                     'inbox' => 0,
                     'admin_course_reviews' => 0,
                     'admin_completion_reviews' => 0,
+                    'faculty_learner_progress' => false,
                 ];
 
                 if (Auth::check()) {
@@ -106,6 +110,51 @@ class AppServiceProvider extends ServiceProvider
                             ->unreadForSender()
                             ->count();
                     }
+
+                    if ($user->isFaculty()) {
+                        $courseIds = Course::query()
+                            ->where('created_by', $user->id)
+                            ->pluck('id');
+
+                        if ($courseIds->isNotEmpty()) {
+                            $hasPendingReview = Enrollment::query()
+                                ->whereIn('course_id', $courseIds)
+                                ->whereIn('faculty_verification_status', ['pending', 'not_required'])
+                                ->where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
+                                ->whereHas('course', fn ($query) => $query->where('requires_faculty_verification', true))
+                                ->exists();
+
+                            $counts['faculty_learner_progress'] = $hasPendingReview;
+
+                            if (! $hasPendingReview) {
+                                $studentIds = Enrollment::query()
+                                    ->whereIn('course_id', $courseIds)
+                                    ->distinct()
+                                    ->pluck('user_id');
+                                $attemptPairs = QuizAttempt::query()
+                                    ->whereIn('user_id', $studentIds)
+                                    ->whereHas('quiz', fn ($query) => $query->whereIn('course_id', $courseIds)->whereHas('questions'))
+                                    ->whereHas('answers')
+                                    ->select(['user_id', 'quiz_id'])
+                                    ->distinct()
+                                    ->get();
+
+                                if ($attemptPairs->isNotEmpty()) {
+                                    $quizzes = Quiz::query()
+                                        ->with('questions')
+                                        ->whereIn('id', $attemptPairs->pluck('quiz_id')->unique())
+                                        ->get()
+                                        ->keyBy('id');
+                                    $attemptService = app(QuizAttemptService::class);
+
+                                    $counts['faculty_learner_progress'] = $attemptPairs->contains(
+                                        fn (QuizAttempt $attempt): bool => isset($quizzes[$attempt->quiz_id])
+                                            && $attemptService->retakeStatus($quizzes[$attempt->quiz_id], (int) $attempt->user_id)['exhausted']
+                                    );
+                                }
+                            }
+                        }
+                    }
                 }
 
                 $request->attributes->set('upskill.unread', $counts);
@@ -117,6 +166,7 @@ class AppServiceProvider extends ServiceProvider
             $view->with('unreadInboxCount', $counts['inbox']);
             $view->with('adminPendingCourseReviewCount', $counts['admin_course_reviews']);
             $view->with('adminPendingCompletionReviewCount', $counts['admin_completion_reviews']);
+            $view->with('facultyLearnerProgressNeedsAttention', $counts['faculty_learner_progress']);
         });
     }
 }

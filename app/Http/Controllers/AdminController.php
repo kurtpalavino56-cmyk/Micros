@@ -1013,6 +1013,8 @@ class AdminController extends Controller
                 'title' => $quiz->title,
                 'questions_count' => $quiz->questions->count(),
                 'passing_score' => $quiz->passing_score,
+                'time_limit' => $quiz->time_limit,
+                'instructions' => $quiz->instructions ?? '',
                 'questions' => $quiz->questions->map(fn ($question) => (object) [
                     'question' => $question->question,
                     'type' => $question->type ?? 'Multiple Choice',

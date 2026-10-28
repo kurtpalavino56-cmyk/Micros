@@ -1078,7 +1078,12 @@ class FacultyController extends Controller
                 'title' => $c->title,
                 'short_description' => $c->short_description,
                 'description' => $c->description,
-                'status' => $c->statusLabel(),
+                'status' => match (true) {
+                    $c->approval_status === 'denied' => 'Returned',
+                    $c->approval_status === 'pending' => 'Pending approval',
+                    $c->statusLabel() === 'Published' && $c->is_published => 'Published',
+                    default => 'Draft',
+                },
                 'level' => $c->level,
                 'students_count' => (int) $c->enrollments_count,
                 'modules_count' => (int) $c->modules_count,
