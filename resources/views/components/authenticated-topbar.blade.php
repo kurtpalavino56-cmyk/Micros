@@ -34,7 +34,7 @@
             </button>
         @endif
         <span class="auth-topbar-logo"><img src="{{ asset('Images/PSU-Logo.png') }}" alt="PSU Logo"></span>
-        <strong>@if ($isFaculty)<span class="faculty-brand-up">UP</span><span>SKILL</span>@elseif ($isStudent)<span>UP</span><span class="student-brand-skill">SKILL</span>@elseif ($isAdmin)<span>UP</span><span class="admin-brand-skill">SKILL</span>@else UPSKILL @endif</strong>
+        <strong>@if ($isFaculty || $isStudent || $isAdmin)<span>UP</span><span class="auth-brand-skill">SKILL</span>@else UPSKILL @endif</strong>
     </div>
 
     <div class="auth-topbar-actions">
@@ -96,30 +96,21 @@
     .auth-topbar,.auth-topbar *{box-sizing:border-box;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-style:normal;}
     .auth-topbar .material-symbols-rounded{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;display:inline-block;line-height:1;text-transform:none;letter-spacing:normal;white-space:nowrap;direction:ltr;font-feature-settings:"liga";-webkit-font-smoothing:antialiased;}
     .auth-topbar{--navy:#0d1b6e;--gold:#dba617;--gold-light:#ffd84a;background:linear-gradient(115deg, #001B33 0%,#071550 0%,#0d1b6e 58%,#102b83 100%);display:flex;align-items:center;justify-content:space-between;padding:12px 28px;gap:20px;position:sticky;top:0;z-index:1000;border-bottom:1px solid rgba(255,255,255,.1);box-shadow:0 8px 24px rgba(7,21,80,.2);}
-    .auth-topbar.admin-auth-topbar{--navy:#1C3552;--gold:#f9c21b;--gold-light:#f9c21b;background:#1C3552;border-bottom:1px solid #152a42;box-shadow:0 8px 24px rgba(0,0,0,.18);}    .admin-auth-topbar .auth-topbar-brand strong>span:first-child{color:#f9c21b;}
-    .admin-auth-topbar .admin-brand-skill{color:#fff;}
+    /* Student, faculty and admin share one header: the student gradient,
+       white "UP", gold "SKILL", gold badges. The doubled class keeps this
+       ahead of any role colours set in faculty.css or admin.css. */
+    .auth-topbar.student-auth-topbar,.auth-topbar.faculty-auth-topbar,.auth-topbar.admin-auth-topbar{background:radial-gradient(ellipse 34% 190% at 8% 0%,rgba(37,83,220,.58) 0%,rgba(37,83,220,.3) 44%,transparent 82%),radial-gradient(ellipse 40% 210% at 42% 120%,rgba(30,65,190,.68) 0%,rgba(30,65,190,.32) 48%,transparent 84%),radial-gradient(ellipse 34% 180% at 76% -35%,rgba(56,76,205,.62) 0%,rgba(56,76,205,.28) 48%,transparent 84%),radial-gradient(ellipse 32% 190% at 105% 100%,rgba(25,76,190,.6) 0%,rgba(25,76,190,.28) 50%,transparent 86%),radial-gradient(ellipse 55% 150% at 54% 48%,rgba(25,42,132,.5) 0%,transparent 88%),linear-gradient(112deg,#07143f 0%,#101f70 52%,#081742 100%);}
     .admin-auth-topbar .auth-topbar-inbox.is-active{color:var(--gold-light);background:rgba(255,255,255,.12);}
-    .auth-topbar.faculty-auth-topbar{--navy:#061a45;--gold:#9a7000;--gold-light:#fff;background:#f4c430;border-bottom:1px solid #ddb51d;box-shadow:0 6px 18px rgba(92,67,0,.16);}
-    .auth-topbar.student-auth-topbar{background:radial-gradient(ellipse 34% 190% at 8% 0%,rgba(37,83,220,.58) 0%,rgba(37,83,220,.3) 44%,transparent 82%),radial-gradient(ellipse 40% 210% at 42% 120%,rgba(30,65,190,.68) 0%,rgba(30,65,190,.32) 48%,transparent 84%),radial-gradient(ellipse 34% 180% at 76% -35%,rgba(56,76,205,.62) 0%,rgba(56,76,205,.28) 48%,transparent 84%),radial-gradient(ellipse 32% 190% at 105% 100%,rgba(25,76,190,.6) 0%,rgba(25,76,190,.28) 50%,transparent 86%),radial-gradient(ellipse 55% 150% at 54% 48%,rgba(25,42,132,.5) 0%,transparent 88%),linear-gradient(112deg,#07143f 0%,#101f70 52%,#081742 100%);}
-    .faculty-auth-topbar .auth-topbar-brand{color:#fff;}
-    .faculty-auth-topbar .auth-profile-trigger{color:#fff;}
-    .faculty-auth-topbar .auth-topbar-icon,.faculty-auth-topbar .auth-profile-name{color:#fff;}
-    .faculty-auth-topbar .auth-topbar-brand strong{color:#fff;}
-    .faculty-auth-topbar .faculty-brand-up{color:#000;}
-    .faculty-auth-topbar .auth-topbar-brand strong span:last-child{color:#fff;}
-    .faculty-auth-topbar .auth-topbar-icon:hover{color:#fff;background:rgba(11,27,69,.12);}
-    .faculty-auth-topbar .auth-topbar-badge{background:#ef4444;color:#fff;box-shadow:0 0 0 2px #f4c430;}
-    .faculty-auth-topbar .auth-notifications-item.is-unread{border-left-color:#ef4444;}
     .faculty-auth-topbar .faculty-sidebar-toggle{position:relative;left:-10px;margin-right:10px;display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;padding:0;border:0;border-radius:10px;background:transparent;color:#fff;cursor:pointer;transition:background-color .15s ease;}
-    .faculty-auth-topbar .faculty-sidebar-toggle:hover{background:rgba(11,27,69,.12);}
+    .faculty-auth-topbar .faculty-sidebar-toggle:hover{background:rgba(255,255,255,.12);}
     .faculty-auth-topbar .faculty-sidebar-toggle .material-symbols-rounded{font-size:20px;}
     .student-auth-topbar .student-sidebar-toggle{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;padding:0;border:0;border-radius:10px;background:transparent;color:#fff;cursor:pointer;transition:background-color .15s ease;}
     .student-auth-topbar .student-sidebar-toggle:hover{background:rgba(255,255,255,.12);}
     .student-auth-topbar .student-sidebar-toggle .material-symbols-rounded{font-size:20px;}
     .student-auth-topbar .student-sidebar-toggle{position:relative;left:-10px;margin-right:10px;}
-    .student-auth-topbar .auth-topbar-brand strong .student-brand-skill{color:#F4C430;}
-    .student-auth-topbar .auth-topbar-badge{background:#f4c430;color:#061a45;box-shadow:0 0 0 2px #0d1b6e;}
-    .student-auth-topbar .auth-notifications-item.is-unread{border-left-color:#f4c430;}
+    .auth-topbar-brand strong .auth-brand-skill{color:#F4C430;}
+    .auth-topbar:is(.student-auth-topbar,.faculty-auth-topbar,.admin-auth-topbar) .auth-topbar-badge{background:#f4c430;color:#061a45;box-shadow:0 0 0 2px #0d1b6e;}
+    .auth-topbar:is(.student-auth-topbar,.faculty-auth-topbar,.admin-auth-topbar) .auth-notifications-item.is-unread{border-left-color:#f4c430;}
     .auth-topbar-brand{display:flex;align-items:center;gap:8px;color:#fff;white-space:nowrap;}
     .auth-topbar-logo{width:42px;height:42px;border-radius:50%;background:transparent;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 42px;}
     .auth-topbar-logo img{width:100%;height:100%;object-fit:contain;padding:3px;}
@@ -145,7 +136,6 @@
     .auth-topbar-badge{position:absolute;top:0;right:1px;background:#ef4444;color:#fff;border-radius:999px;font-size:10px;font-weight:800;padding:2px 5px;line-height:1.3;box-shadow:0 0 0 2px var(--navy);}
     .auth-profile{position:relative;margin-left:2px;padding-left:16px;}
     .auth-profile::before{position:absolute;top:50%;left:0;width:1px;height:30px;background:rgba(255,255,255,.3);content:"";transform:translateY(-50%);}
-    .faculty-auth-topbar .auth-profile::before{background:rgba(11,27,69,.28);}
     .auth-profile-trigger{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;color:#fff;padding:0;cursor:pointer;}
     .auth-profile-avatar{width:38px;height:38px;border-radius:50%;background:#fff center/cover no-repeat;display:flex;align-items:center;justify-content:center;overflow:hidden;}
     .auth-profile-avatar .material-symbols-rounded{font-size:21px;color:var(--navy);}

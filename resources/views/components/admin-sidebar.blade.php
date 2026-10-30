@@ -21,7 +21,10 @@
         --admin-navy: #123b7a;
         --admin-text: #334155;
         --admin-muted: #64748b;
-        --admin-hover: #e2e8f0;
+        /* Sidebar hover = the student sidebar hover, used by every role. */
+        --admin-hover: #f2f7ff;
+        --admin-hover-text: #0d1b6e;
+        --admin-hover-icon: #2447d4;
         --admin-active: #fff4c7;
         --admin-font: 'Inter', sans-serif;
 
@@ -220,6 +223,7 @@
         height: 18px;
         flex: 0 0 18px;
         color: inherit;
+        transition: color .2s ease;
     }
 
     aside.shared-admin-sidebar .sb-item-alert-dot {
@@ -233,9 +237,13 @@
         box-shadow: 0 0 0 2px rgba(239, 68, 68, .16);
     }
 
-    aside.shared-admin-sidebar .sb-item:hover {
+    aside.shared-admin-sidebar .sb-item:not(.active):hover {
         background: var(--admin-hover) !important;
-        color: var(--admin-text) !important;
+        color: var(--admin-hover-text) !important;
+    }
+
+    aside.shared-admin-sidebar .sb-item:not(.active):hover .sb-item-icon {
+        color: var(--admin-hover-icon) !important;
     }
 
     /* aside.shared-admin-sidebar .sb-item.active,

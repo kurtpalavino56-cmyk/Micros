@@ -1,5 +1,23 @@
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,1,0" rel="stylesheet">
-
+<style>
+    /* Sidebar hover = the student sidebar hover (student-sidebar.blade.php),
+       so every role's sidebar reacts with the same colour. The rest of the
+       faculty sidebar is styled in resources/css/faculty.css; !important
+       makes sure this hover wins over anything set there. */
+    aside.faculty-sidebar .side-link {
+        transition: background-color .2s ease, color .2s ease, transform .15s ease;
+    }
+    aside.faculty-sidebar .side-link:not(.active):hover {
+        background: #f2f7ff !important;
+        color: #0d1b6e !important;
+    }
+    aside.faculty-sidebar .side-link .side-icon-box .material-symbols-rounded {
+        transition: color .2s ease;
+    }
+    aside.faculty-sidebar .side-link:not(.active):hover .side-icon-box .material-symbols-rounded {
+        color: #2447d4 !important;
+    }
+</style>
 
 <aside class="faculty-sidebar" id="faculty-sidebar">
     <span class="sidebar-section-label">Overview</span>
@@ -17,8 +35,8 @@
         <span class="side-label">Create Courses</span>
     </a>
     <span class="sidebar-section-label">People</span>
-    <a href="{{ route('faculty.students') }}" class="side-link {{ request()->routeIs('faculty.students*') ? 'active' : '' }}" @if($facultyLearnerProgressNeedsAttention ?? false) title="Pending reviews or exhausted quiz attempts" @endif>
-        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">groups</span></span><span class="side-label">Learner Progress</span>@if($facultyLearnerProgressNeedsAttention ?? false)<span class="side-alert-dot" role="img" aria-label="Pending reviews or exhausted quiz attempts"></span>@endif
+    <a href="{{ route('faculty.students') }}" class="side-link {{ request()->routeIs('faculty.students*') ? 'active' : '' }}">
+        <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">groups</span></span><span class="side-label">Learner Progress</span>
     </a>
     <span class="sidebar-section-label">Insights</span>
     <a href="{{ route('faculty.analytics') }}" class="side-link {{ request()->routeIs('faculty.analytics') ? 'active' : '' }}">
