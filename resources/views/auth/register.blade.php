@@ -439,7 +439,7 @@
             color: #6b7280;
             text-align: center;
         }
-        .terms-modal__foot.is-done { color: #167a3f; font-weight: 600; }
+        .terms-modal__foot[hidden] { display: none; }
 
         /* Login link */
         .register-login {
@@ -945,8 +945,9 @@
             if (atEnd && !reachedEnd) {
                 reachedEnd = true;
                 agreeBtn.disabled = false;
-                hint.textContent = 'You have reached the end. Select "I Agree" to continue.';
-                hint.classList.add('is-done');
+                // The I Agree card already says the end is reached, so the
+                // "scroll to the bottom" bar is no longer needed.
+                hint.hidden = true;
             }
         }
 
