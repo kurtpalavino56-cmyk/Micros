@@ -42,6 +42,11 @@ class RegisterController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'username' => ['required', 'string', 'max:255', 'unique:users,username'],
             'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
+            // The sign-up form locks the button until the Terms are agreed
+            // to; this enforces the same rule on the server.
+            'terms' => ['accepted'],
+        ], [
+            'terms.accepted' => 'Please read and agree to the Terms and Conditions and the Privacy Policy before signing up.',
         ]);
 
         $code = $userCodes->generateForRole(User::ROLE_STUDENT);

@@ -10,6 +10,7 @@ it('assigns a unique public user code when a learner registers', function () {
         'username' => 'learner.test',
         'password' => 'Password123!',
         'password_confirmation' => 'Password123!',
+        'terms' => '1',
     ]);
 
     $response->assertRedirect(route('dashboard'));
