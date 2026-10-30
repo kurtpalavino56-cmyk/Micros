@@ -328,7 +328,23 @@
             padding: 1.4rem 1.6rem 1.6rem;
             color: #3f4a63;
         }
+        .terms-modal__body[hidden] { display: none; }
         .terms-modal__body:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+        .terms-modal__body h3 {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--navy);
+            margin: 1.1rem 0 0.45rem;
+        }
+        .terms-modal__body .legal__note {
+            background: #f7f9ff;
+            border: 1px solid #dfe4fb;
+            border-left: 4px solid var(--navy);
+            border-radius: 10px;
+            padding: 0.85rem 1rem;
+            margin: 1.2rem 0;
+        }
+        .terms-modal__body .legal__note p { margin: 0; }
         .terms-modal__body h2 {
             font-family: var(--font-display);
             font-size: 1rem;
@@ -730,9 +746,10 @@
                     <li data-password-rule="symbol">At least 1 special character</li>
                 </ul>
 
-                {{-- Terms agreement. Ticking the box opens the Terms pop-up;
-                     it only stays ticked after "I Agree" is pressed at the
-                     bottom of the Terms. Sign Up stays locked until then. --}}
+                {{-- Terms agreement. Ticking the box opens the agreement
+                     pop-up (Terms, then Privacy Policy); it only stays ticked
+                     after "I Agree" is pressed at the bottom of the Privacy
+                     Policy. Sign Up stays locked until then. --}}
                 <div class="terms-agree">
                     <input type="checkbox" id="terms" name="terms" value="1"
                         class="terms-agree__box"
@@ -744,7 +761,7 @@
                         <button type="button" class="terms-agree__link" data-terms-open>Terms and Conditions</button>
                         and acknowledge that I have read and understood the
                         <a href="{{ route('privacy') }}" class="terms-agree__link" target="_blank" rel="noopener">Privacy Policy</a>
-                        of UPSKILL: Micro-Credentials, operated by Pangasinan State University
+                        of UPSKILL
                     </label>
                 </div>
                 @error('terms')<p class="form-error">{{ $message }}</p>@enderror
@@ -795,28 +812,39 @@
     </div>
 </div>
 
-{{-- ── Terms and Conditions pop-up ──
-     Same wording as the public /terms page (shared partial). --}}
+{{-- ── Agreement pop-up: step 1 Terms and Conditions, step 2 Privacy Policy ──
+     Same wording as the public /terms and /privacy pages (shared partials). --}}
 <div class="terms-modal" id="termsModal" hidden>
     <div class="terms-modal__backdrop" data-terms-close></div>
     <section class="terms-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="termsModalTitle" tabindex="-1">
         <header class="terms-modal__head">
             <div>
-                <p class="terms-modal__eyebrow">UPSKILL: Micro-Credentials</p>
-                <h2 class="terms-modal__title" id="termsModalTitle">Terms and Conditions</h2>
+                <p class="terms-modal__eyebrow" data-terms-step-label>UPSKILL · Step 1 of 2</p>
+                <h2 class="terms-modal__title" id="termsModalTitle" data-terms-title>Terms and Conditions</h2>
             </div>
-            <button type="button" class="terms-modal__close" data-terms-close aria-label="Close Terms and Conditions">&times;</button>
+            <button type="button" class="terms-modal__close" data-terms-close aria-label="Close">&times;</button>
         </header>
 
         <div class="terms-modal__progress" aria-hidden="true"><span data-terms-progress></span></div>
 
         {{-- The arrows float over the scrolling text, in its bottom-right corner. --}}
         <div class="terms-modal__scroll">
-            <div class="terms-modal__body" data-terms-body tabindex="0" aria-label="Terms and Conditions text">
+            {{-- Step 1 --}}
+            <div class="terms-modal__body" data-terms-pane="terms" tabindex="0" aria-label="Terms and Conditions text">
                 @include('public.partials.terms-content')
 
                 <div class="terms-modal__agree">
                     <p>You have reached the end of the Terms and Conditions.</p>
+                    <button type="button" class="terms-modal__agree-btn" data-terms-next disabled>Next</button>
+                </div>
+            </div>
+
+            {{-- Step 2 --}}
+            <div class="terms-modal__body" data-terms-pane="privacy" tabindex="0" aria-label="Privacy Policy text" hidden>
+                @include('public.partials.privacy-content')
+
+                <div class="terms-modal__agree">
+                    <p>You have reached the end of the Privacy Policy.</p>
                     <button type="button" class="terms-modal__agree-btn" data-terms-agree disabled>I Agree</button>
                 </div>
             </div>
@@ -831,7 +859,7 @@
             </div>
         </div>
 
-        <p class="terms-modal__foot" data-terms-hint aria-live="polite">Scroll to the bottom to agree to the Terms and Conditions.</p>
+        <p class="terms-modal__foot" data-terms-hint aria-live="polite"></p>
     </section>
 </div>
 
@@ -887,10 +915,13 @@
     });
 
     /* ── Terms agreement ───────────────────────────────────────────────
-       The checkbox can only become ticked through "I Agree" at the bottom
-       of the Terms pop-up. Sign Up is enabled only while it is ticked.
-       Once the Terms have been agreed to, re-ticking the box (after
-       unticking it) does not force the pop-up open again. */
+       Two steps in one pop-up: the Terms and Conditions, then the Privacy
+       Policy. "Next" (bottom of the Terms) and "I Agree" (bottom of the
+       Privacy Policy) each unlock only once that text is scrolled to the
+       end. The checkbox can only become ticked through "I Agree", and
+       Sign Up is enabled only while it is ticked. Once both have been
+       agreed to, re-ticking the box (after unticking it) does not force
+       the pop-up open again. */
     (function () {
         const form      = document.querySelector('.register-form-panel form');
         const checkbox  = document.querySelector('[data-terms-checkbox]');
@@ -899,24 +930,49 @@
         if (!form || !checkbox || !submit || !modal) return;
 
         const dialog    = modal.querySelector('[role="dialog"]');
-        const body      = modal.querySelector('[data-terms-body]');
+        const stepLabel = modal.querySelector('[data-terms-step-label]');
+        const title     = modal.querySelector('[data-terms-title]');
+        const nextBtn   = modal.querySelector('[data-terms-next]');
         const agreeBtn  = modal.querySelector('[data-terms-agree]');
         const upBtn     = modal.querySelector('[data-terms-jump="up"]');
         const downBtn   = modal.querySelector('[data-terms-jump="down"]');
         const progress  = modal.querySelector('[data-terms-progress]');
         const hint      = modal.querySelector('[data-terms-hint]');
 
-        // A ticked box on page load means the Terms were already agreed to
+        const steps = {
+            terms: {
+                pane: modal.querySelector('[data-terms-pane="terms"]'),
+                button: nextBtn,
+                label: 'UPSKILL · Step 1 of 2',
+                title: 'Terms and Conditions',
+                hint: 'Scroll to the bottom of the Terms and Conditions to continue.',
+                reachedEnd: false,
+            },
+            privacy: {
+                pane: modal.querySelector('[data-terms-pane="privacy"]'),
+                button: agreeBtn,
+                label: 'UPSKILL · Step 2 of 2',
+                title: 'Privacy Policy',
+                hint: 'Scroll to the bottom of the Privacy Policy to agree.',
+                reachedEnd: false,
+            },
+        };
+        let current = 'terms';
+
+        // A ticked box on page load means both were already agreed to
         // before a validation error sent the form back.
         let hasAgreed   = checkbox.checked;
-        let reachedEnd  = false;
         let opener      = null;
 
-        // Links inside the Terms (e.g. Privacy Policy) open in a new tab so
+        const activePane = () => steps[current].pane;
+
+        // Links inside the text (e.g. Privacy Policy) open in a new tab so
         // the half-filled sign-up form is not lost.
-        body.querySelectorAll('a[href]').forEach(link => {
-            link.target = '_blank';
-            link.rel = 'noopener';
+        Object.values(steps).forEach(step => {
+            step.pane.querySelectorAll('a[href]').forEach(link => {
+                link.target = '_blank';
+                link.rel = 'noopener';
+            });
         });
 
         function syncSubmit() {
@@ -924,12 +980,15 @@
         }
 
         function updateScrollState() {
-            // Hiding the pop-up fires a final scroll event while the text has
-            // no size, which would otherwise look like "reached the bottom".
-            if (modal.hidden || body.clientHeight === 0) return;
+            const pane = activePane();
+            // Hiding a pane (or the pop-up) fires a final scroll event while
+            // the text has no size, which would otherwise look like
+            // "reached the bottom".
+            if (modal.hidden || pane.hidden || pane.clientHeight === 0) return;
 
-            const max = body.scrollHeight - body.clientHeight;
-            const top = body.scrollTop;
+            const step = steps[current];
+            const max = pane.scrollHeight - pane.clientHeight;
+            const top = pane.scrollTop;
             const atTop = top <= 2;
             const atEnd = max <= 2 || top >= max - 2;
 
@@ -937,18 +996,29 @@
 
             // A focused button that becomes disabled drops focus out of the
             // pop-up, so hand focus to the other arrow (or the text) first.
-            if (atTop && document.activeElement === upBtn) (atEnd ? body : downBtn).focus();
-            if (atEnd && document.activeElement === downBtn) (atTop ? body : upBtn).focus();
+            if (atTop && document.activeElement === upBtn) (atEnd ? pane : downBtn).focus();
+            if (atEnd && document.activeElement === downBtn) (atTop ? pane : upBtn).focus();
             upBtn.disabled = atTop;
             downBtn.disabled = atEnd;
 
-            if (atEnd && !reachedEnd) {
-                reachedEnd = true;
-                agreeBtn.disabled = false;
-                // The I Agree card already says the end is reached, so the
-                // "scroll to the bottom" bar is no longer needed.
-                hint.hidden = true;
+            if (atEnd && !step.reachedEnd) {
+                step.reachedEnd = true;
+                step.button.disabled = false;
             }
+            // The end card already says the end is reached, so the
+            // "scroll to the bottom" bar is only shown until then.
+            hint.hidden = step.reachedEnd;
+        }
+
+        function showStep(name) {
+            current = name;
+            const step = steps[name];
+            Object.entries(steps).forEach(([key, s]) => { s.pane.hidden = key !== name; });
+            stepLabel.textContent = step.label;
+            title.textContent = step.title;
+            hint.textContent = step.hint;
+            step.pane.scrollTop = 0;
+            updateScrollState();
         }
 
         function focusables() {
@@ -960,8 +1030,7 @@
             opener = document.activeElement;
             modal.hidden = false;
             document.body.style.overflow = 'hidden';
-            body.scrollTop = 0;
-            updateScrollState();
+            showStep('terms');
             dialog.focus();
         }
 
@@ -971,8 +1040,14 @@
             (opener && opener.focus ? opener : checkbox).focus();
         }
 
+        function next() {
+            if (!steps.terms.reachedEnd) return;
+            showStep('privacy');
+            steps.privacy.pane.focus();
+        }
+
         function agree() {
-            if (!reachedEnd) return;
+            if (!steps.terms.reachedEnd || !steps.privacy.reachedEnd) return;
             hasAgreed = true;
             checkbox.checked = true;
             syncSubmit();
@@ -982,8 +1057,9 @@
 
         // Fast scroll: each click moves most of a screenful.
         function jump(direction) {
-            const step = Math.max(120, body.clientHeight * 0.85);
-            body.scrollBy({ top: direction === 'up' ? -step : step, behavior: 'smooth' });
+            const pane = activePane();
+            const step = Math.max(120, pane.clientHeight * 0.85);
+            pane.scrollBy({ top: direction === 'up' ? -step : step, behavior: 'smooth' });
         }
 
         checkbox.addEventListener('click', event => {
@@ -997,10 +1073,13 @@
 
         document.querySelector('[data-terms-open]').addEventListener('click', openTerms);
         modal.querySelectorAll('[data-terms-close]').forEach(el => el.addEventListener('click', closeTerms));
+        nextBtn.addEventListener('click', next);
         agreeBtn.addEventListener('click', agree);
         upBtn.addEventListener('click', () => jump('up'));
         downBtn.addEventListener('click', () => jump('down'));
-        body.addEventListener('scroll', updateScrollState, { passive: true });
+        Object.values(steps).forEach(step => {
+            step.pane.addEventListener('scroll', updateScrollState, { passive: true });
+        });
         window.addEventListener('resize', () => { if (!modal.hidden) updateScrollState(); });
 
         // On document (not the pop-up) so Escape still works if focus has

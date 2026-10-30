@@ -37,25 +37,36 @@ test('students can register after agreeing to the terms and conditions', functio
     expect(User::where('email', 'terms.tester@example.com')->exists())->toBeTrue();
 });
 
-test('the sign-up form shows the agreement checkbox, a locked sign up button, and the shared terms text', function () {
+test('the sign-up form shows the agreement checkbox, a locked sign up button, and the shared terms and privacy text', function () {
     $html = $this->get(route('register'))->assertOk()->getContent();
 
     expect($html)
         ->toContain('data-terms-checkbox')
         ->toContain('I have read and agree to the')
-        ->toContain('operated by Pangasinan State University')
+        ->toContain('of UPSKILL')
+        ->not->toContain('operated by Pangasinan State University')
         ->toContain('id="termsModal"')
+        ->toContain('data-terms-pane="terms"')
+        ->toContain('data-terms-next')
+        ->toContain('data-terms-pane="privacy"')
         ->toContain('data-terms-agree')
         ->toContain('data-terms-jump="up"')
         ->toContain('data-terms-jump="down"')
         ->toContain('1. Acceptance of Terms')
         ->toContain('21. Acknowledgment and Agreement')
+        ->toContain('Information We Collect')
+        ->toContain('Changes to This Privacy Policy')
         ->toMatch('/<button type="submit" class="register-submit" data-register-submit\s+disabled>/');
 });
 
-test('the public terms page and the sign-up pop-up use the same terms text', function () {
+test('the public terms and privacy pages still show their full text from the shared partials', function () {
     $this->get(route('terms'))
         ->assertOk()
         ->assertSee('1. Acceptance of Terms')
         ->assertSee('21. Acknowledgment and Agreement');
+
+    $this->get(route('privacy'))
+        ->assertOk()
+        ->assertSee('Information We Collect')
+        ->assertSee('Changes to This Privacy Policy');
 });
