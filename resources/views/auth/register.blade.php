@@ -757,11 +757,11 @@
                         @checked(old('terms'))
                         required>
                     <label for="terms" class="terms-agree__label">
-                        I have read and agree to the
+                        I agree to the
                         <button type="button" class="terms-agree__link" data-terms-open>Terms and Conditions</button>
-                        and acknowledge that I have read and understood the
+                        and have read and understood the
                         <a href="{{ route('privacy') }}" class="terms-agree__link" target="_blank" rel="noopener">Privacy Policy</a>
-                        of UPSKILL
+                        of UPSKILL.
                     </label>
                 </div>
                 @error('terms')<p class="form-error">{{ $message }}</p>@enderror

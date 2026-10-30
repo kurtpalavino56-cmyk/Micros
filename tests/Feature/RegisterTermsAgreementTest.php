@@ -42,8 +42,9 @@ test('the sign-up form shows the agreement checkbox, a locked sign up button, an
 
     expect($html)
         ->toContain('data-terms-checkbox')
-        ->toContain('I have read and agree to the')
-        ->toContain('of UPSKILL')
+        ->toContain('I agree to the')
+        ->toContain('and have read and understood the')
+        ->toContain('of UPSKILL.')
         ->not->toContain('operated by Pangasinan State University')
         ->toContain('id="termsModal"')
         ->toContain('data-terms-pane="terms"')
