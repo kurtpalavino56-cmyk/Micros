@@ -93,9 +93,28 @@
                 <h1 class="step-title">Where are you based?</h1>
                 <p class="step-subtitle">Share the address you want associated with your profile.</p>
                 <div class="illustration"><img src="{{ asset('Images/Address.png') }}" alt="Address"></div>
-                <div>
-                    <label class="field-label" for="address">Address</label>
-                    <textarea class="field-control" id="address" name="address" rows="3" maxlength="500" data-required>{{ old('address') }}</textarea>
+                <div class="address-fields">
+                    <div>
+                        <label class="field-label" for="address_province">Province</label>
+                        <select class="field-control" id="address_province" name="address_province" data-required>
+                            <option value="">Select your province</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label" for="address_city">City / Municipality</label>
+                        <select class="field-control" id="address_city" name="address_city" data-required>
+                            <option value="">Select your city or municipality</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label" for="address_barangay">Barangay</label>
+                        <select class="field-control" id="address_barangay" name="address_barangay" data-required>
+                            <option value="">Select your barangay</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="address" name="address" value="{{ old('address') }}">
+                    <p class="field-hint" id="address-status" role="status" aria-live="polite">Location options use PSGC data.</p>
+                    <button class="wizard-button secondary" type="button" id="address-retry" hidden>Retry loading locations</button>
                 </div>
             </section>
 
@@ -137,17 +156,45 @@
                 <div class="illustration"><img src="{{ asset('Images/Career goal.png') }}" alt="Career goal"></div>
                 <div>
                     <label class="field-label" for="career_goal">Career goal</label>
-                    <input class="field-control" id="career_goal" name="career_goal" type="text" maxlength="255" placeholder="e.g. Software Engineer" value="{{ old('career_goal') }}" data-required>
+                    <select class="field-control career-goal-control" id="career_goal" name="career_goal" data-required>
+                        <option value="">Select a career goal</option>
+                        @foreach (($career_options ?? []) as $career)
+                            <option value="{{ $career }}" @selected(old('career_goal') === $career)>{{ $career }}</option>
+                        @endforeach
+                    </select>
+                    <div class="other-school" id="other-career-wrap" @if(old('career_goal') !== 'Other') hidden @endif>
+                        <label class="field-label" for="career_goal_other">Enter your career goal</label>
+                        <input class="field-control career-goal-control" id="career_goal_other" name="career_goal_other" type="text" maxlength="255" placeholder="e.g. Architect" value="{{ old('career_goal_other') }}" data-required-when="other-career">
+                    </div>
                 </div>
             </section>
 
             <section class="step-panel" data-step="8" hidden>
-                <h1 class="step-title">Anything else you’d like us to know?</h1>
-                <p class="step-subtitle">This is optional. You can update it later in your profile.</p>
+                <h1 class="step-title">What is your reason for taking microcredentials?</h1>
+                <p class="step-subtitle">What is your main goal?</p>
                 <div class="illustration"><img src="{{ asset('Images/About you.png') }}" alt="About you"></div>
-                <div>
-                    <label class="field-label" for="bio">About you <span style="font-weight:400;color:var(--onboarding-finish-muted)">(optional)</span></label>
-                    <textarea class="field-control" id="bio" name="bio" rows="4" maxlength="2000" placeholder="Share what success looks like for you.">{{ old('bio') }}</textarea>
+                <div class="main-goal-grid" role="radiogroup" aria-label="What is your main goal?">
+                    @foreach ([
+                        ['Advance my career', 'Grow in your current career', '↗'],
+                        ['Start a new career', 'Prepare for a new career path', '✦'],
+                        ['Build skills for a new career', 'Learn skills for your next step', '⌘'],
+                        ['Advance my education', 'Continue your education', '▤'],
+                        ['Learn for fun', 'Explore a topic you enjoy', '♡'],
+                        ['Other', 'Share another goal', '+'],
+                    ] as [$goal, $description, $icon])
+                        <label class="main-goal-card">
+                            <input type="radio" name="main_goal" value="{{ $goal }}" @checked(old('main_goal') === $goal) data-required>
+                            <span class="main-goal-card-content">
+                                <span class="main-goal-icon" aria-hidden="true">{{ $icon }}</span>
+                                <span class="main-goal-title">{{ $goal }}</span>
+                                <span class="main-goal-description">{{ $description }}</span>
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+                <div class="main-goal-other" id="other-main-goal-wrap" @if(old('main_goal') !== 'Other') hidden @endif>
+                    <label class="field-label" for="main_goal_other">Tell us your main goal</label>
+                    <input class="field-control" id="main_goal_other" name="main_goal_other" type="text" maxlength="255" placeholder="Enter your reason for taking microcredentials" value="{{ old('main_goal_other') }}" data-required-when="other-main-goal">
                 </div>
             </section>
 
@@ -174,9 +221,133 @@
             const stepCount = document.getElementById('step-count');
             const percentText = document.getElementById('progress-percent');
             const progressTrack = document.querySelector('.progress-track');
+            const provinceSelect = document.getElementById('address_province');
+            const citySelect = document.getElementById('address_city');
+            const barangaySelect = document.getElementById('address_barangay');
+            const addressStatus = document.getElementById('address-status');
+            const addressRetry = document.getElementById('address-retry');
             const totalSteps = steps.length;
             let current = 0;
+            let provincesLoaded = false;
+            let provincesLoading = false;
+            const savedAddress = {
+                province: @json(old('address_province')),
+                city: @json(old('address_city')),
+                barangay: @json(old('address_barangay')),
+            };
             const serverErrors = @json($errors->keys());
+
+            function setLocationOptions(select, locations, placeholder) {
+                select.replaceChildren(new Option(placeholder, ''));
+                locations
+                    .sort((left, right) => left.name.localeCompare(right.name))
+                    .forEach(location => {
+                        const option = new Option(location.name, location.name);
+                        option.dataset.code = location.code;
+                        select.add(option);
+                    });
+            }
+
+            async function fetchLocations(path) {
+                const response = await fetch('https://psgc.gitlab.io/api/' + path, {
+                    headers: { Accept: 'application/json' },
+                });
+                if (!response.ok) {
+                    throw new Error('The location service returned an error.');
+                }
+                const locations = await response.json();
+                if (!Array.isArray(locations) || locations.some(location =>
+                    typeof location.name !== 'string' || typeof location.code !== 'string'
+                )) {
+                    throw new Error('The location service returned invalid data.');
+                }
+                return locations;
+            }
+
+            function showLocationError(error) {
+                console.error(error);
+                addressStatus.textContent = 'Location options could not be loaded. Check your connection and try again.';
+                addressRetry.hidden = false;
+            }
+
+            async function loadBarangays(selectedName = '') {
+                const cityOption = citySelect.selectedOptions[0];
+                const cityCode = cityOption?.dataset.code;
+                barangaySelect.replaceChildren(new Option('Select your barangay', ''));
+                if (!cityCode) {
+                    addressStatus.textContent = 'Choose your city or municipality to load barangays.';
+                    return;
+                }
+
+                addressStatus.textContent = 'Loading barangays...';
+                try {
+                    const locations = await fetchLocations('cities-municipalities/' + encodeURIComponent(cityCode) + '/barangays/');
+                    if (citySelect.selectedOptions[0]?.dataset.code !== cityCode) {
+                        return;
+                    }
+                    setLocationOptions(barangaySelect, locations, 'Select your barangay');
+                    if (selectedName && locations.some(location => location.name === selectedName)) {
+                        barangaySelect.value = selectedName;
+                    }
+                    addressRetry.hidden = true;
+                    addressStatus.textContent = 'Select your barangay.';
+                } catch (error) {
+                    showLocationError(error);
+                }
+            }
+
+            async function loadCities(selectedName = '', selectedBarangay = '') {
+                const provinceOption = provinceSelect.selectedOptions[0];
+                const provinceCode = provinceOption?.dataset.code;
+                citySelect.replaceChildren(new Option('Select your city or municipality', ''));
+                barangaySelect.replaceChildren(new Option('Select your barangay', ''));
+                if (!provinceCode) {
+                    addressStatus.textContent = 'Choose your province to load cities and municipalities.';
+                    return;
+                }
+
+                addressStatus.textContent = 'Loading cities and municipalities...';
+                try {
+                    const locations = await fetchLocations('provinces/' + encodeURIComponent(provinceCode) + '/cities-municipalities/');
+                    if (provinceSelect.selectedOptions[0]?.dataset.code !== provinceCode) {
+                        return;
+                    }
+                    setLocationOptions(citySelect, locations, 'Select your city or municipality');
+                    addressRetry.hidden = true;
+                    if (selectedName && locations.some(location => location.name === selectedName)) {
+                        citySelect.value = selectedName;
+                        await loadBarangays(selectedBarangay);
+                    } else {
+                        addressStatus.textContent = 'Select your city or municipality.';
+                    }
+                } catch (error) {
+                    showLocationError(error);
+                }
+            }
+
+            async function loadProvinces() {
+                if (provincesLoaded || provincesLoading) {
+                    return;
+                }
+                provincesLoading = true;
+                addressStatus.textContent = 'Loading provinces...';
+                try {
+                    const locations = await fetchLocations('provinces/');
+                    setLocationOptions(provinceSelect, locations, 'Select your province');
+                    provincesLoaded = true;
+                    addressRetry.hidden = true;
+                    if (savedAddress.province && locations.some(location => location.name === savedAddress.province)) {
+                        provinceSelect.value = savedAddress.province;
+                        await loadCities(savedAddress.city, savedAddress.barangay);
+                    } else {
+                        addressStatus.textContent = 'Select your province.';
+                    }
+                } catch (error) {
+                    showLocationError(error);
+                } finally {
+                    provincesLoading = false;
+                }
+            }
 
             function schoolOtherState() {
                 const school = document.getElementById('school');
@@ -185,6 +356,24 @@
                 const shown = school.value === 'Other';
                 wrapper.hidden = !shown;
                 other.required = shown && !steps[2].hidden;
+            }
+
+            function careerOtherState() {
+                const career = document.getElementById('career_goal');
+                const wrapper = document.getElementById('other-career-wrap');
+                const other = document.getElementById('career_goal_other');
+                const shown = career.value === 'Other';
+                wrapper.hidden = !shown;
+                other.required = shown && !steps[7].hidden;
+            }
+
+            function mainGoalOtherState() {
+                const selectedGoal = form.querySelector('input[name="main_goal"]:checked');
+                const wrapper = document.getElementById('other-main-goal-wrap');
+                const other = document.getElementById('main_goal_other');
+                const shown = selectedGoal?.value === 'Other';
+                wrapper.hidden = !shown;
+                other.required = shown && !steps[8].hidden;
             }
 
             function showStep(index) {
@@ -197,8 +386,16 @@
                     step.querySelectorAll('[data-required-when="other-school"]').forEach(control => {
                         control.required = i === current && document.getElementById('school').value === 'Other';
                     });
+                    step.querySelectorAll('[data-required-when="other-career"]').forEach(control => {
+                        control.required = i === current && document.getElementById('career_goal').value === 'Other';
+                    });
+                    step.querySelectorAll('[data-required-when="other-main-goal"]').forEach(control => {
+                        control.required = i === current && form.querySelector('input[name="main_goal"]:checked')?.value === 'Other';
+                    });
                 });
                 schoolOtherState();
+                careerOtherState();
+                mainGoalOtherState();
                 backButton.hidden = current === 0;
                 nextButton.hidden = current === totalSteps - 1;
                 finishButton.hidden = current !== totalSteps - 1;
@@ -208,6 +405,9 @@
                 stepCount.textContent = 'Step ' + (current + 1) + ' of ' + totalSteps;
                 percentText.textContent = percent + '% complete';
                 progressTrack.setAttribute('aria-valuenow', current + 1);
+                if (current === 4) {
+                    loadProvinces();
+                }
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
 
@@ -266,15 +466,42 @@
             });
 
             document.getElementById('school').addEventListener('change', schoolOtherState);
+            document.getElementById('career_goal').addEventListener('change', careerOtherState);
+            form.querySelectorAll('input[name="main_goal"]').forEach(control => {
+                control.addEventListener('change', mainGoalOtherState);
+            });
+            provinceSelect.addEventListener('change', () => loadCities());
+            citySelect.addEventListener('change', () => loadBarangays());
+            addressRetry.addEventListener('click', () => {
+                addressRetry.hidden = true;
+                if (!provincesLoaded) {
+                    loadProvinces();
+                } else if (citySelect.value) {
+                    loadBarangays();
+                } else if (provinceSelect.value) {
+                    loadCities();
+                }
+            });
             backButton.addEventListener('click', () => showStep(Math.max(0, current - 1)));
             nextButton.addEventListener('click', () => {
                 if (stepIsValid(steps[current])) showStep(Math.min(totalSteps - 1, current + 1));
             });
             form.addEventListener('submit', function (event) {
+                document.getElementById('address').value = [
+                    barangaySelect.value,
+                    citySelect.value,
+                    provinceSelect.value,
+                ].filter(Boolean).join(', ');
                 for (let i = 0; i < totalSteps; i++) {
                     steps[i].querySelectorAll('[data-required]').forEach(control => { control.required = true; });
                     steps[i].querySelectorAll('[data-required-when="other-school"]').forEach(control => {
                         control.required = document.getElementById('school').value === 'Other';
+                    });
+                    steps[i].querySelectorAll('[data-required-when="other-career"]').forEach(control => {
+                        control.required = document.getElementById('career_goal').value === 'Other';
+                    });
+                    steps[i].querySelectorAll('[data-required-when="other-main-goal"]').forEach(control => {
+                        control.required = form.querySelector('input[name="main_goal"]:checked')?.value === 'Other';
                     });
                     if (!steps[i].checkValidity()) {
                         event.preventDefault();

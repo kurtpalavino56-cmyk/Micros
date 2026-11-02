@@ -19,3 +19,18 @@ test('profile route uses the authenticated user data', function () {
             && $viewUser->email === $user->email;
     });
 });
+
+test('profile shows the saved onboarding address below education', function () {
+    $user = User::factory()->create([
+        'address' => 'Alos, City of Alaminos, Pangasinan',
+        'education' => "Bachelor's Degree",
+    ]);
+
+    $response = $this->actingAs($user)->get('/profile');
+
+    $response->assertOk()
+        ->assertSee('Alos, City of Alaminos, Pangasinan');
+
+    $content = $response->getContent();
+    expect(strpos($content, 'Education'))->toBeLessThan(strpos($content, 'Address'));
+});

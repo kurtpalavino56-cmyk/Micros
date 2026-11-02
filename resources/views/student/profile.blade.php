@@ -401,6 +401,10 @@
                         <span class="value">@if($user->education ?? null){{ $user->education }}@else<button type="button" class="add-link" onclick="openEditModal('about')">Add education</button>@endif</span>
                     </div>
                     <div class="detail-row">
+                        <span class="label">Address</span>
+                        <span class="value">{{ $user->address ?: 'Not provided' }}</span>
+                    </div>
+                    <div class="detail-row">
                         <span class="label">School</span>
                         <span class="value">@if($user->school ?? null){{ $user->school }}@else<button type="button" class="add-link" onclick="openEditModal('about')">Add school</button>@endif</span>
                     </div>

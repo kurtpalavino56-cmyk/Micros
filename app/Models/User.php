@@ -68,6 +68,7 @@ class User extends Authenticatable
         'bio',
         'skills_have',
         'skills_want',
+        'main_goal',
         'language',
         'timezone',
         'profile_completed',

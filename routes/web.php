@@ -331,6 +331,8 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':student',
 
     Route::get('/profile', [StudentController::class, 'profile'])->name('profile.show');
     Route::patch('/profile', [StudentController::class, 'updateProfile'])->name('profile.update');
+    Route::get('/profile/complete', fn () => redirect()->route('onboarding.show'))
+        ->name('profile.complete.redirect');
     Route::post('/profile/complete', [StudentController::class, 'completeProfile'])->name('profile.complete');
 
     Route::get('/pathways', [StudentController::class, 'pathways'])->name('pathways.index');

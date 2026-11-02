@@ -33,6 +33,7 @@ class UserPresenter
             'date_of_birth' => self::prettyDate($u->date_of_birth),
             'gender' => $u->gender,
             'education' => $u->education,
+            'address' => $u->address,
             'school' => $u->school,
             'bio' => $u->bio,
             'language' => $u->language ?? 'English',

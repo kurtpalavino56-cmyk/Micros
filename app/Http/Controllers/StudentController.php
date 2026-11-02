@@ -45,6 +45,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -56,6 +57,28 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class StudentController extends Controller
 {
+    private const CAREER_GOALS = [
+        'Software Engineer',
+        'Teacher',
+        'Nurse',
+        'Accountant',
+        'Civil Engineer',
+        'Data Analyst',
+        'Graphic Designer',
+        'Entrepreneur',
+        'Cybersecurity Specialist',
+        'Other',
+    ];
+
+    private const ONBOARDING_MAIN_GOALS = [
+        'Advance my career',
+        'Start a new career',
+        'Build skills for a new career',
+        'Advance my education',
+        'Learn for fun',
+        'Other',
+    ];
+
     public function __construct(
         private StudentProgressService $progressService,
         private QuizAttemptService $quizAttempts,
@@ -86,6 +109,7 @@ class StudentController extends Controller
             'user' => UserPresenter::student($auth),
             'schools' => SchoolCatalog::all(),
             'skill_options' => SkillCatalog::all(),
+            'career_options' => self::CAREER_GOALS,
         ]);
     }
 
@@ -333,10 +357,14 @@ class StudentController extends Controller
             'education' => ['required', 'string', 'max:255'],
             'school' => ['required', 'string', 'max:255'],
             'school_other' => ['nullable', 'string', 'max:255'],
-            'address' => ['required', 'string', 'max:500'],
-            'career_goal' => ['required', 'string', 'max:255'],
+            'address_province' => ['required', 'string', 'max:150'],
+            'address_city' => ['required', 'string', 'max:150'],
+            'address_barangay' => ['required', 'string', 'max:150'],
+            'career_goal' => ['required', 'string', Rule::in(self::CAREER_GOALS)],
+            'career_goal_other' => ['required_if:career_goal,Other', 'nullable', 'string', 'max:255'],
+            'main_goal' => ['required', 'string', Rule::in(self::ONBOARDING_MAIN_GOALS)],
+            'main_goal_other' => ['required_if:main_goal,Other', 'nullable', 'string', 'max:255'],
             'pathway_id' => ['nullable', 'integer', 'exists:pathways,id'],
-            'bio' => ['nullable', 'string', 'max:2000'],
             'skills_have' => ['nullable'],
             'skills_have.*' => ['string', 'max:60'],
             'skills_want' => ['nullable'],
@@ -358,15 +386,24 @@ class StudentController extends Controller
 
         $skillsHave = $splitSkills($data['skills_have'] ?? null);
         $skillsWant = $splitSkills($data['skills_want'] ?? null);
-        $bio = $data['bio'] ?? null;
+        $bio = $auth->bio;
 
         $attrs = [
             'date_of_birth' => $data['date_of_birth'],
             'gender' => $data['gender'],
             'education' => $data['education'],
             'school' => $this->resolveSchool($data),
-            'address' => $data['address'],
-            'career_goal' => $data['career_goal'],
+            'address' => implode(', ', [
+                $data['address_barangay'],
+                $data['address_city'],
+                $data['address_province'],
+            ]),
+            'career_goal' => $data['career_goal'] === 'Other'
+                ? $data['career_goal_other']
+                : $data['career_goal'],
+            'main_goal' => $data['main_goal'] === 'Other'
+                ? $data['main_goal_other']
+                : $data['main_goal'],
             // nullable fields are dropped from validated data when absent —
             // read with a fallback so onboarding can't 500 here.
             'pathway_id' => $data['pathway_id'] ?? null,
