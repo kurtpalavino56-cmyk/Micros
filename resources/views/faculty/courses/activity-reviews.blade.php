@@ -83,7 +83,10 @@
                                             <div class="submission-response">The student submitted an attachment without written text.</div>
                                         @endif
                                         @if($submission->submission_path)
-                                            <a class="submission-attachment" href="{{ route('faculty.lesson-activities.download', $submission->id) }}">Download submitted file</a>
+                                            <div class="submission-file-actions">
+                                                <a class="submission-attachment" href="{{ route('faculty.lesson-activities.view', $submission->id) }}" target="_blank" rel="noopener">View file</a>
+                                                <a class="submission-attachment" href="{{ route('faculty.lesson-activities.download', $submission->id) }}">Download</a>
+                                            </div>
                                         @endif
                                     </section>
                                     @if($submission->status !== 'submitted')
