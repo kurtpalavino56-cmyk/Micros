@@ -267,6 +267,10 @@ class FacultyController extends Controller
             $sort = 'name_asc';
         }
         $sortDirection = $sort === 'name_desc' ? 'desc' : 'asc';
+        $statusFilter = $filter === 'all' ? (string) $request->query('status', '') : '';
+        if (! in_array($statusFilter, ['completed', 'review_pending', 'in_progress', 'rejected'], true)) {
+            $statusFilter = '';
+        }
 
         $enrollments = Enrollment::query()
             ->where('course_id', $course->id)
@@ -291,6 +295,19 @@ class FacultyController extends Controller
 
                 return $query->whereIn('faculty_verification_status', ['pending', 'not_required'])
                     ->where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION);
+            })
+            ->when($statusFilter !== '', function ($query) use ($statusFilter): void {
+                match ($statusFilter) {
+                    'completed' => $query->where('completion_status', MicrocredentialCompletionService::STATUS_COMPLETED)->where('faculty_verification_status', 'verified'),
+                    'review_pending' => $query->where(function ($statusQuery): void {
+                        $statusQuery->where(function ($reviewQuery): void {
+                            $reviewQuery->where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)
+                                ->whereIn('faculty_verification_status', ['pending', 'not_required']);
+                        })->orWhere('completion_status', MicrocredentialCompletionService::STATUS_REVIEW_PENDING);
+                    }),
+                    'rejected' => $query->where('faculty_verification_status', 'rejected'),
+                    'in_progress' => $query->where('completion_status', MicrocredentialCompletionService::STATUS_IN_PROGRESS)->where('faculty_verification_status', '!=', 'rejected'),
+                };
             })
             ->orderBy(User::query()->select('first_name')->whereColumn('users.id', 'enrollments.user_id'), $sortDirection)
             ->orderBy(User::query()->select('last_name')->whereColumn('users.id', 'enrollments.user_id'), $sortDirection)
@@ -352,6 +369,7 @@ class FacultyController extends Controller
             'totalStudents' => Enrollment::where('course_id', $course->id)->count(),
             'search' => $search,
             'sort' => $sort,
+            'statusFilter' => $statusFilter,
             'attemptRows' => $attemptRows,
         ]);
     }
@@ -509,12 +527,24 @@ class FacultyController extends Controller
             ->with('success', $student->name.' was removed from the course.');
     }
 
-    public function exportCourseStudents(int $id, string $format)
+    public function exportCourseStudents(Request $request, int $id, string $format)
     {
         $course = $this->ownedCourse($id);
+        $statusFilter = (string) $request->query('status', '');
+        if (! in_array($statusFilter, ['completed', 'review_pending', 'in_progress', 'rejected'], true)) {
+            $statusFilter = '';
+        }
         $students = Enrollment::query()
             ->where('course_id', $course->id)
             ->with('user')
+            ->when($statusFilter !== '', function ($query) use ($statusFilter): void {
+                match ($statusFilter) {
+                    'completed' => $query->where('completion_status', MicrocredentialCompletionService::STATUS_COMPLETED)->where('faculty_verification_status', 'verified'),
+                    'review_pending' => $query->where('completion_status', MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION)->whereIn('faculty_verification_status', ['pending', 'not_required']),
+                    'rejected' => $query->where('faculty_verification_status', 'rejected'),
+                    'in_progress' => $query->where('completion_status', MicrocredentialCompletionService::STATUS_IN_PROGRESS)->where('faculty_verification_status', '!=', 'rejected'),
+                };
+            })
             ->orderBy('id')
             ->get()
             ->map(function (Enrollment $enrollment) use ($course): array {

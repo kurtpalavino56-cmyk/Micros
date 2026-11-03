@@ -20,9 +20,9 @@
                     <details class="export-dropdown">
                         <summary class="action"><svg class="download-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 20h14"></path></svg><span>Download</span></summary>
                         <div class="export-menu">
-                            <a class="action export-pdf" href="{{ route('faculty.students.course.export', ['id' => $course->id, 'format' => 'pdf']) }}">PDF</a>
-                            <a class="action export-word" href="{{ route('faculty.students.course.export', ['id' => $course->id, 'format' => 'word']) }}">Word (.doc)</a>
-                            <a class="action export-excel" href="{{ route('faculty.students.course.export', ['id' => $course->id, 'format' => 'excel']) }}">Excel (.csv)</a>
+                            <a class="action export-pdf" href="{{ route('faculty.students.course.export', ['id' => $course->id, 'format' => 'pdf', 'status' => $statusFilter]) }}">PDF</a>
+                            <a class="action export-word" href="{{ route('faculty.students.course.export', ['id' => $course->id, 'format' => 'word', 'status' => $statusFilter]) }}">Word (.doc)</a>
+                            <a class="action export-excel" href="{{ route('faculty.students.course.export', ['id' => $course->id, 'format' => 'excel', 'status' => $statusFilter]) }}">Excel (.csv)</a>
                         </div>
                     </details>
                 @endif
@@ -67,6 +67,17 @@
                             </select>
                         </span>
                     </label>
+                    @if($filter === 'all')
+                        <label class="table-sort table-status-filter" for="student-status">
+                            <select id="student-status" name="status" aria-label="Filter by student status">
+                                <option value="" @selected($statusFilter === '')>All statuses</option>
+                                <option value="completed" @selected($statusFilter === 'completed')>Completed</option>
+                                <option value="review_pending" @selected($statusFilter === 'review_pending')>Review pending</option>
+                                <option value="in_progress" @selected($statusFilter === 'in_progress')>In progress</option>
+                                <option value="rejected" @selected($statusFilter === 'rejected')>Rejected</option>
+                            </select>
+                        </label>
+                    @endif
                     <button class="action" type="submit">Filter</button>
                 </form>
             </div>

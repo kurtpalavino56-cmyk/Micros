@@ -2181,12 +2181,16 @@
     :where(html[data-faculty-page="faculty-students-course"]) .table-toolbar{display:flex;flex:0 0 auto;justify-content:flex-end;margin:0;}
     :where(html[data-faculty-page="faculty-students-course"]) .table-toolbar form{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;}
     :where(html[data-faculty-page="faculty-students-course"]) .table-search{position:relative;display:flex;align-items:center;}
-    :where(html[data-faculty-page="faculty-students-course"]) .table-search input, :where(html[data-faculty-page="faculty-students-course"]) .table-sort select{min-height:36px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:var(--ink);font:inherit;font-size:12px;}
+    :where(html[data-faculty-page="faculty-students-course"]) .table-search input, :where(html[data-faculty-page="faculty-students-course"]) .table-sort select, :where(html[data-faculty-page="faculty-students-course"]) .table-status-filter select{min-height:36px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:var(--ink);font:inherit;font-size:12px;}
     :where(html[data-faculty-page="faculty-students-course"]) .table-search input{width:min(240px,50vw);padding-left:33px;}
     :where(html[data-faculty-page="faculty-students-course"]) .table-search-icon{position:absolute;left:11px;width:15px;height:15px;color:#64748b;pointer-events:none;}
     :where(html[data-faculty-page="faculty-students-course"]) .table-sort{display:block;}
+    :where(html[data-faculty-page="faculty-students-course"]) .table-status-filter{position:relative;display:block;color:#64748b;font-size:12px;font-weight:600;}
+    :where(html[data-faculty-page="faculty-students-course"]) .table-status-filter select{appearance:none;-webkit-appearance:none;padding-right:34px;}
+    :where(html[data-faculty-page="faculty-students-course"]) .table-status-filter::after{position:absolute;top:50%;right:13px;width:7px;height:7px;border-right:2px solid var(--ink);border-bottom:2px solid var(--ink);content:"";pointer-events:none;transform:translateY(-70%) rotate(45deg);}
     :where(html[data-faculty-page="faculty-students-course"]) .sort-select-wrap{position:relative;display:block;}
-    :where(html[data-faculty-page="faculty-students-course"]) .sort-select-wrap select{padding-left:31px;}
+    :where(html[data-faculty-page="faculty-students-course"]) .sort-select-wrap select{appearance:none;-webkit-appearance:none;padding:7px 34px 7px 31px;}
+    :where(html[data-faculty-page="faculty-students-course"]) .sort-select-wrap::after{position:absolute;top:50%;right:13px;width:7px;height:7px;border-right:2px solid var(--ink);border-bottom:2px solid var(--ink);content:"";pointer-events:none;transform:translateY(-70%) rotate(45deg);}
     :where(html[data-faculty-page="faculty-students-course"]) .sort-select-wrap .sort-icon{position:absolute;top:50%;left:10px;transform:translateY(-50%);color:#64748b;pointer-events:none;}
     :where(html[data-faculty-page="faculty-students-course"]) .table-toolbar form>.action{min-height:36px;padding:7px 12px;background:#facc15;border-color:#eab308;color:#713f12;}
     :where(html[data-faculty-page="faculty-students-course"]) .table-toolbar form>.action:hover{background:#eab308;}
