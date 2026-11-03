@@ -126,6 +126,9 @@
                         <h3 class="section-title">Course Modules</h3>
                         <p class="section-caption">Organize the lessons, activities, and assessments in this course.</p>
                     </div>
+                    @if($modules->isNotEmpty())
+                        <button class="btn-secondary-action module-toggle-all" type="button" aria-expanded="false" onclick="toggleAllModules(this)">Expand All</button>
+                    @endif
                 </div>
 
                 <div class="sortable-list module-sort-list" data-order-kind="modules" data-order-url="{{ route('faculty.modules.reorder', $course->id) }}">
@@ -144,9 +147,6 @@
                             <div class="module-heading-copy">
                                 <span class="eyebrow-label">Module {{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
                                 <h4>{{ $module->title }}</h4>
-                                @if($module->subtitle ?? null)
-                                    <div class="module-description">{{ $module->subtitle }}</div>
-                                @endif
                                 <div class="module-stats">
                                     {{ $moduleLessonCount }} {{ Illuminate\Support\Str::plural('lesson', $moduleLessonCount) }}
                                     · {{ $moduleDurationLabel }}
@@ -165,6 +165,14 @@
                         </header>
                         {{-- Keep the old sortable handle available without adding a colored icon tile. --}}
                         <button class="drag-handle module-drag-handle" type="button" draggable="true" title="Drag to reorder module" aria-label="Drag to reorder module">⋮⋮</button>
+                        @php
+                            $moduleHasOpenForm = ($errors->has('module_description') && (int) session('open_module_edit') === (int) $module->idx)
+                                || ($addLessonIndex ?? null) === $module->idx
+                                || (int) session('open_lesson_form') === (int) $module->idx
+                                || (int) session('open_module_content') === (int) $module->idx;
+                        @endphp
+                        <button class="module-collapse-toggle" type="button" aria-expanded="{{ $moduleHasOpenForm ? 'true' : 'false' }}" aria-controls="module-body-{{ $module->idx }}" aria-label="{{ $moduleHasOpenForm ? 'Collapse' : 'Expand' }} module" onclick="toggleModuleCollapse({{ $module->idx }}, this)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+                        <div id="module-body-{{ $module->idx }}" @if(! $moduleHasOpenForm) hidden @endif>
 
                         {{-- ── Inline module editor — title + rich-text description ── --}}
                         <form class="lesson-form module-edit-form" id="module-edit-{{ $module->idx }}"
@@ -331,6 +339,7 @@
                             @endif
                             </div>
                         </section>
+                        </div>
                     </div>
                 @empty
                     <div class="empty-modules">
@@ -359,10 +368,6 @@
                 <div id="reorder-status" aria-live="polite"></div>
 
                 <section class="panel fac-final-exam-panel" aria-labelledby="course-completion-title">
-                    <div class="fac-final-exam-copy">
-                        <h3 id="course-completion-title" class="fac-final-exam-title">Course completion</h3>
-                        <p class="fac-final-exam-description">Add a separate course assessment that unlocks after students finish the course modules.</p>
-                    </div>
                     @if($finalModule)
                         <div class="fac-final-exam-header">
                             <div>
@@ -377,7 +382,7 @@
                                 <a class="btn-secondary-action" href="{{ route('faculty.final-exam.edit', [$course->id, $finalModule->id]) }}">Edit Final Exam</a>
                                 <form method="POST" action="{{ route('faculty.final-exam.destroy', $course->id) }}" onsubmit="return confirm('Remove the final exam and its quiz?');">
                                     @csrf
-                                    <button class="btn-text-action" type="submit">Remove final exam</button>
+                                    <button class="btn-icon-danger" type="submit" title="Remove final exam" aria-label="Remove final exam"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 4v5m4-5v5"/></svg></button>
                                 </form>
                             </div>
                         </div>
@@ -724,7 +729,7 @@
                     if (!response.ok) throw new Error('The new order could not be saved.');
                 } catch (error) {
                     queuedItems = null;
-                    if (status) status.textContent = error.message || 'Could not save the new order.';
+                    if (status) showReorderToast(error.message || 'Could not save the new order.', 'error');
                     window.setTimeout(function () { window.location.reload(); }, 900);
                     break;
                 }
@@ -732,9 +737,23 @@
 
             isSavingOrder = false;
             if (!queuedItems && status && status.textContent === 'Saving new order…') {
-                status.textContent = 'Order saved.';
+                status.textContent = '';
+                showReorderToast('Order saved.', 'success');
             }
             if (queuedItems) saveQueuedOrder();
+        }
+
+        function showReorderToast(message, type) {
+            var toast = document.createElement('div');
+            toast.className = 'reorder-toast reorder-toast--' + type;
+            toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            window.setTimeout(function () { toast.classList.add('is-visible'); }, 10);
+            window.setTimeout(function () {
+                toast.classList.remove('is-visible');
+                window.setTimeout(function () { toast.remove(); }, 200);
+            }, 3500);
         }
 
         list.addEventListener('dragstart', function (event) {
@@ -811,6 +830,48 @@
             var first = box.querySelector('input[name="module_title"]');
             if (first) first.focus();
         }
+    }
+
+    function toggleModuleCollapse(moduleIdx, button) {
+        var body = document.getElementById('module-body-' + moduleIdx);
+        if (!body) return;
+        var isExpanded = button.getAttribute('aria-expanded') === 'true';
+        body.hidden = isExpanded;
+        button.setAttribute('aria-expanded', String(!isExpanded));
+        button.setAttribute('aria-label', isExpanded ? 'Expand module' : 'Collapse module');
+    }
+
+    document.querySelectorAll('.module-card').forEach(function (moduleCard) {
+        var moduleToggle = moduleCard.querySelector('.module-collapse-toggle');
+        var moduleBody = moduleToggle && document.getElementById(moduleToggle.getAttribute('aria-controls'));
+        if (!moduleToggle || !moduleBody) return;
+
+        var pendingExpandKey = 'faculty-course-module-expand-' + moduleToggle.getAttribute('aria-controls');
+        if (sessionStorage.getItem(pendingExpandKey) === '1') {
+            sessionStorage.removeItem(pendingExpandKey);
+            moduleBody.hidden = false;
+            moduleToggle.setAttribute('aria-expanded', 'true');
+            moduleToggle.setAttribute('aria-label', 'Collapse module');
+        }
+
+        moduleCard.querySelectorAll('form').forEach(function (moduleForm) {
+            moduleForm.addEventListener('submit', function () {
+                sessionStorage.setItem(pendingExpandKey, '1');
+            });
+        });
+    });
+
+    function toggleAllModules(button) {
+        var shouldExpand = button.getAttribute('aria-expanded') !== 'true';
+        document.querySelectorAll('.module-sort-list .module-collapse-toggle').forEach(function (toggle) {
+            var body = document.getElementById(toggle.getAttribute('aria-controls'));
+            if (!body) return;
+            body.hidden = !shouldExpand;
+            toggle.setAttribute('aria-expanded', String(shouldExpand));
+            toggle.setAttribute('aria-label', shouldExpand ? 'Collapse module' : 'Expand module');
+        });
+        button.setAttribute('aria-expanded', String(shouldExpand));
+        button.textContent = shouldExpand ? 'Collapse All' : 'Expand All';
     }
 
     function addChoice(q) {

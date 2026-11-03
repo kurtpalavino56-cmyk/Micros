@@ -1537,12 +1537,20 @@
     :where(html[data-faculty-page="faculty-courses-index"]) .empty-modules{padding:44px 20px;text-align:center;background:#fff;border:1px dashed #cfd3e2;border-radius:14px;}
     :where(html[data-faculty-page="faculty-courses-index"]) .empty-modules h4{margin:0 0 6px;color:var(--text);font-size:16px;} :where(html[data-faculty-page="faculty-courses-index"]) .empty-modules p{margin:0;color:var(--muted);font-size:14px;}
     :where(html[data-faculty-page="faculty-courses-index"]) #reorder-status{min-height:18px;margin-top:6px;color:var(--muted);font-size:12px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .reorder-toast{position:fixed;right:24px;bottom:24px;z-index:10000;padding:12px 18px;border-radius:10px;background:#15803d;color:#fff;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(15,23,42,.2);opacity:0;transform:translateY(8px);transition:opacity .2s ease,transform .2s ease;pointer-events:none;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .reorder-toast.is-visible{opacity:1;transform:translateY(0);}
+    :where(html[data-faculty-page="faculty-courses-index"]) .reorder-toast--error{background:#b91c1c;}
     :where(html[data-faculty-page="faculty-courses-index"]) .is-dragging{opacity:.45;} :where(html[data-faculty-page="faculty-courses-index"]) .is-drop-target{outline:2px dashed var(--gold);outline-offset:2px;}
 
     /* Module */
-    :where(html[data-faculty-page="faculty-courses-index"]) .module-card{--module-content-left-gutter:46px;--module-content-right-gutter:21px;position:relative;margin:0 0 18px;padding:20px 20px 18px 42px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:14px;box-shadow:var(--shadow);}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-card{--module-content-left-gutter:46px;--module-content-right-gutter:21px;position:relative;margin:0 0 18px;padding:20px 20px 18px 52px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:14px;box-shadow:var(--shadow);}
     :where(html[data-faculty-page="faculty-courses-index"]) .module-drag-handle{position:absolute;top:22px;left:12px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-collapse-toggle{position:absolute;top:23px;left:27px;display:grid;width:20px;height:20px;place-items:center;padding:0;border:0;background:transparent;color:var(--muted);cursor:pointer;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-collapse-toggle svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:2;transition:transform .18s ease;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-collapse-toggle[aria-expanded="false"] svg{transform:rotate(0);}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-collapse-toggle[aria-expanded="true"] svg{transform:rotate(90deg);}
     :where(html[data-faculty-page="faculty-courses-index"]) .module-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding-bottom:14px;border-bottom:1px solid var(--line);}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-card:has(> [id^="module-body-"][hidden]) .module-head{padding-bottom:0;border-bottom:0;}
     :where(html[data-faculty-page="faculty-courses-index"]) .module-heading-copy{min-width:0;}
     :where(html[data-faculty-page="faculty-courses-index"]) .eyebrow-label{display:block;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;}
     :where(html[data-faculty-page="faculty-courses-index"]) .module-head h4{margin:4px 0 6px;color:#17202a;font-family:"Plus Jakarta Sans",Inter,sans-serif;font-size:19px;font-weight:700;line-height:1.3;overflow-wrap:anywhere;}
@@ -1650,10 +1658,10 @@
     :where(html[data-faculty-page="faculty-courses-index"]) .panel{margin-top:22px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;}
     :where(html[data-faculty-page="faculty-courses-index"]) .panel-head{padding:12px 18px;background:var(--soft);border-bottom:1px solid var(--line);color:var(--text);font-size:14px;font-weight:700;}
     :where(html[data-faculty-page="faculty-courses-index"]) .panel-body{padding:16px 18px;}
-    :where(html[data-faculty-page="faculty-courses-index"]) .avg-row{display:flex;align-items:center;gap:14px;margin-bottom:14px;} :where(html[data-faculty-page="faculty-courses-index"]) .avg-row:last-child{margin-bottom:0;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .avg-row{display:grid;grid-template-columns:30% 50% 20%;align-items:center;gap:0;margin-bottom:14px;} :where(html[data-faculty-page="faculty-courses-index"]) .avg-row:last-child{margin-bottom:0;}
     :where(html[data-faculty-page="faculty-courses-index"]) .avg-title{font-weight:600;font-size:13px;color:var(--text);white-space:nowrap;}
-    :where(html[data-faculty-page="faculty-courses-index"]) .avg-track{flex:1;height:8px;border-radius:999px;background:#e9ebf5;overflow:hidden;} :where(html[data-faculty-page="faculty-courses-index"]) .avg-fill{height:100%;background:var(--green);border-radius:999px;}
-    :where(html[data-faculty-page="faculty-courses-index"]) .avg-pct{font-weight:700;font-size:13px;color:var(--navy);white-space:nowrap;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .avg-track{min-width:0;height:8px;border-radius:999px;background:#e9ebf5;overflow:hidden;} :where(html[data-faculty-page="faculty-courses-index"]) .avg-fill{height:100%;background:var(--green);border-radius:999px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .avg-pct{font-weight:700;font-size:13px;color:var(--navy);text-align:center;white-space:nowrap;}
 
     /* ── QUIZ BUILDER ──────────────────────────────────────── */
     :where(html[data-faculty-page="faculty-courses-index"]) .back-link{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;}
@@ -1710,7 +1718,7 @@
         :where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-add-form{align-self:flex-end;}
         :where(html[data-faculty-page="faculty-courses-index"]) .course-banner{padding:18px 16px;} :where(html[data-faculty-page="faculty-courses-index"]) .banner-actions{width:100%;}
         :where(html[data-faculty-page="faculty-courses-index"]) .course-meta{gap:12px 20px;}
-        :where(html[data-faculty-page="faculty-courses-index"]) .module-card{--module-content-left-gutter:34px;--module-content-right-gutter:13px;padding:16px 12px 14px 30px;} :where(html[data-faculty-page="faculty-courses-index"]) .module-drag-handle{left:7px;top:18px;}
+        :where(html[data-faculty-page="faculty-courses-index"]) .module-card{--module-content-left-gutter:34px;--module-content-right-gutter:13px;padding:16px 12px 14px 30px;} :where(html[data-faculty-page="faculty-courses-index"]) .module-drag-handle{left:7px;top:18px;} :where(html[data-faculty-page="faculty-courses-index"]) .module-collapse-toggle{top:30px;}
         :where(html[data-faculty-page="faculty-courses-index"]) .module-head{flex-direction:column;} :where(html[data-faculty-page="faculty-courses-index"]) .module-actions{align-self:flex-end;margin-top:-4px;}
         :where(html[data-faculty-page="faculty-courses-index"]) .module-content-card{grid-template-columns:18px 26px minmax(0,1fr);padding:10px;}
         :where(html[data-faculty-page="faculty-courses-index"]) .module-content-actions{grid-column:3;justify-content:flex-start;flex-wrap:wrap;}
@@ -2887,10 +2895,10 @@
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-copy{flex:1;min-width:0;}
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-description{margin:0;color:#667085;}
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-add-form{display:flex;flex:0 0 auto;justify-content:flex-end;}
-:where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+:where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-header{display:flex;flex:1;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-meta{margin-top:4px;color:#667085;}
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-warning{margin-top:4px;color:#b45309;}
-:where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-actions{display:flex;gap:10px;align-items:center;}
+:where(html[data-faculty-page="faculty-courses-index"]) .fac-final-exam-actions{display:flex;gap:10px;align-items:center;margin-left:auto;}
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-empty-state-plain{border:none;padding:0;text-align:left;}
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-width-full{width:100%;}
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-quiz-intro{text-align:center;}
