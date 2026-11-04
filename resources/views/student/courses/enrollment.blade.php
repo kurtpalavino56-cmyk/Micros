@@ -1606,11 +1606,6 @@ async function submitInlineAssessment(form, timeExpired) {
     error.hidden = true;
 
     const formData = new FormData(form);
-    if (timeExpired) {
-        for (const key of Array.from(formData.keys())) {
-            if (key.startsWith('answers[')) formData.delete(key);
-        }
-    }
 
     try {
         const response = await fetch(form.action, {

@@ -1643,10 +1643,8 @@ class StudentController extends Controller
         $answers = (array) ($data['answers'] ?? []);
         $allowedIds = $quiz->questions->pluck('id')->map(fn ($questionId) => (string) $questionId)->all();
         abort_if(array_diff(array_keys($answers), $allowedIds) !== [], 422, 'The submitted quiz contains an invalid question.');
-        if ((int) $quiz->time_limit > 0) {
-            if (now()->timestamp - $startedAt > ((int) $quiz->time_limit * 60) + 5) {
-                $answers = [];
-            }
+        if ($this->quizAttempts->submissionIsLate($quiz, $startedAt)) {
+            $answers = [];
         }
 
         $result = $this->quizAttempts->submit($student, $quiz, ['answers' => $answers], $startedAt > 0 ? Carbon::createFromTimestamp($startedAt) : null);
@@ -2344,7 +2342,7 @@ class StudentController extends Controller
 
                     continue;
                 }
-                if (now()->timestamp - $startedAt > ((int) $quiz->time_limit * 60) + 5) {
+                if ($this->quizAttempts->submissionIsLate($quiz, $startedAt)) {
                     $result['answers'] = [];
                 }
             }

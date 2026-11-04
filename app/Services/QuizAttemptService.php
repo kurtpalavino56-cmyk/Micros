@@ -13,7 +13,27 @@ use Illuminate\Support\Facades\DB;
 
 class QuizAttemptService
 {
+    /**
+     * Tolerance for submissions that reach the server just after the deadline.
+     * The browser submits at 0:00, so this only absorbs network and timer drift.
+     */
+    public const SUBMISSION_GRACE_SECONDS = 5;
+
     public function __construct(private QuizGradingService $grading) {}
+
+    /**
+     * A timed submission is late once it arrives past the limit plus the grace window.
+     * Untimed quizzes and quizzes without a recorded start are never late.
+     */
+    public function submissionIsLate(Quiz $quiz, ?int $startedAt): bool
+    {
+        $timeLimitSeconds = max(0, (int) $quiz->time_limit * 60);
+        if ($timeLimitSeconds === 0 || $startedAt === null || $startedAt <= 0) {
+            return false;
+        }
+
+        return now()->timestamp - $startedAt > $timeLimitSeconds + self::SUBMISSION_GRACE_SECONDS;
+    }
 
     public function attemptsAllowed(Quiz $quiz): int
     {
