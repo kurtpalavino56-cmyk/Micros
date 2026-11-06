@@ -16,8 +16,10 @@ use App\Models\LessonActivity;
 use App\Models\LessonActivitySubmission;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
+use App\Models\QuizAttemptAnswer;
 use App\Models\QuizAttemptGrant;
 use App\Models\QuizQuestion;
+use App\Models\QuizSet;
 use App\Models\User;
 use App\Services\CourseCreationService;
 use App\Services\CourseLessonService;
@@ -39,6 +41,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -656,7 +659,7 @@ class FacultyController extends Controller
                     ->orWhereHas('lesson', fn ($lessonQuery) => $lessonQuery->where('course_id', $course->id));
             })
             ->get();
-        $quizAttempts = QuizAttempt::with(['quiz', 'answers.question'])
+        $quizAttempts = QuizAttempt::with(['quiz', 'set', 'answers.question'])
             ->where('user_id', $enrollment->user_id)
             ->whereIn('quiz_id', $quizzes->pluck('id'))
             ->latest('submitted_at')
@@ -1177,7 +1180,8 @@ class FacultyController extends Controller
                     'quiz' => $l->quizzes->where('is_active', true)->first() ? (object) [
                         'id' => $l->quizzes->where('is_active', true)->first()->id,
                         'title' => $l->quizzes->where('is_active', true)->first()->title,
-                        'questions_count' => $l->quizzes->where('is_active', true)->first()->questions->count(),
+                        'questions_count' => $l->quizzes->where('is_active', true)->first()->questionsPerSetCount(),
+                        'sets_count' => $l->quizzes->where('is_active', true)->first()->setCount(),
                         'passing_score' => $l->quizzes->where('is_active', true)->first()->passing_score,
                         'sort_order' => $l->quizzes->where('is_active', true)->first()->sort_order,
                     ] : null,
@@ -1208,13 +1212,15 @@ class FacultyController extends Controller
                 'learning_quizzes' => $m->quizzes->where('is_active', true)->map(fn (Quiz $quiz) => (object) [
                     'id' => $quiz->id,
                     'title' => $quiz->title,
-                    'questions_count' => $quiz->questions->count(),
+                    'questions_count' => $quiz->questionsPerSetCount(),
+                    'sets_count' => $quiz->setCount(),
                     'passing_score' => $quiz->passing_score,
                     'module_order' => $quiz->module_order,
                 ])->sortBy('module_order')->values(),
                 'quiz' => $m->quiz ? (object) [
                     'title' => $m->quiz->title,
-                    'questions_count' => $m->quiz->questions->count(),
+                    'questions_count' => $m->quiz->questionsPerSetCount(),
+                    'sets_count' => $m->quiz->setCount(),
                     'passing_score' => $m->quiz->passing_score,
                 ] : null,
             ];
@@ -1226,7 +1232,8 @@ class FacultyController extends Controller
             'title' => $finalExamModule->title,
             'quiz' => $finalExamModule->quiz ? (object) [
                 'title' => $finalExamModule->quiz->title,
-                'questions_count' => $finalExamModule->quiz->questions->count(),
+                'questions_count' => $finalExamModule->quiz->questionsPerSetCount(),
+                'sets_count' => $finalExamModule->quiz->setCount(),
                 'passing_score' => $finalExamModule->quiz->passing_score,
                 'attempts' => $finalExamModule->quiz->attempts,
             ] : null,
@@ -1979,31 +1986,11 @@ class FacultyController extends Controller
     {
         $quizModel = $mode === 'module-quiz' && $quizId === null
             ? null
-            : Quiz::with('questions')->where('module_id', $module->id)
+            : Quiz::with(['questions', 'sets'])->where('module_id', $module->id)
                 ->where('is_summative', $mode !== 'module-quiz')
                 ->when($quizId !== null, fn ($query) => $query->whereKey($quizId))
                 ->first();
-        $quiz = $quizModel ? (object) [
-            'title' => $quizModel->title,
-            'items' => $quizModel->questions->count(),
-            'passing_score' => $quizModel->passing_score,
-            'attempts' => $quizModel->attempts ?: ($module->is_final ? 'Unlimited' : null),
-            'time_limit' => $quizModel->time_limit,
-            'instructions' => $quizModel->instructions ?? '',
-            'questions' => $quizModel->questions->map(function (QuizQuestion $question): array {
-                $options = $question->options ?? [];
-                $correct = $question->correct_answer !== null ? array_search($question->correct_answer, $options, true) : null;
-
-                return [
-                    'text' => $question->question,
-                    'type' => $question->type ?? 'Multiple Choice',
-                    'points' => (int) $question->points,
-                    'choices' => $options,
-                    'correct' => $correct === false ? null : $correct,
-                    'answer' => $question->type === 'Identification' ? $question->correct_answer : null,
-                ];
-            })->values()->all(),
-        ] : null;
+        $quiz = $quizModel ? $this->quizBuilderData($quizModel, $module->is_final ? 'Unlimited' : null) : null;
 
         return view('faculty.courses.index', [
             'mode' => $mode,
@@ -2015,6 +2002,88 @@ class FacultyController extends Controller
             'moduleQuizId' => $quizId,
             'quiz' => $quiz,
         ]);
+    }
+
+    /**
+     * Data for the shared quiz builder (faculty/courses/index, quiz mode).
+     *
+     * "items" (No. of Items) is not persisted: it is prefilled from the
+     * first set's question count. "questions" stays the first set's flat list
+     * for older code; "sets" carries every set for the Sets drawer, with
+     * flags for anything students already answered (the builder blocks
+     * removing those, as does QuizManagementService on save).
+     */
+    private function quizBuilderData(Quiz $quizModel, ?string $defaultAttempts = null): object
+    {
+        $questionIds = $quizModel->questions->pluck('id');
+        $answeredIds = $questionIds->isEmpty() ? collect() : QuizAttemptAnswer::query()
+            ->whereIn('question_id', $questionIds)
+            ->distinct()
+            ->pluck('question_id')
+            ->map(fn ($id) => (int) $id);
+        $usedSetIds = QuizAttempt::query()
+            ->where('quiz_id', $quizModel->id)
+            ->whereNotNull('quiz_set_id')
+            ->distinct()
+            ->pluck('quiz_set_id')
+            ->map(fn ($id) => (int) $id);
+
+        $ordered = $quizModel->questions->sortBy([['position', 'asc'], ['id', 'asc']])->values();
+        $firstSetId = $quizModel->sets->first()?->id;
+        $sets = $quizModel->sets->map(fn (QuizSet $set) => [
+            'id' => (int) $set->id,
+            'name' => $set->name,
+            'position' => (int) $set->position,
+            'used' => $usedSetIds->contains((int) $set->id),
+            // Questions without a set (pre-sets data) belong to the first set.
+            'questions' => $ordered
+                ->filter(fn (QuizQuestion $question) => (int) ($question->quiz_set_id ?: $firstSetId) === (int) $set->id)
+                ->map(fn (QuizQuestion $question) => $this->quizQuestionPayload($question, $answeredIds))
+                ->values()->all(),
+        ])->values();
+
+        if ($sets->isEmpty()) {
+            $sets = collect([[
+                'id' => null,
+                'name' => 'Set A',
+                'position' => 0,
+                'used' => false,
+                'questions' => $ordered->map(fn (QuizQuestion $question) => $this->quizQuestionPayload($question, $answeredIds))->values()->all(),
+            ]]);
+        }
+
+        return (object) [
+            'title' => $quizModel->title,
+            'items' => count($sets->first()['questions']),
+            'passing_score' => $quizModel->passing_score,
+            'attempts' => $quizModel->attempts ?: $defaultAttempts,
+            'time_limit' => $quizModel->time_limit,
+            'instructions' => $quizModel->instructions ?? '',
+            'shuffle_questions' => (bool) $quizModel->shuffle_questions,
+            'shuffle_choices' => (bool) $quizModel->shuffle_choices,
+            'has_attempts' => QuizAttempt::query()->where('quiz_id', $quizModel->id)->exists(),
+            'questions' => $sets->first()['questions'],
+            'sets' => $sets->all(),
+        ];
+    }
+
+    /** @param Collection<int, int> $answeredIds */
+    private function quizQuestionPayload(QuizQuestion $question, $answeredIds): array
+    {
+        $options = $question->options ?? [];
+        $correct = $question->correct_answer !== null ? array_search($question->correct_answer, $options, true) : null;
+
+        return [
+            'id' => (int) $question->id,
+            'text' => $question->question,
+            'type' => $question->type ?? 'Multiple Choice',
+            'points' => (int) $question->points,
+            'choices' => $options,
+            'correct' => $correct === false ? null : $correct,
+            'answer' => $question->type === 'Identification' ? $question->correct_answer : null,
+            'lock_choice_order' => (bool) $question->lock_choice_order,
+            'answered' => $answeredIds->contains((int) $question->id),
+        ];
     }
 
     public function storeFinalExam(int $id, CourseModuleService $courseModuleService)
@@ -2128,28 +2197,8 @@ class FacultyController extends Controller
     {
         $course = $this->ownedCourse($id);
         $lesson = CourseLesson::where('course_id', $course->id)->findOrFail($lessonId);
-        $quizModel = Quiz::with('questions')->where('lesson_id', $lesson->id)->first();
-        $quiz = $quizModel ? (object) [
-            'title' => $quizModel->title,
-            'items' => $quizModel->questions->count(),
-            'passing_score' => $quizModel->passing_score,
-            'attempts' => $quizModel->attempts,
-            'time_limit' => $quizModel->time_limit,
-            'instructions' => $quizModel->instructions ?? '',
-            'questions' => $quizModel->questions->map(function (QuizQuestion $question): array {
-                $options = $question->options ?? [];
-                $correct = $question->correct_answer !== null ? array_search($question->correct_answer, $options, true) : null;
-
-                return [
-                    'text' => $question->question,
-                    'type' => $question->type ?? 'Multiple Choice',
-                    'points' => (int) $question->points,
-                    'choices' => $options,
-                    'correct' => $correct === false ? null : $correct,
-                    'answer' => ($question->type === 'Identification') ? $question->correct_answer : null,
-                ];
-            })->values()->all(),
-        ] : null;
+        $quizModel = Quiz::with(['questions', 'sets'])->where('lesson_id', $lesson->id)->first();
+        $quiz = $quizModel ? $this->quizBuilderData($quizModel) : null;
 
         return view('faculty.courses.index', [
             'mode' => 'quiz',

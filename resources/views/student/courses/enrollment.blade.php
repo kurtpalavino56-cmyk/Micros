@@ -2103,8 +2103,11 @@ function showQuizView(modIdx, viewOnly, retakeOnly, serverStarted) {
         q.options.forEach(function(opt) {
             const div = document.createElement('div');
             div.className = 'quiz-opt';
+            // dataset.letter is the submitted value: the option's ORIGINAL
+            // position letter, which grading uses. opt.label is the
+            // sequential letter shown for its position on screen.
             div.dataset.letter = opt.letter;
-            div.innerHTML = '<span class="quiz-opt-letter">' + opt.letter + '</span>'
+            div.innerHTML = '<span class="quiz-opt-letter">' + (opt.label || opt.letter) + '</span>'
                           + '<span class="quiz-opt-text">' + opt.text + '</span>';
 
             const result = review[String(q.id)];
@@ -2175,6 +2178,11 @@ function startModuleQuiz(modIdx) {
         return response.json().then(function (data) {
             if (!response.ok || !data.ok) throw new Error(data.message || 'This quiz is not currently available.');
             _serverQuizDeadlines[modIdx] = Number(data.deadline) || null;
+            // The server decides which set this attempt gets (and its
+            // order). Use it, so a retake without a reload shows the new set.
+            if (Array.isArray(data.questions) && data.questions.length > 0 && QUIZ_DATA[modIdx]) {
+                QUIZ_DATA[modIdx].questions = data.questions;
+            }
             return data;
         });
     }).catch(function (error) {

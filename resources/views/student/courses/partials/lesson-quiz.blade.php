@@ -10,7 +10,7 @@
             <span class="inline-quiz-cooldown" data-quiz-cooldown role="timer" aria-live="polite" @unless($status['unlock'] && ! $status['exhausted']) hidden @endunless></span>
         </div>
         <h2>{{ $quiz->title }}</h2>
-        <p>{{ $quiz->lesson?->title ?? $quiz->module?->title ?? '' }} · {{ $quiz->questions->count() }} questions · Pass {{ $quiz->passing_score }}%</p>
+        <p>{{ $quiz->lesson?->title ?? $quiz->module?->title ?? '' }} · {{ $quiz->questionsPerSetCount() }} questions · Pass {{ $quiz->passing_score }}%</p>
     </header>
     @if($quiz->instructions)<div class="inline-assessment-instructions up-ckeditor-wrapper"><div class="ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($quiz->instructions) !!}</div></div>@endif
     @if(($time_limit_seconds ?? 0) > 0 && $quizAvailable)
@@ -26,15 +26,17 @@
     @elseif(! $status['unlock'])
         <form class="inline-assessment-form inline-quiz-form" data-assessment-form method="POST" action="{{ route('quiz.submit', $quiz->id) }}">
             @csrf
-            @foreach($quiz->questions as $question)
+            {{-- Assigned set only, served order; radios submit the ORIGINAL letter. --}}
+            @foreach($presented_questions ?? [] as $item)
+                @php($question = $item['question'])
                 <fieldset class="inline-quiz-question">
                     <legend>{{ $loop->iteration }}. {{ $question->question }}</legend>
                     @if($question->type === 'Identification')
                         <input class="inline-quiz-input" name="answers[{{ $question->id }}]" required maxlength="2000">
                     @else
                         <div class="inline-quiz-options">
-                            @foreach($question->options ?? [] as $option)
-                                <label><input type="radio" name="answers[{{ $question->id }}]" value="{{ chr(65 + $loop->index) }}" required><span>{{ $option }}</span></label>
+                            @foreach($item['options'] as $option)
+                                <label><input type="radio" name="answers[{{ $question->id }}]" value="{{ $option['value'] }}" required><span>{{ $option['text'] }}</span></label>
                             @endforeach
                         </div>
                     @endif

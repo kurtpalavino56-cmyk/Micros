@@ -15,6 +15,7 @@ use App\Models\Enrollment;
 use App\Models\FacultyCode;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
+use App\Models\QuizSet;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -218,9 +219,16 @@ class DatabaseSeeder extends Seeder
                     ]
                 );
 
+                $set = QuizSet::firstOrCreate(
+                    ['quiz_id' => $quiz->id, 'position' => 0],
+                    ['name' => 'Set A']
+                );
+
                 QuizQuestion::updateOrCreate(
                     ['quiz_id' => $quiz->id, 'question' => 'What does HTML stand for?'],
                     [
+                        'quiz_set_id' => $set->id,
+                        'position' => 0,
                         'type' => 'Multiple Choice',
                         'options' => ['HyperText Markup Language', 'Hyperlink Text Mode', 'Home Tool Markup Language'],
                         'correct_answer' => 'HyperText Markup Language',

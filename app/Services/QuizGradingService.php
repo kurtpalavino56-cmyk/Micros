@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Quiz;
+use App\Models\QuizQuestion;
+use Illuminate\Support\Collection;
 
 class QuizGradingService
 {
@@ -13,12 +15,22 @@ class QuizGradingService
      * client-supplied score is intentionally ignored because it is not evidence
      * of what the student actually answered.
      *
+     * $questions is the set the student was served (see
+     * QuizAttemptService::presentationFor()). When omitted, the quiz's
+     * default set is used, which for a one-set quiz is every question.
+     *
+     * Choice shuffling never affects grading: the student submits the
+     * ORIGINAL position letter of the chosen option, whatever its position
+     * on screen, and it is compared with the original position of
+     * correct_answer below.
+     *
      * @param  array<string, mixed>  $result
+     * @param  Collection<int, QuizQuestion>|null  $questions
      * @return array{correct:int,total:int,score:int,passed:bool,answers:array<string,array{answer:string|null,correct:bool,correct_answer:string|null}>}
      */
-    public function grade(Quiz $quiz, array $result): array
+    public function grade(Quiz $quiz, array $result, ?Collection $questions = null): array
     {
-        $questions = $quiz->questions->values();
+        $questions = ($questions ?? $quiz->questionsForSet())->values();
         $total = $questions->count();
         $submitted = is_array($result['answers'] ?? null) ? $result['answers'] : [];
         $correct = 0;

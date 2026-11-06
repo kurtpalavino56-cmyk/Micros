@@ -11,6 +11,9 @@ class QuizAttempt extends Model
     protected $fillable = [
         'user_id',
         'quiz_id',
+        'quiz_set_id',
+        'shuffle_seed',
+        'presentation',
         'score',
         'passed',
         'started_at',
@@ -23,6 +26,8 @@ class QuizAttempt extends Model
             'passed' => 'boolean',
             'started_at' => 'datetime',
             'submitted_at' => 'datetime',
+            'shuffle_seed' => 'integer',
+            'presentation' => 'array',
         ];
     }
 
@@ -34,6 +39,11 @@ class QuizAttempt extends Model
     public function quiz(): BelongsTo
     {
         return $this->belongsTo(Quiz::class);
+    }
+
+    public function set(): BelongsTo
+    {
+        return $this->belongsTo(QuizSet::class, 'quiz_set_id');
     }
 
     public function answers(): HasMany

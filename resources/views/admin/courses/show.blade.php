@@ -11,7 +11,10 @@
     <x-slot:head>
         <link rel="icon" type="image/png" href="{{ asset('Images/PSU-Logo.png') }}">
             <link rel="apple-touch-icon" href="{{ asset('Images/PSU-Logo.png') }}">
-    </x-slot:head>
+        <style>
+        .quiz-set-heading, .assessment-set-heading { margin: 14px 0 6px; padding: 4px 10px; border-left: 3px solid #f4b900; background: #f6f8fc; color: #123b7a; font-weight: 700; font-size: .85rem; }
+    </style>
+</x-slot:head>
 @php
     // CKEditor leaves <p>&nbsp;</p> for every blank line the author types.
     // On a review page those show up as large gaps, so drop them.
@@ -311,6 +314,7 @@
                                                     <span>{{ $lessonQuiz->title }}</span>
                                                     <span class="lesson-assessment-meta">
                                                         Lesson quiz · {{ $lessonQuiz->questions_count }} {{ $lessonQuiz->questions_count === 1 ? 'question' : 'questions' }} · Pass {{ $lessonQuiz->passing_score }}%
+                                                        @if (($lessonQuiz->sets_count ?? 1) > 1) · {{ $lessonQuiz->sets_count }} sets @endif @if ($lessonQuiz->shuffle_questions ?? false) · shuffled questions @endif @if ($lessonQuiz->shuffle_choices ?? false) · shuffled choices @endif
                                                         @if ($lessonQuiz->time_limit)
                                                             · {{ $lessonQuiz->time_limit }} min
                                                         @endif
@@ -319,7 +323,10 @@
                                                 @if ($lessonQuiz->instructions)
                                                     <div class="assessment-instructions up-ckeditor-wrapper"><div class="rich ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($lessonQuiz->instructions) !!}</div></div>
                                                 @endif
-                                                @forelse ($lessonQuiz->questions as $qi => $question)
+                                                @forelse ($lessonQuiz->sets as $set)
+                                                @continue($set->questions->isEmpty())
+                                                @if (($lessonQuiz->sets_count ?? 1) > 1)<div class="assessment-set-heading">{{ $set->name }} · {{ $set->questions->count() }} {{ \Illuminate\Support\Str::plural('question', $set->questions->count()) }}</div>@endif
+                                                @foreach ($set->questions as $qi => $question)
                                                     <div class="assessment-question">
                                                         <div class="assessment-question-title">Q{{ $qi + 1 }}. {{ $question->question }}</div>
                                                         <div class="lesson-assessment-meta">{{ $question->type }}{{ $question->points ? ' · ' . $question->points . ' pts' : '' }}</div>
@@ -338,9 +345,13 @@
                                                             <div class="assessment-answer">Answer: {{ $question->correct_answer }}</div>
                                                         @endif
                                                     </div>
+                                                @endforeach
                                                 @empty
                                                     <p class="lesson-desc lesson-empty">No questions have been added to this quiz.</p>
                                                 @endforelse
+                                                @if ($lessonQuiz->sets->every(fn ($set) => $set->questions->isEmpty()) && $lessonQuiz->sets->isNotEmpty())
+                                                    <p class="lesson-desc lesson-empty">No questions have been added to this quiz.</p>
+                                                @endif
                                             </section>
                                         @endforeach
                                         @foreach($lesson->lesson_activities as $lessonActivity)
@@ -381,13 +392,15 @@
                                 @foreach($module->learning_quizzes as $learningQuiz)
                                     <div class="quiz-row quiz-row--module" onclick="this.nextElementSibling.classList.toggle('open')">
                                         <span>Module quiz: {{ $learningQuiz->title }}</span>
-                                        <span>{{ $learningQuiz->questions_count }} questions · Pass {{ $learningQuiz->passing_score }}%{{ $learningQuiz->time_limit ? ' · ' . $learningQuiz->time_limit . ' min' : '' }}</span>
+                                        <span>{{ $learningQuiz->questions_count }} questions · Pass {{ $learningQuiz->passing_score }}%{{ $learningQuiz->time_limit ? ' · ' . $learningQuiz->time_limit . ' min' : '' }}@if (($learningQuiz->sets_count ?? 1) > 1) · {{ $learningQuiz->sets_count }} sets @endif @if ($learningQuiz->shuffle_questions ?? false) · shuffled questions @endif @if ($learningQuiz->shuffle_choices ?? false) · shuffled choices @endif</span>
                                     </div>
                                     <div class="quiz-detail open">
                                         @if ($learningQuiz->instructions)
                                             <div class="quiz-instructions up-ckeditor-wrapper"><div class="rich ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($learningQuiz->instructions) !!}</div></div>
                                         @endif
-                                        @foreach($learningQuiz->questions as $qi => $question)
+                                        @foreach ($learningQuiz->sets as $set)
+                                        @if (($learningQuiz->sets_count ?? 1) > 1)<div class="quiz-set-heading">{{ $set->name }} · {{ $set->questions->count() }} {{ \Illuminate\Support\Str::plural('question', $set->questions->count()) }}</div>@endif
+                                        @foreach($set->questions as $qi => $question)
                                             <div class="quiz-question">
                                                 <div class="quiz-question-head">
                                                     <span class="quiz-question-text">Q{{ $qi + 1 }}. {{ $question->question }}</span>
@@ -406,19 +419,22 @@
                                                 @endif
                                             </div>
                                         @endforeach
+                                        @endforeach
                                     </div>
                                 @endforeach
 
                                 @if ($module->quiz)
                                     <div class="quiz-row{{ $module->is_final ? ' quiz-row--final-exam' : '' }}" onclick="this.nextElementSibling.classList.toggle('open')">
                                         <span>{{ $module->is_final ? 'Final exam' : 'Summative quiz' }}: {{ $module->quiz->title }}</span>
-                                        <span>{{ $module->quiz->questions_count }} questions · Pass {{ $module->quiz->passing_score }}%{{ $module->quiz->time_limit ? ' · ' . $module->quiz->time_limit . ' min' : '' }}</span>
+                                        <span>{{ $module->quiz->questions_count }} questions · Pass {{ $module->quiz->passing_score }}%{{ $module->quiz->time_limit ? ' · ' . $module->quiz->time_limit . ' min' : '' }}@if (($module->quiz->sets_count ?? 1) > 1) · {{ $module->quiz->sets_count }} sets @endif @if ($module->quiz->shuffle_questions ?? false) · shuffled questions @endif @if ($module->quiz->shuffle_choices ?? false) · shuffled choices @endif</span>
                                     </div>
                                     <div class="quiz-detail">
                                         @if ($module->quiz->instructions)
                                             <div class="quiz-instructions up-ckeditor-wrapper"><div class="rich ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($module->quiz->instructions) !!}</div></div>
                                         @endif
-                                        @foreach ($module->quiz->questions as $qi => $q)
+                                        @foreach ($module->quiz->sets as $set)
+                                        @if (($module->quiz->sets_count ?? 1) > 1)<div class="quiz-set-heading">{{ $set->name }} · {{ $set->questions->count() }} {{ \Illuminate\Support\Str::plural('question', $set->questions->count()) }}</div>@endif
+                                        @foreach ($set->questions as $qi => $q)
                                             <div class="quiz-question">
                                                 <div class="quiz-question-head">
                                                     <span class="quiz-question-text">Q{{ $qi + 1 }}. {{ $q->question }}</span>
@@ -436,6 +452,7 @@
                                                     <div class="quiz-answer">Answer: <strong>{{ $q->correct_answer }}</strong></div>
                                                 @endif
                                             </div>
+                                        @endforeach
                                         @endforeach
                                     </div>
                                 @endif

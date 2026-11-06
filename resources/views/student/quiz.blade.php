@@ -5,7 +5,7 @@
         <p>{{ $quiz->course->title }}</p>
         <h1>{{ $quiz->title }}</h1>
         @if($quiz->instructions)<div class="quiz-instructions up-ckeditor-wrapper"><div class="ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($quiz->instructions) !!}</div></div>@endif
-        <p>{{ $quiz->questions->count() }} questions · pass {{ $quiz->passing_score }}% · {{ $status['allowed'] === 0 ? 'unlimited' : max(0, $status['allowed'] - $status['used']).' attempt(s) remaining' }}</p>
+        <p>{{ $quiz->questionsPerSetCount() }} questions · pass {{ $quiz->passing_score }}% · {{ $status['allowed'] === 0 ? 'unlimited' : max(0, $status['allowed'] - $status['used']).' attempt(s) remaining' }}</p>
         @if(($time_limit_seconds ?? 0) > 0 && ! $status['exhausted'] && ! $status['unlock'])
             <p class="quiz-notice quiz-timer" id="quiz-timer" role="timer" aria-live="polite"></p>
         @endif
@@ -35,15 +35,20 @@
         @else
             <form id="quiz-attempt-form" method="POST" action="{{ route('quiz.submit', $quiz->id) }}">
                 @csrf
-                @foreach($quiz->questions as $question)
+                {{-- Only the set assigned to this attempt, in its served order.
+                     Each radio submits the option's ORIGINAL letter, whatever
+                     its position on screen, so choice shuffling cannot change
+                     grading. --}}
+                @foreach($presented_questions ?? [] as $item)
+                    @php($question = $item['question'])
                     <fieldset class="quiz-question">
                         <legend><strong>{{ $loop->iteration }}. {{ $question->question }}</strong></legend>
                         @if($question->type === 'Identification')
                             <input class="quiz-input" name="answers[{{ $question->id }}]" required maxlength="2000">
                         @else
                             <div class="quiz-options">
-                                @foreach($question->options ?? [] as $option)
-                                    <label class="quiz-option"><input type="radio" name="answers[{{ $question->id }}]" value="{{ chr(65 + $loop->index) }}" required><span>{{ $option }}</span></label>
+                                @foreach($item['options'] as $option)
+                                    <label class="quiz-option"><input type="radio" name="answers[{{ $question->id }}]" value="{{ $option['value'] }}" required><span>{{ $option['text'] }}</span></label>
                                 @endforeach
                             </div>
                         @endif

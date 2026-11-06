@@ -19,6 +19,7 @@ use App\Models\Notification;
 use App\Models\Pathway;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
+use App\Models\QuizQuestion;
 use App\Models\StackingFramework;
 use App\Models\UserBadge;
 use App\Services\CourseCompletionService;
@@ -585,7 +586,7 @@ class StudentController extends Controller
         $quizSummary = fn (Quiz $quiz): object => (object) [
             'id' => $quiz->id,
             'title' => $quiz->title,
-            'questions_count' => $quiz->questions->count(),
+            'questions_count' => $quiz->questionsPerSetCount(),
             'passing_score' => $quiz->passing_score,
         ];
         $finalExamModule = $course->modules->firstWhere('is_final', true);
@@ -841,26 +842,17 @@ class StudentController extends Controller
             'quiz' => $m->quiz ? (object) [
                 'id' => $m->quiz->id,
                 'title' => $m->quiz->title,
-                'questions_count' => $m->quiz->questions->count(),
+                'questions_count' => $m->quiz->questionsPerSetCount(),
                 'passing_score' => $m->quiz->passing_score,
                 // Needed by the countdown in the player. Without this the
                 // view only ever saw null, so every quiz looked untimed.
                 'time_limit' => (int) ($m->quiz->time_limit ?? 0),
                 'attempts' => $m->quiz->attempts,
                 'instructions' => $m->quiz->instructions,
-                'questions' => $m->quiz->questions->map(function ($q) {
-                    $opts = collect($q->options ?? [])->values()->map(fn ($text, $i) => [
-                        'letter' => chr(65 + $i),
-                        'text' => (string) $text,
-                    ])->all();
-
-                    return [
-                        'id' => (int) $q->id,
-                        'label' => Str::limit((string) $q->question, 40, ''),
-                        'question' => (string) $q->question,
-                        'options' => $opts,
-                    ];
-                })->values()->all(),
+                // Filled in below once saved scores are known: a student
+                // reviewing a past attempt sees that attempt's set and order,
+                // anyone else sees the set assigned to their next attempt.
+                'questions' => [],
             ] : null,
             'activities' => $m->activities->where('is_active', true)->map(fn (LessonActivity $activity) => (object) [
                 'id' => $activity->id,
@@ -878,7 +870,7 @@ class StudentController extends Controller
                 'id' => $quiz->id,
                 'title' => $quiz->title,
                 'passing_score' => $quiz->passing_score,
-                'questions_count' => $quiz->questions->count(),
+                'questions_count' => $quiz->questionsPerSetCount(),
                 'module_order' => $quiz->module_order,
                 'is_completed' => $passedModuleQuizIds->contains((int) $quiz->id),
             ])->values(),
@@ -1076,6 +1068,17 @@ class StudentController extends Controller
                     ] : null,
                 ];
             })->values()->all();
+
+        $reviewModuleScores = array_diff_key($state['module_scores'] ?? [], array_flip($staleScores));
+        foreach ($course->modules as $mIdx => $m) {
+            if ($m->quiz && isset($modules[$mIdx]) && $modules[$mIdx]->quiz) {
+                $modules[$mIdx]->quiz->questions = $this->playerQuizQuestions(
+                    $m->quiz,
+                    (int) $auth->id,
+                    array_key_exists((string) $mIdx, $reviewModuleScores) || array_key_exists($mIdx, $reviewModuleScores)
+                );
+            }
+        }
 
         return view('student.courses.enrollment', [
             'user' => UserPresenter::student($auth),
@@ -1559,10 +1562,17 @@ class StudentController extends Controller
             session()->put($sessionKey, now()->timestamp);
         }
         $quizStartedAt = $timeLimitSeconds > 0 ? (int) session()->get($sessionKey, now()->timestamp) : null;
+        $quizAvailable = ! $status['exhausted'] && ! $status['unlock'];
+        // Only an attempt that can actually be taken is assigned (and
+        // remembered); a locked quiz renders no questions at all.
+        $presentedQuestions = $quizAvailable
+            ? $this->quizAttempts->presentedQuestions($quiz, $this->quizAttempts->presentationFor($quiz, (int) $student->id))
+            : [];
 
         $viewData = [
             'user' => UserPresenter::student($student),
             'quiz' => $quiz,
+            'presented_questions' => $presentedQuestions,
             'module_order' => $quiz->module_order,
             'status' => $status,
             'latestAttempt' => $latestAttempt,
@@ -1614,7 +1624,66 @@ class StudentController extends Controller
             $deadline = ($startedAt + $timeLimitSeconds) * 1000;
         }
 
-        return response()->json(['ok' => true, 'deadline' => $deadline]);
+        // The course player renders whatever set this returns, so a retake
+        // without a page reload still shows the newly assigned set.
+        $presentation = $this->quizAttempts->presentationFor($quiz, (int) $student->id);
+
+        return response()->json([
+            'ok' => true,
+            'deadline' => $deadline,
+            'questions' => $this->playerQuestionPayload($this->quizAttempts->presentedQuestions($quiz, $presentation)),
+        ]);
+    }
+
+    /**
+     * Course-player question payload. "letter" is the submitted value (the
+     * option's ORIGINAL position, which grading uses); "label" is what the
+     * student sees (sequential by on-screen position). No correct answers.
+     *
+     * @param  list<array{question:QuizQuestion,options:list<array{value:string,label:string,text:string}>}>  $presented
+     * @return list<array<string, mixed>>
+     */
+    private function playerQuestionPayload(array $presented): array
+    {
+        return array_map(fn (array $item): array => [
+            'id' => (int) $item['question']->id,
+            'label' => Str::limit((string) $item['question']->question, 40, ''),
+            'question' => (string) $item['question']->question,
+            'options' => array_map(fn (array $option): array => [
+                'letter' => $option['value'],
+                'label' => $option['label'],
+                'text' => $option['text'],
+            ], $item['options']),
+        ], $presented);
+    }
+
+    /**
+     * Questions for the course player's module quiz. A student with a saved
+     * score opens a read-only review, which must show the set and order of
+     * that attempt; otherwise the set assigned to the next attempt is used.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function playerQuizQuestions(Quiz $quiz, int $userId, bool $review): array
+    {
+        if ($review) {
+            $editedAt = $this->quizAttempts->lastEditedAt($quiz);
+            $latest = QuizAttempt::query()
+                ->where('user_id', $userId)
+                ->where('quiz_id', $quiz->id)
+                ->whereNotNull('presentation')
+                ->when($editedAt, fn ($query) => $query->where('submitted_at', '>=', $editedAt))
+                ->latest('submitted_at')
+                ->latest('id')
+                ->first();
+            if ($latest && ! empty($latest->presentation['question_ids'])) {
+                return $this->playerQuestionPayload($this->quizAttempts->presentedQuestions($quiz, $latest->presentation));
+            }
+        }
+
+        return $this->playerQuestionPayload(
+            $this->quizAttempts->presentedQuestions($quiz, $this->quizAttempts->presentationFor($quiz, $userId))
+        );
     }
 
     private function quizTrackingSessionKey(int $userId, int $quizId): string
@@ -1641,13 +1710,15 @@ class StudentController extends Controller
         ]);
 
         $answers = (array) ($data['answers'] ?? []);
-        $allowedIds = $quiz->questions->pluck('id')->map(fn ($questionId) => (string) $questionId)->all();
-        abort_if(array_diff(array_keys($answers), $allowedIds) !== [], 422, 'The submitted quiz contains an invalid question.');
+        // Submitted question IDs must belong to the set this student was
+        // served; the set itself is derived on the server, never posted.
+        $presentation = $this->quizAttempts->presentationFor($quiz, (int) $student->id);
+        abort_unless($this->quizAttempts->answersMatchPresentation($answers, $presentation), 422, 'The submitted quiz contains an invalid question.');
         if ($this->quizAttempts->submissionIsLate($quiz, $startedAt)) {
             $answers = [];
         }
 
-        $result = $this->quizAttempts->submit($student, $quiz, ['answers' => $answers], $startedAt > 0 ? Carbon::createFromTimestamp($startedAt) : null);
+        $result = $this->quizAttempts->submit($student, $quiz, ['answers' => $answers], $startedAt > 0 ? Carbon::createFromTimestamp($startedAt) : null, $presentation);
         if ($result['blocked']) {
             if ($request->expectsJson()) {
                 $course = Course::with('modules.quiz.questions')->findOrFail($quiz->course_id);
@@ -2347,11 +2418,25 @@ class StudentController extends Controller
                 }
             }
 
+            $presentation = $this->quizAttempts->presentationFor($quiz, (int) $student->id);
+            if (! $this->quizAttempts->answersMatchPresentation((array) ($result['answers'] ?? []), $presentation)) {
+                $quizSubmissions[(string) $moduleIndex] = [
+                    'blocked' => true,
+                    'score' => null,
+                    'passed' => false,
+                    'unlock' => null,
+                    'message' => 'These answers do not match the questions you were given. Reload the course and try again.',
+                ];
+
+                continue;
+            }
+
             $submission = $this->quizAttempts->submit(
                 $student,
                 $quiz,
                 $result,
-                $startedAt > 0 ? Carbon::createFromTimestamp($startedAt) : null
+                $startedAt > 0 ? Carbon::createFromTimestamp($startedAt) : null,
+                $presentation
             );
             if ($submission['blocked']) {
                 $submission['message'] = $submission['unlock'] !== null

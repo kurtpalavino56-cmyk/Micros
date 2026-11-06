@@ -312,9 +312,9 @@ class StudentProgressService
                 continue;
             }
 
-            $questionCount = $module->quiz->relationLoaded('questions')
-                ? $module->quiz->questions->count()
-                : $module->quiz->questions()->count();
+            // A student answers one set, so the denominator is the per-set
+            // count (all sets have the same number of questions).
+            $questionCount = $module->quiz->questionsPerSetCount();
             if ($questionCount === 0) {
                 continue;
             }

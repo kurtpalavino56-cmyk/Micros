@@ -266,7 +266,7 @@
                                         @else
                                             <span class="module-content-kind">Quiz</span>
                                             <strong>{{ $item->title }}</strong>
-                                            <span class="module-content-meta">{{ $item->questions_count }} questions · Pass {{ $item->passing_score }}%</span>
+                                            <span class="module-content-meta">{{ $item->questions_count }} questions · Pass {{ $item->passing_score }}%@if(($item->sets_count ?? 1) > 1) · {{ $item->sets_count }} sets @endif</span>
                                         @endif
                                     </div>
                                     <div class="module-content-actions">
@@ -323,7 +323,7 @@
                             @if($module->quiz ?? null)
                                 <div class="quiz-info">
                                     <h4>{{ $module->quiz->title }}</h4>
-                                    <div class="sub">{{ $module->quiz->questions_count }} {{ Illuminate\Support\Str::plural('question', $module->quiz->questions_count) }} · Pass {{ $module->quiz->passing_score }}%</div>
+                                    <div class="sub">{{ $module->quiz->questions_count }} {{ Illuminate\Support\Str::plural('question', $module->quiz->questions_count) }} · Pass {{ $module->quiz->passing_score }}%@if(($module->quiz->sets_count ?? 1) > 1) · {{ $module->quiz->sets_count }} sets @endif</div>
                                 </div>
                                 <a class="module-content-action" href="{{ route('faculty.quiz.create', [$course->id, $module->idx]) }}">Edit</a>
                                 <form method="POST"
@@ -373,7 +373,7 @@
                             <div>
                                 <strong>Final Exam</strong>
                                 @if($finalModule->quiz)
-                                    <div class="fac-final-exam-meta">{{ $finalModule->quiz->title }} · {{ $finalModule->quiz->questions_count }} {{ Illuminate\Support\Str::plural('question', $finalModule->quiz->questions_count) }} · Pass {{ $finalModule->quiz->passing_score }}% · {{ $finalModule->quiz->attempts ?: 'Unlimited' }} attempts</div>
+                                    <div class="fac-final-exam-meta">{{ $finalModule->quiz->title }} · {{ $finalModule->quiz->questions_count }} {{ Illuminate\Support\Str::plural('question', $finalModule->quiz->questions_count) }} · Pass {{ $finalModule->quiz->passing_score }}% · {{ $finalModule->quiz->attempts ?: 'Unlimited' }} attempts @if(($finalModule->quiz->sets_count ?? 1) > 1) · {{ $finalModule->quiz->sets_count }} sets @endif</div>
                                 @else
                                     <div class="fac-final-exam-warning">Final Exam setup is required before course approval.</div>
                                 @endif
@@ -443,7 +443,7 @@
                     </div>
                     <div>
                         <label class="q-label">No. of Items <span class="req">*</span></label>
-                        <input class="input-outline fac-width-full" type="number" name="items" placeholder="1" min="1" value="{{ $quiz->items ?? '' }}">
+                        <input class="input-outline fac-width-full" type="number" name="items" id="quiz-items" placeholder="1" min="1" max="100" value="{{ $quiz->items ?? '' }}" onchange="itemsChanged(this)">
                     </div>
                     <div>
                         <label class="q-label">Passing Score (%)</label>
@@ -462,119 +462,169 @@
                         <small class="field-help">Leave blank to allow unlimited time. A timer is applied only when you enter a number.</small>
                     </div>
                 </div>
+                <div class="quiz-shuffle-options">
+                    <label>
+                        <input type="checkbox" name="shuffle_questions" value="1" @checked(old('_token') ? old('shuffle_questions') : ($quiz->shuffle_questions ?? false))>
+                        <span><strong>Shuffle question order</strong><small>Each attempt shows its set's questions in a different order.</small></span>
+                    </label>
+                    <label>
+                        <input type="checkbox" name="shuffle_choices" value="1" @checked(old('_token') ? old('shuffle_choices') : ($quiz->shuffle_choices ?? false))>
+                        <span><strong>Shuffle choices order</strong><small>Multiple-choice options appear in a different order per attempt. True or False and locked questions keep their order.</small></span>
+                    </label>
+                </div>
                 <div>
                     <label class="q-label">Instructions ( Optional )</label>
                     @include('components.rich-text-editor', ['name' => 'instructions', 'id' => 'assessment-instructions', 'value' => old('instructions', $quiz->instructions ?? ''), 'placeholder' => 'Add instructions for students...'])
                 </div>
             </div>
 
-            {{-- Questions â€” for a NEW quiz the containers are generated after
-                 clicking "Create Quiz"; the count follows "No. of Items" --}}
+            {{-- Questions live in SETS (Set A, Set B, ...). Every set has the same
+                 number of questions; each student attempt is served one set.
+                 All sets stay in the DOM (only the active one is visible) so a
+                 single form POST saves everything as sets[s][questions][q][...].
+                 For a NEW quiz the cards are generated after "Create Quiz". --}}
             @php
-                $questions = $quiz->questions ?? [];
-                $isNewQuiz = empty($questions);
+                $quizSets = collect($quiz->sets ?? []);
+                $knownSets = $quizSets->keyBy(fn ($set) => (string) ($set['id'] ?? ''));
+                $knownQuestions = $quizSets->flatMap(fn ($set) => $set['questions'] ?? [])->keyBy(fn ($question) => (string) ($question['id'] ?? ''));
+                $oldSets = old('sets');
+                if (is_array($oldSets) && $oldSets !== []) {
+                    // Re-populate after a failed save, keeping ids and the
+                    // "answered"/"used" flags the server knows about.
+                    $builderSets = collect($oldSets)->values()->map(function ($set) use ($knownSets, $knownQuestions) {
+                        $setId = isset($set['id']) && $set['id'] !== '' ? (int) $set['id'] : null;
+
+                        return [
+                            'id' => $setId,
+                            'name' => (string) ($set['name'] ?? ''),
+                            'used' => (bool) ($knownSets[(string) $setId]['used'] ?? false),
+                            'questions' => collect($set['questions'] ?? [])->values()->map(function ($question) use ($knownQuestions) {
+                                $questionId = isset($question['id']) && $question['id'] !== '' ? (int) $question['id'] : null;
+                                $type = $question['type'] ?? 'Multiple Choice';
+
+                                return [
+                                    'id' => $questionId,
+                                    'text' => (string) ($question['text'] ?? ''),
+                                    'type' => $type,
+                                    'points' => $question['points'] ?? '',
+                                    'choices' => array_values((array) ($question['choices'] ?? [])),
+                                    'correct' => $type === 'True or False' ? ($question['tf_correct'] ?? null) : ($question['correct'] ?? null),
+                                    'answer' => $question['answer'] ?? '',
+                                    'lock_choice_order' => ! empty($question['lock_choice_order']),
+                                    'answered' => (bool) ($knownQuestions[(string) $questionId]['answered'] ?? false),
+                                ];
+                            })->all(),
+                        ];
+                    })->all();
+                } else {
+                    $builderSets = $quizSets->isNotEmpty()
+                        ? $quizSets->values()->all()
+                        : [['id' => null, 'name' => 'Set A', 'used' => false, 'questions' => []]];
+                }
+                $isNewQuiz = collect($builderSets)->every(fn ($set) => empty($set['questions']));
+                $quizHasAttempts = (bool) ($quiz->has_attempts ?? false);
             @endphp
+
+            <style>
+                .quiz-sets-layout { display: flex; gap: 20px; align-items: flex-start; }
+                .quiz-sets-main { flex: 1 1 auto; min-width: 0; }
+                .quiz-set-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 14px; }
+                .quiz-set-bar__title { margin: 0; font-size: 1rem; color: #123b7a; }
+                .quiz-set-bar__title small { color: #526078; font-weight: 500; }
+                .quiz-sets-toggle { border: 1px solid #c9d3e3; background: #fff; color: #123b7a; border-radius: 8px; padding: 7px 12px; font-weight: 700; cursor: pointer; }
+                .quiz-sets-drawer { flex: 0 0 280px; position: sticky; top: 16px; border: 1px solid #dfe5ef; border-radius: 12px; background: #fff; padding: 14px; box-shadow: 0 6px 18px rgba(18, 59, 122, .06); }
+                .quiz-sets-drawer[hidden] { display: none; }
+                .quiz-sets-drawer__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+                .quiz-sets-drawer__head h3 { margin: 0; font-size: 1rem; color: #123b7a; }
+                .quiz-sets-drawer__close { border: 0; background: none; font-size: 1.3rem; line-height: 1; cursor: pointer; color: #526078; }
+                .quiz-sets-drawer__help { margin: 0 0 12px; color: #526078; font-size: .82rem; line-height: 1.45; }
+                .quiz-set-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
+                .quiz-set-item { border: 1px solid #dfe5ef; border-radius: 10px; padding: 8px 10px; }
+                .quiz-set-item.is-active { border-color: #123b7a; background: #f3f6fc; }
+                .quiz-set-switch { display: flex; width: 100%; justify-content: space-between; gap: 8px; border: 0; background: none; padding: 0; text-align: left; cursor: pointer; font: inherit; font-weight: 700; color: #182b4d; }
+                .quiz-set-switch span:last-child { color: #526078; font-weight: 500; font-size: .82rem; white-space: nowrap; }
+                .quiz-set-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+                .quiz-set-actions button { border: 1px solid #d8e0eb; background: #fff; border-radius: 6px; padding: 3px 8px; font-size: .78rem; cursor: pointer; color: #182b4d; }
+                .quiz-set-actions button.is-danger { color: #b42318; }
+                .quiz-set-used { display: block; margin-top: 4px; color: #8a5a00; font-size: .75rem; }
+                .quiz-set-add { width: 100%; border: 1px dashed #9fb0cc; background: #f8fafc; border-radius: 10px; padding: 9px; font-weight: 700; color: #123b7a; cursor: pointer; }
+                .quiz-set-panel[hidden] { display: none; }
+                .quiz-shuffle-options { display: grid; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #e5eaf1; }
+                .quiz-shuffle-options label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+                .quiz-shuffle-options small { display: block; color: #526078; }
+                .lock-choice-order { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; font-size: .88rem; color: #182b4d; cursor: pointer; }
+                .lock-choice-order small { display: block; color: #526078; }
+                .question-answered-note { margin-top: 10px; color: #8a5a00; font-size: .8rem; }
+                .quiz-builder-notice { margin: 0 0 16px; padding: 12px 14px; border-left: 4px solid #dba617; background: #fff7dc; border-radius: 8px; color: #4a3b00; font-size: .9rem; }
+                .quiz-builder-errors { margin: 0 0 16px; padding: 12px 14px; border-left: 4px solid #b42318; background: #fee4e2; border-radius: 8px; color: #7a1a12; }
+                .quiz-builder-errors ul { margin: 6px 0 0; padding-left: 18px; }
+                @media (max-width: 980px) {
+                    .quiz-sets-layout { flex-direction: column-reverse; }
+                    .quiz-sets-drawer { position: static; width: 100%; flex-basis: auto; box-sizing: border-box; }
+                }
+            </style>
+
+            @if ($errors->any())
+                <div class="quiz-builder-errors" role="alert">
+                    <strong>The quiz was not saved.</strong>
+                    <ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+                </div>
+            @endif
+            @if ($quizHasAttempts)
+                <div class="quiz-builder-notice" role="note">
+                    Students have already taken this quiz. Questions they answered and sets they were served can't be removed, so their attempt history stays intact. Changing question content starts a fresh attempt count; renaming sets or changing the shuffle options does not.
+                </div>
+            @endif
 
             @if ($isNewQuiz)
             <div class="quiz-card fac-quiz-intro" id="create-quiz-intro">
                 <p class="fac-quiz-intro-copy">
                     Set the {{ $mode === 'final-exam' ? 'final exam' : 'quiz' }} details above &mdash; especially <strong>No. of Items</strong> &mdash; then click
-                    <strong>{{ $mode === 'final-exam' ? 'Create Final Exam' : 'Create Quiz' }}</strong>. One question container will be created per item.
+                    <strong>{{ $mode === 'final-exam' ? 'Create Final Exam' : 'Create Quiz' }}</strong>. One question container will be created per item. You can add more sets (Set B, Set C, ...) afterwards.
                 </p>
                 <button class="btn-save-lesson" type="button" onclick="createQuizQuestions()">{{ $mode === 'final-exam' ? 'Create Final Exam' : 'Create Quiz' }}</button>
             </div>
             @endif
 
             <div id="questions-area" style="display:{{ $isNewQuiz ? 'none' : 'block' }};">
-            <div class="question-bulk-tools" id="question-bulk-tools">
-                <label for="select-all-questions">
-                    <input class="question-select" id="select-all-questions" type="checkbox" aria-label="Select all questions">
-                    <span>Select all questions</span>
-                </label>
-                <span class="question-bulk-status" id="question-bulk-status" aria-live="polite">Select questions to change their type or points together.</span>
-            </div>
-            <div id="questions">
-                @foreach ($questions as $q => $question)
-                    <div class="quiz-card question-card">
-                        <div class="q-head">
-                            <input class="question-select question-select-item" type="checkbox" aria-label="Select question {{ $q + 1 }}" onchange="updateQuestionSelectionState()">
-                            <h3>Question {{ $q + 1 }}</h3>
-                            <span class="type-label">Type</span>
-                            <div class="sel-wrap">
-                                @php $qType = $question['type'] ?? 'Multiple Choice'; @endphp
-                                <select name="questions[{{ $q }}][type]" onchange="questionTypeChanged(this)">
-                                    <option value="Multiple Choice" {{ $qType === 'Multiple Choice' ? 'selected' : '' }}>Multiple Choice</option>
-                                    <option value="True or False" {{ $qType === 'True or False' ? 'selected' : '' }}>True or False</option>
-                                    <option value="Identification" {{ $qType === 'Identification' ? 'selected' : '' }}>Identification</option>
-                                </select>
-                            </div>
-                            <input class="input-outline points" type="number" name="questions[{{ $q }}][points]" placeholder="Points" min="0" value="{{ $question['points'] ?? '' }}" oninput="syncSelectedQuestionPoints(this)">
-                            {{-- âœ… Removes THIS question card --}}
-                            <button class="btn-x" type="button" title="Remove question" onclick="removeQuestion(this)">&times;</button>
-                        </div>
-
-                        <div class="fac-question-field-spacing">
-                            <input class="input-outline question-input fac-width-full" type="text" name="questions[{{ $q }}][text]" placeholder="What does SQL stand for?" value="{{ $question['text'] ?? '' }}">
-                        </div>
-
-                        @php
-                            $savedChoices = $question['choices'] ?? [];
-                            $choiceCount  = max(3, count($savedChoices));
-                            $correct      = $question['correct'] ?? null;
-                        @endphp
-
-                        {{-- âœ… The section below changes with the question Type --}}
-
-                        {{-- Multiple Choice: A/B/C choices + Add a Choice --}}
-                        <div class="q-mc" style="display:{{ $qType === 'Multiple Choice' ? 'block' : 'none' }};">
-                            <div class="choices" id="choices-{{ $q }}">
-                                @for ($i = 0; $i < $choiceCount; $i++)
-                                    @php $letter = chr(65 + $i); @endphp
-                                    <div class="choice-row">
-                                        <span class="choice-letter">{{ $letter }}.</span>
-                                        <input class="input-outline" type="text" name="questions[{{ $q }}][choices][]" placeholder="Choice {{ $letter }}" value="{{ $qType === 'Multiple Choice' ? ($savedChoices[$i] ?? '') : '' }}">
-                                        <label class="mark-correct">
-                                            Mark as Correct
-                                            <input type="radio" name="questions[{{ $q }}][correct]" value="{{ $i }}" {{ $qType === 'Multiple Choice' && $correct !== null && (int) $correct === $i ? 'checked' : '' }}>
-                                            <span class="radio-dot"></span>
-                                        </label>
-                                    </div>
-                                @endfor
-                            </div>
-                            {{-- âœ… Adds another choice row (D, E, F ...) --}}
-                            <button class="btn-add-choice" type="button" onclick="addChoice({{ $q }})">+ Add a Choice</button>
-                        </div>
-
-                        {{-- True or False: fixed True / False rows --}}
-                        <div class="q-tf" style="display:{{ $qType === 'True or False' ? 'block' : 'none' }};">
-                            @foreach (['True', 'False'] as $ti => $tfLabel)
-                                <div class="choice-row">
-                                    <span class="tf-label">{{ $tfLabel }}</span>
-                                    <label class="mark-correct">
-                                        Mark as Correct
-                                        <input type="radio" name="questions[{{ $q }}][tf_correct]" value="{{ $ti }}" {{ $qType === 'True or False' && $correct !== null && (int) $correct === $ti ? 'checked' : '' }}>
-                                        <span class="radio-dot"></span>
-                                    </label>
-                                </div>
-                            @endforeach
-                        </div>
-
-                        {{-- Identification: a single correct-answer field --}}
-                        <div class="q-id" style="display:{{ $qType === 'Identification' ? 'block' : 'none' }};">
-                            <label class="q-label">Correct Answer</label>
-                            <input class="input-outline fac-identification-answer" type="text" name="questions[{{ $q }}][answer]" placeholder="Type the correct answer" value="{{ $question['answer'] ?? '' }}">
-                        </div>
+            <div class="quiz-sets-layout">
+                <div class="quiz-sets-main">
+                    <div class="quiz-set-bar">
+                        <h3 class="quiz-set-bar__title"><span id="active-set-name">Set A</span> <small id="active-set-meta"></small></h3>
+                        <button class="quiz-sets-toggle" id="quiz-sets-toggle" type="button" aria-controls="quiz-sets-drawer" aria-expanded="true" onclick="toggleSetsDrawer()">Sets (<span id="quiz-sets-count">1</span>)</button>
                     </div>
-                @endforeach
-            </div>
+                    <div class="question-bulk-tools" id="question-bulk-tools">
+                        <label for="select-all-questions">
+                            <input class="question-select" id="select-all-questions" type="checkbox" aria-label="Select all questions in this set">
+                            <span>Select all questions</span>
+                        </label>
+                        <span class="question-bulk-status" id="question-bulk-status" aria-live="polite">Select questions to change their type or points together.</span>
+                    </div>
+                    <div id="questions"></div>
 
-            {{-- âœ… Adds another fresh Question card --}}
-            <button class="btn-add-choice fac-add-question-spacing" type="button" onclick="addQuestion()">+ Add Question</button>
+                    {{-- Adds a fresh card at the end of EVERY set (equal counts). --}}
+                    <button class="btn-add-choice fac-add-question-spacing" type="button" onclick="addQuestion()">+ Add Question</button>
+                </div>
+
+                <aside class="quiz-sets-drawer" id="quiz-sets-drawer" aria-label="Question sets">
+                    <div class="quiz-sets-drawer__head">
+                        <h3>Sets</h3>
+                        <button class="quiz-sets-drawer__close" type="button" aria-label="Collapse sets panel" onclick="toggleSetsDrawer(false)">&times;</button>
+                    </div>
+                    <p class="quiz-sets-drawer__help">Each student attempt gets one set. All sets have the same number of questions; retakes rotate to the next set.</p>
+                    <ul class="quiz-set-list" id="quiz-set-list"></ul>
+                    <button class="quiz-set-add" type="button" onclick="addSet()">+ Add set</button>
+                </aside>
+            </div>
             </div>{{-- /questions-area --}}
 
             <div class="save-quiz-row" id="save-quiz-row" style="display:{{ $isNewQuiz ? 'none' : 'flex' }};">
                 <button class="btn-save-lesson" type="submit">{{ $mode === 'final-exam' ? 'Save Final Exam' : 'Save Quiz' }}</button>
             </div>
+            <script>
+                var QUIZ_BUILDER_SETS = @json($builderSets);
+                var QUIZ_BUILDER_HAS_ATTEMPTS = @json($quizHasAttempts);
+            </script>
         </form>
 
     @else
@@ -874,43 +924,269 @@
         button.textContent = shouldExpand ? 'Collapse All' : 'Expand All';
     }
 
-    function addChoice(q) {
-        var box = document.getElementById('choices-' + q);
-        if (!box) return;
-        var i = box.children.length;
-        if (i >= 26) return;
-        var letter = String.fromCharCode(65 + i);   // D, E, F ...
-        var row = document.createElement('div');
-        row.className = 'choice-row';
-        row.innerHTML =
-            '<span class="choice-letter">' + letter + '.</span>' +
-            '<input class="input-outline" type="text" name="questions[' + q + '][choices][]" placeholder="Choice ' + letter + '">' +
-            '<label class="mark-correct">Mark as Correct' +
-            '<input type="radio" name="questions[' + q + '][correct]" value="' + i + '">' +
-            '<span class="radio-dot"></span></label>';
-        box.appendChild(row);
+    /* ── Quiz builder with sets ───────────────────────────────────────────
+       Every set is a .quiz-set-panel inside #questions; only the active one
+       is visible, but all stay in the DOM so one POST saves everything as
+       sets[s][questions][q][...]. Set keys (s) and question keys (q) are
+       unique counters that never repeat, so radio groups never collide;
+       the server reads them in DOM order. Equal-count rule: adding,
+       removing and resizing always apply to every set at the same position. */
+    var _setKey = 0;
+    var _questionKey = 0;
+    var _activeSetKey = null;
+    var _lastItems = null;
+
+    function esc(value) {
+        return String(value === null || value === undefined ? '' : value)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
-    // Next unused question index (indices never repeat, even after removals)
-    var nextQuestionIndex = document.querySelectorAll('#questions .question-card').length;
+    function setPanels() {
+        return Array.prototype.slice.call(document.querySelectorAll('#questions .quiz-set-panel'));
+    }
 
-    // â”€â”€ "Create Quiz" â€” builds exactly N question containers, where N is the
-    //    value of the "No. of Items" field (5 items â†’ 5 question cards) â”€â”€
-    function createQuizQuestions() {
-        var itemsInput = document.querySelector('input[name="items"]');
-        var n = parseInt(itemsInput && itemsInput.value, 10);
-        if (!n || n < 1) {
-            alert('Please set the "No. of Items" first (at least 1) before creating the quiz.');
-            if (itemsInput) itemsInput.focus();
+    function activePanel() {
+        return document.querySelector('#questions .quiz-set-panel[data-set-key="' + _activeSetKey + '"]') || setPanels()[0] || null;
+    }
+
+    function panelCards(panel) {
+        return panel ? Array.prototype.slice.call(panel.querySelectorAll('.question-card')) : [];
+    }
+
+    function questionCount() {
+        return panelCards(setPanels()[0]).length;
+    }
+
+    function cardIsFilled(card) {
+        var text = card.querySelector('.question-input');
+        return !!(text && text.value.trim() !== '');
+    }
+
+    function nextSetName() {
+        var used = {};
+        setPanels().forEach(function (panel) { used[panel.querySelector('.set-name-input').value.trim().toLowerCase()] = true; });
+        for (var i = 0; i < 702; i++) {
+            var name = 'Set ' + (i < 26 ? String.fromCharCode(65 + i) : String.fromCharCode(64 + Math.floor(i / 26)) + String.fromCharCode(65 + (i % 26)));
+            if (!used[name.toLowerCase()]) return name;
+        }
+        return 'Set ' + (setPanels().length + 1);
+    }
+
+    function createSetPanel(set) {
+        var s = _setKey++;
+        var panel = document.createElement('div');
+        panel.className = 'quiz-set-panel';
+        panel.dataset.setKey = String(s);
+        panel.dataset.used = set.used ? '1' : '0';
+        panel.innerHTML =
+            '<input type="hidden" name="sets[' + s + '][id]" value="' + esc(set.id || '') + '">' +
+            '<input type="hidden" class="set-name-input" name="sets[' + s + '][name]" value="' + esc(set.name || nextSetName()) + '">' +
+            '<input type="hidden" class="set-position-input" name="sets[' + s + '][position]" value="0">' +
+            '<div class="set-cards"></div>';
+        document.getElementById('questions').appendChild(panel);
+        (set.questions || []).forEach(function (question) { appendCard(panel, question); });
+        return panel;
+    }
+
+    function choiceRowHtml(prefix, i, value, checked) {
+        var letter = String.fromCharCode(65 + i);
+        return '<div class="choice-row">' +
+            '<span class="choice-letter">' + letter + '.</span>' +
+            '<input class="input-outline" type="text" name="' + prefix + '[choices][]" placeholder="Choice ' + letter + '" value="' + esc(value) + '">' +
+            '<label class="mark-correct">Mark as Correct' +
+            '<input type="radio" name="' + prefix + '[correct]" value="' + i + '"' + (checked ? ' checked' : '') + '>' +
+            '<span class="radio-dot"></span></label>' +
+            '</div>';
+    }
+
+    function appendCard(panel, question) {
+        question = question || {};
+        var s = panel.dataset.setKey;
+        var q = _questionKey++;
+        var prefix = 'sets[' + s + '][questions][' + q + ']';
+        var type = question.type || 'Multiple Choice';
+        var correct = question.correct === null || question.correct === undefined || question.correct === '' ? null : parseInt(question.correct, 10);
+        var choices = type === 'Multiple Choice' ? (question.choices || []) : [];
+        var choiceCount = Math.max(3, choices.length);
+
+        var choicesHtml = '';
+        for (var i = 0; i < choiceCount; i++) {
+            choicesHtml += choiceRowHtml(prefix, i, choices[i] || '', type === 'Multiple Choice' && correct === i);
+        }
+        var tfHtml = '';
+        ['True', 'False'].forEach(function (label, i) {
+            tfHtml += '<div class="choice-row"><span class="tf-label">' + label + '</span>' +
+                '<label class="mark-correct">Mark as Correct' +
+                '<input type="radio" name="' + prefix + '[tf_correct]" value="' + i + '"' + (type === 'True or False' && correct === i ? ' checked' : '') + '>' +
+                '<span class="radio-dot"></span></label></div>';
+        });
+
+        var card = document.createElement('div');
+        card.className = 'quiz-card question-card';
+        card.dataset.answered = question.answered ? '1' : '0';
+        card.innerHTML =
+            '<input type="hidden" name="' + prefix + '[id]" value="' + esc(question.id || '') + '">' +
+            '<div class="q-head">' +
+                '<input class="question-select question-select-item" type="checkbox" aria-label="Select question" onchange="updateQuestionSelectionState()">' +
+                '<h3>Question ?</h3>' +
+                '<span class="type-label">Type</span>' +
+                '<div class="sel-wrap"><select name="' + prefix + '[type]" onchange="questionTypeChanged(this)">' +
+                    ['Multiple Choice', 'True or False', 'Identification'].map(function (option) {
+                        return '<option value="' + option + '"' + (option === type ? ' selected' : '') + '>' + option + '</option>';
+                    }).join('') +
+                '</select></div>' +
+                '<input class="input-outline points" type="number" name="' + prefix + '[points]" placeholder="Points" min="0" value="' + esc(question.points === 0 ? 0 : (question.points || '')) + '" oninput="syncSelectedQuestionPoints(this)">' +
+                '<button class="btn-x" type="button" title="Remove this question from every set" onclick="removeQuestion(this)">&times;</button>' +
+            '</div>' +
+            '<div class="fac-question-field-spacing">' +
+                '<input class="input-outline question-input fac-width-full" type="text" name="' + prefix + '[text]" placeholder="Enter your question" value="' + esc(question.text || '') + '">' +
+            '</div>' +
+            '<div class="q-mc" style="display:' + (type === 'Multiple Choice' ? 'block' : 'none') + ';">' +
+                '<div class="choices" data-prefix="' + prefix + '">' + choicesHtml + '</div>' +
+                '<button class="btn-add-choice" type="button" onclick="addChoice(this)">+ Add a Choice</button>' +
+                '<label class="lock-choice-order"><input type="checkbox" name="' + prefix + '[lock_choice_order]" value="1"' + (question.lock_choice_order ? ' checked' : '') + '>' +
+                    '<span>Lock choice order<small>Keep these choices in the order written even when choice shuffling is on (for options like "All of the above").</small></span></label>' +
+            '</div>' +
+            '<div class="q-tf" style="display:' + (type === 'True or False' ? 'block' : 'none') + ';">' + tfHtml + '</div>' +
+            '<div class="q-id" style="display:' + (type === 'Identification' ? 'block' : 'none') + ';">' +
+                '<label class="q-label">Correct Answer</label>' +
+                '<input class="input-outline fac-identification-answer" type="text" name="' + prefix + '[answer]" placeholder="Type the correct answer" value="' + esc(type === 'Identification' ? (question.answer || '') : '') + '">' +
+            '</div>' +
+            (question.answered ? '<div class="question-answered-note">Students have answered this question, so it can\'t be removed.</div>' : '');
+        panel.querySelector('.set-cards').appendChild(card);
+        return card;
+    }
+
+    function addChoice(button) {
+        var box = button.closest('.q-mc').querySelector('.choices');
+        var i = box.children.length;
+        if (i >= 26) return;
+        box.insertAdjacentHTML('beforeend', choiceRowHtml(box.dataset.prefix, i, '', false));
+    }
+
+    function switchSet(key) {
+        _activeSetKey = String(key);
+        setPanels().forEach(function (panel) { panel.hidden = panel.dataset.setKey !== _activeSetKey; });
+        document.querySelectorAll('#questions .question-select-item').forEach(function (checkbox) { checkbox.checked = false; });
+        refreshBuilder();
+    }
+
+    function refreshBuilder() {
+        var panels = setPanels();
+        var active = activePanel();
+        if (active && active.dataset.setKey !== _activeSetKey) _activeSetKey = active.dataset.setKey;
+        panels.forEach(function (panel, index) {
+            panel.querySelector('.set-position-input').value = index;
+            panelCards(panel).forEach(function (card, i) {
+                var heading = card.querySelector('.q-head h3');
+                if (heading) heading.textContent = 'Question ' + (i + 1);
+            });
+        });
+
+        var count = questionCount();
+        var name = active ? active.querySelector('.set-name-input').value : 'Set A';
+        document.getElementById('active-set-name').textContent = name;
+        document.getElementById('active-set-meta').textContent = '· ' + count + ' question' + (count === 1 ? '' : 's') + (panels.length > 1 ? ' in each of ' + panels.length + ' sets' : '');
+        document.getElementById('quiz-sets-count').textContent = panels.length;
+
+        var list = document.getElementById('quiz-set-list');
+        list.innerHTML = '';
+        panels.forEach(function (panel) {
+            var key = panel.dataset.setKey;
+            var item = document.createElement('li');
+            item.className = 'quiz-set-item' + (key === _activeSetKey ? ' is-active' : '');
+            item.innerHTML =
+                '<button class="quiz-set-switch" type="button" onclick="switchSet(' + key + ')"' + (key === _activeSetKey ? ' aria-current="true"' : '') + '>' +
+                    '<span>' + esc(panel.querySelector('.set-name-input').value) + '</span><span>' + panelCards(panel).length + ' items</span></button>' +
+                '<div class="quiz-set-actions">' +
+                    '<button type="button" onclick="renameSet(' + key + ')">Rename</button>' +
+                    '<button type="button" onclick="duplicateSet(' + key + ')">Duplicate</button>' +
+                    '<button type="button" class="is-danger" onclick="deleteSet(' + key + ')">Delete</button>' +
+                '</div>' +
+                (panel.dataset.used === '1' ? '<span class="quiz-set-used">Served to students, can\'t be deleted</span>' : '');
+            list.appendChild(item);
+        });
+
+        var itemsInput = document.getElementById('quiz-items');
+        if (itemsInput && count > 0) itemsInput.value = count;
+        _lastItems = count;
+        updateQuestionSelectionState();
+    }
+
+    function toggleSetsDrawer(open) {
+        var drawer = document.getElementById('quiz-sets-drawer');
+        var show = typeof open === 'boolean' ? open : drawer.hidden;
+        drawer.hidden = !show;
+        document.getElementById('quiz-sets-toggle').setAttribute('aria-expanded', String(show));
+    }
+
+    function panelByKey(key) {
+        return document.querySelector('#questions .quiz-set-panel[data-set-key="' + key + '"]');
+    }
+
+    function addSet() {
+        var panel = createSetPanel({ id: null, name: nextSetName(), questions: [] });
+        for (var i = 0, n = questionCount() || 1; i < n; i++) appendCard(panel, {});
+        // A brand-new quiz still on the "Create Quiz" screen gets its cards now.
+        if (questionCount() > 0) revealQuestionsArea();
+        switchSet(panel.dataset.setKey);
+    }
+
+    function renameSet(key) {
+        var panel = panelByKey(key);
+        var input = panel.querySelector('.set-name-input');
+        var name = window.prompt('Rename set', input.value);
+        if (name === null) return;
+        name = name.trim().slice(0, 60);
+        if (name === '') return;
+        input.value = name;
+        refreshBuilder();
+    }
+
+    function duplicateSet(key) {
+        var source = panelByKey(key);
+        var copy = createSetPanel({ id: null, name: nextSetName(), questions: [] });
+        panelCards(source).forEach(function (card) { appendCard(copy, readCard(card)); });
+        switchSet(copy.dataset.setKey);
+    }
+
+    function deleteSet(key) {
+        var panels = setPanels();
+        if (panels.length <= 1) {
+            alert('A quiz must always have at least one set.');
             return;
         }
-        if (n > 100) n = 100;
+        var panel = panelByKey(key);
+        var name = panel.querySelector('.set-name-input').value;
+        if (panel.dataset.used === '1' || panelCards(panel).some(function (card) { return card.dataset.answered === '1'; })) {
+            alert('"' + name + '" has already been served to students, so it can\'t be deleted. Its attempt history depends on it.');
+            return;
+        }
+        if (!confirm('Delete "' + name + '" and its ' + panelCards(panel).length + ' questions?')) return;
+        var wasActive = panel.dataset.setKey === _activeSetKey;
+        panel.remove();
+        if (wasActive) switchSet(setPanels()[0].dataset.setKey); else refreshBuilder();
+    }
 
-        var wrap = document.getElementById('questions');
-        if (wrap) wrap.innerHTML = '';
-        nextQuestionIndex = 0;
-        for (var i = 0; i < n; i++) addQuestion();
+    /** The values of a card, for duplicating a set (ids and answered flags are not copied). */
+    function readCard(card) {
+        var type = card.querySelector('select[name$="[type]"]').value;
+        var checked = card.querySelector(type === 'True or False' ? 'input[name$="[tf_correct]"]:checked' : 'input[name$="[correct]"]:checked');
+        return {
+            id: null,
+            type: type,
+            text: card.querySelector('.question-input').value,
+            points: card.querySelector('.points').value,
+            choices: Array.prototype.map.call(card.querySelectorAll('input[name$="[choices][]"]'), function (input) { return input.value; }),
+            correct: checked ? checked.value : null,
+            answer: card.querySelector('input[name$="[answer]"]').value,
+            lock_choice_order: !!card.querySelector('input[name$="[lock_choice_order]"]:checked'),
+            answered: false
+        };
+    }
 
+    function revealQuestionsArea() {
         var intro = document.getElementById('create-quiz-intro');
         if (intro) intro.style.display = 'none';
         var area = document.getElementById('questions-area');
@@ -919,7 +1195,67 @@
         if (saveRow) saveRow.style.display = 'flex';
     }
 
-    // âœ… Swaps the question card's display to match the chosen Type
+    // ── "Create Quiz": N blank cards in every set, N = "No. of Items" ──
+    function createQuizQuestions() {
+        var itemsInput = document.getElementById('quiz-items');
+        var n = parseInt(itemsInput && itemsInput.value, 10);
+        if (!n || n < 1) {
+            alert('Please set the "No. of Items" first (at least 1) before creating the quiz.');
+            if (itemsInput) itemsInput.focus();
+            return;
+        }
+        if (n > 100) n = 100;
+        setPanels().forEach(function (panel) {
+            panel.querySelector('.set-cards').innerHTML = '';
+            for (var i = 0; i < n; i++) appendCard(panel, {});
+        });
+        revealQuestionsArea();
+        refreshBuilder();
+        var first = activePanel() && activePanel().querySelector('.question-input');
+        if (first) first.focus();
+    }
+
+    // ── "No. of Items" resizes EVERY set: append or remove at the end ──
+    function itemsChanged(input) {
+        if (document.getElementById('questions-area').style.display === 'none') return;
+        var target = parseInt(input.value, 10);
+        var current = questionCount();
+        if (!target || target < 1) { input.value = current; return; }
+        if (target > 100) target = 100;
+        if (target === current) return;
+
+        if (target > current) {
+            setPanels().forEach(function (panel) {
+                for (var i = current; i < target; i++) appendCard(panel, {});
+            });
+            refreshBuilder();
+            return;
+        }
+
+        var affected = [];
+        var blocked = false;
+        setPanels().forEach(function (panel) {
+            var removed = panelCards(panel).slice(target);
+            if (removed.some(function (card) { return card.dataset.answered === '1'; })) blocked = true;
+            var filled = removed.filter(cardIsFilled).length;
+            if (filled) affected.push(panel.querySelector('.set-name-input').value + ' (' + filled + ' filled)');
+        });
+        if (blocked) {
+            alert('Some of the last ' + (current - target) + ' questions have already been answered by students, so the quiz can\'t be shortened to ' + target + ' items.');
+            input.value = current;
+            return;
+        }
+        if (affected.length && !confirm('Reducing to ' + target + ' items removes the last ' + (current - target) + ' question(s) from every set, including filled-in questions in: ' + affected.join(', ') + '. Continue?')) {
+            input.value = current;
+            return;
+        }
+        setPanels().forEach(function (panel) {
+            panelCards(panel).slice(target).forEach(function (card) { card.remove(); });
+        });
+        refreshBuilder();
+    }
+
+    // ✅ Swaps the question card's display to match the chosen Type
     function questionTypeChanged(sel) {
         var card = sel.closest('.question-card');
         if (!card) return;
@@ -928,7 +1264,7 @@
 
         var selection = card.querySelector('.question-select-item');
         if (selection && selection.checked) {
-            document.querySelectorAll('#questions .question-card').forEach(function (selectedCard) {
+            panelCards(activePanel()).forEach(function (selectedCard) {
                 if (selectedCard === card) return;
                 var selected = selectedCard.querySelector('.question-select-item');
                 var selectedType = selectedCard.querySelector('select[name$="[type]"]');
@@ -951,7 +1287,7 @@
     function updateQuestionSelectionState() {
         var master = document.getElementById('select-all-questions');
         var status = document.getElementById('question-bulk-status');
-        var cards = Array.prototype.slice.call(document.querySelectorAll('#questions .question-card'));
+        var cards = panelCards(activePanel());
         var selectedCount = cards.filter(function (card) {
             var checkbox = card.querySelector('.question-select-item');
             return checkbox && checkbox.checked;
@@ -974,7 +1310,7 @@
         var selection = card && card.querySelector('.question-select-item');
         if (!selection || !selection.checked) return;
 
-        document.querySelectorAll('#questions .question-card').forEach(function (selectedCard) {
+        panelCards(activePanel()).forEach(function (selectedCard) {
             if (selectedCard === card) return;
             var selected = selectedCard.querySelector('.question-select-item');
             var points = selectedCard.querySelector('.points');
@@ -985,88 +1321,70 @@
     document.addEventListener('change', function (event) {
         if (event.target.id === 'select-all-questions') {
             var shouldSelect = event.target.checked;
-            document.querySelectorAll('#questions .question-select-item').forEach(function (checkbox) {
-                checkbox.checked = shouldSelect;
+            panelCards(activePanel()).forEach(function (card) {
+                var checkbox = card.querySelector('.question-select-item');
+                if (checkbox) checkbox.checked = shouldSelect;
             });
             updateQuestionSelectionState();
         }
     });
 
+    // Adds a blank card at the end of EVERY set, keeping counts equal.
     function addQuestion() {
-        var wrap = document.getElementById('questions');
-        if (!wrap) return;
-        var q = nextQuestionIndex++;
-        var card = document.createElement('div');
-        card.className = 'quiz-card question-card';
-        var tfHtml = '';
-        ['True', 'False'].forEach(function (label, i) {
-            tfHtml +=
-                '<div class="choice-row">' +
-                '<span class="tf-label">' + label + '</span>' +
-                '<label class="mark-correct">Mark as Correct' +
-                '<input type="radio" name="questions[' + q + '][tf_correct]" value="' + i + '">' +
-                '<span class="radio-dot"></span></label>' +
-                '</div>';
-        });
-        var choicesHtml = '';
-        ['A', 'B', 'C'].forEach(function (letter, i) {
-            choicesHtml +=
-                '<div class="choice-row">' +
-                '<span class="choice-letter">' + letter + '.</span>' +
-                '<input class="input-outline" type="text" name="questions[' + q + '][choices][]" placeholder="Choice ' + letter + '">' +
-                '<label class="mark-correct">Mark as Correct' +
-                '<input type="radio" name="questions[' + q + '][correct]" value="' + i + '">' +
-                '<span class="radio-dot"></span></label>' +
-                '</div>';
-        });
-        card.innerHTML =
-            '<div class="q-head">' +
-                '<input class="question-select question-select-item" type="checkbox" aria-label="Select question" onchange="updateQuestionSelectionState()">' +
-                '<h3>Question ?</h3>' +
-                '<span class="type-label">Type</span>' +
-                '<div class="sel-wrap">' +
-                    '<select name="questions[' + q + '][type]" onchange="questionTypeChanged(this)">' +
-                        '<option value="Multiple Choice">Multiple Choice</option>' +
-                        '<option value="True or False">True or False</option>' +
-                        '<option value="Identification">Identification</option>' +
-                    '</select>' +
-                '</div>' +
-                '<input class="input-outline points" type="number" name="questions[' + q + '][points]" placeholder="Points" min="0" oninput="syncSelectedQuestionPoints(this)">' +
-                '<button class="btn-x" type="button" title="Remove question" onclick="removeQuestion(this)">\u2715</button>' +
-            '</div>' +
-            '<div style="margin-bottom:18px;">' +
-                '<input class="input-outline question-input" style="width:100%;" type="text" name="questions[' + q + '][text]" placeholder="Enter your question">' +
-            '</div>' +
-            '<div class="q-mc">' +
-                '<div class="choices" id="choices-' + q + '">' + choicesHtml + '</div>' +
-                '<button class="btn-add-choice" type="button" onclick="addChoice(' + q + ')">+ Add a Choice</button>' +
-            '</div>' +
-            '<div class="q-tf" style="display:none;">' + tfHtml + '</div>' +
-            '<div class="q-id" style="display:none;">' +
-                '<label class="q-label">Correct Answer</label>' +
-                '<input class="input-outline" style="width:100%;max-width:420px;" type="text" name="questions[' + q + '][answer]" placeholder="Type the correct answer">' +
-            '</div>';
-        wrap.appendChild(card);
-        renumberQuestions();
-        updateQuestionSelectionState();
-        var first = card.querySelector('input[type="text"]');
+        setPanels().forEach(function (panel) { appendCard(panel, {}); });
+        refreshBuilder();
+        var cards = panelCards(activePanel());
+        var first = cards.length && cards[cards.length - 1].querySelector('.question-input');
         if (first) first.focus();
     }
 
+    // Removes this POSITION from every set, after listing what it affects.
     function removeQuestion(btn) {
         var card = btn.closest('.question-card');
-        if (card && confirm('Remove this question?')) {
-            card.remove();
-            renumberQuestions();
-            updateQuestionSelectionState();
+        if (!card) return;
+        var position = panelCards(card.closest('.quiz-set-panel')).indexOf(card);
+        var panels = setPanels();
+        if (questionCount() <= 1 && QUIZ_BUILDER_HAS_ATTEMPTS) {
+            alert('Students have already taken this quiz, so it needs at least one question.');
+            return;
         }
+        var lines = [];
+        var blocked = [];
+        panels.forEach(function (panel) {
+            var target = panelCards(panel)[position];
+            if (!target) return;
+            var name = panel.querySelector('.set-name-input').value;
+            var text = target.querySelector('.question-input').value.trim();
+            lines.push('• ' + name + ': ' + (text ? '"' + (text.length > 60 ? text.slice(0, 57) + '...' : text) + '"' : '(empty)'));
+            if (target.dataset.answered === '1') blocked.push(name);
+        });
+        if (blocked.length) {
+            alert('Question ' + (position + 1) + ' has already been answered by students in ' + blocked.join(', ') + ', so it can\'t be removed. Edit its text instead.');
+            return;
+        }
+        var message = panels.length > 1
+            ? 'Remove question ' + (position + 1) + ' from every set? This affects:\n' + lines.join('\n')
+            : 'Remove this question?';
+        if (!confirm(message)) return;
+        panels.forEach(function (panel) {
+            var target = panelCards(panel)[position];
+            if (target) target.remove();
+        });
+        refreshBuilder();
     }
 
     function renumberQuestions() {
-        document.querySelectorAll('#questions .question-card .q-head h3').forEach(function (h, i) {
-            h.textContent = 'Question ' + (i + 1);
-        });
+        refreshBuilder();
     }
+
+    // Build the sets from the server payload (or the old input after a failed save).
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof QUIZ_BUILDER_SETS === 'undefined' || !document.getElementById('questions')) return;
+        var sets = Array.isArray(QUIZ_BUILDER_SETS) && QUIZ_BUILDER_SETS.length ? QUIZ_BUILDER_SETS : [{ id: null, name: 'Set A', questions: [] }];
+        sets.forEach(function (set) { createSetPanel(set); });
+        switchSet(setPanels()[0].dataset.setKey);
+        if (window.matchMedia && window.matchMedia('(max-width: 980px)').matches && setPanels().length === 1) toggleSetsDrawer(false);
+    });
 </script>
 
 {{-- â”€â”€ Back to top (appears on long pages) â”€â”€ --}}

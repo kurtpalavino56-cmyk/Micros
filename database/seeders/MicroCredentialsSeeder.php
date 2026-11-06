@@ -528,9 +528,17 @@ class MicroCredentialsSeeder extends Seeder
             'created_at' => now(), 'updated_at' => now(),
         ]);
 
-        foreach ($questions as [$question, $options, $correct]) {
+        // Raw inserts bypass the QuizQuestion model hook, so the default set
+        // is created explicitly: every seeded quiz gets one "Set A".
+        $setId = DB::table('quiz_sets')->insertGetId([
+            'quiz_id' => $quizId, 'name' => 'Set A', 'position' => 0,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        foreach (array_values($questions) as $position => [$question, $options, $correct]) {
             DB::table('quiz_questions')->insert([
-                'quiz_id' => $quizId, 'question' => $question, 'type' => 'Multiple Choice',
+                'quiz_id' => $quizId, 'quiz_set_id' => $setId, 'position' => $position,
+                'question' => $question, 'type' => 'Multiple Choice',
                 'options' => json_encode($options), 'correct_answer' => $correct, 'points' => 1,
                 'created_at' => now(), 'updated_at' => now(),
             ]);

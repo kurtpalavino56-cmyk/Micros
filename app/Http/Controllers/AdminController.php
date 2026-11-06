@@ -920,7 +920,7 @@ class AdminController extends Controller
      */
     public function showCourse(CourseReadinessService $courseReadiness, int $id)
     {
-        $c = Course::with(['badge', 'creator', 'modules.lessons.quizzes.questions', 'modules.lessons.activities', 'modules.activities', 'modules.quizzes.questions', 'modules.quiz.questions', 'learningOutcomes'])
+        $c = Course::with(['badge', 'creator', 'modules.lessons.quizzes.questions', 'modules.lessons.quizzes.sets', 'modules.lessons.activities', 'modules.activities', 'modules.quizzes.questions', 'modules.quizzes.sets', 'modules.quiz.questions', 'modules.quiz.sets', 'learningOutcomes'])
             ->withCount('enrollments')
             ->findOrFail($id);
 
@@ -992,51 +992,27 @@ class AdminController extends Controller
                 'content' => $l->content,
                 'file_url' => ! empty($l->file_url) ? asset($l->file_url) : null,
                 'file_name' => ! empty($l->file_url) ? basename($l->file_url) : null,
-                'lesson_quizzes' => $l->quizzes->map(fn ($quiz) => (object) [
+                'lesson_quizzes' => $l->quizzes->map(fn ($quiz) => (object) ([
                     'title' => $quiz->title,
-                    'questions_count' => $quiz->questions->count(),
                     'passing_score' => $quiz->passing_score,
                     'time_limit' => $quiz->time_limit,
                     'instructions' => $quiz->instructions,
-                    'questions' => $quiz->questions->map(fn ($question) => (object) [
-                        'question' => $question->question,
-                        'type' => $question->type ?? 'Multiple Choice',
-                        'points' => (int) $question->points,
-                        'options' => $question->options ?? [],
-                        'correct_answer' => $question->correct_answer,
-                    ])->values(),
-                ])->values(),
+                ] + $this->quizSetPreview($quiz)))->values(),
                 'lesson_activities' => $l->activities,
             ])->values(),
             'activities' => $m->activities->where('is_active', true)->values(),
-            'learning_quizzes' => $m->quizzes->where('is_active', true)->map(fn ($quiz) => (object) [
+            'learning_quizzes' => $m->quizzes->where('is_active', true)->map(fn ($quiz) => (object) ([
                 'title' => $quiz->title,
-                'questions_count' => $quiz->questions->count(),
                 'passing_score' => $quiz->passing_score,
                 'time_limit' => $quiz->time_limit,
                 'instructions' => $quiz->instructions ?? '',
-                'questions' => $quiz->questions->map(fn ($question) => (object) [
-                    'question' => $question->question,
-                    'type' => $question->type ?? 'Multiple Choice',
-                    'points' => (int) $question->points,
-                    'options' => $question->options ?? [],
-                    'correct_answer' => $question->correct_answer,
-                ])->values(),
-            ])->values(),
-            'quiz' => $m->quiz ? (object) [
+            ] + $this->quizSetPreview($quiz)))->values(),
+            'quiz' => $m->quiz ? (object) ([
                 'title' => $m->quiz->title,
-                'questions_count' => $m->quiz->questions->count(),
                 'passing_score' => $m->quiz->passing_score,
                 'time_limit' => $m->quiz->time_limit,
                 'instructions' => $m->quiz->instructions ?? '',
-                'questions' => $m->quiz->questions->map(fn ($q) => (object) [
-                    'question' => $q->question,
-                    'type' => $q->type ?? 'Multiple Choice',
-                    'points' => (int) $q->points,
-                    'options' => $q->options ?? [],
-                    'correct_answer' => $q->correct_answer,
-                ])->values(),
-            ] : null,
+            ] + $this->quizSetPreview($m->quiz)) : null,
         ])->values();
 
         return view('admin.courses.show', compact('course', 'modules'));
@@ -1109,7 +1085,7 @@ class AdminController extends Controller
                     ->orWhereHas('lesson', fn ($lessonQuery) => $lessonQuery->where('course_id', $course->id));
             })
             ->get();
-        $quizAttempts = QuizAttempt::with(['quiz', 'answers.question'])
+        $quizAttempts = QuizAttempt::with(['quiz', 'set', 'answers.question'])
             ->where('user_id', $enrollment->user_id)
             ->whereIn('quiz_id', $quizzes->pluck('id'))
             ->latest('submitted_at')
@@ -2585,5 +2561,44 @@ class AdminController extends Controller
         }
 
         $pathway->courses()->sync($orderedCourses);
+    }
+
+    /**
+     * Admin course preview: every set shown separately, in authored order,
+     * with correct answers (this is a review screen, not an attempt).
+     * "questions" keeps the first set for older markup.
+     *
+     * @return array{questions_count:int,sets_count:int,shuffle_questions:bool,shuffle_choices:bool,sets:Collection,questions:Collection}
+     */
+    private function quizSetPreview(Quiz $quiz): array
+    {
+        $ordered = $quiz->questions->sortBy([['position', 'asc'], ['id', 'asc']])->values();
+        $firstSetId = $quiz->sets->first()?->id;
+        $question = fn ($q) => (object) [
+            'question' => $q->question,
+            'type' => $q->type ?? 'Multiple Choice',
+            'points' => (int) $q->points,
+            'options' => $q->options ?? [],
+            'correct_answer' => $q->correct_answer,
+            'lock_choice_order' => (bool) $q->lock_choice_order,
+        ];
+
+        $sets = $quiz->sets->isEmpty()
+            ? collect([(object) ['name' => 'Set A', 'questions' => $ordered->map($question)->values()]])
+            : $quiz->sets->map(fn ($set) => (object) [
+                'name' => $set->name,
+                'questions' => $ordered
+                    ->filter(fn ($q) => (int) ($q->quiz_set_id ?: $firstSetId) === (int) $set->id)
+                    ->map($question)->values(),
+            ])->filter(fn ($set) => $set->questions->isNotEmpty() || $quiz->sets->count() === 1)->values();
+
+        return [
+            'questions_count' => $quiz->questionsPerSetCount(),
+            'sets_count' => max(1, $sets->count()),
+            'shuffle_questions' => (bool) $quiz->shuffle_questions,
+            'shuffle_choices' => (bool) $quiz->shuffle_choices,
+            'sets' => $sets,
+            'questions' => $sets->first()?->questions ?? collect(),
+        ];
     }
 }
