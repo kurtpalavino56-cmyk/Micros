@@ -223,7 +223,7 @@
                             <label class="form-field-label" for="lesson-title-add-{{ $module->idx }}">Lesson title</label>
                             <input class="input-outline" id="lesson-title-add-{{ $module->idx }}" type="text" name="lesson_title" placeholder="e.g. Web Page Foundations" value="{{ old('lesson_title') }}" required>
                             <label class="form-field-label" for="lesson-content-add-{{ $module->idx }}">Description</label>
-                            @include('components.rich-text-editor', ['name' => 'lesson_content', 'id' => 'lesson-content-add-'.$module->idx, 'value' => old('lesson_content'), 'placeholder' => 'Write the lesson content...'])
+                            @include('components.rich-text-editor', ['name' => 'lesson_content', 'id' => 'lesson-content-add-'.$module->idx, 'value' => old('lesson_content'), 'placeholder' => 'Write the lesson content...', 'preset' => 'content-table'])
                             @if ($errors->has('lesson_content') && (int) session('open_lesson_form') === (int) $module->idx)
                                 <div class="form-error" role="alert">{{ $errors->first('lesson_content') }}</div>
                             @endif
@@ -242,7 +242,7 @@
                             <div class="activity-form-context"><strong>Add activity to this module</strong><span>{{ $module->title }}</span></div>
                             <input name="title" maxlength="255" value="{{ old('title') }}" placeholder="Activity title" required>
                             <select name="activity_type"><option value="practice" @selected(old('activity_type', 'practice') === 'practice')>Practice</option><option value="reflection" @selected(old('activity_type') === 'reflection')>Reflection</option><option value="assignment" @selected(old('activity_type') === 'assignment')>Assignment (faculty reviewed)</option></select>
-                            @include('components.rich-text-editor', ['name' => 'instructions', 'id' => 'module-activity-instructions-add-'.$module->idx, 'value' => old('instructions'), 'placeholder' => 'Instructions and criteria'])
+                            @include('components.rich-text-editor', ['name' => 'instructions', 'id' => 'module-activity-instructions-add-'.$module->idx, 'value' => old('instructions'), 'placeholder' => 'Instructions and criteria', 'preset' => 'content-table'])
                             <label><input type="checkbox" name="is_required" value="1" @checked(old('is_required', true))> Required for module completion</label>
                             <div class="activity-actions" data-assignment-fields><input type="number" name="max_points" min="1" max="10000" value="{{ old('max_points') }}" placeholder="Points (assignment)"><input type="number" name="passing_percent" min="1" max="100" value="{{ old('passing_percent') }}" placeholder="Pass %"></div>
                             <div class="activity-actions full"><button class="btn-save-lesson" type="submit">Save Activity</button><button class="btn-cancel-outline" type="button" onclick="toggleModuleActivityForm({{ $module->idx }}, false)">Cancel</button></div>
@@ -285,7 +285,7 @@
                                     @if($moduleItem->type === 'lesson')
                                         <form class="lesson-form lesson-edit-form module-content-edit-form" id="lesson-edit-{{ $item->id }}" style="display:none;" method="POST" action="{{ route('faculty.lesson.update', [$course->id, $module->idx, $item->id]) }}">@csrf
                                             <div class="row2"><input class="input-outline" type="text" name="lesson_title" placeholder="Lesson title *" value="{{ old('lesson_title', $item->title) }}" required></div>
-                                            @include('components.rich-text-editor', ['name' => 'lesson_content', 'id' => 'lesson-content-edit-'.$item->id, 'value' => old('lesson_content', $item->content), 'placeholder' => 'Write the lesson content...'])
+                                            @include('components.rich-text-editor', ['name' => 'lesson_content', 'id' => 'lesson-content-edit-'.$item->id, 'value' => old('lesson_content', $item->content), 'placeholder' => 'Write the lesson content...', 'preset' => 'content-table'])
                                             @if ($errors->has('lesson_content') && (int) session('open_lesson_edit') === (int) $item->id)<div class="fac-course-inline-error">{{ $errors->first('lesson_content') }}</div>@endif
                                             <div class="actions"><input class="input-outline" type="number" name="duration" placeholder="Duration ( Min )" min="0" value="{{ old('duration', $item->duration_raw ?: '') }}"><button class="btn-save-lesson" type="submit">Save Lesson</button><button class="btn-cancel-outline" type="button" onclick="toggleLessonEdit({{ $item->id }})">Cancel</button></div>
                                         </form>
@@ -293,7 +293,7 @@
                                         <form class="activity-form activity-edit-form module-content-edit-form" id="activity-edit-{{ $item->id }}" hidden method="POST" action="{{ route('faculty.lesson-activity.update', [$course->id, $item->id]) }}">@csrf
                                             <input name="title" maxlength="255" value="{{ $item->title }}" placeholder="Activity title" required>
                                             <select name="activity_type">@foreach(['practice'=>'Practice','reflection'=>'Reflection','assignment'=>'Assignment (faculty reviewed)'] as $type=>$label)<option value="{{ $type }}" @selected($item->activity_type === $type)>{{ $label }}</option>@endforeach</select>
-                                            @include('components.rich-text-editor', ['name' => 'instructions', 'id' => 'module-activity-instructions-edit-'.$item->id, 'value' => $item->instructions, 'placeholder' => 'Instructions and criteria'])
+                                            @include('components.rich-text-editor', ['name' => 'instructions', 'id' => 'module-activity-instructions-edit-'.$item->id, 'value' => $item->instructions, 'placeholder' => 'Instructions and criteria', 'preset' => 'content-table'])
                                             <label><input type="checkbox" name="is_required" value="1" @checked($item->is_required)> Required for module completion</label>
                                             <div class="activity-actions" data-assignment-fields><input type="number" name="max_points" min="1" max="10000" value="{{ $item->max_points }}" placeholder="Points (assignment)"><input type="number" name="passing_percent" min="1" max="100" value="{{ $item->passing_percent }}" placeholder="Pass %"></div>
                                             <div class="activity-actions full"><button class="btn-save-lesson" type="submit">Save Activity</button><button class="btn-cancel-outline" type="button" onclick="toggleActivityEdit({{ $item->id }})">Cancel</button></div>

@@ -179,7 +179,7 @@
 
                         <div class="field">
                             <label>Description <span class="req">*</span></label>
-                            @include('components.rich-text-editor', ['name' => 'description', 'id' => 'course-description-editor', 'value' => old('description', $course->description ?? ''), 'placeholder' => 'Describe the micro-credential, its purpose, and what learners will achieve.'])
+                            @include('components.rich-text-editor', ['name' => 'description', 'id' => 'course-description-editor', 'value' => old('description', $course->description ?? ''), 'placeholder' => 'Describe the micro-credential, its purpose, and what learners will achieve.', 'preset' => 'content-table'])
                         </div>
 
                         <input type="hidden" name="duration" id="legacyCourseDuration" value="{{ $learningHours }}">
@@ -343,6 +343,7 @@
                                 'id' => 'learning-outcomes-editor',
                                 'value' => $savedOutcomes,
                                 'placeholder' => 'Describe what learners will be able to do after completing this micro-credential.',
+                                'preset' => 'content-table',
                             ])
                             <small class="field-hint">Describe observable actions. These outcomes appear to students and in credential records.</small>
                         </div>
@@ -369,18 +370,36 @@
 
                         <div class="field">
                             <label for="targetLearners">Intended learners</label>
-                            <textarea class="textarea" id="targetLearners" name="target_learners" rows="3" placeholder="Who should take this micro-credential?">{{ old('target_learners', $course->target_learners ?? '') }}</textarea>
+                            @include('components.rich-text-editor', [
+                                'name' => 'target_learners',
+                                'id' => 'targetLearners',
+                                'value' => \App\Support\RichTextSanitizer::toHtml(old('target_learners', $course->target_learners ?? '')),
+                                'placeholder' => 'Who should take this micro-credential?',
+                                'preset' => 'basic-table',
+                            ])
                         </div>
 
                         <div class="field">
                             <label for="assessmentStrategy">Assessment strategy</label>
-                            <textarea class="textarea" id="assessmentStrategy" name="assessment_strategy" rows="3" placeholder="Describe formative and summative assessment.">{{ old('assessment_strategy', $course->assessment_strategy ?? '') }}</textarea>
+                            @include('components.rich-text-editor', [
+                                'name' => 'assessment_strategy',
+                                'id' => 'assessmentStrategy',
+                                'value' => \App\Support\RichTextSanitizer::toHtml(old('assessment_strategy', $course->assessment_strategy ?? '')),
+                                'placeholder' => 'Describe formative and summative assessment.',
+                                'preset' => 'basic-table',
+                            ])
                             <small class="field-hint">Pass criteria are set on each quiz or activity.</small>
                         </div>
 
                         <div class="field">
                             <label for="gradingRubric">Grading rubric / mastery standard</label>
-                            <textarea class="textarea" id="gradingRubric" name="grading_rubric" rows="3" placeholder="State the criteria and threshold used to judge mastery.">{{ old('grading_rubric', $course->grading_rubric ?? '') }}</textarea>
+                            @include('components.rich-text-editor', [
+                                'name' => 'grading_rubric',
+                                'id' => 'gradingRubric',
+                                'value' => \App\Support\RichTextSanitizer::toHtml(old('grading_rubric', $course->grading_rubric ?? '')),
+                                'placeholder' => 'State the criteria and threshold used to judge mastery.',
+                                'preset' => 'basic-table',
+                            ])
                         </div>
                     </div>
                 </section>

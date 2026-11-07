@@ -86,7 +86,7 @@
                                      @js($lesson->description ?? $lesson->title),
                                      @js($lesson->duration ?? '15m'),
                                      {{ $mIndex }}, {{ $lIndex }},
-                                     @js($lesson->content ?? $lesson->description ?? '')
+                                     @js(\App\Support\RichTextSanitizer::wrapTables($lesson->content ?? $lesson->description ?? ''))
                                  )">
                                 <span class="lesson-title-text">{{ $lesson->title }}</span>
                                 <span class="lesson-meta">{{ $lesson->type }} - {{ $lesson->duration }}</span>
@@ -290,7 +290,7 @@
 /* Quizzes come straight from the database â€” exactly what the faculty
    built on the manage screen. Modules without a quiz get an empty set. */
 var MODULE_DESCRIPTIONS = {!! $modules->mapWithKeys(fn ($m, $i) => [
-    $i => (string) ($m->description ?? ''),
+    $i => \App\Support\RichTextSanitizer::wrapTables((string) ($m->description ?? '')),
 ])->toJson(JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!};
 
 var QUIZ_DATA = {!! $modules->mapWithKeys(fn ($m, $i) => [
@@ -299,7 +299,7 @@ var QUIZ_DATA = {!! $modules->mapWithKeys(fn ($m, $i) => [
         'title'        => $m->quiz->title ?? '',
         'passingScore' => (int) ($m->quiz->passing_score ?? 75),
         'timeLimit'    => (int) ($m->quiz->time_limit ?? 0),   // minutes; 0 = untimed
-        'instructions' => $m->quiz->instructions ?? '',
+        'instructions' => \App\Support\RichTextSanitizer::wrapTables($m->quiz->instructions ?? ''),
         'questions'    => $m->quiz->questions ?? [],
     ],
 ])->toJson(JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!};

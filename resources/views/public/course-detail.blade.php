@@ -135,7 +135,7 @@
                     @if($hasDescription)
                         <section class="pc-section">
                             <h2>About this course</h2>
-                            <div class="pc-prose rich-content">{!! $course->description !!}</div>
+                            <div class="pc-prose rich-content">{!! \App\Support\RichTextSanitizer::wrapTables($course->description) !!}</div>
                         </section>
                     @endif
 
@@ -143,11 +143,11 @@
                         <section class="pc-section">
                             <h2>What you’ll learn</h2>
                             @if($course->learningOutcomes->count() === 1)
-                                <div class="pc-prose rich-content">{!! \App\Support\RichTextSanitizer::sanitize($course->learningOutcomes->first()->description) !!}</div>
+                                <div class="pc-prose rich-content">{!! \App\Support\RichTextSanitizer::toHtml($course->learningOutcomes->first()->description) !!}</div>
                             @elseif($course->learningOutcomes->isNotEmpty())
                                 <ul class="pc-outcomes">
                                     @foreach($course->learningOutcomes as $outcome)
-                                        <li>{{ $outcome->description }}</li>
+                                        <li>{!! \App\Support\RichTextSanitizer::toHtml($outcome->description) !!}</li>
                                     @endforeach
                                 </ul>
                             @else
@@ -164,10 +164,10 @@
                         <section class="pc-section">
                             <h2>How you’ll be assessed</h2>
                             @if($course->assessment_strategy)
-                                <p class="pc-prose">{{ $course->assessment_strategy }}</p>
+                                <div class="pc-prose rich-content">{!! \App\Support\RichTextSanitizer::toHtml($course->assessment_strategy) !!}</div>
                             @endif
                             @if($course->grading_rubric)
-                                <div class="pc-callout"><strong>Mastery criteria</strong>{{ $course->grading_rubric }}</div>
+                                <div class="pc-callout rich-content"><strong>Mastery criteria</strong>{!! \App\Support\RichTextSanitizer::toHtml($course->grading_rubric) !!}</div>
                             @endif
                         </section>
                      @endif
@@ -216,7 +216,7 @@
                         @if($course->learning_hours || $course->duration)<div><dt>Estimated effort</dt><dd>{{ $course->learning_hours ? $course->learning_hours.' '.\Illuminate\Support\Str::plural('hour', $course->learning_hours) : $course->duration }}</dd></div>@endif
                         @if($course->delivery_mode)<div><dt>Delivery</dt><dd>{{ \Illuminate\Support\Str::headline($course->delivery_mode) }}</dd></div>@endif
                         @if($course->credit_bearing)<div><dt>Credit</dt><dd>{{ $course->credit_equivalency ?: 'Subject to institutional review' }}</dd></div>@endif
-                        @if($course->target_learners)<div><dt>Intended for</dt><dd>{{ $course->target_learners }}</dd></div>@endif
+                        @if($course->target_learners)<div><dt>Intended for</dt><dd class="rich-content">{!! \App\Support\RichTextSanitizer::toHtml($course->target_learners) !!}</dd></div>@endif
                         @if($course->badge?->is_active)<div><dt>Badge</dt><dd>{{ $course->badge->name }}</dd></div>@endif
                         @if($course->certificate_enabled)<div><dt>Certificate</dt><dd>On completion</dd></div>@endif
                     </dl>

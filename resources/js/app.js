@@ -21,7 +21,9 @@ import {
     Undo,
     CodeBlock,
     RemoveFormat,
-    
+    Table,
+    TableToolbar,
+
     Image,
     ImageToolbar,
     ImageCaption,
@@ -630,115 +632,133 @@ function UpskillFileUploadPlugin(editor) {
 }
 
 function getEditorConfig(element) {
-     const isAdminEditorPreset = ['announcement', 'admin-reply'].includes(element.dataset.editorPreset);
+    const preset = element.dataset.editorPreset || '';
+    const isAdminEditorPreset = ['announcement', 'admin-reply'].includes(preset);
+    const isContentTablePreset = preset === 'content-table';
+    const isBasicTablePreset = preset === 'basic-table';
+    const usesTable = isContentTablePreset || isBasicTablePreset;
 
-    return {
+    const basePlugins = [
+        Essentials,
+        Paragraph,
+        Heading,
+        Bold,
+        Italic,
+        Underline,
+        Strikethrough,
+        Font,
+        Subscript,
+        Superscript,
+        Link,
+        BlockQuote,
+        List,
+        Alignment,
+        Undo,
+        CodeBlock,
+        RemoveFormat,
+
+        Image,
+        ImageToolbar,
+        ImageCaption,
+        ImageStyle,
+        ImageUpload,
+        SimpleUploadAdapter,
+        MediaEmbed,
+
+        FileRepository,
+        UpskillAttachmentPlugin,
+        UpskillFileUploadButton,
+        UpskillFileUploadPlugin,
+    ];
+
+    const adminToolbar = [
+        'undo',
+        'redo',
+        '|',
+        'heading',
+        '|',
+        'bold',
+        'italic',
+        'underline',
+        '|',
+        'bulletedList',
+        'numberedList',
+        '|',
+        'alignment',
+        '|',
+        'link',
+        'imageUpload',
+        'removeFormat',
+    ];
+
+    const defaultToolbar = [
+        'undo',
+        'redo',
+        '|',
+        'heading',
+        '|',
+        'bold',
+        'italic',
+        'underline',
+        'strikethrough',
+        '|',
+        'fontColor',
+        'fontBackgroundColor',
+        '|',
+        'subscript',
+        'superscript',
+        '|',
+        'bulletedList',
+        'numberedList',
+        '|',
+        'alignment',
+        '|',
+        'link',
+        'imageUpload',
+        'attachFile',
+        'blockQuote',
+        'codeBlock',
+        'removeFormat',
+        'mediaEmbed',
+    ];
+
+    const config = {
         licenseKey: 'GPL',
 
-        plugins: [
-            Essentials,
-            Paragraph,
-            Heading,
-            Bold,
-            Italic,
-            Underline,
-            Strikethrough,
-            Font,
-            Subscript,
-            Superscript,
-            Link,
-            BlockQuote,
-            List,
-            Alignment,
-            Undo,
-            CodeBlock,
-            RemoveFormat,
+        // The basic preset is intentionally table-and-text only: no file
+        // attachment, image upload, media embed, or code block.
+        plugins: isBasicTablePreset
+            ? [
+                Essentials,
+                Paragraph,
+                Bold,
+                Italic,
+                List,
+                Link,
+                Table,
+                TableToolbar,
+            ]
+            : usesTable
+                ? [...basePlugins, Table, TableToolbar]
+                : basePlugins,
 
-            Image,
-            ImageToolbar,
-            ImageCaption,
-            ImageStyle,
-            ImageUpload,
-            SimpleUploadAdapter,
-            MediaEmbed,
-
-            FileRepository,
-            UpskillAttachmentPlugin,
-            UpskillFileUploadButton,
-            UpskillFileUploadPlugin,
-        ],
-
-        toolbar: isAdminEditorPreset ? [
-            'undo',
-            'redo',
-            '|',
-            'heading',
-            '|',
-            'bold',
-            'italic',
-            'underline',
-            '|',
-            'bulletedList',
-            'numberedList',
-            '|',
-            'alignment',
-            '|',
-            'link',
-            'imageUpload',
-            'removeFormat',
-        ] : [
-            'undo',
-            'redo',
-            '|',
-            'heading',
-            '|',
-            'bold',
-            'italic',
-            'underline',
-            'strikethrough',
-            '|',
-            'fontColor',
-            'fontBackgroundColor',
-            '|',
-            'subscript',
-            'superscript',
-            '|',
-            'bulletedList',
-            'numberedList',
-            '|',
-            'alignment',
-            '|',
-            'link',
-            'imageUpload',
-            'attachFile',
-            'blockQuote',
-            'codeBlock',
-            'removeFormat',
-            'mediaEmbed',
-        ],
-
-        image: {
-    toolbar: [
-        'imageTextAlternative',
-        'toggleImageCaption',
-        '|',
-        'imageStyle:inline',
-        'imageStyle:block',
-        'imageStyle:side',
-    ],
-
-},
-
-        simpleUpload: {
-            uploadUrl: isAdminEditorPreset
-                ? '/Admin-editor/upload?kind=image'
-                : '/Faculty-editor/upload?kind=image',
-            headers: {
-                'X-CSRF-TOKEN': document
-                   .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute('content'),
-                },
-            },
+        toolbar: isBasicTablePreset
+            ? [
+                'bold',
+                'italic',
+                '|',
+                'bulletedList',
+                'numberedList',
+                '|',
+                'link',
+                '|',
+                'insertTable',
+            ]
+            : isContentTablePreset
+                ? [...defaultToolbar, '|', 'insertTable']
+                : isAdminEditorPreset
+                    ? adminToolbar
+                    : defaultToolbar,
 
         heading: {
             options: [
@@ -777,6 +797,40 @@ function getEditorConfig(element) {
             defaultProtocol: 'https://',
         },
     };
+
+    if (!isBasicTablePreset) {
+        config.image = {
+            toolbar: [
+                'imageTextAlternative',
+                'toggleImageCaption',
+                '|',
+                'imageStyle:inline',
+                'imageStyle:block',
+                'imageStyle:side',
+            ],
+        };
+
+        config.simpleUpload = {
+            uploadUrl: isAdminEditorPreset
+                ? '/Admin-editor/upload?kind=image'
+                : '/Faculty-editor/upload?kind=image',
+            headers: {
+                'X-CSRF-TOKEN': document
+                    .querySelector('meta[name="csrf-token"]')
+                    ?.getAttribute('content'),
+            },
+        };
+    }
+
+    if (usesTable) {
+        // Row/column controls and the header-row toggle only. Merging and
+        // cell styling are deliberately not exposed.
+        config.table = {
+            contentToolbar: ['tableColumn', 'tableRow'],
+        };
+    }
+
+    return config;
 }
 
 function initializeEditors(root = document) {

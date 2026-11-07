@@ -125,6 +125,32 @@
         color: #155eef;
     }
 
+    .up-ckeditor-wrapper .ck-content .table-scroll,
+    .up-ckeditor-wrapper .ck-content figure.table {
+        display: block !important;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .up-ckeditor-wrapper .ck-content table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .up-ckeditor-wrapper .ck-content th,
+    .up-ckeditor-wrapper .ck-content td {
+        padding: 8px 10px;
+        border: 1px solid #d7dce5;
+        text-align: left;
+        vertical-align: top;
+    }
+
+    .up-ckeditor-wrapper .ck-content th {
+        background: #f2f5fb;
+        font-weight: 700;
+    }
+
     @media (max-width: 900px) {
         .up-ckeditor-wrapper .ck.ck-toolbar {
             flex-wrap: wrap;

@@ -191,23 +191,23 @@
                         $descHtml = $tidy($course->description);
                         $descBlank = trim(preg_replace('/[\s\x{00A0}]+/u', ' ', html_entity_decode(strip_tags($descHtml, '<img><oembed>')))) === '';
                     @endphp
-                    <div class="rich rich-content">{!! $descBlank ? 'No description provided.' : $descHtml !!}</div>
+                    <div class="rich rich-content">{!! $descBlank ? 'No description provided.' : \App\Support\RichTextSanitizer::wrapTables($descHtml) !!}</div>
                 </section>
 
                 <section class="card syllabus-details">
                     <div class="card-title"><svg class="ico"><use href="#i-file"/></svg>Micro-credential syllabus details</div>
                     <div class="chip-row"><span class="chip">PQF {{ $course->pqf_level ? 'Level '.$course->pqf_level : 'not specified' }}</span><span class="chip">{{ $course->learning_hours ? $course->learning_hours.' learning hours' : 'Learning hours not specified' }}</span><span class="chip">{{ $course->delivery_mode ? Illuminate\Support\Str::headline($course->delivery_mode) : 'Delivery mode not specified' }}</span></div>
-                    <p><strong>Intended learners:</strong> {{ $course->target_learners ?: 'Not specified' }}</p>
-                    <p><strong>Assessment strategy:</strong> {{ $course->assessment_strategy ?: 'Not specified' }}</p>
-                    <p><strong>Mastery criteria:</strong> {{ $course->grading_rubric ?: 'Not specified' }}</p>
+                    <div class="rich rich-content"><strong>Intended learners:</strong> {!! $course->target_learners ? \App\Support\RichTextSanitizer::toHtml($course->target_learners) : 'Not specified' !!}</div>
+                    <div class="rich rich-content"><strong>Assessment strategy:</strong> {!! $course->assessment_strategy ? \App\Support\RichTextSanitizer::toHtml($course->assessment_strategy) : 'Not specified' !!}</div>
+                    <div class="rich rich-content"><strong>Mastery criteria:</strong> {!! $course->grading_rubric ? \App\Support\RichTextSanitizer::toHtml($course->grading_rubric) : 'Not specified' !!}</div>
                     @if(!empty($course->learning_outcomes))
                         <strong class="outcome-heading">Measurable learning outcomes</strong>
                         @if(count($course->learning_outcomes) === 1)
-                            <div class="rich rich-content">{!! \App\Support\RichTextSanitizer::sanitize($course->learning_outcomes[0]) !!}</div>
+                            <div class="rich rich-content">{!! \App\Support\RichTextSanitizer::toHtml($course->learning_outcomes[0]) !!}</div>
                         @else
                             <ul class="obj-list">
                                 @foreach($course->learning_outcomes as $outcome)
-                                    <li><div class="rich rich-content">{!! \App\Support\RichTextSanitizer::sanitize($outcome) !!}</div></li>
+                                    <li><div class="rich rich-content">{!! \App\Support\RichTextSanitizer::toHtml($outcome) !!}</div></li>
                                 @endforeach
                             </ul>
                         @endif
@@ -262,7 +262,7 @@
                                 @if (!$moduleDescriptionIsBlank)
                                     <section class="module-overview" aria-label="Module details">
                                         <div class="module-overview-title">Module details</div>
-                                        <div class="module-overview-content rich rich-content">{!! $moduleDescription !!}</div>
+                                        <div class="module-overview-content rich rich-content">{!! \App\Support\RichTextSanitizer::wrapTables($moduleDescription) !!}</div>
                                     </section>
                                 @elseif (!$module->is_final)
                                     <section class="module-overview" aria-label="Module details">
@@ -293,9 +293,9 @@
                                     @endphp
                                     <div class="lesson-detail open">
                                         @if ($hasBody)
-                                            <div class="rich rich-content">{!! $lBody !!}</div>
+                                            <div class="rich rich-content">{!! \App\Support\RichTextSanitizer::wrapTables($lBody) !!}</div>
                                         @elseif ($hasDesc)
-                                            <div class="rich rich-content">{!! $lDesc !!}</div>
+                                            <div class="rich rich-content">{!! \App\Support\RichTextSanitizer::wrapTables($lDesc) !!}</div>
                                         @endif
                                         @if ($lFile && (($lesson->type ?? '') === 'Image' || $lIsImageFile))
                                             <div class="rich"><img src="{{ $lFile }}" alt="{{ $lesson->title }}"></div>

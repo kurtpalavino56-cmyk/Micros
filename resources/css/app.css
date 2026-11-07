@@ -4395,11 +4395,29 @@ body.app-shell.page-dashboard .student-dashboard .stats .stat-card.c-deep:hover 
     color: var(--ui-text-muted);
     font-size: var(--text-xs);
 }
-.rich-content figure.table {
+/* Wide tables scroll inside their own box, never the page body.
+   !important is needed because CKEditor's own stylesheet sets
+   .ck-content figure.table { display: table }, which defeats scrolling. */
+.table-scroll,
+figure.table {
+    display: block !important;
     max-width: 100%;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
-.rich-content table {
+/* Let flex/grid children shrink instead of growing past the viewport. */
+.lesson-content,
+.lesson-card,
+.lesson-editor-body,
+.activity-shell,
+.activity-card,
+.up-ckeditor-wrapper,
+.rich-content,
+.ck-content {
+    min-width: 0;
+}
+.rich-content table,
+.ck-content table {
     width: 100%;
     border-collapse: collapse;
 }
@@ -4410,6 +4428,18 @@ body.app-shell.page-dashboard .student-dashboard .stats .stat-card.c-deep:hover 
     text-align: left;
 }
 .rich-content th {
+    background: var(--ui-surface-subtle);
+    color: var(--ui-text-strong);
+    font-weight: 700;
+}
+.ck-content th,
+.ck-content td {
+    padding: .625em .75em;
+    border: 1px solid var(--ui-border);
+    text-align: left;
+    vertical-align: top;
+}
+.ck-content th {
     background: var(--ui-surface-subtle);
     color: var(--ui-text-strong);
     font-weight: 700;
