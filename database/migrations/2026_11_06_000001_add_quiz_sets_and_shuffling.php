@@ -17,39 +17,69 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('quiz_sets', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('quiz_id')->constrained()->cascadeOnDelete();
-            $table->string('name');
-            $table->unsignedInteger('position')->default(0);
-            $table->timestamps();
+        if (! Schema::hasTable('quiz_sets')) {
+            Schema::create('quiz_sets', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('quiz_id')->constrained()->cascadeOnDelete();
+                $table->string('name');
+                $table->unsignedInteger('position')->default(0);
+                $table->timestamps();
 
-            $table->index(['quiz_id', 'position']);
-        });
+                $table->index(['quiz_id', 'position']);
+            });
+        }
 
-        Schema::table('quiz_questions', function (Blueprint $table) {
-            // nullOnDelete: a set is never deleted while its questions still
-            // exist (QuizManagementService removes questions first), and a
-            // cascade here would chain into quiz_attempt_answers.
-            $table->foreignId('quiz_set_id')->nullable()->after('quiz_id')->constrained('quiz_sets')->nullOnDelete();
-            $table->unsignedInteger('position')->default(0)->after('quiz_set_id');
-            $table->boolean('lock_choice_order')->default(false)->after('points');
-        });
+        if (! Schema::hasColumn('quiz_questions', 'quiz_set_id')) {
+            Schema::table('quiz_questions', function (Blueprint $table) {
+                // nullOnDelete avoids cascading into quiz_attempt_answers.
+                $table->foreignId('quiz_set_id')->nullable()->after('quiz_id')->constrained('quiz_sets')->nullOnDelete();
+            });
+        }
 
-        Schema::table('quiz_attempts', function (Blueprint $table) {
-            $table->foreignId('quiz_set_id')->nullable()->after('quiz_id')->constrained('quiz_sets')->nullOnDelete();
-            // Seeds are crc32 values (0 .. 4,294,967,295): unsigned BIGINT holds
-            // that range on every driver; a signed INT would overflow.
-            $table->unsignedBigInteger('shuffle_seed')->nullable()->after('quiz_set_id');
-            $table->json('presentation')->nullable()->after('shuffle_seed');
-        });
+        $questionPositionWasMissing = ! Schema::hasColumn('quiz_questions', 'position');
+        if ($questionPositionWasMissing) {
+            Schema::table('quiz_questions', function (Blueprint $table) {
+                $table->unsignedInteger('position')->default(0)->after('quiz_set_id');
+            });
+        }
 
-        Schema::table('quizzes', function (Blueprint $table) {
-            $table->boolean('shuffle_questions')->default(false)->after('time_limit');
-            $table->boolean('shuffle_choices')->default(false)->after('shuffle_questions');
-        });
+        if (! Schema::hasColumn('quiz_questions', 'lock_choice_order')) {
+            Schema::table('quiz_questions', function (Blueprint $table) {
+                $table->boolean('lock_choice_order')->default(false)->after('points');
+            });
+        }
 
-        $this->backfill();
+        if (! Schema::hasColumn('quiz_attempts', 'quiz_set_id')) {
+            Schema::table('quiz_attempts', function (Blueprint $table) {
+                $table->foreignId('quiz_set_id')->nullable()->after('quiz_id')->constrained('quiz_sets')->nullOnDelete();
+            });
+        }
+
+        if (! Schema::hasColumn('quiz_attempts', 'shuffle_seed')) {
+            Schema::table('quiz_attempts', function (Blueprint $table) {
+                $table->unsignedBigInteger('shuffle_seed')->nullable()->after('quiz_set_id');
+            });
+        }
+
+        if (! Schema::hasColumn('quiz_attempts', 'presentation')) {
+            Schema::table('quiz_attempts', function (Blueprint $table) {
+                $table->json('presentation')->nullable()->after('shuffle_seed');
+            });
+        }
+
+        if (! Schema::hasColumn('quizzes', 'shuffle_questions')) {
+            Schema::table('quizzes', function (Blueprint $table) {
+                $table->boolean('shuffle_questions')->default(false)->after('time_limit');
+            });
+        }
+
+        if (! Schema::hasColumn('quizzes', 'shuffle_choices')) {
+            Schema::table('quizzes', function (Blueprint $table) {
+                $table->boolean('shuffle_choices')->default(false)->after('shuffle_questions');
+            });
+        }
+
+        $this->backfill($questionPositionWasMissing);
     }
 
     public function down(): void
@@ -75,22 +105,50 @@ return new class extends Migration
     }
 
     /** One "Set A" per existing quiz; existing questions move into it in id order. */
-    private function backfill(): void
+    private function backfill(bool $questionPositionWasMissing): void
     {
         $now = now();
 
-        DB::table('quizzes')->orderBy('id')->select('id')->chunkById(200, function ($quizzes) use ($now): void {
+        DB::table('quizzes')->orderBy('id')->select('id')->chunkById(200, function ($quizzes) use ($now, $questionPositionWasMissing): void {
             foreach ($quizzes as $quiz) {
-                $setId = DB::table('quiz_sets')->insertGetId([
-                    'quiz_id' => $quiz->id,
-                    'name' => 'Set A',
-                    'position' => 0,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ]);
+                $setId = DB::table('quiz_sets')
+                    ->where('quiz_id', $quiz->id)
+                    ->orderBy('position')
+                    ->orderBy('id')
+                    ->value('id');
 
-                $position = 0;
-                foreach (DB::table('quiz_questions')->where('quiz_id', $quiz->id)->orderBy('id')->pluck('id') as $questionId) {
+                if ($setId === null) {
+                    $setId = DB::table('quiz_sets')->insertGetId([
+                        'quiz_id' => $quiz->id,
+                        'name' => 'Set A',
+                        'position' => 0,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+                }
+
+                $setIds = DB::table('quiz_sets')->where('quiz_id', $quiz->id)->orderBy('position')->orderBy('id')->pluck('id');
+                foreach ($setIds as $existingSetId) {
+                    $questionIds = DB::table('quiz_questions')
+                        ->where('quiz_set_id', $existingSetId)
+                        ->orderBy('id')
+                        ->pluck('id');
+
+                    if ($questionPositionWasMissing) {
+                        foreach ($questionIds as $position => $questionId) {
+                            DB::table('quiz_questions')->where('id', $questionId)->update(['position' => $position]);
+                        }
+                    }
+                }
+
+                $unassignedQuestions = DB::table('quiz_questions')
+                    ->where('quiz_id', $quiz->id)
+                    ->whereNull('quiz_set_id')
+                    ->orderBy('id')
+                    ->pluck('id');
+                $position = (int) DB::table('quiz_questions')->where('quiz_set_id', $setId)->max('position') + 1;
+
+                foreach ($unassignedQuestions as $questionId) {
                     DB::table('quiz_questions')->where('id', $questionId)->update([
                         'quiz_set_id' => $setId,
                         'position' => $position++,
