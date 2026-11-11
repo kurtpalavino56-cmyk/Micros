@@ -3034,8 +3034,8 @@ html,body{scrollbar-width:none;-ms-overflow-style:none;}
     .faculty-sidebar .side-link:not(.active):hover{background:#fffbe6;color:#061a45;}
     .faculty-sidebar .side-link:not(.active):active{transform:scale(.98);}
     .faculty-sidebar .side-link.active{position:relative;margin-left:-10px;padding:7px 14px 7px 24px;border-radius:0 13px 13px 0;background:transparent;color:#071550;font-weight:600;box-shadow:none;overflow:visible;}
-    .faculty-sidebar .side-link.active::before{position:absolute;z-index:0;top:5px;right:0;bottom:5px;left:0;border-radius:0 9px 9px 0;background:#fff1b8;box-shadow:0 0 24px 6px rgba(244,196,48,.12);content:"";}
-    .faculty-sidebar .side-link.active::after{position:absolute;z-index:1;top:5px;bottom:5px;left:0;width:5px;border-radius:0 5px 5px 0;background:#c4930f;content:"";}
+    .faculty-sidebar .side-link.active::before{position:absolute;z-index:0;top:5px;right:0;bottom:5px;left:0;border-radius:0 9px 9px 0;background:#dbeafe;box-shadow:0 0 24px 6px rgba(36,71,212,.12);content:"";}
+    .faculty-sidebar .side-link.active::after{position:absolute;z-index:1;top:5px;bottom:5px;left:0;width:5px;border-radius:0 5px 5px 0;background:#2447d4;content:"";}
     .faculty-sidebar .side-link.active>*{position:relative;z-index:2;}
     .faculty-sidebar .side-link.active:hover{background:transparent;color:#071550;}
     .faculty-sidebar .side-icon-box{width:30px;height:30px;flex:0 0 30px;display:flex;align-items:center;justify-content:center;background:transparent !important;border:0;border-radius:0;}
@@ -3043,7 +3043,7 @@ html,body{scrollbar-width:none;-ms-overflow-style:none;}
     .faculty-sidebar .side-icon-box .material-symbols-rounded{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;width:24px;height:24px;font-size:24px;line-height:1;font-feature-settings:"liga";font-variation-settings:"FILL" 1;-webkit-font-smoothing:antialiased;transition:color .2s ease,transform .2s ease;}
     .faculty-sidebar .side-link:not(.active) .side-icon-box .material-symbols-rounded{color:#061a45;}
     .faculty-sidebar .side-link:not(.active):hover .side-icon-box .material-symbols-rounded{color:#061a45;}
-    .faculty-sidebar .side-link.active .side-icon-box .material-symbols-rounded{color:#061a45;}
+    .faculty-sidebar .side-link.active .side-icon-box .material-symbols-rounded{color:#071550;}
     .faculty-sidebar .side-label{flex:0 0 auto;overflow:hidden;opacity:1;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;line-height:1.25;transition:opacity .18s ease,width .25s ease;}
     .faculty-sidebar .sidebar-section-label{flex:0 0 auto;margin:12px 14px 3px;color:#56627a;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:10px;font-weight:800;letter-spacing:.09em;line-height:1.3;text-transform:uppercase;white-space:nowrap;}
     .faculty-sidebar .side-divider{width:100%;border:0;border-top:1px solid rgba(9,37,95,.22);margin:10px 0;}

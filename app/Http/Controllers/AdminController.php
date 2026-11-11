@@ -902,6 +902,7 @@ class AdminController extends Controller
                 'is_published' => (bool) $c->is_published,
                 'can_toggle_publish' => $c->approval_status === 'approved' && (bool) $c->is_approved,
                 'is_featured' => (bool) $c->is_featured,
+                'can_toggle_feature' => $c->isEligibleForFeaturing(),
                 // "Subject is Related on" — faculty/admin only, never shown
                 // to students. Lets an admin see what a submitted course
                 // will be recommended against before approving it.
@@ -1458,11 +1459,6 @@ class AdminController extends Controller
             $featured = $moderation->toggleFeature($course);
         } catch (\DomainException $e) {
             return back()->withErrors(['feature' => $e->getMessage()]);
-        }
-
-        if ($featured && ! $course->is_approved) {
-            return back()->with('success', '"'.$course->title.'" is marked as featured. '
-                .'It will appear on the homepage once the course is approved.');
         }
 
         return back()->with('success', '"'.$course->title.'" '

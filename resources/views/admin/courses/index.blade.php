@@ -65,15 +65,17 @@
                                 @endif
                             </div>
 
-                            <form class="star-form" method="POST" action="{{ route('admin.courses.feature', $course->id) }}" onclick="event.stopPropagation();">
-                                @csrf
-                                <button type="submit"
-                                        class="star-btn {{ $course->is_featured ? 'is-on' : '' }}"
-                                        aria-label="{{ $course->is_featured ? 'Unfeature course' : 'Feature course on homepage' }}"
-                                        title="{{ $course->is_featured ? 'Shown on the homepage. Click to unfeature.' : 'Feature this course on the homepage' }}">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>
-                                </button>
-                            </form>
+                            @if ($course->can_toggle_feature || $course->is_featured)
+                                <form class="star-form" method="POST" action="{{ route('admin.courses.feature', $course->id) }}" onclick="event.stopPropagation();">
+                                    @csrf
+                                    <button type="submit"
+                                            class="star-btn {{ $course->is_featured ? 'is-on' : '' }}"
+                                            aria-label="{{ $course->is_featured ? 'Unfeature course' : 'Feature course on homepage' }}"
+                                            title="{{ $course->is_featured ? 'Shown on the homepage. Click to unfeature.' : 'Feature this course on the homepage' }}">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>
+                                    </button>
+                                </form>
+                            @endif
                         </div>
 
                         {{-- 2 · Identity --}}

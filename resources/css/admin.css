@@ -4237,3 +4237,17 @@ html:has(body[data-admin-page]:not([data-admin-page="admin-complaints"]))::-webk
     display: none;
 }
 
+body[data-admin-page="admin-courses-index"] .main .actions > a.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+body[data-admin-page="admin-courses-index"] .main .card-status-group .status-pending {
+    min-height: 28px;
+    padding: 5px 10px;
+    gap: 7px;
+    line-height: 1.2;
+}
+
