@@ -7,7 +7,13 @@
     <header class="inline-assessment-header">
         <div class="inline-assessment-header-top">
             <span class="inline-assessment-eyebrow">{{ ! empty($module_content_step) ? 'Module quiz' : 'Lesson assessment' }}</span>
-            <span class="inline-quiz-cooldown" data-quiz-cooldown role="timer" aria-live="polite" @unless($status['unlock'] && ! $status['exhausted']) hidden @endunless></span>
+            @if($latestAttemptPassed)
+                <span class="inline-assessment-feedback inline-assessment-feedback--compact is-success" role="status">
+                    Latest attempt: {{ $latestAttempt->score }}%. You passed. Continue to the next required item.
+                </span>
+            @else
+                <span class="inline-quiz-cooldown" data-quiz-cooldown role="timer" aria-live="polite" @unless($status['unlock'] && ! $status['exhausted']) hidden @endunless></span>
+            @endif
         </div>
         <h2>{{ $quiz->title }}</h2>
         <p>{{ $quiz->lesson?->title ?? $quiz->module?->title ?? '' }} · {{ $quiz->questionsPerSetCount() }} questions · Pass {{ $quiz->passing_score }}%</p>
@@ -17,13 +23,9 @@
         <p class="inline-quiz-timer" data-inline-quiz-timer role="timer" aria-live="polite"></p>
     @endif
 
-    @if($latestAttemptPassed)
-        <div class="inline-assessment-feedback is-success" role="status">
-            Latest attempt: {{ $latestAttempt->score }}%. You passed. Continue to the next required item.
-        </div>
-    @elseif($status['exhausted'])
+    @if(! $latestAttemptPassed && $status['exhausted'])
         <div class="inline-assessment-feedback is-warning" role="status">You have used all allowed attempts for this quiz.</div>
-    @elseif(! $status['unlock'])
+    @elseif($quizAvailable)
         <form class="inline-assessment-form inline-quiz-form" data-assessment-form method="POST" action="{{ route('quiz.submit', $quiz->id) }}">
             @csrf
             {{-- Assigned set only, served order; radios submit the ORIGINAL letter. --}}
@@ -45,5 +47,26 @@
             <p class="inline-assessment-error" data-assessment-error role="alert" hidden></p>
             <button class="inline-assessment-submit" type="submit">Submit lesson quiz</button>
         </form>
+    @endif
+    @if($latestAttemptPassed && ! empty($review_questions))
+        <section class="inline-quiz-review">
+            <h3>Correct answers</h3>
+            @foreach($review_questions as $reviewQuestion)
+                <fieldset class="inline-quiz-review-question">
+                    <legend>{{ $loop->iteration }}. {{ $reviewQuestion['question'] }}</legend>
+                    @if($reviewQuestion['type'] === 'Identification')
+                        <p>Correct answer: {{ $reviewQuestion['review_answer'] }}</p>
+                    @else
+                        <div class="inline-quiz-review-options">
+                            @foreach($reviewQuestion['options'] as $option)
+                                <p class="{{ $option['is_correct'] ? 'is-correct' : '' }}">
+                                    {{ $option['label'] }}. {{ $option['text'] }} @if($option['is_correct']) (Correct answer) @endif
+                                </p>
+                            @endforeach
+                        </div>
+                    @endif
+                </fieldset>
+            @endforeach
+        </section>
     @endif
 </section>

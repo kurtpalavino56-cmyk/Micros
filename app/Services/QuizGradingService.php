@@ -55,9 +55,13 @@ class QuizGradingService
                 : chr(65 + (int) $correctPosition);
             if (($question->type ?? null) === 'Identification') {
                 $selectedAnswer = trim((string) ($submitted[$questionId] ?? ''));
+                $normalizeAnswer = static fn (string $answer): string => mb_strtolower(preg_replace('/\s+/', ' ', trim($answer)) ?? '');
+                $acceptedAnswers = array_filter(
+                    [$question->correct_answer, ...(array) ($question->options ?? [])],
+                    fn ($answer): bool => is_string($answer) && trim($answer) !== '',
+                );
                 $isCorrect = $selectedAnswer !== ''
-                    && mb_strtolower(preg_replace('/\s+/', ' ', $selectedAnswer))
-                        === mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $question->correct_answer)));
+                    && in_array($normalizeAnswer($selectedAnswer), array_map($normalizeAnswer, $acceptedAnswers), true);
                 $selected = $selectedAnswer;
             } else {
                 $isCorrect = $selected !== null && $correctLetter !== null && $selected === $correctLetter;

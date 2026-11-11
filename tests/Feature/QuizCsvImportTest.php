@@ -105,12 +105,17 @@ test('CSV imports multiple choice by letter and exact text, true false and ident
     expect(Storage::disk('local')->allFiles('quiz-imports/'.$faculty->id.'/'.$quiz->id))->toHaveCount(2);
 
     $this->actingAs($faculty)->get(route('faculty.quiz-import.preview.show', [$course->id, $quiz->id]))
-        ->assertOk()->assertSee('5 valid')->assertSee('0 errors')->assertSee('0 duplicates')->assertSee('2 row(s) will be normalized');
+        ->assertOk()
+        ->assertSee('<strong>5</strong>', false)
+        ->assertSee('valid rows')
+        ->assertSee('errors')
+        ->assertSee('duplicates')
+        ->assertSee('2 row(s) will be normalized');
     $state = csvImportState($faculty, $quiz);
     $this->post(route('faculty.quiz-import.confirm', [$course->id, $quiz->id]), ['token' => $state['token']])
-        ->assertRedirect(route('faculty.quiz.create', [$course->id, $quiz->module_id]))
+        ->assertRedirect(route('faculty.quiz.create', [$course->id, $quiz->module_id]).'#questions')
         ->assertSessionHas('success');
-    expect(session('success'))->toContain('Items to show learners');
+    expect(session('success'))->toContain('quiz pool now has');
 
     $questions = $quiz->questions()->orderBy('position')->get()->keyBy('question');
     expect($questions)->toHaveCount(5)
@@ -139,9 +144,14 @@ test('CSV accepts a UTF-8 BOM and semicolon delimiter', function () {
 test('the saved quiz builder links to CSV import and the template has the documented columns', function () {
     [$course, , $quiz, , $faculty] = csvQuizFixture();
     $this->actingAs($faculty)->get(route('faculty.quiz.create', [$course->id, $quiz->module_id]))
-        ->assertOk()->assertSee('Import from CSV')->assertSee('min="1"', false)->assertSee('0 or blank counts as 1');
+        ->assertOk()->assertSee('Upload CSV')->assertSee('name="continue_to_import"', false)
+        ->assertSee('Save Quiz')->assertSee('min="1"', false)->assertSee('0 or blank counts as 1');
     $this->actingAs($faculty)->get(route('faculty.quiz-import.form', [$course->id, $quiz->id]))
-        ->assertOk()->assertSee('Identification accepts one answer')
+        ->assertOk()
+        ->assertSee('<header class="auth-topbar faculty-auth-topbar', false)
+        ->assertSee('<aside class="faculty-sidebar" id="faculty-sidebar">', false)
+        ->assertSee('class="main quiz-csv-page"', false)
+        ->assertSee('Identification questions accept one correct answer')
         ->assertSee('Rephrase any answer starting with')
         ->assertSee('2 MB and 500 data rows');
     $template = $this->get(route('faculty.quiz-import.template', [$course->id, $quiz->id]))
@@ -150,6 +160,19 @@ test('the saved quiz builder links to CSV import and the template has the docume
     expect($template->streamedContent())->toContain('type,question,choice_a,choice_b,choice_c,choice_d,correct_answer,points')
         ->and($template->streamedContent())->toContain('Rephrase answers starting with -')
         ->and(app(QuizCsvImportService::class)->preview($quiz, $template->streamedContent())['valid'])->toHaveCount(3);
+});
+
+test('saving an empty bank can go directly to CSV import with all questions shown', function () {
+    [$course, $module, $quiz, , $faculty] = csvQuizFixture();
+
+    $this->actingAs($faculty)->post(route('faculty.quiz.store', [$course->id, $module->id]), [
+        'quiz_title' => $quiz->title,
+        'continue_to_import' => '1',
+    ])->assertRedirect(route('faculty.quiz-import.form', [$course->id, $quiz->id]));
+
+    expect($quiz->fresh()->questions()->count())->toBe(0)
+        ->and($quiz->fresh()->questions_per_attempt)->toBeNull()
+        ->and($quiz->fresh()->setCount())->toBe(1);
 });
 
 test('CSV validation errors retain their source row number', function (array $row, string $reason) {
@@ -230,13 +253,40 @@ test('replace clears the existing pool only when there are no attempts, while ap
     expect($quiz->questions()->count())->toBe(1);
 });
 
-test('multi-set quizzes cannot use CSV import', function () {
+test('CSV import works with legacy multiple-set quizzes and keeps past attempts', function () {
     [$course, , $quiz, , $faculty] = csvQuizFixture();
-    QuizSet::create(['quiz_id' => $quiz->id, 'name' => 'Set B', 'position' => 1]);
+    $secondSet = QuizSet::create(['quiz_id' => $quiz->id, 'name' => 'Set B', 'position' => 1]);
+    $oldQuestion = QuizQuestion::create([
+        'quiz_id' => $quiz->id,
+        'quiz_set_id' => $secondSet->id,
+        'question' => 'Old question',
+        'type' => 'Identification',
+        'correct_answer' => 'answer',
+        'options' => [],
+        'points' => 1,
+    ]);
+    $attempt = QuizAttempt::create([
+        'user_id' => $faculty->id,
+        'quiz_id' => $quiz->id,
+        'quiz_set_id' => $secondSet->id,
+        'score' => 0,
+        'passed' => false,
+        'submitted_at' => now(),
+    ]);
+    $attempt->answers()->create(['question_id' => $oldQuestion->id, 'answer' => 'wrong', 'is_correct' => false]);
 
-    csvImportPost($this, $course, $quiz, $faculty, csvImportContents([csvImportRow()]))
-        ->assertSessionHasErrors('csv');
-    expect($quiz->questions()->count())->toBe(0);
+    csvImportPost($this, $course, $quiz, $faculty, csvImportContents([csvImportRow(['question' => 'Imported question'])]))
+        ->assertRedirect(route('faculty.quiz-import.preview.show', [$course->id, $quiz->id]));
+    $state = csvImportState($faculty, $quiz);
+    $this->actingAs($faculty)->post(route('faculty.quiz-import.confirm', [$course->id, $quiz->id]), ['token' => $state['token']])
+        ->assertRedirect(route('faculty.quiz.create', [$course->id, $quiz->module_id]).'#questions')
+        ->assertSessionHas('success');
+
+    expect($quiz->fresh()->questions()->count())->toBe(2)
+        ->and($quiz->fresh()->sets()->count())->toBe(2)
+        ->and($attempt->fresh()->quiz_set_id)->toBe($secondSet->id)
+        ->and($attempt->answers()->count())->toBe(1)
+        ->and(QuizQuestion::where('quiz_id', $quiz->id)->where('question', 'Imported question')->exists())->toBeTrue();
 });
 
 test('CSV formula-like cells are rejected but negative identification answers and points normalize safely', function () {

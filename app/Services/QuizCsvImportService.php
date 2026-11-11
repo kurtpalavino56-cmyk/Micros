@@ -15,10 +15,6 @@ class QuizCsvImportService
     /** @return array{valid:list<array{row:int,question:array<string,mixed>}>,duplicates:list<array{row:int,reason:string,question:array<string,mixed>}>,errors:list<array{row:int,reason:string}>,points_normalized:int,pool_size:int,replace_allowed:bool} */
     public function preview(Quiz $quiz, string $contents): array
     {
-        if ($quiz->sets()->count() > 1 || $quiz->setCount() > 1) {
-            throw ValidationException::withMessages(['csv' => 'CSV import is available only for quizzes with one set.']);
-        }
-
         if (str_starts_with($contents, "\xEF\xBB\xBF")) {
             $contents = substr($contents, 3);
         }

@@ -110,7 +110,7 @@ class Course extends Model
      */
     public function statusLabel(): string
     {
-        if ($this->approval_status === 'approved' || $this->is_approved) {
+        if ($this->is_published && ($this->approval_status === 'approved' || $this->is_approved)) {
             return 'Published';
         }
 

@@ -1,69 +1,80 @@
-<x-faculty.layout title="Preview CSV import | Upskill" data-faculty-page="quiz-csv-import-preview">
+<x-faculty.layout title="Preview CSV import | Upskill" data-faculty-page="quiz-csv-import-preview" use-app-css use-app-js>
     @php
         $validCount = count($preview['valid']);
         $duplicateCount = count($preview['duplicates']);
         $errorCount = count($preview['errors']);
     @endphp
-    <main class="container" style="max-width:1100px;padding:32px 16px;">
-        <p><a href="{{ $builderUrl }}">&larr; Back to quiz builder</a></p>
-        <h1>Preview CSV import</h1>
-        <p>Identification accepts one answer; matching trims it, ignores case, and collapses repeated whitespace. Rephrase answers starting with <code>-</code> to avoid spreadsheet formula injection. Blank points and points of 0 count as 1. Limits: 2 MB and 500 data rows.</p>
-        <p><strong>{{ $course->title }}</strong> · {{ $quiz->title }}</p>
+    <main class="main quiz-csv-page quiz-csv-preview-page">
+        <a class="quiz-csv-back-link" href="{{ $builderUrl }}">&larr; Back to quiz builder</a>
+        <header class="quiz-csv-header">
+            <span class="quiz-csv-eyebrow">Question pool</span>
+            <h1>Preview CSV import</h1>
+            <p><strong>{{ $course->title }}</strong><span aria-hidden="true"> · </span>{{ $quiz->title }}</p>
+        </header>
+        <p class="quiz-csv-intro">Review the rows below before saving. Identification accepts one answer; matching trims it, ignores case, and collapses repeated whitespace. Rephrase answers starting with <code>-</code> to avoid spreadsheet formula injection. Blank points and points of 0 count as 1. Limits: 2 MB and 500 data rows.</p>
 
         @if($errors->any())
-            <div role="alert" style="padding:12px;border:1px solid #b42318;background:#fee4e2;color:#7a1a12;border-radius:8px;margin:16px 0;">
-                <ul style="margin:0;padding-left:20px;">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+            <div class="quiz-csv-alert" role="alert">
+                <ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
             </div>
         @endif
 
-        <section aria-label="Import summary" style="display:flex;flex-wrap:wrap;gap:18px;padding:16px;background:#f3f6fc;border-radius:10px;">
-            <strong>{{ $validCount }} valid</strong>
-            <strong>{{ $errorCount }} errors</strong>
-            <strong>{{ $duplicateCount }} duplicates</strong>
-            <strong>Current pool: {{ $preview['pool_size'] }}</strong>
-            <strong>Resulting pool: <span id="resulting-pool-size">{{ $preview['pool_size'] + $validCount }}</span></strong>
+        <section class="quiz-csv-summary" aria-label="Import summary">
+            <div class="quiz-csv-stat quiz-csv-stat--valid"><strong>{{ $validCount }}</strong><span>valid rows</span></div>
+            <div class="quiz-csv-stat {{ $errorCount ? 'quiz-csv-stat--error' : '' }}"><strong>{{ $errorCount }}</strong><span>errors</span></div>
+            <div class="quiz-csv-stat"><strong>{{ $duplicateCount }}</strong><span>duplicates</span></div>
+            <div class="quiz-csv-stat"><strong>{{ $preview['pool_size'] }}</strong><span>current pool</span></div>
+            <div class="quiz-csv-stat quiz-csv-stat--result"><strong id="resulting-pool-size">{{ $preview['pool_size'] + $validCount }}</strong><span>resulting pool</span></div>
         </section>
-        <p>Points note: blank values become 1; 0 or negative values are normalized to 1. {{ $preview['points_normalized'] }} row(s) will be normalized.</p>
+        <p class="quiz-csv-points-note">Points note: blank values become 1; 0 or negative values are normalized to 1. {{ $preview['points_normalized'] }} row(s) will be normalized.</p>
 
         @if($preview['valid'])
-            <h2>Valid rows</h2>
-            <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
-                <thead><tr><th>Row</th><th>Question</th><th>Type</th><th>Answer</th><th>Points</th></tr></thead>
-                <tbody>@foreach($preview['valid'] as $item)
-                    <tr><td>{{ $item['row'] }}</td><td>{{ $item['question']['question'] }}</td><td>{{ $item['question']['type'] }}</td><td>{{ $item['question']['correct_answer'] }}</td><td>{{ $item['question']['points'] }}</td></tr>
-                @endforeach</tbody>
-            </table></div>
+            <section class="quiz-csv-results-card" aria-labelledby="valid-rows-heading">
+                <h2 id="valid-rows-heading">Valid rows</h2>
+                <div class="quiz-csv-table-wrap"><table class="quiz-csv-table">
+                    <thead><tr><th>Row</th><th>Question</th><th>Type</th><th>Answer</th><th>Points</th></tr></thead>
+                    <tbody>@foreach($preview['valid'] as $item)
+                        <tr><td>{{ $item['row'] }}</td><td>{{ $item['question']['question'] }}</td><td>{{ $item['question']['type'] }}</td><td>{{ $item['question']['correct_answer'] }}</td><td>{{ $item['question']['points'] }}</td></tr>
+                    @endforeach</tbody>
+                </table></div>
+            </section>
         @endif
 
         @if($preview['duplicates'])
-            <h2>Duplicates (skipped by default)</h2>
-            <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
-                <thead><tr><th>Row</th><th>Question</th><th>Reason</th></tr></thead>
-                <tbody>@foreach($preview['duplicates'] as $item)
-                    <tr><td>{{ $item['row'] }}</td><td>{{ $item['question']['question'] }}</td><td>{{ $item['reason'] }}</td></tr>
-                @endforeach</tbody>
-            </table></div>
+            <section class="quiz-csv-results-card" aria-labelledby="duplicate-rows-heading">
+                <h2 id="duplicate-rows-heading">Duplicates <span>Skipped by default</span></h2>
+                <div class="quiz-csv-table-wrap"><table class="quiz-csv-table">
+                    <thead><tr><th>Row</th><th>Question</th><th>Reason</th></tr></thead>
+                    <tbody>@foreach($preview['duplicates'] as $item)
+                        <tr><td>{{ $item['row'] }}</td><td>{{ $item['question']['question'] }}</td><td>{{ $item['reason'] }}</td></tr>
+                    @endforeach</tbody>
+                </table></div>
+            </section>
         @endif
 
         @if($preview['errors'])
-            <h2>Rows with errors</h2>
-            <ul>@foreach($preview['errors'] as $item)<li>Row {{ $item['row'] }}: {{ $item['reason'] }}</li>@endforeach</ul>
+            <section class="quiz-csv-results-card quiz-csv-errors-card" aria-labelledby="error-rows-heading">
+                <h2 id="error-rows-heading">Rows with errors</h2>
+                <ul>@foreach($preview['errors'] as $item)<li><strong>Row {{ $item['row'] }}:</strong> {{ $item['reason'] }}</li>@endforeach</ul>
+            </section>
         @endif
 
-        <form method="POST" action="{{ $confirmUrl }}" style="display:grid;gap:12px;margin-top:24px;">
+        <form class="quiz-csv-confirm-card" method="POST" action="{{ $confirmUrl }}">
             @csrf
             <input type="hidden" name="token" value="{{ $token }}">
             @if($duplicateCount > 0)
-                <label><input type="checkbox" name="include_duplicates" value="1" id="include-duplicates"> Include duplicate rows</label>
+                <label class="quiz-csv-option"><input type="checkbox" name="include_duplicates" value="1" id="include-duplicates"><span><strong>Include duplicate rows</strong><small>These are skipped by default to avoid adding the same question twice.</small></span></label>
             @endif
             @if($preview['replace_allowed'])
-                <label><input type="checkbox" name="replace" value="1" id="replace-mode"> Replace the existing pool</label>
+                <label class="quiz-csv-option"><input type="checkbox" name="replace" value="1" id="replace-mode"><span><strong>Replace the existing question pool</strong><small>Remove existing questions before adding the valid rows above.</small></span></label>
             @else
-                <p role="note">Replace mode is unavailable because students have already attempted this quiz. New valid rows will be appended.</p>
+                <p class="quiz-csv-notice" role="note"><strong>Append-only for this quiz</strong><span>Replace mode is unavailable because students have already attempted this quiz. New valid rows will be appended.</span></p>
             @endif
-            <button class="btn-save-lesson" type="submit">Confirm import</button>
+            <div class="quiz-csv-form-actions">
+                <a class="quiz-csv-secondary-button" href="{{ $uploadUrl }}">Upload a different CSV</a>
+                <button class="quiz-csv-primary-button" type="submit">Confirm import</button>
+            </div>
         </form>
-        <p><a href="{{ $uploadUrl }}">Upload a different CSV</a></p>
     </main>
     <script>
         document.addEventListener('DOMContentLoaded', function () {

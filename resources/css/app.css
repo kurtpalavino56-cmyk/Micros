@@ -4957,6 +4957,7 @@ body.page-course-player .app-main--course-player {
     @keyframes course-player-spin{to{transform:rotate(360deg);}}
     body.page-course-player .inline-assessment-header{padding-bottom:16px;border-bottom:1px solid var(--course-player-line);margin-bottom:18px;}
     body.page-course-player .inline-assessment-header-top{display:flex;align-items:center;justify-content:space-between;gap:16px;}
+    body.page-course-player .inline-assessment-feedback--compact{flex:0 1 auto;max-width:70%;margin:0;padding:8px 11px;font-size:12px;line-height:1.35;text-align:right;}
     body.page-course-player .inline-assessment-eyebrow{display:block;margin-bottom:7px;color:var(--course-player-muted);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
     body.page-course-player .inline-quiz-cooldown{color:#dc2626;font-size:18px;font-weight:400;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
     body.page-course-player .inline-quiz-cooldown-label{color:#111827;}
@@ -5008,8 +5009,16 @@ body.page-course-player .app-main--course-player {
     body.page-course-player .inline-quiz-question{margin:0;padding:17px 0;border:0;border-bottom:1px solid var(--course-player-line);}
     body.page-course-player .inline-quiz-question legend{padding:0 0 12px;line-height:1.5;}
     body.page-course-player .inline-quiz-options{display:grid;gap:9px;}
-    body.page-course-player .inline-quiz-options label{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-radius:9px;background:var(--course-player-color-hex-f7f9fd);font-weight:500;}
+    body.page-course-player .inline-quiz-options label{display:flex;align-items:flex-start;gap:10px;padding:2px 0;border-radius:0;background:transparent;font-weight:500;}
     body.page-course-player .inline-quiz-options input{margin-top:4px;}
+    body.page-course-player .inline-quiz-review{display:grid;gap:12px;margin-top:0;padding-top:8px;}
+    body.page-course-player .inline-quiz-review h3{margin:0;color:var(--course-player-color-hex-172554);font-size:17px;}
+    body.page-course-player .inline-quiz-review-question{margin:0;padding:13px 0;border:0;border-bottom:1px solid var(--course-player-line);}
+    body.page-course-player .inline-quiz-review-question legend{padding:0 0 9px;color:var(--course-player-color-hex-172554);font-weight:700;line-height:1.5;}
+    body.page-course-player .inline-quiz-review-question>p{margin:0;color:var(--course-player-color-hex-334155);}
+    body.page-course-player .inline-quiz-review-options{display:grid;gap:7px;}
+    body.page-course-player .inline-quiz-review-options p{margin:0;padding:9px 11px;border-radius:8px;background:var(--course-player-color-hex-f7f9fd);color:var(--course-player-color-hex-334155);}
+    body.page-course-player .inline-quiz-review-options p.is-correct{background:var(--course-player-color-hex-ecfdf3);color:var(--course-player-color-hex-166534);font-weight:700;}
     body.page-course-player .inline-quiz-timer{color:var(--course-player-color-hex-9a3412);font-weight:800;}
     
     @media(max-width:600px){
@@ -5026,6 +5035,8 @@ body.page-course-player .app-main--course-player {
         body.page-course-player .lesson-editor-body .rich-content{font-size:15px;}
         body.page-course-player #lb-desc .lesson-pdf-embed__frame{height:55vh;min-height:320px;}
         body.page-course-player .inline-assessment-panel{padding:19px 17px;}
+        body.page-course-player .inline-assessment-header-top{align-items:flex-start;flex-wrap:wrap;}
+        body.page-course-player .inline-assessment-feedback--compact{max-width:100%;margin-left:auto;text-align:left;}
         body.page-course-player .inline-assessment-header h2{font-size:19px;}
         body.page-course-player .inline-assessment-header-top{align-items:flex-start;}
         body.page-course-player .inline-quiz-cooldown{white-space:normal;}
@@ -5063,6 +5074,22 @@ body.page-course-player .app-main--course-player {
     body.page-course-player .module-locked .lesson-item{pointer-events:none;opacity:.4;cursor:not-allowed;}
     body.page-course-player .module-locked .lesson-assessment-link{pointer-events:none;opacity:.4;cursor:not-allowed;}
     body.page-course-player .module-locked .btn-quiz-sm{pointer-events:none;opacity:.4;}
+    body.page-course-player .module-sequence-step.is-disabled,
+    body.page-course-player .module-sequence-step.is-disabled:hover{
+        opacity:.45;
+        color:var(--course-player-muted);
+        cursor:not-allowed;
+        pointer-events:none;
+        filter:grayscale(.15);
+        background:transparent;
+    }
+    body.page-course-player .module-sequence-step.is-disabled .lesson-title-text,
+    body.page-course-player .module-sequence-step.is-disabled .lesson-meta,
+    body.page-course-player .module-sequence-step.is-disabled .quiz-info-title,
+    body.page-course-player .module-sequence-step.is-disabled .quiz-info-sub,
+    body.page-course-player .module-sequence-step.is-disabled .quiz-retake-countdown{
+        color:var(--course-player-muted);
+    }
     body.page-course-player .module-lock-badge{font-size:11px;color:var(--course-player-muted);font-weight:700;
         display:flex;align-items:center;gap:4px;margin-top:3px;}
     /* Retake quiz button */

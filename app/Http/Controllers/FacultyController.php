@@ -19,7 +19,6 @@ use App\Models\QuizAttempt;
 use App\Models\QuizAttemptAnswer;
 use App\Models\QuizAttemptGrant;
 use App\Models\QuizQuestion;
-use App\Models\QuizSet;
 use App\Models\User;
 use App\Services\CourseCreationService;
 use App\Services\CourseLessonService;
@@ -1187,8 +1186,7 @@ class FacultyController extends Controller
                     'quiz' => $l->quizzes->where('is_active', true)->first() ? (object) [
                         'id' => $l->quizzes->where('is_active', true)->first()->id,
                         'title' => $l->quizzes->where('is_active', true)->first()->title,
-                        'questions_count' => $l->quizzes->where('is_active', true)->first()->questionsPerSetCount(),
-                        'sets_count' => $l->quizzes->where('is_active', true)->first()->setCount(),
+                        'questions_count' => $l->quizzes->where('is_active', true)->first()->questions()->count(),
                         'passing_score' => $l->quizzes->where('is_active', true)->first()->passing_score,
                         'sort_order' => $l->quizzes->where('is_active', true)->first()->sort_order,
                     ] : null,
@@ -1219,15 +1217,13 @@ class FacultyController extends Controller
                 'learning_quizzes' => $m->quizzes->where('is_active', true)->map(fn (Quiz $quiz) => (object) [
                     'id' => $quiz->id,
                     'title' => $quiz->title,
-                    'questions_count' => $quiz->questionsPerSetCount(),
-                    'sets_count' => $quiz->setCount(),
+                    'questions_count' => $quiz->questions()->count(),
                     'passing_score' => $quiz->passing_score,
                     'module_order' => $quiz->module_order,
                 ])->sortBy('module_order')->values(),
                 'quiz' => $m->quiz ? (object) [
                     'title' => $m->quiz->title,
-                    'questions_count' => $m->quiz->questionsPerSetCount(),
-                    'sets_count' => $m->quiz->setCount(),
+                    'questions_count' => $m->quiz->questions()->count(),
                     'passing_score' => $m->quiz->passing_score,
                 ] : null,
             ];
@@ -1239,8 +1235,7 @@ class FacultyController extends Controller
             'title' => $finalExamModule->title,
             'quiz' => $finalExamModule->quiz ? (object) [
                 'title' => $finalExamModule->quiz->title,
-                'questions_count' => $finalExamModule->quiz->questionsPerSetCount(),
-                'sets_count' => $finalExamModule->quiz->setCount(),
+                'questions_count' => $finalExamModule->quiz->questions()->count(),
                 'passing_score' => $finalExamModule->quiz->passing_score,
                 'attempts' => $finalExamModule->quiz->attempts,
             ] : null,
@@ -1353,10 +1348,14 @@ class FacultyController extends Controller
     }
 
     /** Submit a complete draft course for administrator review. */
-    public function submitForApproval(CourseReadinessService $courseReadiness, UserNotificationService $userNotifications, int $id)
+    public function submitForApproval(Request $request, CourseReadinessService $courseReadiness, UserNotificationService $userNotifications, int $id)
     {
         $course = $this->ownedCourse($id);
         abort_unless($course->approval_status === 'draft', 409);
+
+        $data = $request->validate([
+            'change_note' => ['nullable', 'string', 'max:2000'],
+        ]);
 
         $missingRequirements = $courseReadiness->missingRequirements($course);
         if ($missingRequirements !== []) {
@@ -1369,6 +1368,7 @@ class FacultyController extends Controller
             'is_approved' => false,
             'is_published' => false,
             'denial_feedback' => null,
+            'change_note' => trim((string) ($data['change_note'] ?? '')) ?: null,
         ]);
         $userNotifications->createForRole(
             User::FULL_ADMIN_NOTIFICATION_ROLE_IDS,
@@ -1484,12 +1484,18 @@ class FacultyController extends Controller
             'user' => UserPresenter::faculty(Auth::user()),
             'course' => $course,
             'editing' => true,
-            'categories' => $this->courseCategories(),
+            'categories' => array_values(array_unique(array_merge(
+                $this->courseCategories(),
+                $course->category ? [$course->category] : [],
+            ))),
             'levels' => ['Beginner', 'Intermediate', 'Advanced'],
             'skillOptions' => self::skillOptions(),
             'skillGroups' => self::skillGroups(),
             // #7 Prerequisites are real courses already live on the site.
-            'prereqOptions' => $this->prerequisiteOptions($course->id),
+            'prereqOptions' => $this->prerequisiteOptions(
+                $course->id,
+                (array) ($course->prerequisite_ids ?? []),
+            ),
             // #10 Badge / certificate options for the award section.
             'badgeOptions' => $this->badgeOptions(),
         ]);
@@ -1511,7 +1517,6 @@ class FacultyController extends Controller
             'short_description' => ['required', 'string', 'max:120'],
             'description' => ['nullable', 'string'],
             'category' => ['nullable', 'string', 'max:120'],
-            'program' => ['nullable', 'string', 'max:120'],
             'level' => ['nullable', 'in:Beginner,Intermediate,Advanced'],
             'pqf_level' => ['nullable', 'regex:/^[5-8]$/'],
             'target_learners' => ['nullable', 'string', 'max:20000'],
@@ -1524,17 +1529,15 @@ class FacultyController extends Controller
             'equivalent_course' => ['nullable', 'string', 'max:255'],
             'duration' => ['nullable', 'numeric', 'min:0'],
             'passing_score' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'learning_objectives' => ['nullable', 'string'],
             'learning_outcomes_content' => ['nullable', 'string', 'max:50000'],
             'competencies' => ['nullable', 'array'],
             'competencies.*' => ['string', 'max:120'],
             'prerequisites' => ['nullable', 'string', 'max:120'],
-            'thumbnail' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:51200'],
-            'change_note' => ['nullable', 'string', 'max:2000'],
+            'thumbnail' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:10240'],
             'prerequisite_ids' => ['nullable', 'array'],
             'prerequisite_ids.*' => ['integer', 'exists:courses,id'],
             'badge_enabled' => ['nullable'],
-            'badge_name' => ['nullable', 'string', 'max:120'],
+            'badge_name' => ['required_if:badge_enabled,1', 'nullable', 'string', 'max:120'],
             'badge_description' => ['nullable', 'string', 'max:400'],
             'badge_icon_base64' => ['nullable', 'string', 'max:500000'],
             'badge_icon_choice' => ['nullable', 'in:psu,technology,business,design,data,web,achievement,custom'],
@@ -1562,9 +1565,7 @@ class FacultyController extends Controller
             'description' => $this->sanitizeRichText($data['description'] ?? ''),
             'skills' => array_values($data['competencies'] ?? []),
             'related_skills' => $this->relatedSkillsFrom($request),
-            'objectives' => $this->linesToArray($data['learning_objectives'] ?? null),
             'category' => $data['category'] ?? null,
-            'program' => $data['program'] ?? null,
             'level' => $data['level'] ?? 'Beginner',
             'pqf_level' => $data['pqf_level'] ?? null,
             'target_learners' => RichTextSanitizer::toHtml($data['target_learners'] ?? '') ?: null,
@@ -1597,38 +1598,22 @@ class FacultyController extends Controller
         $attributes['approved_at'] = null;
         $attributes['approved_by'] = null;
 
-        $course->update($attributes);
-        $outcomeContent = $this->sanitizeRichText($data['learning_outcomes_content'] ?? '');
-        $outcomes = $outcomeContent === '' ? [] : [['description' => $outcomeContent]];
-        $learningOutcomes->sync($course, $outcomes);
+        DB::transaction(function () use ($course, $attributes, $data, $learningOutcomes, $request): void {
+            $course->update($attributes);
+            $outcomeContent = $this->sanitizeRichText($data['learning_outcomes_content'] ?? '');
+            $outcomes = $outcomeContent === '' ? [] : [['description' => $outcomeContent]];
+            $learningOutcomes->sync($course, $outcomes);
 
-        // Written directly rather than through update(). If 'related_skills'
-        // is missing from Course::$fillable, mass assignment discards it
-        // SILENTLY — the save succeeds and the field is quietly dropped.
-        // setAttribute + save() is not subject to that guard.
-        $course->related_skills = $this->relatedSkillsFrom($request);
+            $course->related_skills = $this->relatedSkillsFrom($request);
+            $course->prerequisite_ids = $this->prerequisiteIdsFrom($request, $course->id);
+            $course->certificate_enabled = true;
+            $course->certificate_title = 'Certificate of Completion';
+            $course->certificate_mode = 'auto';
+            $course->badge_id = $this->saveInlineBadge($request, $course);
+            $course->requires_faculty_verification = $request->boolean('requires_faculty_verification');
 
-        // #7 / #10 — prerequisites and award settings.
-        $course->prerequisite_ids = $this->prerequisiteIdsFrom($request, $course->id);
-        $course->certificate_enabled = true;
-        $course->certificate_title = 'Certificate of Completion';
-        $course->certificate_mode = 'auto';
-        $course->certificate_signature_name = $course->creator?->name ?: Auth::user()->name;
-        $course->badge_id = $this->saveInlineBadge($request, $course);
-
-        // Completion Requirements — see MicrocredentialCompletionService.
-        // Independent of academic-unit confirmation, which is always
-        // required and has no course-level toggle.
-        $course->requires_faculty_verification = $request->boolean('requires_faculty_verification');
-
-        // #12 — the author's summary of what changed, shown to the admin on
-        // the review screen. Cleared once the course is approved again.
-        $note = trim((string) $request->input('change_note'));
-        if ($note !== '') {
-            $course->change_note = $note;
-        }
-
-        $course->save();
+            $course->save();
+        });
 
         return redirect()->route('faculty.courses.manage', $course->id)
             ->with('success', 'Course updated.');
@@ -1823,14 +1808,14 @@ class FacultyController extends Controller
             // string "on", which fails boolean validation and silently
             // bounced the form back. $request->boolean() handles it below.
             'feature_homepage' => ['nullable'],
-            'thumbnail' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:51200'],   // 50 MB
+            'thumbnail' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:10240'],
             'related_skills' => ['nullable', 'array'],
             'related_skills.*' => ['string', 'max:80'],
             'related_skills_csv' => ['nullable', 'string', 'max:4000'],
             'prerequisite_ids' => ['nullable', 'array'],
             'prerequisite_ids.*' => ['integer', 'exists:courses,id'],
             'badge_enabled' => ['nullable'],
-            'badge_name' => ['nullable', 'string', 'max:120'],
+            'badge_name' => ['required_if:badge_enabled,1', 'nullable', 'string', 'max:120'],
             'badge_description' => ['nullable', 'string', 'max:400'],
             'badge_icon_base64' => ['nullable', 'string', 'max:500000'],
             'badge_icon_choice' => ['nullable', 'in:psu,technology,business,design,data,web,achievement,custom'],
@@ -1841,15 +1826,19 @@ class FacultyController extends Controller
         ]);
 
         try {
-            $course = $courseCreationService->create($request, $data, $auth);
-            $outcomeContent = $this->sanitizeRichText($data['learning_outcomes_content'] ?? '');
-            $outcomes = $outcomeContent === '' ? [] : [['description' => $outcomeContent]];
-            $learningOutcomes->sync($course, $outcomes);
+            $course = DB::transaction(function () use ($request, $data, $auth, $courseCreationService, $learningOutcomes): Course {
+                $course = $courseCreationService->create($request, $data, $auth);
+                $outcomeContent = $this->sanitizeRichText($data['learning_outcomes_content'] ?? '');
+                $outcomes = $outcomeContent === '' ? [] : [['description' => $outcomeContent]];
+                $learningOutcomes->sync($course, $outcomes);
+
+                return $course;
+            });
         } catch (\Throwable $e) {
             report($e);
 
             return back()->withInput()->withErrors([
-                'create' => 'The course could not be saved: '.$e->getMessage(),
+                'create' => 'The course could not be saved. Please try again or contact support.',
             ]);
         }
 
@@ -2011,15 +2000,7 @@ class FacultyController extends Controller
         ]);
     }
 
-    /**
-     * Data for the shared quiz builder (faculty/courses/index, quiz mode).
-     *
-     * "items" (No. of Items) is not persisted: it is prefilled from the
-     * first set's question count. "questions" stays the first set's flat list
-     * for older code; "sets" carries every set for the Sets drawer, with
-     * flags for anything students already answered (the builder blocks
-     * removing those, as does QuizManagementService on save).
-     */
+    /** Data for the shared quiz builder (faculty/courses/index, quiz mode). */
     private function quizBuilderData(Quiz $quizModel, ?string $defaultAttempts = null): object
     {
         $questionIds = $quizModel->questions->pluck('id');
@@ -2036,33 +2017,33 @@ class FacultyController extends Controller
             ->map(fn ($id) => (int) $id);
 
         $ordered = $quizModel->questions->sortBy([['position', 'asc'], ['id', 'asc']])->values();
-        $firstSetId = $quizModel->sets->first()?->id;
-        $sets = $quizModel->sets->map(fn (QuizSet $set) => [
-            'id' => (int) $set->id,
-            'name' => $set->name,
-            'position' => (int) $set->position,
-            'used' => $usedSetIds->contains((int) $set->id),
-            // Questions without a set (pre-sets data) belong to the first set.
-            'questions' => $ordered
-                ->filter(fn (QuizQuestion $question) => (int) ($question->quiz_set_id ?: $firstSetId) === (int) $set->id)
-                ->map(fn (QuizQuestion $question) => $this->quizQuestionPayload($question, $answeredIds))
-                ->values()->all(),
-        ])->values();
-
-        if ($sets->isEmpty()) {
-            $sets = collect([[
-                'id' => null,
-                'name' => 'Set A',
-                'position' => 0,
-                'used' => false,
-                'questions' => $ordered->map(fn (QuizQuestion $question) => $this->quizQuestionPayload($question, $answeredIds))->values()->all(),
-            ]]);
+        $storedSets = $quizModel->sets->sortBy([['position', 'asc'], ['id', 'asc']])->values();
+        if ($storedSets->isEmpty()) {
+            $storedSets = collect([(object) ['id' => null, 'name' => 'Set A', 'position' => 0]]);
         }
+        $sets = $storedSets->map(function ($set, int $index) use ($ordered, $answeredIds, $usedSetIds): array {
+            $questions = $ordered->filter(function (QuizQuestion $question) use ($set, $index): bool {
+                return ($set->id !== null && (int) $question->quiz_set_id === (int) $set->id)
+                    || ($index === 0 && $question->quiz_set_id === null);
+            });
+
+            return [
+                'id' => $set->id ? (int) $set->id : null,
+                'name' => $set->name ?: 'Set '.($index + 1),
+                'position' => (int) $set->position,
+                'used' => $usedSetIds->contains((int) $set->id),
+                'questions' => $questions
+                    ->map(fn (QuizQuestion $question) => $this->quizQuestionPayload($question, $answeredIds))
+                    ->values()
+                    ->all(),
+            ];
+        });
+        $firstSetQuestions = $sets->first()['questions'] ?? [];
 
         return (object) [
             'id' => (int) $quizModel->id,
             'title' => $quizModel->title,
-            'items' => count($sets->first()['questions']),
+            'items' => count($firstSetQuestions),
             'passing_score' => $quizModel->passing_score,
             'attempts' => $quizModel->attempts ?: $defaultAttempts,
             'time_limit' => $quizModel->time_limit,
@@ -2071,7 +2052,7 @@ class FacultyController extends Controller
             'shuffle_choices' => (bool) $quizModel->shuffle_choices,
             'questions_per_attempt' => $quizModel->questions_per_attempt,
             'has_attempts' => QuizAttempt::query()->where('quiz_id', $quizModel->id)->exists(),
-            'questions' => $sets->first()['questions'],
+            'questions' => $firstSetQuestions,
             'sets' => $sets->all(),
         ];
     }
@@ -2090,6 +2071,7 @@ class FacultyController extends Controller
             'choices' => $options,
             'correct' => $correct === false ? null : $correct,
             'answer' => $question->type === 'Identification' ? $question->correct_answer : null,
+            'alternative_answers' => $question->type === 'Identification' ? $options : [],
             'lock_choice_order' => (bool) $question->lock_choice_order,
             'answered' => $answeredIds->contains((int) $question->id),
         ];
@@ -2119,8 +2101,14 @@ class FacultyController extends Controller
         $course = $this->ownedCourse($id);
         $module = CourseModule::where('course_id', $course->id)->findOrFail($moduleIndex);
         abort_if($module->is_final, 404);
+        $isNewQuiz = ! Quiz::query()->where('module_id', $module->id)->whereNull('lesson_id')->where('is_summative', true)->exists();
         $questionsChanged = $quizManagementService->save($request, $course, $module);
         $this->returnCourseToDraft($course);
+        $quiz = Quiz::query()->where('module_id', $module->id)->whereNull('lesson_id')->where('is_summative', true)->firstOrFail();
+
+        if ($redirect = $this->redirectToQuizImportIfRequested($request, $course, $quiz)) {
+            return $redirect;
+        }
 
         if ($request->boolean('inline')) {
             return redirect()->route('faculty.quiz.create', [$course->id, $module->id, 'inline' => 1])
@@ -2129,7 +2117,12 @@ class FacultyController extends Controller
                     : 'Quiz saved. The new settings apply to students immediately.');
         }
 
-        return redirect()->route('faculty.courses.manage', $course->id)
+        if ($isNewQuiz) {
+            return redirect()->route('faculty.quiz.create', [$course->id, $module->id])
+                ->with('success', 'Quiz created. Add questions or update its settings.');
+        }
+
+        return redirect()->route('faculty.quiz.create', [$course->id, $module->id])
             ->with('success', $questionsChanged
                 ? 'Quiz saved. The questions changed, so students may attempt it again.'
                 : 'Quiz saved. The new settings apply to students immediately.');
@@ -2156,10 +2149,21 @@ class FacultyController extends Controller
     {
         $course = $this->ownedCourse($id);
         $module = CourseModule::where('course_id', $course->id)->where('is_final', false)->findOrFail($moduleIndex);
-        $questionsChanged = $quizManagementService->saveRegularForModule($request, $course, $module);
+        $existingQuiz = Quiz::query()->where('module_id', $module->id)->whereNull('lesson_id')->where('is_summative', false)->first();
+        $questionsChanged = $quizManagementService->saveRegularForModule($request, $course, $module, $existingQuiz);
         $this->returnCourseToDraft($course);
+        $quiz = Quiz::query()->where('module_id', $module->id)->whereNull('lesson_id')->where('is_summative', false)->firstOrFail();
 
-        return redirect()->route('faculty.courses.manage', $course->id)->with('success', $questionsChanged
+        if ($redirect = $this->redirectToQuizImportIfRequested($request, $course, $quiz)) {
+            return $redirect;
+        }
+
+        if ($existingQuiz === null) {
+            return redirect()->route('faculty.module-quiz.edit', [$course->id, $module->id, $quiz->id])
+                ->with('success', 'Module quiz created. Add questions or update its settings.');
+        }
+
+        return redirect()->route('faculty.module-quiz.edit', [$course->id, $module->id, $quiz->id])->with('success', $questionsChanged
             ? 'Module quiz saved. The questions changed, so students may need a new attempt.'
             : 'Module quiz saved.');
     }
@@ -2172,7 +2176,11 @@ class FacultyController extends Controller
         $questionsChanged = $quizManagementService->saveRegularForModule($request, $course, $module, $quiz);
         $this->returnCourseToDraft($course);
 
-        return redirect()->route('faculty.courses.manage', $course->id)->with('success', $questionsChanged
+        if ($redirect = $this->redirectToQuizImportIfRequested($request, $course, $quiz)) {
+            return $redirect;
+        }
+
+        return redirect()->route('faculty.module-quiz.edit', [$course->id, $module->id, $quiz->id])->with('success', $questionsChanged
             ? 'Module quiz saved. The questions changed, so students may need a new attempt.'
             : 'Module quiz saved.');
     }
@@ -2193,10 +2201,21 @@ class FacultyController extends Controller
     {
         $course = $this->ownedCourse($id);
         $module = CourseModule::where('course_id', $course->id)->where('is_final', true)->findOrFail($moduleId);
+        $isNewQuiz = ! Quiz::query()->where('module_id', $module->id)->whereNull('lesson_id')->where('is_summative', true)->exists();
         $questionsChanged = $quizManagementService->save($request, $course, $module);
         $this->returnCourseToDraft($course);
+        $quiz = Quiz::query()->where('module_id', $module->id)->whereNull('lesson_id')->where('is_summative', true)->firstOrFail();
 
-        return redirect()->route('faculty.courses.manage', $course->id)
+        if ($redirect = $this->redirectToQuizImportIfRequested($request, $course, $quiz)) {
+            return $redirect;
+        }
+
+        if ($isNewQuiz) {
+            return redirect()->route('faculty.final-exam.edit', [$course->id, $module->id])
+                ->with('success', 'Final Exam created. Add questions or update its settings.');
+        }
+
+        return redirect()->route('faculty.final-exam.edit', [$course->id, $module->id])
             ->with('success', $questionsChanged
                 ? 'Final Exam saved. The questions changed, so students may need a new attempt.'
                 : 'Final Exam saved. The updated settings apply to students immediately.');
@@ -2224,8 +2243,14 @@ class FacultyController extends Controller
     {
         $course = $this->ownedCourse($id);
         $lesson = CourseLesson::where('course_id', $course->id)->findOrFail($lessonId);
+        $existingQuiz = Quiz::query()->where('lesson_id', $lesson->id)->first();
         $questionsChanged = $quizManagementService->saveForLesson($request, $course, $lesson);
         $this->returnCourseToDraft($course);
+        $quiz = Quiz::query()->where('lesson_id', $lesson->id)->firstOrFail();
+
+        if ($redirect = $this->redirectToQuizImportIfRequested($request, $course, $quiz)) {
+            return $redirect;
+        }
 
         if ($request->boolean('inline')) {
             return redirect()->route('faculty.lesson-quiz.create', [$course->id, $lesson->id, 'inline' => 1])
@@ -2234,13 +2259,27 @@ class FacultyController extends Controller
                     : 'Lesson quiz saved.');
         }
 
-        return redirect()->route('faculty.courses.manage', $course->id)
+        if ($existingQuiz === null) {
+            return redirect()->route('faculty.lesson-quiz.create', [$course->id, $lesson->id])
+                    ->with('success', 'Lesson quiz created. Add questions or update its settings.');
+        }
+
+        return redirect()->route('faculty.lesson-quiz.create', [$course->id, $lesson->id])
             ->with('success', $questionsChanged
                 ? 'Lesson quiz saved. Students will need a new attempt for the revised questions.'
                 : 'Lesson quiz saved.');
     }
 
-    public function quizCsvImportForm(int $id, int $quizId): View
+    private function redirectToQuizImportIfRequested(Request $request, Course $course, Quiz $quiz): ?RedirectResponse
+    {
+        if (! $request->boolean('continue_to_import')) {
+            return null;
+        }
+
+        return redirect()->route('faculty.quiz-import.form', [$course->id, $quiz->id]);
+    }
+
+    public function quizCsvImportForm(int $id, int $quizId): View|RedirectResponse
     {
         $course = $this->ownedCourse($id);
         $quiz = $this->ownedQuizForCourse($course, $quizId);
@@ -2258,7 +2297,7 @@ class FacultyController extends Controller
     public function quizCsvImportTemplate(int $id, int $quizId)
     {
         $course = $this->ownedCourse($id);
-        $this->ownedQuizForCourse($course, $quizId);
+        $quiz = $this->ownedQuizForCourse($course, $quizId);
         $template = "# Identification accepts one answer; matching trims, ignores case, and collapses repeated whitespace.\r\n"
             ."# Rephrase answers starting with - to avoid spreadsheet formula injection.\r\n"
             ."# Blank points and 0 count as 1. Limits: 2 MB and 500 data rows.\r\n"
@@ -2396,7 +2435,7 @@ class FacultyController extends Controller
         $this->forgetQuizCsvImportPreview($key);
 
         return redirect($this->quizImportBuilderUrl($course, $quiz))
-            ->with('success', $imported.' question(s) imported. The pool now has '.$poolSize.' questions; set “Items to show learners” if you want a random draw.');
+            ->with('success', $imported.' question(s) imported. The quiz pool now has '.$poolSize.' questions.');
     }
 
     private function ownedQuizForCourse(Course $course, int $quizId): Quiz
@@ -2407,18 +2446,18 @@ class FacultyController extends Controller
     private function quizImportBuilderUrl(Course $course, Quiz $quiz): string
     {
         if ($quiz->lesson_id !== null) {
-            return route('faculty.lesson-quiz.create', [$course->id, $quiz->lesson_id]);
+            return route('faculty.lesson-quiz.create', [$course->id, $quiz->lesson_id]).'#questions';
         }
         $module = $quiz->module;
         abort_unless($module, 404);
         if ($module->is_final) {
-            return route('faculty.final-exam.edit', [$course->id, $module->id]);
+            return route('faculty.final-exam.edit', [$course->id, $module->id]).'#questions';
         }
         if (! $quiz->is_summative) {
-            return route('faculty.module-quiz.edit', [$course->id, $module->id, $quiz->id]);
+            return route('faculty.module-quiz.edit', [$course->id, $module->id, $quiz->id]).'#questions';
         }
 
-        return route('faculty.quiz.create', [$course->id, $module->id]);
+        return route('faculty.quiz.create', [$course->id, $module->id]).'#questions';
     }
 
     private function quizCsvImportSessionKey(int $userId, int $quizId): string
@@ -2802,12 +2841,17 @@ class FacultyController extends Controller
      * live on the site, excluding the one being edited (a course cannot
      * require itself).
      */
-    private function prerequisiteOptions(?int $excludeId = null)
+    private function prerequisiteOptions(?int $excludeId = null, array $includeIds = [])
     {
         $graph = $this->prerequisiteGraph();
 
         return Course::query()
-            ->where('is_approved', true)
+            ->where(function ($query) use ($includeIds): void {
+                $query->where('is_approved', true);
+                if ($includeIds !== []) {
+                    $query->orWhereIn('id', $includeIds);
+                }
+            })
             ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
             ->orderBy('title')
             ->get(['id', 'title', 'category'])

@@ -1580,6 +1580,9 @@ class StudentController extends Controller
             'module_order' => $quiz->module_order,
             'status' => $status,
             'latestAttempt' => $latestAttempt,
+            'review_questions' => $latestAttempt?->passed
+                ? $this->quizAttempts->reviewQuestionsForAttempt($latestAttempt)
+                : null,
             'time_limit_seconds' => $timeLimitSeconds,
             'timer_remaining_seconds' => $quizStartedAt === null
                 ? null
@@ -1799,6 +1802,7 @@ class StudentController extends Controller
                 'lesson_completed' => $lessonCompleted,
                 'next_url' => $nextRequirement['url'],
                 'pending_review' => $nextRequirement['pending_review'],
+                'review_questions' => $result['passed'] ? $result['review_questions'] : null,
                 'progress_percent' => (int) $enrollment->fresh()->progress_percent,
                 'progress_breakdown' => $this->progressService->progressBreakdown($course, (int) $student->id, $enrollment->enrolled_at),
                 'evaluation_eligible' => $courseEvaluation->isEligible($course, $student, $enrollment->fresh()),
@@ -2316,7 +2320,7 @@ class StudentController extends Controller
             'module_scores.*' => 'integer|min:0',
             'quiz_results' => 'nullable|array',
             'quiz_results.*.answers' => 'nullable|array',
-            'quiz_results.*.answers.*' => 'nullable|string|size:1',
+            'quiz_results.*.answers.*' => 'nullable|string|max:2000',
             'quiz_results.*.score' => 'prohibited',
             'retake_check' => 'nullable|integer|min:0',
         ]);

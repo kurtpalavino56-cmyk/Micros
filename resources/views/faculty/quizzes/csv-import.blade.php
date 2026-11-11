@@ -1,34 +1,53 @@
-<x-faculty.layout title="Import quiz questions | Upskill" data-faculty-page="quiz-csv-import">
-    <main class="container" style="max-width:900px;padding:32px 16px;">
-        <p><a href="{{ $builderUrl }}">&larr; Back to quiz builder</a></p>
-        <h1>Import questions from CSV</h1>
-        <p><strong>{{ $course->title }}</strong> · {{ $quiz->title }}</p>
-        <p>Upload a UTF-8 CSV file up to 2 MB with no more than 500 data rows. Preview checks every row before anything is saved.</p>
+<x-faculty.layout title="Import quiz questions | Upskill" data-faculty-page="quiz-csv-import" use-app-css use-app-js>
+    <main class="main quiz-csv-page">
+        <a class="quiz-csv-back-link" href="{{ $builderUrl }}">&larr; Back to quiz builder</a>
+        <header class="quiz-csv-header">
+            <span class="quiz-csv-eyebrow">Question pool</span>
+            <h1>Import questions from CSV</h1>
+            <p><strong>{{ $course->title }}</strong><span aria-hidden="true"> · </span>{{ $quiz->title }}</p>
+        </header>
 
         @if($errors->any())
-            <div role="alert" style="padding:12px;border:1px solid #b42318;background:#fee4e2;color:#7a1a12;border-radius:8px;margin:16px 0;">
-                <ul style="margin:0;padding-left:20px;">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+            <div class="quiz-csv-alert" role="alert">
+                <ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
             </div>
         @endif
 
-        <p><a class="btn-secondary-action" href="{{ $templateUrl }}">Download CSV template</a></p>
-        <p>Columns: <code>type, question, choice_a, choice_b, choice_c, choice_d, correct_answer, points</code>. Multiple choice uses A-D letters or exact choice text. True/false accepts True or False.</p>
-        <ul>
-            <li>Identification accepts one answer. Matching trims the submitted answer, ignores case, and collapses repeated whitespace; it does not accept multiple answer variants.</li>
-            <li>Rephrase any answer starting with <code>-</code> to avoid spreadsheet formula injection.</li>
-            <li>Blank points and points of 0 count as 1. Uploads are limited to 2 MB and 500 data rows.</li>
-        </ul>
-        @unless($replaceAllowed)
-            <p role="note">Replace mode is unavailable because students have already attempted this quiz. Imports will append questions.</p>
-        @endunless
+        <section class="quiz-csv-card quiz-csv-upload-card" aria-labelledby="csv-upload-heading">
+            <div class="quiz-csv-card-heading">
+                <div>
+                    <h2 id="csv-upload-heading">Choose a CSV file</h2>
+                    <p>Upload questions, review the preview, then decide what to import.</p>
+                </div>
+                <a class="quiz-csv-template-link" href="{{ $templateUrl }}">Download CSV template</a>
+            </div>
 
-        <form method="POST" action="{{ $previewUrl }}" enctype="multipart/form-data" style="display:grid;gap:14px;max-width:620px;">
-            @csrf
-            <label for="csv-file"><strong>CSV file</strong></label>
-            <input id="csv-file" type="file" name="csv_file" accept=".csv,text/csv" required>
-            @error('csv_file')<small role="alert">{{ $message }}</small>@enderror
-            <button class="btn-save-lesson" type="submit">Preview import</button>
-        </form>
-        <p style="margin-top:18px;">Blank points and points of 0 count as 1. Points below 1 are normalized to 1 and called out in the preview.</p>
+            <div class="quiz-csv-guidance">
+                <h3>Prepare your file</h3>
+                <p>Upload a UTF-8 CSV file up to 2 MB with no more than 500 data rows. The preview checks every row before anything is saved.</p>
+                <p class="quiz-csv-columns"><strong>Columns:</strong> <code>type, question, choice_a, choice_b, choice_c, choice_d, correct_answer, points</code></p>
+                <ul>
+                    <li>Multiple choice uses A-D letters or exact choice text. True/false accepts True or False.</li>
+                    <li>Identification questions accept one correct answer. Matching trims the submitted answer, ignores case, and collapses repeated whitespace; it does not accept multiple answer variants.</li>
+                    <li>Rephrase any answer starting with <code>-</code> to avoid spreadsheet formula injection.</li>
+                    <li>Blank points and points of 0 count as 1. Points below 1 are normalized to 1 and called out in the preview. Uploads are limited to 2 MB and 500 data rows.</li>
+                </ul>
+            </div>
+
+            @unless($replaceAllowed)
+                <div class="quiz-csv-notice" role="note">
+                    <strong>Append-only for this quiz</strong>
+                    <span>Replace mode is unavailable because students have already attempted this quiz. Imports will append to the question pool.</span>
+                </div>
+            @endunless
+
+            <form class="quiz-csv-upload-form" method="POST" action="{{ $previewUrl }}" enctype="multipart/form-data">
+                @csrf
+                <label class="quiz-csv-file-label" for="csv-file">CSV file</label>
+                <input class="quiz-csv-file-input" id="csv-file" type="file" name="csv_file" accept=".csv,text/csv" required>
+                @error('csv_file')<small class="quiz-csv-field-error" role="alert">{{ $message }}</small>@enderror
+                <button class="quiz-csv-primary-button" type="submit">Preview import</button>
+            </form>
+        </section>
     </main>
 </x-faculty.layout>

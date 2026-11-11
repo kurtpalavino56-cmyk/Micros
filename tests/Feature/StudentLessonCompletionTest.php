@@ -222,6 +222,60 @@ test('the course player can open the selected reflection and lesson quiz from th
     expect($quizResponse->json('html'))->toContain('Lesson Quiz');
 });
 
+test('passing a lesson quiz returns correct answers and shows the latest attempt in the header', function () {
+    [$student, $course, $lesson] = lessonTrackingFixture();
+    $quiz = Quiz::create([
+        'course_id' => $course->id,
+        'lesson_id' => $lesson->id,
+        'title' => 'Lesson Quiz',
+        'passing_score' => 70,
+        'attempts' => 'Unlimited',
+        'is_active' => true,
+        'sort_order' => 1,
+    ]);
+    $question = QuizQuestion::create([
+        'quiz_id' => $quiz->id,
+        'question' => 'Which answer is correct?',
+        'type' => 'Multiple Choice',
+        'options' => ['Correct', 'Incorrect'],
+        'correct_answer' => 'Correct',
+        'points' => 1,
+    ]);
+    Enrollment::create([
+        'user_id' => $student->id,
+        'course_id' => $course->id,
+        'enrolled_at' => now(),
+        'progress_percent' => 0,
+        'progress_state' => [],
+    ]);
+
+    $this->actingAs($student)
+        ->postJson(route('courses.lessons.start', [$course->id, $lesson->id]))
+        ->assertOk();
+    $this->travel(6)->seconds();
+    $this->postJson(route('courses.lessons.complete', [$course->id, $lesson->id]))
+        ->assertOk();
+    $this->postJson(route('quiz.start', $quiz->id))->assertOk();
+
+    $submission = $this->postJson(route('quiz.submit', $quiz->id), [
+        'answers' => [(string) $question->id => 'A'],
+    ])->assertOk()
+        ->assertJsonPath('passed', true)
+        ->assertJsonPath('review_questions.0.options.0.is_correct', true);
+
+    expect($submission->json('review_questions.0.options.1.is_correct'))->toBeFalse();
+
+    $quizPanel = $this->getJson(route('quiz.show', $quiz->id))->assertOk()->json('html');
+    expect($quizPanel)
+        ->toContain('inline-assessment-feedback--compact')
+        ->toContain('Latest attempt: 100%. You passed. Continue to the next required item.')
+        ->toContain('inline-quiz-review-options')
+        ->toContain('Correct answer')
+        ->toContain('is-correct')
+        ->toContain('Correct')
+        ->not->toContain('Submit lesson quiz');
+});
+
 test('opening a module quiz works when its module has no activities', function () {
     [$student, $course, $lesson] = lessonTrackingFixture();
     $lesson->delete();

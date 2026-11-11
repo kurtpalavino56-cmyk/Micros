@@ -196,7 +196,11 @@ class QuizAttemptService
             'total' => $grade['total'],
             'earned_points' => $grade['earned_points'],
             'possible_points' => $grade['possible_points'],
-            'answers' => $grade['answers'],
+            'answers' => $passed
+                ? $grade['answers']
+                : collect($grade['answers'])
+                    ->map(fn (array $answer): array => ['answer' => $answer['answer']])
+                    ->all(),
             'review_questions' => $this->reviewQuestionsForAttempt($attempt),
             'unlock' => $passed ? null : now()->addMinutes(5)->getTimestamp() * 1000,
         ];
@@ -293,7 +297,8 @@ class QuizAttemptService
             $choiceOrders = $presentation['choice_orders'] ?? [];
 
             return collect($presentation['question_snapshot']['questions'])->map(function (array $snapshot) use ($choiceOrders): array {
-                $options = array_values((array) ($snapshot['options'] ?? []));
+                $type = (string) ($snapshot['type'] ?? '');
+                $options = $type === 'Identification' ? [] : array_values((array) ($snapshot['options'] ?? []));
                 $order = $choiceOrders[(string) ($snapshot['id'] ?? '')] ?? array_keys($options);
                 $presented = [];
                 foreach ($options as $displayIndex => $option) {
@@ -306,7 +311,7 @@ class QuizAttemptService
 
                 $question = new QuizQuestion([
                     'question' => (string) ($snapshot['text'] ?? ''),
-                    'type' => (string) ($snapshot['type'] ?? ''),
+                    'type' => $type,
                     'points' => $snapshot['points'] ?? null,
                     'options' => $options,
                     'correct_answer' => $snapshot['correct_answer'] ?? null,
@@ -321,7 +326,10 @@ class QuizAttemptService
         $choiceOrders = $presentation['choice_orders'] ?? [];
 
         return $this->questionsInPresentation($quiz, $presentation)->map(function (QuizQuestion $question) use ($choiceOrders): array {
-            $options = array_values((array) ($question->options ?? []));
+            $options = $question->type === 'Identification' ? [] : array_values((array) ($question->options ?? []));
+            if ($question->type === 'Identification') {
+                $question->setAttribute('options', []);
+            }
             $order = $choiceOrders[(string) $question->id] ?? array_keys($options);
             if (count($order) !== count($options) || array_diff(array_keys($options), $order) !== []) {
                 $order = array_keys($options);
@@ -366,25 +374,32 @@ class QuizAttemptService
             return null;
         }
 
-        return collect($snapshot['questions'])->map(function (array $question) use ($attempt): array {
-            $options = array_values((array) ($question['options'] ?? []));
+        $includeCorrectAnswers = (bool) $attempt->passed;
+
+        return collect($snapshot['questions'])->map(function (array $question) use ($attempt, $includeCorrectAnswers): array {
+            $options = ($question['type'] ?? null) === 'Identification' ? [] : array_values((array) ($question['options'] ?? []));
             $answer = $question['correct_answer'] ?? null;
             $order = $attempt->presentation['choice_orders'][(string) ($question['id'] ?? '')] ?? array_keys($options);
 
-            return [
+            $review = [
                 'id' => (int) ($question['id'] ?? 0),
                 'label' => mb_substr((string) ($question['text'] ?? ''), 0, 40),
                 'question' => (string) ($question['text'] ?? ''),
                 'type' => (string) ($question['type'] ?? ''),
                 'points' => $question['points'] ?? null,
-                'review_answer' => ($question['type'] ?? null) === 'Identification' ? (string) $answer : null,
                 'options' => collect($options)->map(fn ($option, int $index): array => [
                     'letter' => chr(65 + (int) ($order[$index] ?? $index)),
                     'label' => chr(65 + $index),
                     'text' => (string) $option,
-                    'is_correct' => is_string($answer) && $option === $answer,
+                    ...($includeCorrectAnswers ? ['is_correct' => is_string($answer) && $option === $answer] : []),
                 ])->all(),
             ];
+
+            if ($includeCorrectAnswers && ($question['type'] ?? null) === 'Identification') {
+                $review['review_answer'] = (string) $answer;
+            }
+
+            return $review;
         })->values()->all();
     }
 

@@ -21,8 +21,8 @@
     ]);
 
     Section order: Overview > Image > Skills & recommendations >
-    Learning design > Prerequisites > Credential & completion >
-    Review notes (edit only).
+    Learning design > Prerequisites > Credential & completion.
+    Review notes are collected when submitting for approval.
 --}}
 <x-faculty.layout title="{{ ($editing ?? false) ? 'Edit Course' : 'Create Course' }} | Upskill" data-faculty-page="faculty-courses-create" use-app-css use-app-js>
     <x-slot:head><link rel="preconnect" href="https://fonts.googleapis.com">
@@ -115,6 +115,7 @@
                         ->map(fn ($v) => (int) $v)->all();
 
                     $learningHours = old('learning_hours', $course->learning_hours ?? (int) filter_var((string) ($course->duration ?? ''), FILTER_SANITIZE_NUMBER_INT));
+                    $learningHours = $learningHours > 0 ? $learningHours : '';
                 @endphp
 
                 {{-- ── 1. Course overview ── --}}
@@ -466,23 +467,6 @@
                     </div>
                 </section>
 
-                {{-- ── 7. Review notes (edit only) ── --}}
-                @if ($editing ?? false)
-                    <section class="form-card">
-                        <div class="form-card-head">
-                            <h3>Review notes</h3>
-                            <p>Shown to the admin when this course is reviewed.</p>
-                        </div>
-                        <div class="form-card-body">
-                            <div class="field">
-                                <label for="changeNote">What did you change?</label>
-                                <textarea class="textarea" id="changeNote" name="change_note" rows="4"
-                                          placeholder="e.g. Rewrote Module 2 lessons and lowered the passing score to 70%.">{{ old('change_note', $course->change_note ?? '') }}</textarea>
-                            </div>
-                        </div>
-                    </section>
-                @endif
-
                 {{-- Save goes to the Managing Course screen. Cancel leaves without saving. --}}
                 <div class="form-actions">
                     <button class="btn-save" type="submit">{{ ($editing ?? false) ? 'Save details' : 'Save and continue' }}</button>
@@ -750,7 +734,7 @@
         var IS_EDIT = {{ ($editing ?? false) ? 'true' : 'false' }};
         if (IS_EDIT) return;
 
-        var KEY = 'upskill_create_course_draft';
+        var KEY = @json('upskill_create_course_draft_' . (string) auth()->id());
 
         // Drop drafts older than a day so an abandoned draft cannot make a
         // fresh Create form look half-loaded.
@@ -790,6 +774,15 @@
                 });
             }
         } catch (e) {}
+
+        var hoursField = form.querySelector('#estimatedLearningHours');
+        var durationField = form.querySelector('#legacyCourseDuration');
+        if (hoursField && durationField) {
+            durationField.value = hoursField.value;
+            hoursField.addEventListener('input', function () {
+                durationField.value = hoursField.value;
+            });
+        }
 
         function saveDraft() {
             var data = {};
