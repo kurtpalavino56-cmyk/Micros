@@ -14,6 +14,7 @@ class QuizAttempt extends Model
         'quiz_set_id',
         'shuffle_seed',
         'presentation',
+        'question_snapshot',
         'score',
         'passed',
         'started_at',
@@ -28,8 +29,13 @@ class QuizAttempt extends Model
             'submitted_at' => 'datetime',
             'shuffle_seed' => 'integer',
             'presentation' => 'array',
+            'question_snapshot' => 'array',
         ];
     }
+
+    protected $hidden = [
+        'question_snapshot',
+    ];
 
     public function user(): BelongsTo
     {

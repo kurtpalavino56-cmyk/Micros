@@ -472,4 +472,15 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty',
     Route::post('/Faculty-mycourses/manage/{id}/lessons/{lessonId}/quiz', [FacultyController::class, 'storeLessonQuiz'])
         ->whereNumber('id')->whereNumber('lessonId')->name('faculty.lesson-quiz.store');
 
+    Route::get('/Faculty-mycourses/manage/{id}/quizzes/{quizId}/csv-import', [FacultyController::class, 'quizCsvImportForm'])
+        ->whereNumber('id')->whereNumber('quizId')->name('faculty.quiz-import.form');
+    Route::get('/Faculty-mycourses/manage/{id}/quizzes/{quizId}/csv-import/template', [FacultyController::class, 'quizCsvImportTemplate'])
+        ->whereNumber('id')->whereNumber('quizId')->name('faculty.quiz-import.template');
+    Route::post('/Faculty-mycourses/manage/{id}/quizzes/{quizId}/csv-import/preview', [FacultyController::class, 'quizCsvImportPreview'])
+        ->whereNumber('id')->whereNumber('quizId')->name('faculty.quiz-import.preview');
+    Route::get('/Faculty-mycourses/manage/{id}/quizzes/{quizId}/csv-import/preview', [FacultyController::class, 'showQuizCsvImportPreview'])
+        ->whereNumber('id')->whereNumber('quizId')->name('faculty.quiz-import.preview.show');
+    Route::post('/Faculty-mycourses/manage/{id}/quizzes/{quizId}/csv-import/confirm', [FacultyController::class, 'confirmQuizCsvImport'])
+        ->whereNumber('id')->whereNumber('quizId')->name('faculty.quiz-import.confirm');
+
 });

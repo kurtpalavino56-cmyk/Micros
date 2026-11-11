@@ -19,6 +19,7 @@ class Quiz extends Model
         'description',
         'passing_score',
         'attempts',
+        'questions_per_attempt',
         'time_limit',
         'shuffle_questions',
         'shuffle_choices',
@@ -35,6 +36,7 @@ class Quiz extends Model
             'is_summative' => 'boolean',
             'shuffle_questions' => 'boolean',
             'shuffle_choices' => 'boolean',
+            'questions_per_attempt' => 'integer',
             'questions_changed_at' => 'datetime',
         ];
     }

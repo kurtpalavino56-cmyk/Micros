@@ -300,7 +300,20 @@ var QUIZ_DATA = {!! $modules->mapWithKeys(fn ($m, $i) => [
         'passingScore' => (int) ($m->quiz->passing_score ?? 75),
         'timeLimit'    => (int) ($m->quiz->time_limit ?? 0),   // minutes; 0 = untimed
         'instructions' => \App\Support\RichTextSanitizer::wrapTables($m->quiz->instructions ?? ''),
-        'questions'    => $m->quiz->questions ?? [],
+        'questions'    => collect($m->quiz?->questions ?? [])->map(function ($question) {
+            $item = [
+                'id' => (int) (is_array($question) ? ($question['id'] ?? 0) : $question->id),
+                'text' => (string) (is_array($question) ? ($question['text'] ?? $question['question'] ?? '') : $question->question),
+                'type' => (string) (is_array($question) ? ($question['type'] ?? '') : $question->type),
+                'points' => (int) (is_array($question) ? ($question['points'] ?? 0) : $question->points),
+                'options' => is_array($question) ? ($question['options'] ?? []) : ($question->options ?? []),
+            ];
+            if (is_array($question) && array_key_exists('review_answer', $question)) {
+                $item['review_answer'] = $question['review_answer'];
+            }
+
+            return $item;
+        })->values(),
     ],
 ])->toJson(JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!};
 var QUIZ_START_URL_TEMPLATE = @json(url('/quiz/__QUIZ_ID__/start'));
@@ -320,7 +333,7 @@ var _curLessonEl   = null;
 var _curSidebarStepEl = null;
 var _curModIdx     = 0;
 var _curLesIdx     = 0;
-var _moduleScores  = {};         // { modIdx: correctCount } â€” replaced on retake
+var _moduleScores  = {};         // { modIdx: stored score percentage } â€” replaced on retake
 var _moduleAnswers = {};         // { modIdx: { questionId: letter } }
 var _moduleReview  = {};         // { modIdx: { questionId: {answer, correct, correct_answer} } } â€” saved on submit for view-only replay
 var _retakeQMap    = [];         // maps rendered question index â†’ original question index on retake
@@ -632,7 +645,7 @@ function restoreProgress(saved) {
         var data  = QUIZ_DATA[i];
         var score = _moduleScores[i];
         if (score === undefined) return;
-        var pct = Math.round((score / data.questions.length) * 100);
+        var pct = Number(score);
         var doneBtn = document.getElementById('qbtn-' + i);
         if (pct >= (data.passingScore || 75)) {
             var group = document.getElementById('mg-' + i);
@@ -670,9 +683,7 @@ function restoreProgress(saved) {
         const quiz = QUIZ_DATA[i];
         if (quiz && quiz.questions && quiz.questions.length > 0) {
             const score = _moduleScores[i];
-            const scorePercent = score === undefined
-                ? 0
-                : Math.round((Number(score) / quiz.questions.length) * 100);
+            const scorePercent = score === undefined ? 0 : Number(score);
             if (scorePercent < Number(quiz.passingScore || 75)) break;
         }
 
@@ -2093,7 +2104,7 @@ function showQuizView(modIdx, viewOnly, retakeOnly, serverStarted) {
 
         const qbox = document.createElement('div');
         qbox.className = 'quiz-q-box';
-        qbox.textContent = q.question;
+        qbox.textContent = q.text;
         block.appendChild(qbox);
 
         const optWrap = document.createElement('div');
@@ -2107,8 +2118,22 @@ function showQuizView(modIdx, viewOnly, retakeOnly, serverStarted) {
             // position letter, which grading uses. opt.label is the
             // sequential letter shown for its position on screen.
             div.dataset.letter = opt.letter;
-            div.innerHTML = '<span class="quiz-opt-letter">' + (opt.label || opt.letter) + '</span>'
-                          + '<span class="quiz-opt-text">' + opt.text + '</span>';
+            const optionLetter = document.createElement('span');
+            optionLetter.className = 'quiz-opt-letter';
+            optionLetter.textContent = opt.label || opt.letter;
+            div.appendChild(optionLetter);
+            const optionText = document.createElement('span');
+            optionText.className = 'quiz-opt-text';
+            optionText.textContent = opt.text;
+            div.appendChild(optionText);
+
+            if (viewOnly && opt.is_correct) {
+                div.classList.add('correct-ans');
+                const answerMarker = document.createElement('span');
+                answerMarker.className = 'quiz-correct-answer-label';
+                answerMarker.textContent = 'Correct answer';
+                div.appendChild(answerMarker);
+            }
 
             const result = review[String(q.id)];
             const selected = result?.answer || savedAnswers[String(q.id)] || savedAnswers[qi];
@@ -2132,6 +2157,12 @@ function showQuizView(modIdx, viewOnly, retakeOnly, serverStarted) {
             optWrap.appendChild(div);
         });
         block.appendChild(optWrap);
+        if (viewOnly && q.review_answer) {
+            const answer = document.createElement('p');
+            answer.className = 'quiz-review-answer';
+            answer.textContent = 'Correct answer: ' + q.review_answer;
+            block.appendChild(answer);
+        }
         container.appendChild(block);
     });
 
@@ -2142,13 +2173,11 @@ function showQuizView(modIdx, viewOnly, retakeOnly, serverStarted) {
     if (viewOnly) {
         document.getElementById('btn-quiz-submit').style.display = 'none';
         const scoreEl = document.getElementById('quiz-score-result');
-        const correct = _moduleScores[modIdx] !== undefined ? _moduleScores[modIdx] : '?';
-        const total = data.questions.length;
-        const pct = _moduleScores[modIdx] !== undefined ? Math.round((_moduleScores[modIdx] / total) * 100) : 0;
+        const pct = _moduleScores[modIdx] !== undefined ? Number(_moduleScores[modIdx]) : 0;
         const pass = pct >= (data.passingScore || 75);
         scoreEl.innerHTML = pass
-            ? 'Passed - Score: ' + correct + '/' + total
-            : 'Score: ' + correct + '/' + total + ' - Keep practicing!';
+            ? 'Passed - Score: ' + pct + '%'
+            : 'Score: ' + pct + '% - Keep practicing!';
         scoreEl.className = 'quiz-score-result ' + (pass ? 'pass' : 'fail');
         scoreEl.style.display = 'block';
         if (!pass && _moduleScores[modIdx] !== undefined) showRetakeButton(modIdx);
@@ -2329,8 +2358,11 @@ function applyServerQuizSubmission(modIdx, submission) {
     const data = QUIZ_DATA[modIdx];
     if (!data) return;
 
-    _moduleScores[modIdx] = Number(submission.correct || 0);
+    _moduleScores[modIdx] = Number(submission.score || 0);
     _moduleReview[modIdx] = submission.answers || {};
+    if (Array.isArray(submission.review_questions)) {
+        data.questions = submission.review_questions;
+    }
     const quizId = String(data.quizId || '');
     if (quizId) {
         const budget = attemptBudget(modIdx);
@@ -2343,12 +2375,14 @@ function applyServerQuizSubmission(modIdx, submission) {
     }
     updateProgress();
 
-    const correctCount = _moduleScores[modIdx];
+    const scorePercent = _moduleScores[modIdx];
+    const correctCount = Number(submission.correct || 0);
+    const questionCount = Number(submission.total || data.questions.length);
     const pass = !!submission.passed;
     const scoreEl = document.getElementById('quiz-score-result');
     scoreEl.innerHTML = pass
-        ? 'You passed! Score: ' + correctCount + '/' + data.questions.length
-        : 'Score: ' + correctCount + '/' + data.questions.length + ' — Keep practicing!';
+        ? 'You passed! Score: ' + scorePercent + '% (' + correctCount + '/' + questionCount + ' correct)'
+        : 'Score: ' + scorePercent + '% (' + correctCount + '/' + questionCount + ' correct) — Keep practicing!';
     scoreEl.className = 'quiz-score-result ' + (pass ? 'pass' : 'fail');
     scoreEl.style.display = 'block';
 
@@ -2370,7 +2404,7 @@ function applyServerQuizSubmission(modIdx, submission) {
             moduleGroup.dataset.finalPassed = '1';
             checkModuleComplete(modIdx);
             syncCourseEvaluationUnlock();
-            showFinalExamResult(modIdx, true, correctCount, data.questions.length);
+            showFinalExamResult(modIdx, true, scorePercent, 100);
             return;
         }
         if (hasNextMod) {
@@ -2394,7 +2428,7 @@ function applyServerQuizSubmission(modIdx, submission) {
         showRetakeButton(modIdx);
         const moduleGroup = document.getElementById('mg-' + modIdx);
         if (moduleGroup && moduleGroup.dataset.finalExam === '1') {
-            showFinalExamResult(modIdx, false, correctCount, data.questions.length);
+            showFinalExamResult(modIdx, false, scorePercent, 100);
         }
     }
 }

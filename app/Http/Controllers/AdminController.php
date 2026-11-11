@@ -1088,6 +1088,7 @@ class AdminController extends Controller
         $quizAttempts = QuizAttempt::with(['quiz', 'set', 'answers.question'])
             ->where('user_id', $enrollment->user_id)
             ->whereIn('quiz_id', $quizzes->pluck('id'))
+            ->whereNotNull('submitted_at')
             ->latest('submitted_at')
             ->get()
             ->groupBy('quiz_id');
@@ -1557,6 +1558,7 @@ class AdminController extends Controller
         $quizScores = DB::table('quiz_attempts')
             ->join('quizzes', 'quizzes.id', '=', 'quiz_attempts.quiz_id')
             ->join('courses', 'courses.id', '=', 'quizzes.course_id')
+            ->whereNotNull('quiz_attempts.submitted_at')
             ->whereNotNull('quiz_attempts.score');
         $applyCourseFilters($quizScores);
         if ($periodStart) {
@@ -1658,6 +1660,7 @@ class AdminController extends Controller
                 $query = DB::table('quiz_attempts')
                     ->join('quizzes', 'quizzes.id', '=', 'quiz_attempts.quiz_id')
                     ->join('courses', 'courses.id', '=', 'quizzes.course_id')
+                    ->whereNotNull('quiz_attempts.submitted_at')
                     ->whereNotNull('quiz_attempts.score')
                     ->whereRaw('COALESCE(quiz_attempts.submitted_at, quiz_attempts.created_at) >= ?', [$start])
                     ->whereRaw('COALESCE(quiz_attempts.submitted_at, quiz_attempts.created_at) < ?', [$end]);
@@ -1688,6 +1691,7 @@ class AdminController extends Controller
                 DB::table('quiz_attempts')
                     ->join('quizzes', 'quizzes.id', '=', 'quiz_attempts.quiz_id')
                     ->select('quizzes.course_id', DB::raw('AVG(quiz_attempts.score) as average_score'))
+                    ->whereNotNull('quiz_attempts.submitted_at')
                     ->whereNotNull('quiz_attempts.score')
                     ->when($periodStart, fn ($query) => $query->whereRaw('COALESCE(quiz_attempts.submitted_at, quiz_attempts.created_at) >= ?', [$periodStart]))
                     ->groupBy('quizzes.course_id'),
@@ -1797,6 +1801,7 @@ class AdminController extends Controller
         $lowPassQuizCount = DB::table('quiz_attempts')
             ->join('quizzes', 'quizzes.id', '=', 'quiz_attempts.quiz_id')
             ->join('courses', 'courses.id', '=', 'quizzes.course_id')
+            ->whereNotNull('quiz_attempts.submitted_at')
             ->whereNotNull('quiz_attempts.score')
             ->when($periodStart, fn ($query) => $query->whereRaw('COALESCE(quiz_attempts.submitted_at, quiz_attempts.created_at) >= ?', [$periodStart]))
             ->tap($applyCourseFilters)

@@ -427,10 +427,16 @@
         <a class="back-link" href="{{ route('faculty.courses.manage', $course->id ?? 1) }}">&larr; Back to Modules</a>
         <div class="faculty-page-heading"><h2 class="quiz-head faculty-page-title">@if($mode === 'final-exam'){{ ($quiz ?? null) ? 'Edit' : 'Create' }} Final Exam: {{ $course->title }}@else{{ ($quiz ?? null) ? 'Edit' : 'Add' }} Quiz: {{ $moduleTitle }}@endif</h2></div>
         <x-flash-toast :message="session('success')" />
+        @if(!empty($quiz->id))
+            <div class="quiz-builder-notice" role="note">
+                <strong>Build the question pool from a spreadsheet.</strong>
+                <a class="module-content-action" href="{{ route('faculty.quiz-import.form', [$course->id, $quiz->id]) }}">Import from CSV</a>
+            </div>
+        @endif
 
         {{-- âœ… Real form â€” Save Quiz stores everything (session for now) and
              returns to the Managing Course screen with the quiz in the module --}}
-        <form method="POST" action="{{ $mode === 'final-exam' ? route('faculty.final-exam.update', [$course->id, $moduleIdx]) : ($mode === 'module-quiz' ? (!empty($moduleQuizId) ? route('faculty.module-quiz.update', [$course->id, $moduleIdx, $moduleQuizId]) : route('faculty.module-quiz.store', [$course->id, $moduleIdx])) : (!empty($lessonId) ? route('faculty.lesson-quiz.store', [$course->id, $lessonId]) : route('faculty.quiz.store', [$course->id, $moduleIdx]))) }}">
+        <form method="POST" novalidate action="{{ $mode === 'final-exam' ? route('faculty.final-exam.update', [$course->id, $moduleIdx]) : ($mode === 'module-quiz' ? (!empty($moduleQuizId) ? route('faculty.module-quiz.update', [$course->id, $moduleIdx, $moduleQuizId]) : route('faculty.module-quiz.store', [$course->id, $moduleIdx])) : (!empty($lessonId) ? route('faculty.lesson-quiz.store', [$course->id, $lessonId]) : route('faculty.quiz.store', [$course->id, $moduleIdx]))) }}">
             @csrf
             @if(request()->boolean('inline'))<input type="hidden" name="inline" value="1">@endif
 
@@ -444,6 +450,13 @@
                     <div>
                         <label class="q-label">No. of Items <span class="req">*</span></label>
                         <input class="input-outline fac-width-full" type="number" name="items" id="quiz-items" placeholder="1" min="1" max="100" value="{{ $quiz->items ?? '' }}" onchange="itemsChanged(this)">
+                    </div>
+                    <div>
+                        <label class="q-label" for="questions-per-attempt">Items to show learners</label>
+                        <input class="input-outline fac-width-full" type="number" name="questions_per_attempt" id="questions-per-attempt" min="1" value="{{ old('questions_per_attempt', $quiz->questions_per_attempt ?? '') }}" oninput="updateDrawSetting()">
+                        <small class="field-help">Leave blank to show all questions. <span id="question-pool-size">Pool size: 0 questions</span></small>
+                        <small class="field-help" id="draw-setting-warning" role="status" hidden></small>
+                        @error('questions_per_attempt')<small class="field-help" role="alert">{{ $message }}</small>@enderror
                     </div>
                     <div>
                         <label class="q-label">Passing Score (%)</label>
@@ -1036,7 +1049,8 @@
                         return '<option value="' + option + '"' + (option === type ? ' selected' : '') + '>' + option + '</option>';
                     }).join('') +
                 '</select></div>' +
-                '<input class="input-outline points" type="number" name="' + prefix + '[points]" placeholder="Points" min="0" value="' + esc(question.points === 0 ? 0 : (question.points || '')) + '" oninput="syncSelectedQuestionPoints(this)">' +
+                '<input class="input-outline points" type="number" name="' + prefix + '[points]" placeholder="Points" min="1" value="' + esc(question.points === 0 ? 0 : (question.points || 1)) + '" oninput="syncSelectedQuestionPoints(this)">' +
+                '<small class="field-help">0 or blank counts as 1</small>' +
                 '<button class="btn-x" type="button" title="Remove this question from every set" onclick="removeQuestion(this)">&times;</button>' +
             '</div>' +
             '<div class="fac-question-field-spacing">' +
@@ -1110,8 +1124,28 @@
 
         var itemsInput = document.getElementById('quiz-items');
         if (itemsInput && count > 0) itemsInput.value = count;
+        updateDrawSetting();
         _lastItems = count;
         updateQuestionSelectionState();
+    }
+
+    function updateDrawSetting() {
+        var field = document.getElementById('questions-per-attempt');
+        var size = document.getElementById('question-pool-size');
+        var warning = document.getElementById('draw-setting-warning');
+        if (!field || !size || !warning) return;
+        var panels = setPanels();
+        var poolSize = panels.length ? panelCards(panels[0]).filter(cardIsFilled).length : 0;
+        size.textContent = 'Pool size: ' + poolSize + ' question' + (poolSize === 1 ? '' : 's');
+        var requested = parseInt(field.value, 10);
+        var message = '';
+        if (panels.length > 1 && field.value.trim() !== '') {
+            message = 'Random item draws require a single set. Remove the extra sets or leave this blank.';
+        } else if (field.value.trim() !== '' && (!requested || requested > poolSize)) {
+            message = 'This setting exceeds the current pool size. Reduce it before saving; if the pool later shrinks, learners receive all remaining questions.';
+        }
+        warning.textContent = message;
+        warning.hidden = message === '';
     }
 
     function toggleSetsDrawer(open) {
@@ -1327,6 +1361,10 @@
             });
             updateQuestionSelectionState();
         }
+    });
+
+    document.addEventListener('input', function (event) {
+        if (event.target.matches('#questions .question-input')) updateDrawSetting();
     });
 
     // Adds a blank card at the end of EVERY set, keeping counts equal.

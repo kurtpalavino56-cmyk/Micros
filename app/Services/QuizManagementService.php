@@ -45,6 +45,87 @@ class QuizManagementService
         ]);
     }
 
+    /** @param array<string, mixed> $question */
+    public function parseImportedQuestion(array $question): ?array
+    {
+        return $this->parseQuestion($question);
+    }
+
+    /**
+     * Persist normalized CSV rows as ordinary quiz questions atomically.
+     *
+     * @param  list<array{question:string,type:string,points:int,options:list<string>,correct_answer:?string}>  $rows
+     */
+    public function storeImportedQuestions(Quiz $quiz, array $rows, bool $replace): int
+    {
+        return DB::transaction(function () use ($quiz, $rows, $replace): int {
+            if ($quiz->sets()->count() > 1 || $quiz->setCount() > 1) {
+                throw ValidationException::withMessages(['csv' => 'CSV import is available only for quizzes with one set.']);
+            }
+
+            if ($replace && QuizAttempt::query()->where('quiz_id', $quiz->id)->exists()) {
+                throw ValidationException::withMessages(['replace' => 'Replace mode is unavailable because students have already attempted this quiz.']);
+            }
+
+            if ($rows === []) {
+                throw ValidationException::withMessages(['csv' => 'There are no importable rows to save.']);
+            }
+
+            $validatedRows = [];
+            foreach ($rows as $row) {
+                $rawQuestion = [
+                    'text' => $row['question'],
+                    'type' => $row['type'],
+                    'points' => $row['points'],
+                    'choices' => $row['options'],
+                    'answer' => $row['type'] === 'Identification' ? $row['correct_answer'] : null,
+                    'correct' => $row['type'] === 'Multiple Choice'
+                        ? array_search($row['correct_answer'], $row['options'], true)
+                        : null,
+                    'tf_correct' => $row['type'] === 'True or False'
+                        ? array_search($row['correct_answer'], ['True', 'False'], true)
+                        : null,
+                ];
+                $parsed = $this->parseQuestion($rawQuestion);
+                if (! $parsed || $parsed['error'] !== null || $parsed['correct_answer'] !== $row['correct_answer']) {
+                    throw ValidationException::withMessages(['csv' => 'A previewed question no longer passes quiz validation. Upload the CSV again to preview current data.']);
+                }
+                $validatedRows[] = $parsed;
+            }
+
+            if ($replace) {
+                $quiz->questions()->delete();
+            }
+
+            $set = $quiz->sets()->orderBy('position')->orderBy('id')->first();
+            if (! $set) {
+                $set = QuizSet::query()->create(['quiz_id' => $quiz->id, 'name' => 'Set A', 'position' => 0]);
+            }
+
+            $position = (int) $quiz->questions()->where('quiz_set_id', $set->id)->max('position');
+            $position = $replace ? 0 : ($quiz->questions()->where('quiz_set_id', $set->id)->exists() ? $position + 1 : 0);
+            foreach ($validatedRows as $question) {
+                QuizQuestion::query()->create([
+                    'quiz_id' => $quiz->id,
+                    'quiz_set_id' => $set->id,
+                    'position' => $position++,
+                    'question' => $question['question'],
+                    'type' => $question['type'],
+                    'points' => $question['points'],
+                    'options' => $question['options'],
+                    'correct_answer' => $question['correct_answer'],
+                    'lock_choice_order' => false,
+                ]);
+            }
+
+            $quiz->questions_changed_at = now();
+            $quiz->save();
+            $quiz->touch();
+
+            return count($validatedRows);
+        });
+    }
+
     /** @param array{module_id: int|null, lesson_id: int|null, is_summative: bool} $scope */
     private function persist(Request $request, Course $course, array $scope, ?Quiz $targetQuiz = null, bool $createNew = false): bool
     {
@@ -55,11 +136,33 @@ class QuizManagementService
 
         $existingQuiz = $targetQuiz ?? ($createNew ? null : Quiz::where($scope)->first());
         [$sets, $isNested] = $this->parseSets($request, $existingQuiz);
+        $questionsPerAttempt = $request->input('questions_per_attempt');
+        if ($questionsPerAttempt !== null && $questionsPerAttempt !== '') {
+            if (count($sets) > 1) {
+                throw ValidationException::withMessages([
+                    'questions_per_attempt' => 'Random item draws are available only when the quiz has one set. Remove the extra sets or leave this field blank.',
+                ]);
+            }
+
+            $poolSize = count($sets[0]['questions'] ?? []);
+            $validator = validator(['questions_per_attempt' => $questionsPerAttempt], [
+                'questions_per_attempt' => ['required', 'integer', 'min:1', 'max:'.$poolSize],
+            ]);
+            if ($validator->fails()) {
+                throw ValidationException::withMessages([
+                    'questions_per_attempt' => 'Items to show learners must be a whole number from 1 to '.$poolSize.'.',
+                ]);
+            }
+            $questionsPerAttempt = (int) $questionsPerAttempt;
+        } else {
+            $questionsPerAttempt = null;
+        }
         $quizData = [
             'course_id' => $course->id,
             'title' => trim($request->input('quiz_title', '')) ?: 'Untitled Quiz',
             'passing_score' => $passing,
             'attempts' => trim((string) $request->input('attempts', '')) ?: null,
+            'questions_per_attempt' => $questionsPerAttempt,
             'time_limit' => (int) $request->input('time_limit', 0),
             'instructions' => RichTextSanitizer::sanitize($request->input('instructions', '')),
             // Presentation settings only: changing them never restarts attempts.
@@ -181,16 +284,26 @@ class QuizManagementService
 
             foreach (array_values($set['questions']) as $questionPosition => $question) {
                 $row = $question['id'] ? $existingQuestions->get($question['id']) : new QuizQuestion(['quiz_id' => $quiz->id]);
+                $points = max(1, (int) $question['points']);
+                if ($row->exists && (int) $row->points < 1 && (string) ($question['points_input'] ?? '') === (string) $row->points
+                    && (string) $row->question === (string) $question['question']
+                    && (string) $row->type === (string) $question['type']
+                    && array_values((array) ($row->options ?? [])) === array_values((array) $question['options'])
+                    && $row->correct_answer === $question['correct_answer']
+                    && (bool) $row->lock_choice_order === (bool) $question['lock_choice_order']) {
+                    $points = (int) $row->points;
+                }
                 $row->fill([
                     'quiz_set_id' => $model->id,
                     'position' => $questionPosition,
                     'question' => $question['question'],
                     'type' => $question['type'],
-                    'points' => $question['points'],
+                    'points' => $points,
                     'options' => $question['options'],
                     'correct_answer' => $question['correct_answer'],
                     'lock_choice_order' => $question['lock_choice_order'],
                 ])->save();
+                $sets[$position]['questions'][$questionPosition]['points'] = $points;
             }
         }
 
@@ -384,16 +497,14 @@ class QuizManagementService
             }
         }
 
-        $points = (int) ($rawQuestion['points'] ?? 0);
-        if ($points < 0) {
-            $error ??= 'points cannot be negative.';
-        }
+        $pointsInput = (int) ($rawQuestion['points'] ?? 0);
 
         return [
             'id' => isset($rawQuestion['id']) && is_numeric($rawQuestion['id']) ? (int) $rawQuestion['id'] : null,
             'question' => $text,
             'type' => $type,
-            'points' => max(0, $points),
+            'points' => max(1, $pointsInput),
+            'points_input' => $rawQuestion['points'] ?? null,
             'options' => $choices,
             'correct_answer' => $correct,
             'lock_choice_order' => $type === 'Multiple Choice' && filter_var($rawQuestion['lock_choice_order'] ?? false, FILTER_VALIDATE_BOOLEAN),

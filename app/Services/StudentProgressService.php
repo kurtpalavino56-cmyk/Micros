@@ -7,6 +7,7 @@ use App\Models\Course;
 use App\Models\CourseLesson;
 use App\Models\Enrollment;
 use App\Models\QuizAttempt;
+use App\Models\QuizQuestion;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -76,9 +77,9 @@ class StudentProgressService
     }
 
     /**
-     * Derive module scores exclusively from server-created quiz attempt answers.
-     * The submitted $scores array is retained in the signature for backwards
-     * compatibility with existing callers, but is never trusted.
+     * Derive module percentages from server-created quiz attempts that have
+     * persisted answer rows. The submitted $scores array is retained in the
+     * signature for compatibility with existing callers, but is never trusted.
      *
      * All attempts for the course's quizzes are fetched in ONE query and the
      * latest-per-quiz pick happens in memory — previously each module fired
@@ -106,7 +107,6 @@ class StudentProgressService
             ->where('user_id', $userId)
             ->whereIn('quiz_id', array_keys($quizzes))
             ->whereHas('answers')
-            ->with('answers')
             ->latest('submitted_at')
             ->latest('created_at')
             ->get()
@@ -126,7 +126,7 @@ class StudentProgressService
                 continue;
             }
 
-            $valid[(string) $moduleIndex] = (int) $attempt->answers->where('is_correct', true)->count();
+            $valid[(string) $moduleIndex] = (int) $attempt->score;
         }
 
         return $valid;
@@ -304,31 +304,30 @@ class StudentProgressService
     /** @param array<string, int> $moduleScores */
     private function calculateQuizAccuracyPercent(Course $course, array $moduleScores): int
     {
-        $totalQuestions = 0;
-        $totalCorrect = 0;
+        $totalPoints = 0;
+        $weightedScore = 0;
 
         foreach ($course->modules as $moduleIndex => $module) {
             if (! $module->quiz) {
                 continue;
             }
 
-            // A student answers one set, so the denominator is the per-set
-            // count (all sets have the same number of questions).
-            $questionCount = $module->quiz->questionsPerSetCount();
-            if ($questionCount === 0) {
+            $questions = $module->quiz->questionsForSet();
+            $possiblePoints = $questions->sum(fn (QuizQuestion $question): int => $question->effectivePoints());
+            if ($possiblePoints === 0) {
                 continue;
             }
 
-            $totalQuestions += $questionCount;
+            $totalPoints += $possiblePoints;
             $score = $moduleScores[(string) $moduleIndex] ?? $moduleScores[$moduleIndex] ?? null;
             if ($score !== null) {
-                $totalCorrect += min((int) $score, $questionCount);
+                $weightedScore += min(100, max(0, (int) $score)) * $possiblePoints;
             }
         }
 
-        return $totalQuestions === 0
+        return $totalPoints === 0
             ? 0
-            : (int) min(100, round(($totalCorrect / $totalQuestions) * 100));
+            : (int) min(100, round($weightedScore / $totalPoints));
     }
 
     /** @param array<int, string> $saved */

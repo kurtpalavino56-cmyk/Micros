@@ -25,6 +25,20 @@
                     <p><a href="{{ route('courses.learn', $quiz->course_id) }}">Return to course</a></p>
                 @endif
             </div>
+            @foreach(session('quiz_result.review_questions', []) as $reviewQuestion)
+                <fieldset class="quiz-question quiz-question-review">
+                    <legend><strong>{{ $loop->iteration }}. {{ $reviewQuestion['question'] }}</strong></legend>
+                    @if($reviewQuestion['type'] === 'Identification')
+                        <p>Correct answer: {{ $reviewQuestion['review_answer'] }}</p>
+                    @else
+                        <div class="quiz-options">
+                            @foreach($reviewQuestion['options'] as $option)
+                                <p class="quiz-option {{ $option['is_correct'] ? 'correct-ans' : '' }}">{{ $option['label'] }}. {{ $option['text'] }} @if($option['is_correct']) <strong>Correct answer</strong> @endif</p>
+                            @endforeach
+                        </div>
+                    @endif
+                </fieldset>
+            @endforeach
         @endif
         @error('quiz')<div class="quiz-notice quiz-error" role="alert">{{ $message }}</div>@enderror
 

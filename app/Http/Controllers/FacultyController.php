@@ -28,6 +28,7 @@ use App\Services\CourseReadinessService;
 use App\Services\LearningOutcomeService;
 use App\Services\MicrocredentialCompletionService;
 use App\Services\QuizAttemptService;
+use App\Services\QuizCsvImportService;
 use App\Services\QuizManagementService;
 use App\Services\StudentProgressService;
 use App\Services\UserNotificationService;
@@ -45,6 +46,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -662,6 +664,7 @@ class FacultyController extends Controller
         $quizAttempts = QuizAttempt::with(['quiz', 'set', 'answers.question'])
             ->where('user_id', $enrollment->user_id)
             ->whereIn('quiz_id', $quizzes->pluck('id'))
+            ->whereNotNull('submitted_at')
             ->latest('submitted_at')
             ->get()
             ->groupBy('quiz_id');
@@ -955,20 +958,24 @@ class FacultyController extends Controller
                 'average_quiz_score' => DB::table('quiz_attempts')
                     ->join('quizzes', 'quizzes.id', '=', 'quiz_attempts.quiz_id')
                     ->whereColumn('quizzes.course_id', 'courses.id')
+                    ->whereNotNull('quiz_attempts.submitted_at')
                     ->whereNotNull('quiz_attempts.score')
                     ->selectRaw('AVG(quiz_attempts.score)'),
                 'scored_attempts_count' => DB::table('quiz_attempts')
                     ->join('quizzes', 'quizzes.id', '=', 'quiz_attempts.quiz_id')
                     ->whereColumn('quizzes.course_id', 'courses.id')
+                    ->whereNotNull('quiz_attempts.submitted_at')
                     ->whereNotNull('quiz_attempts.score')
                     ->selectRaw('COUNT(*)'),
                 'attempted_learners_count' => DB::table('quiz_attempts')
                     ->join('quizzes', 'quizzes.id', '=', 'quiz_attempts.quiz_id')
                     ->whereColumn('quizzes.course_id', 'courses.id')
+                    ->whereNotNull('quiz_attempts.submitted_at')
                     ->selectRaw('COUNT(DISTINCT quiz_attempts.user_id)'),
                 'passed_learners_count' => DB::table('quiz_attempts')
                     ->join('quizzes', 'quizzes.id', '=', 'quiz_attempts.quiz_id')
                     ->whereColumn('quizzes.course_id', 'courses.id')
+                    ->whereNotNull('quiz_attempts.submitted_at')
                     ->where('quiz_attempts.passed', true)
                     ->selectRaw('COUNT(DISTINCT quiz_attempts.user_id)'),
                 'pending_reviews_count' => DB::table('lesson_activity_submissions')
@@ -1243,7 +1250,7 @@ class FacultyController extends Controller
         $quizAverages = Quiz::where('course_id', $course->id)
             ->get()
             ->map(function (Quiz $q) {
-                $avg = DB::table('quiz_attempts')->where('quiz_id', $q->id)->avg('score');
+                $avg = DB::table('quiz_attempts')->where('quiz_id', $q->id)->whereNotNull('submitted_at')->avg('score');
 
                 return $avg !== null
                     ? (object) ['title' => $q->title, 'percent' => (int) round($avg)]
@@ -2053,6 +2060,7 @@ class FacultyController extends Controller
         }
 
         return (object) [
+            'id' => (int) $quizModel->id,
             'title' => $quizModel->title,
             'items' => count($sets->first()['questions']),
             'passing_score' => $quizModel->passing_score,
@@ -2061,6 +2069,7 @@ class FacultyController extends Controller
             'instructions' => $quizModel->instructions ?? '',
             'shuffle_questions' => (bool) $quizModel->shuffle_questions,
             'shuffle_choices' => (bool) $quizModel->shuffle_choices,
+            'questions_per_attempt' => $quizModel->questions_per_attempt,
             'has_attempts' => QuizAttempt::query()->where('quiz_id', $quizModel->id)->exists(),
             'questions' => $sets->first()['questions'],
             'sets' => $sets->all(),
@@ -2229,6 +2238,201 @@ class FacultyController extends Controller
             ->with('success', $questionsChanged
                 ? 'Lesson quiz saved. Students will need a new attempt for the revised questions.'
                 : 'Lesson quiz saved.');
+    }
+
+    public function quizCsvImportForm(int $id, int $quizId): View
+    {
+        $course = $this->ownedCourse($id);
+        $quiz = $this->ownedQuizForCourse($course, $quizId);
+
+        return view('faculty.quizzes.csv-import', [
+            'course' => $course,
+            'quiz' => $quiz,
+            'replaceAllowed' => ! QuizAttempt::query()->where('quiz_id', $quiz->id)->exists(),
+            'previewUrl' => route('faculty.quiz-import.preview', [$course->id, $quiz->id]),
+            'templateUrl' => route('faculty.quiz-import.template', [$course->id, $quiz->id]),
+            'builderUrl' => $this->quizImportBuilderUrl($course, $quiz),
+        ]);
+    }
+
+    public function quizCsvImportTemplate(int $id, int $quizId)
+    {
+        $course = $this->ownedCourse($id);
+        $this->ownedQuizForCourse($course, $quizId);
+        $template = "# Identification accepts one answer; matching trims, ignores case, and collapses repeated whitespace.\r\n"
+            ."# Rephrase answers starting with - to avoid spreadsheet formula injection.\r\n"
+            ."# Blank points and 0 count as 1. Limits: 2 MB and 500 data rows.\r\n"
+            ."type,question,choice_a,choice_b,choice_c,choice_d,correct_answer,points\r\n"
+            ."multiple_choice,What is 2 + 2?,3,4,5,6,B,1\r\n"
+            ."true_false,The Earth orbits the Sun,,,,,true,1\r\n"
+            ."identification,What is the opposite of hot?,,,,,cold,1\r\n";
+
+        return response()->streamDownload(static function () use ($template): void {
+            echo $template;
+        }, 'quiz-questions-template.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    public function quizCsvImportPreview(Request $request, int $id, int $quizId, QuizCsvImportService $csvImport): RedirectResponse
+    {
+        $course = $this->ownedCourse($id);
+        $quiz = $this->ownedQuizForCourse($course, $quizId);
+        $request->validate(['csv_file' => ['required', 'file', 'max:2048']]);
+        $file = $request->file('csv_file');
+        $mime = strtolower((string) $file->getMimeType());
+        $allowedMimes = ['text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel', 'text/comma-separated-values'];
+        if (strtolower($file->getClientOriginalExtension()) !== 'csv' || ! in_array($mime, $allowedMimes, true)) {
+            throw ValidationException::withMessages(['csv_file' => 'Upload a .csv file with a recognized CSV MIME type.']);
+        }
+
+        $userId = (int) Auth::id();
+        $key = $this->quizCsvImportSessionKey($userId, (int) $quiz->id);
+        $this->forgetQuizCsvImportPreview($key);
+        $token = (string) Str::uuid();
+        $basePath = 'quiz-imports/'.$userId.'/'.$quiz->id.'/'.$token;
+        $uploadPath = $file->storeAs('quiz-imports/'.$userId.'/'.$quiz->id, $token.'.csv', 'local');
+        if (! $uploadPath) {
+            throw ValidationException::withMessages(['csv_file' => 'The uploaded file could not be stored privately.']);
+        }
+
+        try {
+            $preview = $csvImport->preview($quiz, Storage::disk('local')->get($uploadPath));
+            $previewPath = $basePath.'.json';
+            if (! Storage::disk('local')->put($previewPath, json_encode($preview, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE))) {
+                throw ValidationException::withMessages(['csv_file' => 'The preview could not be stored privately. Upload the CSV again.']);
+            }
+            $request->session()->put($key, [
+                'token' => $token,
+                'upload_path' => $uploadPath,
+                'preview_path' => $previewPath,
+                'expires_at' => now()->addMinutes(30)->timestamp,
+            ]);
+        } catch (\Throwable $exception) {
+            Storage::disk('local')->delete($uploadPath);
+            throw $exception;
+        }
+
+        return redirect()->route('faculty.quiz-import.preview.show', [$course->id, $quiz->id]);
+    }
+
+    public function showQuizCsvImportPreview(Request $request, int $id, int $quizId): View|RedirectResponse
+    {
+        $course = $this->ownedCourse($id);
+        $quiz = $this->ownedQuizForCourse($course, $quizId);
+        $key = $this->quizCsvImportSessionKey((int) Auth::id(), (int) $quiz->id);
+        $state = $request->session()->get($key);
+        if (! is_array($state) || ($state['expires_at'] ?? 0) < now()->timestamp) {
+            $this->forgetQuizCsvImportPreview($key);
+
+            return redirect()->route('faculty.quiz-import.form', [$course->id, $quiz->id])
+                ->withErrors(['preview' => 'This preview expired. Upload the CSV again.']);
+        }
+        if (! Storage::disk('local')->exists($state['preview_path'] ?? '')) {
+            $this->forgetQuizCsvImportPreview($key);
+
+            return redirect()->route('faculty.quiz-import.form', [$course->id, $quiz->id])
+                ->withErrors(['preview' => 'This preview could not be found. Upload the CSV again.']);
+        }
+        $previewContents = Storage::disk('local')->get($state['preview_path']);
+        $preview = json_decode($previewContents, true);
+        if (! is_array($preview)) {
+            $this->forgetQuizCsvImportPreview($key);
+
+            return redirect()->route('faculty.quiz-import.form', [$course->id, $quiz->id])
+                ->withErrors(['preview' => 'This preview could not be read. Upload the CSV again.']);
+        }
+
+        return view('faculty.quizzes.csv-import-preview', [
+            'course' => $course,
+            'quiz' => $quiz,
+            'preview' => $preview,
+            'token' => $state['token'],
+            'confirmUrl' => route('faculty.quiz-import.confirm', [$course->id, $quiz->id]),
+            'uploadUrl' => route('faculty.quiz-import.form', [$course->id, $quiz->id]),
+            'builderUrl' => $this->quizImportBuilderUrl($course, $quiz),
+        ]);
+    }
+
+    public function confirmQuizCsvImport(Request $request, int $id, int $quizId, QuizManagementService $quizManagementService): RedirectResponse
+    {
+        $course = $this->ownedCourse($id);
+        $quiz = $this->ownedQuizForCourse($course, $quizId);
+        $request->validate(['token' => ['required', 'string', 'uuid']]);
+        $key = $this->quizCsvImportSessionKey((int) Auth::id(), (int) $quiz->id);
+        $state = $request->session()->get($key);
+        if (! is_array($state)
+            || ($state['expires_at'] ?? 0) < now()->timestamp
+            || ! hash_equals((string) ($state['token'] ?? ''), (string) $request->input('token'))
+            || ! Storage::disk('local')->exists($state['preview_path'] ?? '')) {
+            $this->forgetQuizCsvImportPreview($key);
+
+            return redirect()->route('faculty.quiz-import.form', [$course->id, $quiz->id])
+                ->withErrors(['preview' => 'This preview is invalid or expired. Upload the CSV again.']);
+        }
+
+        $preview = json_decode(Storage::disk('local')->get($state['preview_path']), true);
+        if (! is_array($preview)) {
+            $this->forgetQuizCsvImportPreview($key);
+
+            return redirect()->route('faculty.quiz-import.form', [$course->id, $quiz->id])
+                ->withErrors(['preview' => 'This preview could not be read. Upload the CSV again.']);
+        }
+        $includeDuplicates = $request->boolean('include_duplicates');
+        $replace = $request->boolean('replace');
+        if ($replace && QuizAttempt::query()->where('quiz_id', $quiz->id)->exists()) {
+            throw ValidationException::withMessages(['replace' => 'Replace mode is unavailable because students have already attempted this quiz.']);
+        }
+        $rows = array_column($preview['valid'] ?? [], 'question');
+        if ($includeDuplicates) {
+            $rows = array_merge($rows, array_column($preview['duplicates'] ?? [], 'question'));
+        }
+
+        $imported = DB::transaction(function () use ($quizManagementService, $quiz, $rows, $replace, $course): int {
+            $imported = $quizManagementService->storeImportedQuestions($quiz, $rows, $replace);
+            $this->returnCourseToDraft($course);
+
+            return $imported;
+        });
+        $poolSize = $quiz->questions()->count();
+        $this->forgetQuizCsvImportPreview($key);
+
+        return redirect($this->quizImportBuilderUrl($course, $quiz))
+            ->with('success', $imported.' question(s) imported. The pool now has '.$poolSize.' questions; set “Items to show learners” if you want a random draw.');
+    }
+
+    private function ownedQuizForCourse(Course $course, int $quizId): Quiz
+    {
+        return Quiz::query()->where('course_id', $course->id)->findOrFail($quizId);
+    }
+
+    private function quizImportBuilderUrl(Course $course, Quiz $quiz): string
+    {
+        if ($quiz->lesson_id !== null) {
+            return route('faculty.lesson-quiz.create', [$course->id, $quiz->lesson_id]);
+        }
+        $module = $quiz->module;
+        abort_unless($module, 404);
+        if ($module->is_final) {
+            return route('faculty.final-exam.edit', [$course->id, $module->id]);
+        }
+        if (! $quiz->is_summative) {
+            return route('faculty.module-quiz.edit', [$course->id, $module->id, $quiz->id]);
+        }
+
+        return route('faculty.quiz.create', [$course->id, $module->id]);
+    }
+
+    private function quizCsvImportSessionKey(int $userId, int $quizId): string
+    {
+        return 'quiz_csv_import.'.$userId.'.'.$quizId;
+    }
+
+    private function forgetQuizCsvImportPreview(string $key): void
+    {
+        $state = session()->get($key);
+        if (is_array($state)) {
+            Storage::disk('local')->delete(array_filter([$state['upload_path'] ?? null, $state['preview_path'] ?? null]));
+        }
+        session()->forget($key);
     }
 
     public function storeLessonActivity(Request $request, int $id, int $lessonId)

@@ -26,7 +26,7 @@ class QuizGradingService
      *
      * @param  array<string, mixed>  $result
      * @param  Collection<int, QuizQuestion>|null  $questions
-     * @return array{correct:int,total:int,score:int,passed:bool,answers:array<string,array{answer:string|null,correct:bool,correct_answer:string|null}>}
+     * @return array{correct:int,total:int,earned_points:int,possible_points:int,score:int,passed:bool,answers:array<string,array{answer:string|null,correct:bool,correct_answer:string|null}>}
      */
     public function grade(Quiz $quiz, array $result, ?Collection $questions = null): array
     {
@@ -34,9 +34,13 @@ class QuizGradingService
         $total = $questions->count();
         $submitted = is_array($result['answers'] ?? null) ? $result['answers'] : [];
         $correct = 0;
+        $earnedPoints = 0;
+        $possiblePoints = 0;
         $answers = [];
 
         foreach ($questions as $question) {
+            $points = $question->effectivePoints();
+            $possiblePoints += $points;
             $questionId = (string) $question->id;
             $selected = isset($submitted[$questionId])
                 ? strtoupper(trim((string) $submitted[$questionId]))
@@ -61,6 +65,7 @@ class QuizGradingService
 
             if ($isCorrect) {
                 $correct++;
+                $earnedPoints += $points;
             }
 
             $answers[$questionId] = [
@@ -70,11 +75,13 @@ class QuizGradingService
             ];
         }
 
-        $score = $total > 0 ? (int) round(($correct / $total) * 100) : 0;
+        $score = $possiblePoints > 0 ? (int) round(($earnedPoints / $possiblePoints) * 100) : 0;
 
         return [
             'correct' => $correct,
             'total' => $total,
+            'earned_points' => $earnedPoints,
+            'possible_points' => $possiblePoints,
             'score' => $score,
             'passed' => $score >= (int) $quiz->passing_score,
             'answers' => $answers,
