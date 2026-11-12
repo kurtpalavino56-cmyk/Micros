@@ -1525,6 +1525,17 @@
     :where(html[data-faculty-page="faculty-courses-index"]) .readiness-item.complete .readiness-mark{background:#86efac;color:#14532d;}
     :where(html[data-faculty-page="faculty-courses-index"]) .readiness-item strong{display:block;font-weight:600;color:#17202a;}
     :where(html[data-faculty-page="faculty-courses-index"]) .readiness-item small{display:block;margin-top:2px;color:var(--muted);font-size:12px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .course-approval-dialog{position:fixed;inset:0;width:min(560px,calc(100vw - 32px));max-width:560px;max-height:calc(100vh - 32px);margin:auto;overflow:auto;padding:0;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);box-shadow:0 24px 70px rgba(15,23,42,.25);}
+    :where(html[data-faculty-page="faculty-courses-index"]) .course-approval-dialog::backdrop{background:rgba(15,23,42,.48);}
+    :where(html[data-faculty-page="faculty-courses-index"]) .course-approval-dialog form{margin:0;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .course-approval-dialog__body{padding:24px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .course-approval-dialog h2{margin:0 0 7px;color:var(--ink);font-size:20px;font-weight:800;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .course-approval-dialog p{margin:0 0 18px;color:var(--muted);font-size:13px;line-height:1.5;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .course-approval-dialog label{display:block;margin-bottom:6px;color:var(--ink);font-size:12px;font-weight:700;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .course-approval-dialog textarea{display:block;width:100%;min-height:110px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;color:var(--ink);font:500 13px Inter,"Segoe UI",sans-serif;resize:vertical;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .course-approval-dialog textarea:focus{border-color:var(--navy);outline:0;box-shadow:0 0 0 3px rgba(19,23,107,.12);}
+    :where(html[data-faculty-page="faculty-courses-index"]) .course-approval-dialog__error{display:block;margin-top:6px;color:#b42318;font-size:12px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .course-approval-dialog__actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
 
     /* Sections */
     :where(html[data-faculty-page="faculty-courses-index"]) .content-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:22px;align-items:start;}
@@ -1550,7 +1561,7 @@
     :where(html[data-faculty-page="faculty-courses-index"]) .module-collapse-toggle[aria-expanded="false"] svg{transform:rotate(0);}
     :where(html[data-faculty-page="faculty-courses-index"]) .module-collapse-toggle[aria-expanded="true"] svg{transform:rotate(90deg);}
     :where(html[data-faculty-page="faculty-courses-index"]) .module-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding-bottom:14px;border-bottom:1px solid var(--line);}
-    :where(html[data-faculty-page="faculty-courses-index"]) .module-card:has(> [id^="module-body-"][hidden]) .module-head{padding-bottom:0;border-bottom:0;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .module-card:has(> [id^="module-body-"][hidden]) .module-head{padding-bottom:0;border-bottom:0;cursor:pointer;}
     :where(html[data-faculty-page="faculty-courses-index"]) .module-heading-copy{min-width:0;}
     :where(html[data-faculty-page="faculty-courses-index"]) .eyebrow-label{display:block;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;}
     :where(html[data-faculty-page="faculty-courses-index"]) .module-head h4{margin:4px 0 6px;color:#17202a;font-family:"Plus Jakarta Sans",Inter,sans-serif;font-size:19px;font-weight:700;line-height:1.3;overflow-wrap:anywhere;}
@@ -1668,6 +1679,8 @@
     :where(html[data-faculty-page="faculty-courses-index"]) .back-link:hover{text-decoration:underline;}
     :where(html[data-faculty-page="faculty-courses-index"]) .quiz-head{font-size:24px;margin:0 0 20px;color:var(--navy);}
     :where(html[data-faculty-page="faculty-courses-index"]) .quiz-card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:22px;margin-bottom:20px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .question-card{padding-left:16px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .question-card[data-collapsed="true"]{padding:10px 16px;margin-bottom:12px;}
     :where(html[data-faculty-page="faculty-courses-index"]) .grid3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:16px;margin-bottom:18px;}
     :where(html[data-faculty-page="faculty-courses-index"]) .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;}
     :where(html[data-faculty-page="faculty-courses-index"]) .question-bulk-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;margin-bottom:16px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font-size:13px;}
@@ -1690,6 +1703,23 @@
     :where(html[data-faculty-page="faculty-courses-index"]) .btn-add-choice:hover{background:var(--bg);border-color:var(--navy);}
     :where(html[data-faculty-page="faculty-courses-index"]) .tf-label{flex:1;max-width:520px;font-weight:600;font-size:14px;color:var(--ink);border:1px solid #d0d5dd;border-radius:9px;padding:10px 14px;background:var(--soft);}
     :where(html[data-faculty-page="faculty-courses-index"]) .save-quiz-row{display:flex;justify-content:center;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .quiz-bank-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:0 0 14px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .quiz-bank-toolbar h3{margin:0;color:#123b7a;font-size:1rem;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .quiz-bank-toolbar__actions{display:flex;flex-wrap:wrap;gap:8px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .quiz-bank-toolbar button{border:1px solid #c9d3e3;background:#fff;color:#123b7a;border-radius:8px;padding:7px 12px;font-weight:700;cursor:pointer;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .question-card-summary{display:flex;flex:1;min-width:0;align-items:center;gap:10px;border:0;background:transparent;padding:0;color:#182b4d;text-align:left;font:inherit;cursor:pointer;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .question-card-summary__copy{display:grid;min-width:0;flex:1;gap:1px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .question-card-summary__text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .question-card-summary__meta{display:flex;flex-wrap:wrap;gap:8px;color:#526078;font-size:.82rem;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .question-card-summary-row{display:flex;align-items:center;gap:8px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .question-card-summary-row .question-select{align-self:flex-start;margin-top:3px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .question-card-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .question-card-toggle{width:34px;height:34px;display:grid;place-items:center;flex:0 0 auto;border:1px solid #d0d5dd;border-radius:50%;background:#fff;color:#123b7a;cursor:pointer;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .question-card-toggle:hover{background:#f3f6fc;border-color:#aab8cf;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .question-card-toggle svg{width:18px;height:18px;transition:transform .18s ease;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .question-card-toggle[aria-expanded="true"] svg{transform:rotate(180deg);}
+    :where(html[data-faculty-page="faculty-courses-index"]) .question-card-toggle:focus-visible,:where(html[data-faculty-page="faculty-courses-index"]) .question-card-summary:focus-visible{outline:3px solid rgba(49,92,190,.25);outline-offset:3px;}
+    :where(html[data-faculty-page="faculty-courses-index"]) .question-card-body[hidden]{display:none;}
 
     /* Inline quiz editor (embedded in Manage Course) */
     body:where([data-faculty-page="faculty-courses-index"]).inline-quiz{min-height:0;background:#fff;overflow-x:hidden;}
@@ -1740,7 +1770,79 @@
         :where(html[data-faculty-page="faculty-courses-index"]) .choice-row{gap:10px;flex-wrap:wrap;} :where(html[data-faculty-page="faculty-courses-index"]) .mark-correct{white-space:normal;}
         body:where([data-faculty-page="faculty-courses-index"]).inline-quiz .layout.faculty-sidebar-layout>.main{padding:14px 12px 20px;}
     }
+    @media (max-width:600px){
+        :where(html[data-faculty-page="faculty-courses-index"]) .question-card-summary{align-items:flex-start;}
+        :where(html[data-faculty-page="faculty-courses-index"]) .question-card-summary__meta{gap:5px;}
+    }
     @media (prefers-reduced-motion:reduce){:where(html[data-faculty-page="faculty-courses-index"]), :where(html[data-faculty-page="faculty-courses-index"]) *{transition:none!important;}}
+
+    :where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-page{width:min(1120px,100%);margin:0 auto;padding:30px 36px 64px;color:#1b1f3b;}
+    :where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-back-link{display:inline-flex;align-items:center;gap:7px;margin-bottom:22px;color:#123b7a;font-size:14px;font-weight:700;text-decoration:none;}
+    :where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-back-link:hover{text-decoration:underline;}
+    :where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-header{margin-bottom:22px;}
+    :where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-eyebrow{display:block;margin-bottom:7px;color:#8a6710;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;}
+    :where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-header h1{margin:0 0 8px;color:#13176b;font-size:clamp(25px,3vw,34px);line-height:1.2;}
+    :where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-header p{margin:0;color:#667085;font-size:14px;}
+    :where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-page h2{margin:0;color:#172554;font-size:18px;line-height:1.35;}
+    :where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-page p{line-height:1.6;}
+    :where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-card,:where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-results-card,:where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-confirm-card{padding:24px;border:1px solid #e4e8f0;border-radius:16px;background:#fff;box-shadow:0 8px 24px rgba(19,23,107,.06);}
+    :where(html[data-faculty-page="quiz-csv-import"]) .quiz-csv-upload-card{display:grid;gap:22px;}
+    :where(html[data-faculty-page="quiz-csv-import"]) .quiz-csv-card-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;}
+    :where(html[data-faculty-page="quiz-csv-import"]) .quiz-csv-card-heading p{margin:6px 0 0;color:#667085;font-size:14px;}
+    :where(html[data-faculty-page="quiz-csv-import"]) .quiz-csv-template-link,:where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-secondary-button{display:inline-flex;justify-content:center;align-items:center;min-height:42px;padding:9px 14px;border:1px solid #c9d3e3;border-radius:9px;background:#fff;color:#123b7a;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;}
+    :where(html[data-faculty-page="quiz-csv-import"]) .quiz-csv-template-link:hover,:where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-secondary-button:hover{background:#f5f7fb;}
+    :where(html[data-faculty-page="quiz-csv-import"]) .quiz-csv-guidance{padding:18px 20px;border:1px solid #e7ebf3;border-radius:12px;background:#f8f9fc;}
+    :where(html[data-faculty-page="quiz-csv-import"]) .quiz-csv-guidance h3{margin:0 0 8px;color:#172554;font-size:14px;}
+    :where(html[data-faculty-page="quiz-csv-import"]) .quiz-csv-guidance p{margin:0 0 9px;color:#526078;font-size:13px;}
+    :where(html[data-faculty-page="quiz-csv-import"]) .quiz-csv-columns code{display:inline-block;max-width:100%;padding:5px 8px;border-radius:6px;background:#eef1f7;color:#344054;font-size:12px;overflow-wrap:anywhere;}
+    :where(html[data-faculty-page="quiz-csv-import"]) .quiz-csv-guidance ul{display:grid;gap:6px;margin:10px 0 0;padding-left:19px;color:#526078;font-size:13px;line-height:1.55;}
+    :where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-notice{display:grid;gap:3px;padding:12px 15px;border:1px solid #f1d48a;border-radius:10px;background:#fff8e6;color:#745400;font-size:13px;line-height:1.5;}
+    :where(html[data-faculty-page="quiz-csv-import"]) .quiz-csv-upload-form{display:grid;gap:10px;padding-top:2px;}
+    :where(html[data-faculty-page="quiz-csv-import"]) .quiz-csv-file-label{color:#344054;font-size:13px;font-weight:700;}
+    :where(html[data-faculty-page="quiz-csv-import"]) .quiz-csv-file-input{width:100%;min-height:56px;padding:10px;border:1px dashed #aab8cf;border-radius:10px;background:#fbfcfe;color:#344054;font:inherit;}
+    :where(html[data-faculty-page="quiz-csv-import"]) .quiz-csv-file-input::file-selector-button{margin-right:12px;padding:8px 12px;border:1px solid #c9d3e3;border-radius:7px;background:#fff;color:#123b7a;font:inherit;font-weight:700;cursor:pointer;}
+    :where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-primary-button{display:inline-flex;justify-content:center;align-items:center;min-height:44px;padding:10px 18px;border:1px solid #13176b;border-radius:9px;background:#13176b;color:#fff;font:inherit;font-size:14px;font-weight:700;text-decoration:none;cursor:pointer;transition:background .15s ease,transform .15s ease;}
+    :where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-primary-button:hover{background:#0c0f4d;transform:translateY(-1px);}
+    :where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-field-error,:where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-alert{color:#912018;}
+    :where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-alert{margin:0 0 18px;padding:14px 18px;border:1px solid #fecdca;border-radius:10px;background:#fff4f2;font-size:13px;}
+    :where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-alert ul{margin:0;padding-left:20px;line-height:1.6;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-intro{max-width:900px;margin:-8px 0 20px;color:#526078;font-size:13px;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:12px;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-stat{display:grid;gap:3px;padding:15px 16px;border:1px solid #e4e8f0;border-radius:12px;background:#fff;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-stat strong{color:#172554;font-size:22px;line-height:1;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-stat span{color:#667085;font-size:12px;font-weight:600;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-stat--valid{border-color:#b7e4d1;background:#f2fbf6;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-stat--valid strong{color:#16734b;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-stat--error{border-color:#fecdca;background:#fff4f2;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-stat--error strong{color:#b42318;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-stat--result{border-color:#cdd7f1;background:#f5f7ff;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-points-note{margin:0 0 18px;color:#667085;font-size:12px;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-results-card{margin-top:16px;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-results-card h2{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-results-card h2 span{padding:4px 8px;border-radius:999px;background:#f2f4f7;color:#667085;font-size:11px;font-weight:700;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-table-wrap{overflow-x:auto;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-table{width:100%;border-collapse:collapse;text-align:left;font-size:13px;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-table th{padding:11px 12px;background:#f7f8fb;color:#526078;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-table td{padding:12px;border-bottom:1px solid #edf0f5;color:#344054;vertical-align:top;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-table tbody tr:last-child td{border-bottom:0;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-errors-card{border-color:#fecdca;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-errors-card ul{display:grid;gap:8px;margin:0;padding-left:20px;color:#912018;font-size:13px;line-height:1.5;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-confirm-card{display:grid;gap:16px;margin-top:18px;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-option{display:flex;align-items:flex-start;gap:11px;color:#344054;cursor:pointer;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-option input{width:17px;height:17px;margin-top:2px;accent-color:#13176b;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-option span{display:grid;gap:3px;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-option strong{font-size:13px;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-option small{color:#667085;font-size:12px;}
+    :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-form-actions{display:flex;justify-content:flex-end;align-items:center;gap:10px;flex-wrap:wrap;padding-top:6px;border-top:1px solid #edf0f5;}
+    @media(max-width:900px){:where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-summary{grid-template-columns:repeat(3,minmax(0,1fr));}}
+    @media(max-width:640px){
+        :where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-page{padding:22px 14px 40px;}
+        :where(html[data-faculty-page="quiz-csv-import"]) .quiz-csv-card-heading{flex-direction:column;}
+        :where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-card,:where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-results-card,:where(html[data-faculty-page="quiz-csv-import"],html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-confirm-card{padding:17px;}
+        :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-summary{grid-template-columns:repeat(2,minmax(0,1fr));}
+        :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-form-actions{justify-content:stretch;}
+        :where(html[data-faculty-page="quiz-csv-import-preview"]) .quiz-csv-form-actions>*{flex:1;}
+    }
 
 
     :where(html[data-faculty-page="faculty-courses-index"]) #back-to-top-btn{position:fixed;right:26px;bottom:26px;z-index:2000;width:48px;height:48px;border-radius:50%;border:none;background:#13176b;color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 22px rgba(19,23,107,.35);transition:transform .15s ease,background .2s ease;}
@@ -2908,6 +3010,15 @@
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-quiz-intro-copy{margin:0 0 16px;color:var(--muted);font-size:14px;}
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-question-field-spacing{margin-bottom:18px;}
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-identification-answer{width:100%;max-width:420px;}
+:where(html[data-faculty-page="faculty-courses-index"]) .alternative-answers{max-width:540px;margin-top:16px;}
+:where(html[data-faculty-page="faculty-courses-index"]) .alternative-answers>.q-label{display:block;margin-bottom:8px;}
+:where(html[data-faculty-page="faculty-courses-index"]) .alternative-answers>.q-label span{font-weight:400;color:var(--muted);}
+:where(html[data-faculty-page="faculty-courses-index"]) .alternative-answer-list{display:grid;gap:8px;}
+:where(html[data-faculty-page="faculty-courses-index"]) .alternative-answer-row{display:flex;align-items:center;gap:8px;}
+:where(html[data-faculty-page="faculty-courses-index"]) .alternative-answer-row .input-outline{flex:1;width:100%;max-width:420px;}
+:where(html[data-faculty-page="faculty-courses-index"]) .btn-remove-alternative{border:0;background:transparent;color:var(--muted);font:600 13px Inter,"Segoe UI",sans-serif;cursor:pointer;}
+:where(html[data-faculty-page="faculty-courses-index"]) .btn-remove-alternative:hover{color:#b42318;}
+:where(html[data-faculty-page="faculty-courses-index"]) .alternative-answers .btn-add-choice{max-width:420px;margin-top:10px;}
 :where(html[data-faculty-page="faculty-courses-index"]) .fac-add-question-spacing{margin-bottom:26px;}
 
 /* Layout: faculty navigation */
@@ -2923,8 +3034,8 @@ html,body{scrollbar-width:none;-ms-overflow-style:none;}
     .faculty-sidebar .side-link:not(.active):hover{background:#fffbe6;color:#061a45;}
     .faculty-sidebar .side-link:not(.active):active{transform:scale(.98);}
     .faculty-sidebar .side-link.active{position:relative;margin-left:-10px;padding:7px 14px 7px 24px;border-radius:0 13px 13px 0;background:transparent;color:#071550;font-weight:600;box-shadow:none;overflow:visible;}
-    .faculty-sidebar .side-link.active::before{position:absolute;z-index:0;top:5px;right:0;bottom:5px;left:0;border-radius:0 9px 9px 0;background:#fff1b8;box-shadow:0 0 24px 6px rgba(244,196,48,.12);content:"";}
-    .faculty-sidebar .side-link.active::after{position:absolute;z-index:1;top:5px;bottom:5px;left:0;width:5px;border-radius:0 5px 5px 0;background:#c4930f;content:"";}
+    .faculty-sidebar .side-link.active::before{position:absolute;z-index:0;top:5px;right:0;bottom:5px;left:0;border-radius:0 9px 9px 0;background:#dbeafe;box-shadow:0 0 24px 6px rgba(36,71,212,.12);content:"";}
+    .faculty-sidebar .side-link.active::after{position:absolute;z-index:1;top:5px;bottom:5px;left:0;width:5px;border-radius:0 5px 5px 0;background:#2447d4;content:"";}
     .faculty-sidebar .side-link.active>*{position:relative;z-index:2;}
     .faculty-sidebar .side-link.active:hover{background:transparent;color:#071550;}
     .faculty-sidebar .side-icon-box{width:30px;height:30px;flex:0 0 30px;display:flex;align-items:center;justify-content:center;background:transparent !important;border:0;border-radius:0;}
@@ -2932,7 +3043,7 @@ html,body{scrollbar-width:none;-ms-overflow-style:none;}
     .faculty-sidebar .side-icon-box .material-symbols-rounded{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;width:24px;height:24px;font-size:24px;line-height:1;font-feature-settings:"liga";font-variation-settings:"FILL" 1;-webkit-font-smoothing:antialiased;transition:color .2s ease,transform .2s ease;}
     .faculty-sidebar .side-link:not(.active) .side-icon-box .material-symbols-rounded{color:#061a45;}
     .faculty-sidebar .side-link:not(.active):hover .side-icon-box .material-symbols-rounded{color:#061a45;}
-    .faculty-sidebar .side-link.active .side-icon-box .material-symbols-rounded{color:#061a45;}
+    .faculty-sidebar .side-link.active .side-icon-box .material-symbols-rounded{color:#071550;}
     .faculty-sidebar .side-label{flex:0 0 auto;overflow:hidden;opacity:1;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;line-height:1.25;transition:opacity .18s ease,width .25s ease;}
     .faculty-sidebar .sidebar-section-label{flex:0 0 auto;margin:12px 14px 3px;color:#56627a;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:10px;font-weight:800;letter-spacing:.09em;line-height:1.3;text-transform:uppercase;white-space:nowrap;}
     .faculty-sidebar .side-divider{width:100%;border:0;border-top:1px solid rgba(9,37,95,.22);margin:10px 0;}
@@ -2962,4 +3073,3 @@ html,body{scrollbar-width:none;-ms-overflow-style:none;}
         .layout.faculty-sidebar-layout .faculty-sidebar{display:none !important;}
         .layout.faculty-sidebar-layout{align-content:start;}
     }
-

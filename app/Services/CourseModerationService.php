@@ -78,6 +78,9 @@ class CourseModerationService
         }
 
         $course->is_published = ! $course->is_published;
+        if (! $course->is_published) {
+            $course->is_featured = false;
+        }
         $course->save();
 
         return (bool) $course->is_published;
@@ -88,6 +91,10 @@ class CourseModerationService
         $featured = DB::transaction(function () use ($course): bool {
             Course::query()->orderBy('id')->lockForUpdate()->first();
             $lockedCourse = Course::query()->lockForUpdate()->findOrFail($course->getKey());
+
+            if (! $lockedCourse->is_featured && ! $lockedCourse->isEligibleForFeaturing()) {
+                throw new \DomainException('Only approved, published courses can be featured.');
+            }
 
             if (! $lockedCourse->is_featured
                 && Course::where('is_featured', true)->count() >= self::MAX_FEATURED_COURSES) {
@@ -101,6 +108,7 @@ class CourseModerationService
         });
 
         $course->is_featured = $featured;
+        $course->syncOriginalAttribute('is_featured');
 
         return $featured;
     }

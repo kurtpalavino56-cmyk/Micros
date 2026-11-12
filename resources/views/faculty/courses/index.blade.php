@@ -96,10 +96,7 @@
             </div>
             <div class="readiness-action">
                 @if($course->approval_status === 'draft')
-                    <form method="POST" action="{{ route('faculty.courses.submit-for-approval', $course->id) }}">
-                        @csrf
-                        <button class="btn-primary-action" type="submit" @disabled(!$canSubmitForApproval)>Submit for approval</button>
-                    </form>
+                    <button class="btn-primary-action" type="button" aria-haspopup="dialog" aria-controls="course-approval-dialog" onclick="document.getElementById('course-approval-dialog').showModal()" @disabled(!$canSubmitForApproval)>Submit for approval</button>
                 @elseif($course->approval_status === 'pending')
                     <span class="readiness-state pending">Awaiting admin review</span>
                 @elseif($course->approval_status === 'denied')
@@ -117,6 +114,27 @@
                 @endforeach
             </ul>
         </section>
+        @if($course->approval_status === 'draft')
+            <dialog class="course-approval-dialog" id="course-approval-dialog" aria-labelledby="course-approval-title">
+                <form method="POST" action="{{ route('faculty.courses.submit-for-approval', $course->id) }}">
+                    @csrf
+                    <div class="course-approval-dialog__body">
+                        <h2 id="course-approval-title">Submit course for approval</h2>
+                        <p>Include a note for the administrator reviewing this course. This is optional.</p>
+                        <label for="course-change-note">Review notes</label>
+                        <textarea class="textarea-outline" id="course-change-note" name="change_note" rows="4" maxlength="2000" placeholder="e.g. Rewrote Module 2 lessons and lowered the passing score to 70%.">{{ old('change_note') }}</textarea>
+                        @error('change_note')<small class="course-approval-dialog__error" role="alert">{{ $message }}</small>@enderror
+                        <div class="course-approval-dialog__actions">
+                            <button class="btn-cancel-outline" type="button" onclick="this.closest('dialog').close()">Cancel</button>
+                            <button class="btn-primary-action" type="submit">Submit for approval</button>
+                        </div>
+                    </div>
+                </form>
+            </dialog>
+            @if($errors->has('change_note'))
+                <script>document.getElementById('course-approval-dialog').showModal();</script>
+            @endif
+        @endif
         <div class="content-grid">
 
             {{-- â”€â”€ Left column: Course Modules â”€â”€ --}}
@@ -266,7 +284,7 @@
                                         @else
                                             <span class="module-content-kind">Quiz</span>
                                             <strong>{{ $item->title }}</strong>
-                                            <span class="module-content-meta">{{ $item->questions_count }} questions · Pass {{ $item->passing_score }}%@if(($item->sets_count ?? 1) > 1) · {{ $item->sets_count }} sets @endif</span>
+                                            <span class="module-content-meta">{{ $item->questions_count }} questions · Pass {{ $item->passing_score }}%</span>
                                         @endif
                                     </div>
                                     <div class="module-content-actions">
@@ -323,7 +341,7 @@
                             @if($module->quiz ?? null)
                                 <div class="quiz-info">
                                     <h4>{{ $module->quiz->title }}</h4>
-                                    <div class="sub">{{ $module->quiz->questions_count }} {{ Illuminate\Support\Str::plural('question', $module->quiz->questions_count) }} · Pass {{ $module->quiz->passing_score }}%@if(($module->quiz->sets_count ?? 1) > 1) · {{ $module->quiz->sets_count }} sets @endif</div>
+                                    <div class="sub">{{ $module->quiz->questions_count }} {{ Illuminate\Support\Str::plural('question', $module->quiz->questions_count) }} · Pass {{ $module->quiz->passing_score }}%</div>
                                 </div>
                                 <a class="module-content-action" href="{{ route('faculty.quiz.create', [$course->id, $module->idx]) }}">Edit</a>
                                 <form method="POST"
@@ -373,7 +391,7 @@
                             <div>
                                 <strong>Final Exam</strong>
                                 @if($finalModule->quiz)
-                                    <div class="fac-final-exam-meta">{{ $finalModule->quiz->title }} · {{ $finalModule->quiz->questions_count }} {{ Illuminate\Support\Str::plural('question', $finalModule->quiz->questions_count) }} · Pass {{ $finalModule->quiz->passing_score }}% · {{ $finalModule->quiz->attempts ?: 'Unlimited' }} attempts @if(($finalModule->quiz->sets_count ?? 1) > 1) · {{ $finalModule->quiz->sets_count }} sets @endif</div>
+                                    <div class="fac-final-exam-meta">{{ $finalModule->quiz->title }} · {{ $finalModule->quiz->questions_count }} {{ Illuminate\Support\Str::plural('question', $finalModule->quiz->questions_count) }} · Pass {{ $finalModule->quiz->passing_score }}% · {{ $finalModule->quiz->attempts ?: 'Unlimited' }} attempts</div>
                                 @else
                                     <div class="fac-final-exam-warning">Final Exam setup is required before course approval.</div>
                                 @endif
@@ -425,143 +443,98 @@
 
         {{-- âœ… Back to the Managing Course screen --}}
         <a class="back-link" href="{{ route('faculty.courses.manage', $course->id ?? 1) }}">&larr; Back to Modules</a>
-        <div class="faculty-page-heading"><h2 class="quiz-head faculty-page-title">@if($mode === 'final-exam'){{ ($quiz ?? null) ? 'Edit' : 'Create' }} Final Exam: {{ $course->title }}@else{{ ($quiz ?? null) ? 'Edit' : 'Add' }} Quiz: {{ $moduleTitle }}@endif</h2></div>
+        <div class="faculty-page-heading"><h2 class="quiz-head faculty-page-title">@if($mode === 'final-exam'){{ ($quiz ?? null) ? 'Edit' : 'Create' }} Final Exam: {{ $course->title }}@elseif(!empty($lessonId)){{ ($quiz ?? null) ? 'Edit' : 'Add' }} Lesson Quiz: {{ $moduleTitle }}@else{{ ($quiz ?? null) ? 'Edit' : 'Add' }} Quiz: {{ $moduleTitle }}@endif</h2></div>
         <x-flash-toast :message="session('success')" />
-
         {{-- âœ… Real form â€” Save Quiz stores everything (session for now) and
              returns to the Managing Course screen with the quiz in the module --}}
-        <form method="POST" action="{{ $mode === 'final-exam' ? route('faculty.final-exam.update', [$course->id, $moduleIdx]) : ($mode === 'module-quiz' ? (!empty($moduleQuizId) ? route('faculty.module-quiz.update', [$course->id, $moduleIdx, $moduleQuizId]) : route('faculty.module-quiz.store', [$course->id, $moduleIdx])) : (!empty($lessonId) ? route('faculty.lesson-quiz.store', [$course->id, $lessonId]) : route('faculty.quiz.store', [$course->id, $moduleIdx]))) }}">
+        <form id="quiz-builder-form" method="POST" novalidate action="{{ $mode === 'final-exam' ? route('faculty.final-exam.update', [$course->id, $moduleIdx]) : ($mode === 'module-quiz' ? (!empty($moduleQuizId) ? route('faculty.module-quiz.update', [$course->id, $moduleIdx, $moduleQuizId]) : route('faculty.module-quiz.store', [$course->id, $moduleIdx])) : (!empty($lessonId) ? route('faculty.lesson-quiz.store', [$course->id, $lessonId]) : route('faculty.quiz.store', [$course->id, $moduleIdx]))) }}">
             @csrf
             @if(request()->boolean('inline'))<input type="hidden" name="inline" value="1">@endif
 
-            {{-- Quiz settings --}}
-            <div class="quiz-card">
-                <div class="grid3">
-                    <div>
-                        <label class="q-label">Quiz Title <span class="req">*</span></label>
-                        <input class="input-outline fac-width-full" type="text" name="quiz_title" placeholder="MySQL Fundamentals Quiz" value="{{ $quiz->title ?? '' }}" required>
-                    </div>
-                    <div>
-                        <label class="q-label">No. of Items <span class="req">*</span></label>
-                        <input class="input-outline fac-width-full" type="number" name="items" id="quiz-items" placeholder="1" min="1" max="100" value="{{ $quiz->items ?? '' }}" onchange="itemsChanged(this)">
-                    </div>
-                    <div>
-                        <label class="q-label">Passing Score (%)</label>
-                        <input class="input-outline fac-width-full" type="number" name="passing_score" placeholder="100" min="0" max="100" value="{{ $quiz->passing_score ?? '' }}">
-                    </div>
-                </div>
-                <div class="grid2">
-                    <div>
-                        <label class="q-label">Attempts allowed</label>
-                        <input class="input-outline fac-width-full" type="text" name="attempts" placeholder="Unlimited" value="{{ $quiz->attempts ?? '' }}">
-                        <small class="field-help">Leave blank for unlimited attempts. Enter a number to set a limit.</small>
-                    </div>
-                    <div>
-                        <label class="q-label">Time Limit (min)</label>
-                        <input class="input-outline fac-width-full" type="number" name="time_limit" placeholder="No time limit" min="1" value="{{ ($quiz->time_limit ?? 0) > 0 ? $quiz->time_limit : '' }}">
-                        <small class="field-help">Leave blank to allow unlimited time. A timer is applied only when you enter a number.</small>
-                    </div>
-                </div>
-                <div class="quiz-shuffle-options">
-                    <label>
-                        <input type="checkbox" name="shuffle_questions" value="1" @checked(old('_token') ? old('shuffle_questions') : ($quiz->shuffle_questions ?? false))>
-                        <span><strong>Shuffle question order</strong><small>Each attempt shows its set's questions in a different order.</small></span>
-                    </label>
-                    <label>
-                        <input type="checkbox" name="shuffle_choices" value="1" @checked(old('_token') ? old('shuffle_choices') : ($quiz->shuffle_choices ?? false))>
-                        <span><strong>Shuffle choices order</strong><small>Multiple-choice options appear in a different order per attempt. True or False and locked questions keep their order.</small></span>
-                    </label>
-                </div>
-                <div>
-                    <label class="q-label">Instructions ( Optional )</label>
-                    @include('components.rich-text-editor', ['name' => 'instructions', 'id' => 'assessment-instructions', 'value' => old('instructions', $quiz->instructions ?? ''), 'placeholder' => 'Add instructions for students...'])
-                </div>
-            </div>
-
-            {{-- Questions live in SETS (Set A, Set B, ...). Every set has the same
-                 number of questions; each student attempt is served one set.
-                 All sets stay in the DOM (only the active one is visible) so a
-                 single form POST saves everything as sets[s][questions][q][...].
-                 For a NEW quiz the cards are generated after "Create Quiz". --}}
             @php
-                $quizSets = collect($quiz->sets ?? []);
-                $knownSets = $quizSets->keyBy(fn ($set) => (string) ($set['id'] ?? ''));
+                $quizSets = collect($quiz->sets ?? [])->sortBy([['position', 'asc'], ['id', 'asc']])->values();
                 $knownQuestions = $quizSets->flatMap(fn ($set) => $set['questions'] ?? [])->keyBy(fn ($question) => (string) ($question['id'] ?? ''));
                 $oldSets = old('sets');
+                $primarySet = $quizSets->first();
+                $builderSet = [
+                    'id' => $primarySet['id'] ?? null,
+                    'name' => $primarySet['name'] ?? 'Set A',
+                    'used' => (bool) ($primarySet['used'] ?? false),
+                    'questions' => [],
+                ];
                 if (is_array($oldSets) && $oldSets !== []) {
-                    // Re-populate after a failed save, keeping ids and the
-                    // "answered"/"used" flags the server knows about.
-                    $builderSets = collect($oldSets)->values()->map(function ($set) use ($knownSets, $knownQuestions) {
-                        $setId = isset($set['id']) && $set['id'] !== '' ? (int) $set['id'] : null;
+                    $oldSets = array_values($oldSets);
+                    $firstOldSet = (array) ($oldSets[0] ?? []);
+                    $setId = isset($firstOldSet['id']) && $firstOldSet['id'] !== '' ? (int) $firstOldSet['id'] : $builderSet['id'];
+                    $knownSet = $quizSets->firstWhere('id', $setId);
+                    $builderSet['id'] = $setId;
+                    $builderSet['name'] = $firstOldSet['name'] ?? ($knownSet['name'] ?? $builderSet['name']);
+                    $builderSet['used'] = (bool) ($knownSet['used'] ?? $builderSet['used']);
+                    $builderSet['questions'] = collect($oldSets)
+                        ->flatMap(fn ($oldSet) => array_values((array) (((array) $oldSet)['questions'] ?? [])))
+                        ->values()
+                        ->map(function ($question) use ($knownQuestions) {
+                            $questionId = isset($question['id']) && $question['id'] !== '' ? (int) $question['id'] : null;
+                            $type = $question['type'] ?? 'Multiple Choice';
 
-                        return [
-                            'id' => $setId,
-                            'name' => (string) ($set['name'] ?? ''),
-                            'used' => (bool) ($knownSets[(string) $setId]['used'] ?? false),
-                            'questions' => collect($set['questions'] ?? [])->values()->map(function ($question) use ($knownQuestions) {
-                                $questionId = isset($question['id']) && $question['id'] !== '' ? (int) $question['id'] : null;
-                                $type = $question['type'] ?? 'Multiple Choice';
-
-                                return [
-                                    'id' => $questionId,
-                                    'text' => (string) ($question['text'] ?? ''),
-                                    'type' => $type,
-                                    'points' => $question['points'] ?? '',
-                                    'choices' => array_values((array) ($question['choices'] ?? [])),
-                                    'correct' => $type === 'True or False' ? ($question['tf_correct'] ?? null) : ($question['correct'] ?? null),
-                                    'answer' => $question['answer'] ?? '',
-                                    'lock_choice_order' => ! empty($question['lock_choice_order']),
-                                    'answered' => (bool) ($knownQuestions[(string) $questionId]['answered'] ?? false),
-                                ];
-                            })->all(),
-                        ];
-                    })->all();
-                } else {
-                    $builderSets = $quizSets->isNotEmpty()
-                        ? $quizSets->values()->all()
-                        : [['id' => null, 'name' => 'Set A', 'used' => false, 'questions' => []]];
+                            return [
+                                'id' => $questionId,
+                                'text' => (string) ($question['text'] ?? ''),
+                                'type' => $type,
+                                'points' => $question['points'] ?? '',
+                                'choices' => array_values((array) ($question['choices'] ?? [])),
+                                'correct' => $type === 'True or False' ? ($question['tf_correct'] ?? null) : ($question['correct'] ?? null),
+                                'answer' => $question['answer'] ?? '',
+                                'lock_choice_order' => ! empty($question['lock_choice_order']),
+                                'answered' => (bool) ($knownQuestions[(string) $questionId]['answered'] ?? false),
+                            ];
+                        })->all();
+                } elseif ($quizSets->isNotEmpty()) {
+                    $builderSet['questions'] = $quizSets
+                        ->flatMap(fn ($set) => $set['questions'] ?? [])
+                        ->values()
+                        ->all();
                 }
-                $isNewQuiz = collect($builderSets)->every(fn ($set) => empty($set['questions']));
+                $builderSets = [$builderSet];
+                $isNewQuiz = empty($quiz->id);
                 $quizHasAttempts = (bool) ($quiz->has_attempts ?? false);
+                $questionCount = collect($builderSet['questions'])
+                    ->filter(fn ($question) => trim((string) ($question['text'] ?? '')) !== '')
+                    ->count();
+                $firstErrorKey = $errors->keys()[0] ?? '';
+                $initialQuizTab = in_array($firstErrorKey, ['quiz_title', 'passing_score', 'instructions', 'attempts', 'time_limit', 'questions_per_attempt'], true)
+                    ? 'settings'
+                    : 'questions';
             @endphp
 
             <style>
-                .quiz-sets-layout { display: flex; gap: 20px; align-items: flex-start; }
-                .quiz-sets-main { flex: 1 1 auto; min-width: 0; }
-                .quiz-set-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 14px; }
-                .quiz-set-bar__title { margin: 0; font-size: 1rem; color: #123b7a; }
-                .quiz-set-bar__title small { color: #526078; font-weight: 500; }
-                .quiz-sets-toggle { border: 1px solid #c9d3e3; background: #fff; color: #123b7a; border-radius: 8px; padding: 7px 12px; font-weight: 700; cursor: pointer; }
-                .quiz-sets-drawer { flex: 0 0 280px; position: sticky; top: 16px; border: 1px solid #dfe5ef; border-radius: 12px; background: #fff; padding: 14px; box-shadow: 0 6px 18px rgba(18, 59, 122, .06); }
-                .quiz-sets-drawer[hidden] { display: none; }
-                .quiz-sets-drawer__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-                .quiz-sets-drawer__head h3 { margin: 0; font-size: 1rem; color: #123b7a; }
-                .quiz-sets-drawer__close { border: 0; background: none; font-size: 1.3rem; line-height: 1; cursor: pointer; color: #526078; }
-                .quiz-sets-drawer__help { margin: 0 0 12px; color: #526078; font-size: .82rem; line-height: 1.45; }
-                .quiz-set-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
-                .quiz-set-item { border: 1px solid #dfe5ef; border-radius: 10px; padding: 8px 10px; }
-                .quiz-set-item.is-active { border-color: #123b7a; background: #f3f6fc; }
-                .quiz-set-switch { display: flex; width: 100%; justify-content: space-between; gap: 8px; border: 0; background: none; padding: 0; text-align: left; cursor: pointer; font: inherit; font-weight: 700; color: #182b4d; }
-                .quiz-set-switch span:last-child { color: #526078; font-weight: 500; font-size: .82rem; white-space: nowrap; }
-                .quiz-set-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-                .quiz-set-actions button { border: 1px solid #d8e0eb; background: #fff; border-radius: 6px; padding: 3px 8px; font-size: .78rem; cursor: pointer; color: #182b4d; }
-                .quiz-set-actions button.is-danger { color: #b42318; }
-                .quiz-set-used { display: block; margin-top: 4px; color: #8a5a00; font-size: .75rem; }
-                .quiz-set-add { width: 100%; border: 1px dashed #9fb0cc; background: #f8fafc; border-radius: 10px; padding: 9px; font-weight: 700; color: #123b7a; cursor: pointer; }
-                .quiz-set-panel[hidden] { display: none; }
-                .quiz-shuffle-options { display: grid; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #e5eaf1; }
-                .quiz-shuffle-options label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
-                .quiz-shuffle-options small { display: block; color: #526078; }
-                .lock-choice-order { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; font-size: .88rem; color: #182b4d; cursor: pointer; }
-                .lock-choice-order small { display: block; color: #526078; }
-                .question-answered-note { margin-top: 10px; color: #8a5a00; font-size: .8rem; }
+                .quiz-builder-tabs { display: flex; gap: 8px; border-bottom: 1px solid #dfe5ef; margin: 0 0 18px; }
+                .quiz-builder-tab { border: 0; border-bottom: 3px solid transparent; background: transparent; padding: 10px 14px; color: #526078; font: inherit; font-weight: 700; cursor: pointer; }
+                .quiz-builder-tab[aria-selected="true"] { border-color: #123b7a; color: #123b7a; }
+                .quiz-builder-panel[hidden], .quiz-set-panel[hidden] { display: none; }
                 .quiz-builder-notice { margin: 0 0 16px; padding: 12px 14px; border-left: 4px solid #dba617; background: #fff7dc; border-radius: 8px; color: #4a3b00; font-size: .9rem; }
                 .quiz-builder-errors { margin: 0 0 16px; padding: 12px 14px; border-left: 4px solid #b42318; background: #fee4e2; border-radius: 8px; color: #7a1a12; }
                 .quiz-builder-errors ul { margin: 6px 0 0; padding-left: 18px; }
-                @media (max-width: 980px) {
-                    .quiz-sets-layout { flex-direction: column-reverse; }
-                    .quiz-sets-drawer { position: static; width: 100%; flex-basis: auto; box-sizing: border-box; }
-                }
+                .quiz-question-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+                .quiz-add-menu { position: relative; }
+                .quiz-add-menu summary { list-style: none; cursor: pointer; }
+                .quiz-add-menu summary::-webkit-details-marker { display: none; }
+                .quiz-add-menu__items { position: absolute; z-index: 20; top: calc(100% + 6px); right: 0; display: grid; min-width: 190px; padding: 6px; border: 1px solid #dfe5ef; border-radius: 8px; background: #fff; box-shadow: 0 8px 24px rgba(20, 35, 60, .12); }
+                .quiz-add-menu__items button { border: 0; background: transparent; padding: 9px 10px; text-align: left; cursor: pointer; color: #182b4d; font: inherit; }
+                .quiz-add-menu__items button:hover { background: #f3f6fc; }
+                .quiz-empty-state { padding: 24px; border: 1px dashed #c8d2e1; border-radius: 10px; color: #526078; text-align: center; }
+                .quiz-shuffle-options { display: grid; gap: 10px; margin: 14px 0; padding-top: 14px; border-top: 1px solid #e5eaf1; }
+                .quiz-shuffle-options label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+                .quiz-field-label-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+                .quiz-field-label-row .q-label { margin: 0; }
+                .quiz-help-icon { position: relative; display: grid; width: 18px; height: 18px; flex: 0 0 18px; place-items: center; padding: 0; border: 1px solid #123b7a; border-radius: 50%; background: #fff; color: #123b7a; font: 700 12px/1 Inter, sans-serif; cursor: help; }
+                .quiz-help-tooltip { display: none; position: absolute; z-index: 30; top: calc(100% + 8px); left: 0; width: max-content; max-width: min(300px, 80vw); padding: 9px 11px; border-radius: 7px; background: #182b4d; box-shadow: 0 6px 18px rgba(16, 24, 40, .18); color: #fff; font: 400 12px/1.45 Inter, sans-serif; text-align: left; white-space: normal; }
+                .quiz-help-icon--align-right .quiz-help-tooltip { right: 0; left: auto; }
+                .quiz-help-icon:hover .quiz-help-tooltip, .quiz-help-icon:focus .quiz-help-tooltip { display: block; }
+                .quiz-shuffle-setting { display: flex; align-items: flex-start; gap: 4px; }
+                .lock-choice-order { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; font-size: .88rem; color: #182b4d; cursor: pointer; }
+                .lock-choice-order small { display: block; color: #526078; }
+                .question-answered-note { margin-top: 10px; color: #8a5a00; font-size: .8rem; }
             </style>
 
             @if ($errors->any())
@@ -570,60 +543,140 @@
                     <ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
                 </div>
             @endif
-            @if ($quizHasAttempts)
-                <div class="quiz-builder-notice" role="note">
-                    Students have already taken this quiz. Questions they answered and sets they were served can't be removed, so their attempt history stays intact. Changing question content starts a fresh attempt count; renaming sets or changing the shuffle options does not.
-                </div>
-            @endif
 
             @if ($isNewQuiz)
-            <div class="quiz-card fac-quiz-intro" id="create-quiz-intro">
-                <p class="fac-quiz-intro-copy">
-                    Set the {{ $mode === 'final-exam' ? 'final exam' : 'quiz' }} details above &mdash; especially <strong>No. of Items</strong> &mdash; then click
-                    <strong>{{ $mode === 'final-exam' ? 'Create Final Exam' : 'Create Quiz' }}</strong>. One question container will be created per item. You can add more sets (Set B, Set C, ...) afterwards.
-                </p>
-                <button class="btn-save-lesson" type="button" onclick="createQuizQuestions()">{{ $mode === 'final-exam' ? 'Create Final Exam' : 'Create Quiz' }}</button>
-            </div>
-            @endif
-
-            <div id="questions-area" style="display:{{ $isNewQuiz ? 'none' : 'block' }};">
-            <div class="quiz-sets-layout">
-                <div class="quiz-sets-main">
-                    <div class="quiz-set-bar">
-                        <h3 class="quiz-set-bar__title"><span id="active-set-name">Set A</span> <small id="active-set-meta"></small></h3>
-                        <button class="quiz-sets-toggle" id="quiz-sets-toggle" type="button" aria-controls="quiz-sets-drawer" aria-expanded="true" onclick="toggleSetsDrawer()">Sets (<span id="quiz-sets-count">1</span>)</button>
+                <div class="quiz-card">
+                    <div>
+                        <label class="q-label" for="quiz-title">Quiz title <span class="req">*</span></label>
+                        <input class="input-outline fac-width-full" id="quiz-title" type="text" name="quiz_title" placeholder="MySQL Fundamentals Quiz" value="{{ old('quiz_title', $quiz->title ?? '') }}" required>
+                        @error('quiz_title')<small class="field-help" role="alert">{{ $message }}</small>@enderror
                     </div>
+                    <div style="margin-top:14px;">
+                        <label class="q-label" for="passing-score">Passing score (%)</label>
+                        <input class="input-outline fac-width-full" id="passing-score" type="number" name="passing_score" min="0" max="100" value="{{ old('passing_score', $quiz->passing_score ?? 75) }}">
+                        @error('passing_score')<small class="field-help" role="alert">{{ $message }}</small>@enderror
+                    </div>
+                    <div style="margin-top:14px;">
+                        <label class="q-label">Instructions (optional)</label>
+                        @include('components.rich-text-editor', ['name' => 'instructions', 'id' => 'assessment-instructions', 'value' => old('instructions', $quiz->instructions ?? ''), 'placeholder' => 'Add instructions for students...'])
+                    </div>
+                </div>
+                <div class="save-quiz-row">
+                    <button class="btn-save-lesson" type="submit">{{ $mode === 'final-exam' ? 'Create Final Exam' : (!empty($lessonId) ? 'Create lesson quiz' : 'Create quiz') }}</button>
+                </div>
+            @else
+                <div class="quiz-builder-tabs" role="tablist" aria-label="Quiz editor tabs">
+                    <button class="quiz-builder-tab" id="quiz-tab-questions" type="button" role="tab" aria-controls="quiz-panel-questions" aria-selected="{{ $initialQuizTab === 'questions' ? 'true' : 'false' }}" onclick="switchQuizTab('questions')">Questions</button>
+                    <button class="quiz-builder-tab" id="quiz-tab-settings" type="button" role="tab" aria-controls="quiz-panel-settings" aria-selected="{{ $initialQuizTab === 'settings' ? 'true' : 'false' }}" onclick="switchQuizTab('settings')">Settings</button>
+                </div>
+
+                <section class="quiz-builder-panel" id="quiz-panel-questions" role="tabpanel" aria-labelledby="quiz-tab-questions" data-quiz-tab-panel="questions" @if($initialQuizTab !== 'questions') hidden @endif>
+                    <div class="quiz-builder-notice" role="note">
+                        Editing question content may reset learners' attempt counting. Changes to quiz settings do not.
+                    </div>
+                    @if ($quizHasAttempts)
+                        <div class="quiz-builder-notice" role="note">
+                            Students have already taken this quiz. Questions they answered cannot be removed.
+                        </div>
+                    @endif
+
+                    <div class="quiz-bank-toolbar">
+                        <h3>Questions in pool: <span id="question-bank-count">{{ $questionCount }}</span></h3>
+                        <div class="quiz-question-actions">
+                            <button type="button" id="toggle-question-cards" aria-expanded="false" onclick="toggleAllQuestionCards(this)">Expand All</button>
+                            <details class="quiz-add-menu">
+                                <summary class="btn-save-lesson">Add</summary>
+                                <div class="quiz-add-menu__items">
+                                    <button type="button" onclick="addQuestion()">New question (manual)</button>
+                                    <button type="submit" name="continue_to_import" value="1" data-csv-submit>Upload CSV</button>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+
                     <div class="question-bulk-tools" id="question-bulk-tools">
                         <label for="select-all-questions">
-                            <input class="question-select" id="select-all-questions" type="checkbox" aria-label="Select all questions in this set">
-                            <span>Select all questions</span>
+                            <input class="question-select" id="select-all-questions" type="checkbox" aria-label="Select all questions in the quiz">
+                            <span>Select all questions in the quiz</span>
                         </label>
                         <span class="question-bulk-status" id="question-bulk-status" aria-live="polite">Select questions to change their type or points together.</span>
                     </div>
+                    <div class="quiz-empty-state" id="quiz-empty-state" @if($questionCount > 0) hidden @endif>No questions yet. Use Add to create a question manually or upload a CSV.</div>
                     <div id="questions"></div>
+                </section>
 
-                    {{-- Adds a fresh card at the end of EVERY set (equal counts). --}}
-                    <button class="btn-add-choice fac-add-question-spacing" type="button" onclick="addQuestion()">+ Add Question</button>
-                </div>
-
-                <aside class="quiz-sets-drawer" id="quiz-sets-drawer" aria-label="Question sets">
-                    <div class="quiz-sets-drawer__head">
-                        <h3>Sets</h3>
-                        <button class="quiz-sets-drawer__close" type="button" aria-label="Collapse sets panel" onclick="toggleSetsDrawer(false)">&times;</button>
+                <section class="quiz-builder-panel" id="quiz-panel-settings" role="tabpanel" aria-labelledby="quiz-tab-settings" data-quiz-tab-panel="settings" @if($initialQuizTab !== 'settings') hidden @endif>
+                    <div class="quiz-card">
+                        <div>
+                            <label class="q-label" for="quiz-title">Quiz title <span class="req">*</span></label>
+                            <input class="input-outline fac-width-full" id="quiz-title" type="text" name="quiz_title" placeholder="MySQL Fundamentals Quiz" value="{{ old('quiz_title', $quiz->title ?? '') }}" required>
+                            @error('quiz_title')<small class="field-help" role="alert">{{ $message }}</small>@enderror
+                        </div>
+                        <div class="grid3" style="margin-top:14px;">
+                            <div>
+                                <label class="q-label" for="passing-score">Passing score (%)</label>
+                                <input class="input-outline fac-width-full" id="passing-score" type="number" name="passing_score" min="0" max="100" value="{{ old('passing_score', $quiz->passing_score ?? 75) }}">
+                                @error('passing_score')<small class="field-help" role="alert">{{ $message }}</small>@enderror
+                            </div>
+                            <div>
+                                <div class="quiz-field-label-row">
+                                    <label class="q-label" for="questions-per-attempt">Questions shown per attempt (blank = all)</label>
+                                    <button class="quiz-help-icon" type="button" aria-label="Help: questions shown per attempt" aria-describedby="questions-per-attempt-help">?<span class="quiz-help-tooltip" id="questions-per-attempt-help" role="tooltip">Questions in pool: <span id="question-pool-size">{{ $questionCount }}</span>. Add more questions than you show, so learners get different sets.</span></button>
+                                </div>
+                                <input class="input-outline fac-width-full" type="number" name="questions_per_attempt" id="questions-per-attempt" min="1" value="{{ old('questions_per_attempt', $quiz->questions_per_attempt ?? '') }}" oninput="updateDrawSetting()">
+                                <small class="field-help" id="draw-setting-warning" role="status" hidden></small>
+                                @error('questions_per_attempt')<small class="field-help" role="alert">{{ $message }}</small>@enderror
+                            </div>
+                            <div>
+                                <div class="quiz-field-label-row">
+                                    <label class="q-label" for="attempts">Attempts allowed</label>
+                                    <button class="quiz-help-icon quiz-help-icon--align-right" type="button" aria-label="Help: attempts allowed" aria-describedby="attempts-help">?<span class="quiz-help-tooltip" id="attempts-help" role="tooltip">Leave blank for unlimited attempts. Enter a number to set a limit.</span></button>
+                                </div>
+                                <input class="input-outline fac-width-full" id="attempts" type="text" name="attempts" placeholder="Unlimited" value="{{ old('attempts', $quiz->attempts ?? '') }}">
+                            </div>
+                        </div>
+                        <div class="grid2">
+                            <div>
+                                <div class="quiz-field-label-row">
+                                    <label class="q-label" for="time-limit">Time limit (min)</label>
+                                    <button class="quiz-help-icon" type="button" aria-label="Help: time limit" aria-describedby="time-limit-help">?<span class="quiz-help-tooltip" id="time-limit-help" role="tooltip">Leave blank to allow unlimited time.</span></button>
+                                </div>
+                                <input class="input-outline fac-width-full" id="time-limit" type="number" name="time_limit" placeholder="No time limit" min="1" value="{{ old('time_limit', ($quiz->time_limit ?? 0) > 0 ? $quiz->time_limit : '') }}">
+                                @error('time_limit')<small class="field-help" role="alert">{{ $message }}</small>@enderror
+                            </div>
+                        </div>
+                        <div class="quiz-shuffle-options">
+                            <div class="quiz-shuffle-setting">
+                                <label>
+                                    <input type="checkbox" name="shuffle_questions" value="1" @checked(old('_token') ? old('shuffle_questions') : ($quiz->shuffle_questions ?? false))>
+                                    <span><strong>Shuffle question order</strong></span>
+                                </label>
+                                <button class="quiz-help-icon" type="button" aria-label="Help: shuffle question order" aria-describedby="shuffle-questions-help">?<span class="quiz-help-tooltip" id="shuffle-questions-help" role="tooltip">Questions from this pool appear in a different order on each attempt.</span></button>
+                            </div>
+                            <div class="quiz-shuffle-setting">
+                                <label>
+                                    <input type="checkbox" name="shuffle_choices" value="1" @checked(old('_token') ? old('shuffle_choices') : ($quiz->shuffle_choices ?? false))>
+                                    <span><strong>Shuffle choices order</strong></span>
+                                </label>
+                                <button class="quiz-help-icon" type="button" aria-label="Help: shuffle choices order" aria-describedby="shuffle-choices-help">?<span class="quiz-help-tooltip" id="shuffle-choices-help" role="tooltip">Multiple-choice options appear in a different order per attempt. True or False and locked questions keep their order.</span></button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="q-label">Instructions (optional)</label>
+                            @include('components.rich-text-editor', ['name' => 'instructions', 'id' => 'assessment-instructions', 'value' => old('instructions', $quiz->instructions ?? ''), 'placeholder' => 'Add instructions for students...'])
+                        </div>
                     </div>
-                    <p class="quiz-sets-drawer__help">Each student attempt gets one set. All sets have the same number of questions; retakes rotate to the next set.</p>
-                    <ul class="quiz-set-list" id="quiz-set-list"></ul>
-                    <button class="quiz-set-add" type="button" onclick="addSet()">+ Add set</button>
-                </aside>
-            </div>
-            </div>{{-- /questions-area --}}
+                </section>
 
-            <div class="save-quiz-row" id="save-quiz-row" style="display:{{ $isNewQuiz ? 'none' : 'flex' }};">
-                <button class="btn-save-lesson" type="submit">{{ $mode === 'final-exam' ? 'Save Final Exam' : 'Save Quiz' }}</button>
-            </div>
+                <div class="save-quiz-row" id="save-quiz-row">
+                    <button class="btn-save-lesson" type="submit">{{ $mode === 'final-exam' ? 'Save Final Exam' : 'Save Quiz' }}</button>
+                </div>
+            @endif
             <script>
                 var QUIZ_BUILDER_SETS = @json($builderSets);
                 var QUIZ_BUILDER_HAS_ATTEMPTS = @json($quizHasAttempts);
+                var QUIZ_BUILDER_INITIAL_TAB = @json($initialQuizTab);
+                var QUIZ_BUILDER_ERRORS = @json($errors->keys());
             </script>
         </form>
 
@@ -896,6 +949,12 @@
         var moduleBody = moduleToggle && document.getElementById(moduleToggle.getAttribute('aria-controls'));
         if (!moduleToggle || !moduleBody) return;
 
+        moduleCard.addEventListener('click', function (event) {
+            if (event.target.closest('button, a, input, select, textarea, form, [contenteditable="true"]')) return;
+            if (!moduleBody.hidden && !event.target.closest('.module-head')) return;
+            toggleModuleCollapse(moduleCard.dataset.orderId, moduleToggle);
+        });
+
         var pendingExpandKey = 'faculty-course-module-expand-' + moduleToggle.getAttribute('aria-controls');
         if (sessionStorage.getItem(pendingExpandKey) === '1') {
             sessionStorage.removeItem(pendingExpandKey);
@@ -924,17 +983,8 @@
         button.textContent = shouldExpand ? 'Collapse All' : 'Expand All';
     }
 
-    /* ── Quiz builder with sets ───────────────────────────────────────────
-       Every set is a .quiz-set-panel inside #questions; only the active one
-       is visible, but all stay in the DOM so one POST saves everything as
-       sets[s][questions][q][...]. Set keys (s) and question keys (q) are
-       unique counters that never repeat, so radio groups never collide;
-       the server reads them in DOM order. Equal-count rule: adding,
-       removing and resizing always apply to every set at the same position. */
-    var _setKey = 0;
+    /* ── Quiz question bank ─────────────────────────────────────────────── */
     var _questionKey = 0;
-    var _activeSetKey = null;
-    var _lastItems = null;
 
     function esc(value) {
         return String(value === null || value === undefined ? '' : value)
@@ -947,7 +997,7 @@
     }
 
     function activePanel() {
-        return document.querySelector('#questions .quiz-set-panel[data-set-key="' + _activeSetKey + '"]') || setPanels()[0] || null;
+        return setPanels()[0] || null;
     }
 
     function panelCards(panel) {
@@ -955,7 +1005,11 @@
     }
 
     function questionCount() {
-        return panelCards(setPanels()[0]).length;
+        return panelCards(activePanel()).length;
+    }
+
+    function filledQuestionCount() {
+        return panelCards(activePanel()).filter(cardIsFilled).length;
     }
 
     function cardIsFilled(card) {
@@ -963,25 +1017,14 @@
         return !!(text && text.value.trim() !== '');
     }
 
-    function nextSetName() {
-        var used = {};
-        setPanels().forEach(function (panel) { used[panel.querySelector('.set-name-input').value.trim().toLowerCase()] = true; });
-        for (var i = 0; i < 702; i++) {
-            var name = 'Set ' + (i < 26 ? String.fromCharCode(65 + i) : String.fromCharCode(64 + Math.floor(i / 26)) + String.fromCharCode(65 + (i % 26)));
-            if (!used[name.toLowerCase()]) return name;
-        }
-        return 'Set ' + (setPanels().length + 1);
-    }
-
     function createSetPanel(set) {
-        var s = _setKey++;
+        var s = 0;
         var panel = document.createElement('div');
         panel.className = 'quiz-set-panel';
         panel.dataset.setKey = String(s);
-        panel.dataset.used = set.used ? '1' : '0';
         panel.innerHTML =
             '<input type="hidden" name="sets[' + s + '][id]" value="' + esc(set.id || '') + '">' +
-            '<input type="hidden" class="set-name-input" name="sets[' + s + '][name]" value="' + esc(set.name || nextSetName()) + '">' +
+            '<input type="hidden" class="set-name-input" name="sets[' + s + '][name]" value="' + esc(set.name || 'Set A') + '">' +
             '<input type="hidden" class="set-position-input" name="sets[' + s + '][position]" value="0">' +
             '<div class="set-cards"></div>';
         document.getElementById('questions').appendChild(panel);
@@ -1014,6 +1057,9 @@
         for (var i = 0; i < choiceCount; i++) {
             choicesHtml += choiceRowHtml(prefix, i, choices[i] || '', type === 'Multiple Choice' && correct === i);
         }
+        var alternativeAnswersHtml = (question.alternative_answers || []).map(function (answer) {
+            return alternativeAnswerRowHtml(prefix, answer);
+        }).join('');
         var tfHtml = '';
         ['True', 'False'].forEach(function (label, i) {
             tfHtml += '<div class="choice-row"><span class="tf-label">' + label + '</span>' +
@@ -1024,38 +1070,97 @@
 
         var card = document.createElement('div');
         card.className = 'quiz-card question-card';
+        card.dataset.collapsed = 'true';
         card.dataset.answered = question.answered ? '1' : '0';
         card.innerHTML =
             '<input type="hidden" name="' + prefix + '[id]" value="' + esc(question.id || '') + '">' +
-            '<div class="q-head">' +
+            '<div class="question-card-summary-row">' +
                 '<input class="question-select question-select-item" type="checkbox" aria-label="Select question" onchange="updateQuestionSelectionState()">' +
-                '<h3>Question ?</h3>' +
-                '<span class="type-label">Type</span>' +
-                '<div class="sel-wrap"><select name="' + prefix + '[type]" onchange="questionTypeChanged(this)">' +
-                    ['Multiple Choice', 'True or False', 'Identification'].map(function (option) {
-                        return '<option value="' + option + '"' + (option === type ? ' selected' : '') + '>' + option + '</option>';
-                    }).join('') +
-                '</select></div>' +
-                '<input class="input-outline points" type="number" name="' + prefix + '[points]" placeholder="Points" min="0" value="' + esc(question.points === 0 ? 0 : (question.points || '')) + '" oninput="syncSelectedQuestionPoints(this)">' +
-                '<button class="btn-x" type="button" title="Remove this question from every set" onclick="removeQuestion(this)">&times;</button>' +
+                '<button class="question-card-summary" type="button" aria-expanded="false" aria-controls="question-body-' + q + '" onclick="toggleQuestionCard(this)">' +
+                    '<span class="question-card-summary__copy">' +
+                        '<span class="question-card-summary__text" data-question-summary-text>' + esc(question.text || 'Question text needed') + '</span>' +
+                        '<span class="question-card-summary__meta"><span data-question-summary-type>' + esc(type) + '</span><span data-question-summary-points>' + esc(question.points || 1) + ' points</span></span>' +
+                    '</span>' +
+                '</button>' +
+                '<div class="question-card-actions">' +
+                    '<button class="btn-x" type="button" aria-label="Delete question" title="Delete question" onclick="removeQuestion(this)">&times;</button>' +
+                    '<button class="question-card-toggle" type="button" aria-label="Expand question" title="Expand question" aria-expanded="false" aria-controls="question-body-' + q + '" onclick="toggleQuestionCard(this)">' +
+                        '<svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+                    '</button>' +
+                '</div>' +
             '</div>' +
-            '<div class="fac-question-field-spacing">' +
-                '<input class="input-outline question-input fac-width-full" type="text" name="' + prefix + '[text]" placeholder="Enter your question" value="' + esc(question.text || '') + '">' +
-            '</div>' +
-            '<div class="q-mc" style="display:' + (type === 'Multiple Choice' ? 'block' : 'none') + ';">' +
-                '<div class="choices" data-prefix="' + prefix + '">' + choicesHtml + '</div>' +
-                '<button class="btn-add-choice" type="button" onclick="addChoice(this)">+ Add a Choice</button>' +
-                '<label class="lock-choice-order"><input type="checkbox" name="' + prefix + '[lock_choice_order]" value="1"' + (question.lock_choice_order ? ' checked' : '') + '>' +
-                    '<span>Lock choice order<small>Keep these choices in the order written even when choice shuffling is on (for options like "All of the above").</small></span></label>' +
-            '</div>' +
-            '<div class="q-tf" style="display:' + (type === 'True or False' ? 'block' : 'none') + ';">' + tfHtml + '</div>' +
-            '<div class="q-id" style="display:' + (type === 'Identification' ? 'block' : 'none') + ';">' +
-                '<label class="q-label">Correct Answer</label>' +
-                '<input class="input-outline fac-identification-answer" type="text" name="' + prefix + '[answer]" placeholder="Type the correct answer" value="' + esc(type === 'Identification' ? (question.answer || '') : '') + '">' +
-            '</div>' +
-            (question.answered ? '<div class="question-answered-note">Students have answered this question, so it can\'t be removed.</div>' : '');
+            '<div class="question-card-body" id="question-body-' + q + '" hidden>' +
+                '<div class="q-head">' +
+                    '<h3>Question ?</h3>' +
+                    '<span class="type-label">Type</span>' +
+                    '<div class="sel-wrap"><select name="' + prefix + '[type]" onchange="questionTypeChanged(this)">' +
+                        ['Multiple Choice', 'True or False', 'Identification'].map(function (option) {
+                            return '<option value="' + option + '"' + (option === type ? ' selected' : '') + '>' + option + '</option>';
+                        }).join('') +
+                    '</select></div>' +
+                    '<input class="input-outline points" type="number" name="' + prefix + '[points]" placeholder="Points" min="0" value="' + esc(question.points === 0 ? 0 : (question.points || 1)) + '" oninput="syncSelectedQuestionPoints(this); refreshQuestionSummary(this)">' +
+                    '<small class="field-help">0 or blank counts as 1</small>' +
+                '</div>' +
+                '<div class="fac-question-field-spacing">' +
+                    '<input class="input-outline question-input fac-width-full" type="text" name="' + prefix + '[text]" placeholder="Enter your question" value="' + esc(question.text || '') + '" oninput="refreshQuestionSummary(this)">' +
+                '</div>' +
+                '<div class="q-mc" style="display:' + (type === 'Multiple Choice' ? 'block' : 'none') + ';">' +
+                    '<div class="choices" data-prefix="' + prefix + '">' + choicesHtml + '</div>' +
+                    '<button class="btn-add-choice" type="button" onclick="addChoice(this)">+ Add a Choice</button>' +
+                    '<label class="lock-choice-order"><input type="checkbox" name="' + prefix + '[lock_choice_order]" value="1"' + (question.lock_choice_order ? ' checked' : '') + '>' +
+                        '<span>Lock choice order<small>Keep these choices in the order written even when choice shuffling is on (for options like "All of the above").</small></span></label>' +
+                '</div>' +
+                '<div class="q-tf" style="display:' + (type === 'True or False' ? 'block' : 'none') + ';">' + tfHtml + '</div>' +
+                '<div class="q-id" style="display:' + (type === 'Identification' ? 'block' : 'none') + ';">' +
+                    '<label class="q-label">Correct Answer</label>' +
+                    '<input class="input-outline fac-identification-answer" type="text" name="' + prefix + '[answer]" placeholder="Type the correct answer" value="' + esc(type === 'Identification' ? (question.answer || '') : '') + '">' +
+                    '<div class="alternative-answers">' +
+                        '<label class="q-label">Alternative answers <span>(optional)</span></label>' +
+                        '<div class="alternative-answer-list" data-prefix="' + prefix + '">' + alternativeAnswersHtml + '</div>' +
+                        '<button class="btn-add-choice" type="button" onclick="addAlternativeAnswer(this)">+ Add alternative answer</button>' +
+                    '</div>' +
+                '</div>' +
+                (question.answered ? '<div class="question-answered-note">Students have answered this question, so it can\'t be removed.</div>' : '') +
+            '</div>';
         panel.querySelector('.set-cards').appendChild(card);
         return card;
+    }
+
+    function refreshQuestionSummary(element) {
+        var card = element.closest('.question-card');
+        if (!card) return;
+        var question = card.querySelector('.question-input');
+        var type = card.querySelector('select[name$="[type]"]');
+        var points = card.querySelector('.points');
+        card.querySelector('[data-question-summary-text]').textContent = question && question.value.trim() ? question.value.trim() : 'Question text needed';
+        card.querySelector('[data-question-summary-type]').textContent = type ? type.value : 'Multiple Choice';
+        card.querySelector('[data-question-summary-points]').textContent = (points && points.value ? points.value : '1') + ' points';
+    }
+
+    function toggleQuestionCard(button, expanded) {
+        var isExpanded = typeof expanded === 'boolean' ? expanded : button.getAttribute('aria-expanded') !== 'true';
+        var summary = button.closest('.question-card').querySelector('.question-card-summary');
+        var toggle = button.closest('.question-card').querySelector('.question-card-toggle');
+        var body = document.getElementById(button.getAttribute('aria-controls'));
+        if (!body) return;
+        button.closest('.question-card').dataset.collapsed = String(!isExpanded);
+        body.hidden = !isExpanded;
+        summary.setAttribute('aria-expanded', String(isExpanded));
+        toggle.setAttribute('aria-expanded', String(isExpanded));
+        toggle.setAttribute('aria-label', isExpanded ? 'Collapse question' : 'Expand question');
+        toggle.setAttribute('title', isExpanded ? 'Collapse question' : 'Expand question');
+    }
+
+    function toggleAllQuestionCards(button) {
+        var cards = panelCards(activePanel());
+        var shouldExpand = cards.some(function (card) {
+            return card.querySelector('.question-card-toggle').getAttribute('aria-expanded') !== 'true';
+        });
+        cards.forEach(function (card) {
+            toggleQuestionCard(card.querySelector('.question-card-toggle'), shouldExpand);
+        });
+        button.setAttribute('aria-expanded', String(shouldExpand));
+        button.textContent = shouldExpand ? 'Collapse All' : 'Expand All';
     }
 
     function addChoice(button) {
@@ -1065,194 +1170,85 @@
         box.insertAdjacentHTML('beforeend', choiceRowHtml(box.dataset.prefix, i, '', false));
     }
 
-    function switchSet(key) {
-        _activeSetKey = String(key);
-        setPanels().forEach(function (panel) { panel.hidden = panel.dataset.setKey !== _activeSetKey; });
-        document.querySelectorAll('#questions .question-select-item').forEach(function (checkbox) { checkbox.checked = false; });
-        refreshBuilder();
-    }
-
     function refreshBuilder() {
         var panels = setPanels();
-        var active = activePanel();
-        if (active && active.dataset.setKey !== _activeSetKey) _activeSetKey = active.dataset.setKey;
-        panels.forEach(function (panel, index) {
-            panel.querySelector('.set-position-input').value = index;
-            panelCards(panel).forEach(function (card, i) {
+        panels.forEach(function (panel) {
+            panel.querySelector('.set-position-input').value = 0;
+            panelCards(panel).forEach(function (card, index) {
                 var heading = card.querySelector('.q-head h3');
-                if (heading) heading.textContent = 'Question ' + (i + 1);
+                if (heading) heading.textContent = 'Question ' + (index + 1);
+                refreshQuestionSummary(card.querySelector('.question-input'));
             });
         });
 
-        var count = questionCount();
-        var name = active ? active.querySelector('.set-name-input').value : 'Set A';
-        document.getElementById('active-set-name').textContent = name;
-        document.getElementById('active-set-meta').textContent = '· ' + count + ' question' + (count === 1 ? '' : 's') + (panels.length > 1 ? ' in each of ' + panels.length + ' sets' : '');
-        document.getElementById('quiz-sets-count').textContent = panels.length;
+        var count = filledQuestionCount();
+        var countOutput = document.getElementById('question-bank-count');
+        if (countOutput) countOutput.textContent = count;
+        var emptyState = document.getElementById('quiz-empty-state');
+        if (emptyState) emptyState.hidden = panels.some(function (panel) { return panelCards(panel).length > 0; });
 
-        var list = document.getElementById('quiz-set-list');
-        list.innerHTML = '';
-        panels.forEach(function (panel) {
-            var key = panel.dataset.setKey;
-            var item = document.createElement('li');
-            item.className = 'quiz-set-item' + (key === _activeSetKey ? ' is-active' : '');
-            item.innerHTML =
-                '<button class="quiz-set-switch" type="button" onclick="switchSet(' + key + ')"' + (key === _activeSetKey ? ' aria-current="true"' : '') + '>' +
-                    '<span>' + esc(panel.querySelector('.set-name-input').value) + '</span><span>' + panelCards(panel).length + ' items</span></button>' +
-                '<div class="quiz-set-actions">' +
-                    '<button type="button" onclick="renameSet(' + key + ')">Rename</button>' +
-                    '<button type="button" onclick="duplicateSet(' + key + ')">Duplicate</button>' +
-                    '<button type="button" class="is-danger" onclick="deleteSet(' + key + ')">Delete</button>' +
-                '</div>' +
-                (panel.dataset.used === '1' ? '<span class="quiz-set-used">Served to students, can\'t be deleted</span>' : '');
-            list.appendChild(item);
-        });
-
-        var itemsInput = document.getElementById('quiz-items');
-        if (itemsInput && count > 0) itemsInput.value = count;
-        _lastItems = count;
+        updateDrawSetting();
         updateQuestionSelectionState();
     }
 
-    function toggleSetsDrawer(open) {
-        var drawer = document.getElementById('quiz-sets-drawer');
-        var show = typeof open === 'boolean' ? open : drawer.hidden;
-        drawer.hidden = !show;
-        document.getElementById('quiz-sets-toggle').setAttribute('aria-expanded', String(show));
-    }
-
-    function panelByKey(key) {
-        return document.querySelector('#questions .quiz-set-panel[data-set-key="' + key + '"]');
-    }
-
-    function addSet() {
-        var panel = createSetPanel({ id: null, name: nextSetName(), questions: [] });
-        for (var i = 0, n = questionCount() || 1; i < n; i++) appendCard(panel, {});
-        // A brand-new quiz still on the "Create Quiz" screen gets its cards now.
-        if (questionCount() > 0) revealQuestionsArea();
-        switchSet(panel.dataset.setKey);
-    }
-
-    function renameSet(key) {
-        var panel = panelByKey(key);
-        var input = panel.querySelector('.set-name-input');
-        var name = window.prompt('Rename set', input.value);
-        if (name === null) return;
-        name = name.trim().slice(0, 60);
-        if (name === '') return;
-        input.value = name;
-        refreshBuilder();
-    }
-
-    function duplicateSet(key) {
-        var source = panelByKey(key);
-        var copy = createSetPanel({ id: null, name: nextSetName(), questions: [] });
-        panelCards(source).forEach(function (card) { appendCard(copy, readCard(card)); });
-        switchSet(copy.dataset.setKey);
-    }
-
-    function deleteSet(key) {
-        var panels = setPanels();
-        if (panels.length <= 1) {
-            alert('A quiz must always have at least one set.');
-            return;
+    function updateDrawSetting() {
+        var field = document.getElementById('questions-per-attempt');
+        var size = document.getElementById('question-pool-size');
+        var warning = document.getElementById('draw-setting-warning');
+        if (!field || !size || !warning) return;
+        var poolSize = filledQuestionCount();
+        size.textContent = String(poolSize);
+        var requested = Number(field.value);
+        var message = '';
+        if (field.value.trim() !== '' && (!Number.isInteger(requested) || requested < 1 || requested > poolSize)) {
+            message = 'Questions shown per attempt must be from 1 to ' + poolSize + '.';
         }
-        var panel = panelByKey(key);
-        var name = panel.querySelector('.set-name-input').value;
-        if (panel.dataset.used === '1' || panelCards(panel).some(function (card) { return card.dataset.answered === '1'; })) {
-            alert('"' + name + '" has already been served to students, so it can\'t be deleted. Its attempt history depends on it.');
-            return;
-        }
-        if (!confirm('Delete "' + name + '" and its ' + panelCards(panel).length + ' questions?')) return;
-        var wasActive = panel.dataset.setKey === _activeSetKey;
-        panel.remove();
-        if (wasActive) switchSet(setPanels()[0].dataset.setKey); else refreshBuilder();
+        warning.textContent = message;
+        warning.hidden = message === '';
+        field.setCustomValidity(message);
     }
 
-    /** The values of a card, for duplicating a set (ids and answered flags are not copied). */
-    function readCard(card) {
-        var type = card.querySelector('select[name$="[type]"]').value;
-        var checked = card.querySelector(type === 'True or False' ? 'input[name$="[tf_correct]"]:checked' : 'input[name$="[correct]"]:checked');
+    function switchQuizTab(name) {
+        document.querySelectorAll('[data-quiz-tab-panel]').forEach(function (panel) {
+            panel.hidden = panel.dataset.quizTabPanel !== name;
+        });
+        document.querySelectorAll('.quiz-builder-tab').forEach(function (tab) {
+            var selected = tab.id === 'quiz-tab-' + name;
+            tab.setAttribute('aria-selected', String(selected));
+            tab.tabIndex = selected ? 0 : -1;
+        });
+    }
+
+    function readQuestionCard(card) {
+        var correct = card.querySelector('input[type="radio"][name$="[correct]"]:checked');
+        var tfCorrect = card.querySelector('input[type="radio"][name$="[tf_correct]"]:checked');
         return {
-            id: null,
-            type: type,
             text: card.querySelector('.question-input').value,
+            type: card.querySelector('select[name$="[type]"]').value,
             points: card.querySelector('.points').value,
-            choices: Array.prototype.map.call(card.querySelectorAll('input[name$="[choices][]"]'), function (input) { return input.value; }),
-            correct: checked ? checked.value : null,
-            answer: card.querySelector('input[name$="[answer]"]').value,
-            lock_choice_order: !!card.querySelector('input[name$="[lock_choice_order]"]:checked'),
-            answered: false
+            choices: Array.from(card.querySelectorAll('.q-mc .choices input[type="text"]')).map(function (input) { return input.value; }),
+            correct: tfCorrect ? tfCorrect.value : (correct ? correct.value : null),
+            answer: card.querySelector('.fac-identification-answer').value,
+            alternative_answers: Array.from(card.querySelectorAll('.alternative-answer-input')).map(function (input) { return input.value; }),
+            lock_choice_order: card.querySelector('.lock-choice-order input').checked
         };
     }
 
-    function revealQuestionsArea() {
-        var intro = document.getElementById('create-quiz-intro');
-        if (intro) intro.style.display = 'none';
-        var area = document.getElementById('questions-area');
-        if (area) area.style.display = 'block';
-        var saveRow = document.getElementById('save-quiz-row');
-        if (saveRow) saveRow.style.display = 'flex';
+    function alternativeAnswerRowHtml(prefix, value) {
+        return '<div class="alternative-answer-row">' +
+            '<input class="input-outline alternative-answer-input" type="text" name="' + prefix + '[alternative_answers][]" placeholder="Alternative answer" value="' + esc(value || '') + '">' +
+            '<button class="btn-remove-alternative" type="button" aria-label="Remove alternative answer" onclick="removeAlternativeAnswer(this)">Remove</button>' +
+            '</div>';
     }
 
-    // ── "Create Quiz": N blank cards in every set, N = "No. of Items" ──
-    function createQuizQuestions() {
-        var itemsInput = document.getElementById('quiz-items');
-        var n = parseInt(itemsInput && itemsInput.value, 10);
-        if (!n || n < 1) {
-            alert('Please set the "No. of Items" first (at least 1) before creating the quiz.');
-            if (itemsInput) itemsInput.focus();
-            return;
-        }
-        if (n > 100) n = 100;
-        setPanels().forEach(function (panel) {
-            panel.querySelector('.set-cards').innerHTML = '';
-            for (var i = 0; i < n; i++) appendCard(panel, {});
-        });
-        revealQuestionsArea();
-        refreshBuilder();
-        var first = activePanel() && activePanel().querySelector('.question-input');
-        if (first) first.focus();
+    function addAlternativeAnswer(button) {
+        var list = button.closest('.q-id').querySelector('.alternative-answer-list');
+        list.insertAdjacentHTML('beforeend', alternativeAnswerRowHtml(list.dataset.prefix, ''));
+        list.lastElementChild.querySelector('input').focus();
     }
 
-    // ── "No. of Items" resizes EVERY set: append or remove at the end ──
-    function itemsChanged(input) {
-        if (document.getElementById('questions-area').style.display === 'none') return;
-        var target = parseInt(input.value, 10);
-        var current = questionCount();
-        if (!target || target < 1) { input.value = current; return; }
-        if (target > 100) target = 100;
-        if (target === current) return;
-
-        if (target > current) {
-            setPanels().forEach(function (panel) {
-                for (var i = current; i < target; i++) appendCard(panel, {});
-            });
-            refreshBuilder();
-            return;
-        }
-
-        var affected = [];
-        var blocked = false;
-        setPanels().forEach(function (panel) {
-            var removed = panelCards(panel).slice(target);
-            if (removed.some(function (card) { return card.dataset.answered === '1'; })) blocked = true;
-            var filled = removed.filter(cardIsFilled).length;
-            if (filled) affected.push(panel.querySelector('.set-name-input').value + ' (' + filled + ' filled)');
-        });
-        if (blocked) {
-            alert('Some of the last ' + (current - target) + ' questions have already been answered by students, so the quiz can\'t be shortened to ' + target + ' items.');
-            input.value = current;
-            return;
-        }
-        if (affected.length && !confirm('Reducing to ' + target + ' items removes the last ' + (current - target) + ' question(s) from every set, including filled-in questions in: ' + affected.join(', ') + '. Continue?')) {
-            input.value = current;
-            return;
-        }
-        setPanels().forEach(function (panel) {
-            panelCards(panel).slice(target).forEach(function (card) { card.remove(); });
-        });
-        refreshBuilder();
+    function removeAlternativeAnswer(button) {
+        button.closest('.alternative-answer-row').remove();
     }
 
     // ✅ Swaps the question card's display to match the chosen Type
@@ -1271,8 +1267,10 @@
                 if (!selected || !selected.checked || !selectedType) return;
                 selectedType.value = t;
                 renderQuestionType(selectedCard, t);
+                refreshQuestionSummary(selectedCard.querySelector('.question-input'));
             });
         }
+        refreshQuestionSummary(card.querySelector('.question-input'));
     }
 
     function renderQuestionType(card, type) {
@@ -1314,7 +1312,10 @@
             if (selectedCard === card) return;
             var selected = selectedCard.querySelector('.question-select-item');
             var points = selectedCard.querySelector('.points');
-            if (selected && selected.checked && points) points.value = input.value;
+            if (selected && selected.checked && points) {
+                points.value = input.value;
+                refreshQuestionSummary(points);
+            }
         });
     }
 
@@ -1329,47 +1330,38 @@
         }
     });
 
-    // Adds a blank card at the end of EVERY set, keeping counts equal.
+    document.addEventListener('input', function (event) {
+        if (event.target.matches('#questions .question-input')) refreshBuilder();
+    });
+
+    // Adds a blank card to the question bank.
     function addQuestion() {
-        setPanels().forEach(function (panel) { appendCard(panel, {}); });
+        switchQuizTab('questions');
+        if (activePanel()) appendCard(activePanel(), {});
         refreshBuilder();
         var cards = panelCards(activePanel());
-        var first = cards.length && cards[cards.length - 1].querySelector('.question-input');
-        if (first) first.focus();
+        var card = cards.length ? cards[cards.length - 1] : null;
+        if (card) {
+            toggleQuestionCard(card.querySelector('.question-card-toggle'), true);
+            var first = card.querySelector('.question-input');
+            if (first) first.focus();
+        }
     }
 
-    // Removes this POSITION from every set, after listing what it affects.
+    // Remove a question only when it has not been answered by a student.
     function removeQuestion(btn) {
         var card = btn.closest('.question-card');
         if (!card) return;
-        var position = panelCards(card.closest('.quiz-set-panel')).indexOf(card);
-        var panels = setPanels();
         if (questionCount() <= 1 && QUIZ_BUILDER_HAS_ATTEMPTS) {
             alert('Students have already taken this quiz, so it needs at least one question.');
             return;
         }
-        var lines = [];
-        var blocked = [];
-        panels.forEach(function (panel) {
-            var target = panelCards(panel)[position];
-            if (!target) return;
-            var name = panel.querySelector('.set-name-input').value;
-            var text = target.querySelector('.question-input').value.trim();
-            lines.push('• ' + name + ': ' + (text ? '"' + (text.length > 60 ? text.slice(0, 57) + '...' : text) + '"' : '(empty)'));
-            if (target.dataset.answered === '1') blocked.push(name);
-        });
-        if (blocked.length) {
-            alert('Question ' + (position + 1) + ' has already been answered by students in ' + blocked.join(', ') + ', so it can\'t be removed. Edit its text instead.');
+        if (card.dataset.answered === '1') {
+            alert('Students have answered this question, so it can\'t be removed. Edit its text instead.');
             return;
         }
-        var message = panels.length > 1
-            ? 'Remove question ' + (position + 1) + ' from every set? This affects:\n' + lines.join('\n')
-            : 'Remove this question?';
-        if (!confirm(message)) return;
-        panels.forEach(function (panel) {
-            var target = panelCards(panel)[position];
-            if (target) target.remove();
-        });
+        if (!confirm('Remove this question?')) return;
+        card.remove();
         refreshBuilder();
     }
 
@@ -1377,13 +1369,127 @@
         refreshBuilder();
     }
 
-    // Build the sets from the server payload (or the old input after a failed save).
+    function activateQuizField(field) {
+        var panel = field.closest('[data-quiz-tab-panel]');
+        if (panel) switchQuizTab(panel.dataset.quizTabPanel);
+
+        var card = field.closest('.question-card');
+        if (card) {
+            var toggle = card.querySelector('.question-card-toggle');
+            if (toggle) toggleQuestionCard(toggle, true);
+        }
+    }
+
+    function syncQuizRichText(form) {
+        form.querySelectorAll('[data-ckeditor]').forEach(function (editorElement) {
+            var editor = window.upskillEditorInstances && window.upskillEditorInstances.get(editorElement);
+            if (editor) editorElement.value = editor.getData();
+        });
+    }
+
+    function quizFormSnapshot(form) {
+        syncQuizRichText(form);
+        var values = [];
+        new FormData(form).forEach(function (value, key) {
+            values.push([key, value instanceof File ? value.name : value]);
+        });
+        return JSON.stringify(values);
+    }
+
+    function focusFirstServerError(form) {
+        var errors = typeof QUIZ_BUILDER_ERRORS === 'undefined' ? [] : QUIZ_BUILDER_ERRORS;
+        if (!errors.length) return;
+
+        switchQuizTab(QUIZ_BUILDER_INITIAL_TAB || 'questions');
+        var firstError = errors[0];
+        var setQuestion = /^sets\.(\d+)\.questions\.(\d+)/.exec(firstError);
+        if (setQuestion) {
+            var card = panelCards(activePanel())[Number(setQuestion[2])];
+            if (card) {
+                var toggle = card.querySelector('.question-card-toggle');
+                if (toggle) toggleQuestionCard(toggle, true);
+                var input = card.querySelector('.question-input');
+                if (input) input.focus();
+            }
+            return;
+        }
+
+        var field = form.querySelector('[name="' + firstError + '"]');
+        if (field) {
+            activateQuizField(field);
+            field.focus();
+        } else if (firstError === 'sets') {
+            switchQuizTab('questions');
+            var firstQuestion = activePanel() && activePanel().querySelector('.question-input');
+            if (firstQuestion) firstQuestion.focus();
+        }
+    }
+
+    // Keep the legacy nested request shape while showing one question pool.
     document.addEventListener('DOMContentLoaded', function () {
-        if (typeof QUIZ_BUILDER_SETS === 'undefined' || !document.getElementById('questions')) return;
-        var sets = Array.isArray(QUIZ_BUILDER_SETS) && QUIZ_BUILDER_SETS.length ? QUIZ_BUILDER_SETS : [{ id: null, name: 'Set A', questions: [] }];
-        sets.forEach(function (set) { createSetPanel(set); });
-        switchSet(setPanels()[0].dataset.setKey);
-        if (window.matchMedia && window.matchMedia('(max-width: 980px)').matches && setPanels().length === 1) toggleSetsDrawer(false);
+        if (typeof QUIZ_BUILDER_SETS === 'undefined') return;
+        var form = document.getElementById('quiz-builder-form');
+        if (!form) return;
+        if (document.getElementById('questions')) {
+            var sets = Array.isArray(QUIZ_BUILDER_SETS) && QUIZ_BUILDER_SETS.length
+                ? QUIZ_BUILDER_SETS
+                : [{ id: null, name: 'Set A', questions: [] }];
+            createSetPanel(sets[0]);
+            switchQuizTab(QUIZ_BUILDER_INITIAL_TAB || 'questions');
+            refreshBuilder();
+        }
+
+        focusFirstServerError(form);
+        var initialSnapshot = quizFormSnapshot(form);
+        var allowNavigation = false;
+        var lastSubmitter = null;
+        var firstInvalidField = null;
+        form.addEventListener('invalid', function (event) {
+            if (firstInvalidField) return;
+            var field = event.target;
+            firstInvalidField = field;
+            activateQuizField(field);
+            window.requestAnimationFrame(function () {
+                field.focus();
+            });
+            window.setTimeout(function () {
+                if (firstInvalidField === field) firstInvalidField = null;
+            }, 0);
+        }, true);
+        form.addEventListener('click', function (event) {
+            var button = event.target.closest('button[type="submit"]');
+            if (button) lastSubmitter = button;
+        });
+        form.addEventListener('submit', function (event) {
+            var submitter = event.submitter || lastSubmitter;
+            syncQuizRichText(form);
+            if (submitter && submitter.hasAttribute('data-csv-submit')
+                && quizFormSnapshot(form) !== initialSnapshot
+                && !confirm('You have unsaved changes. Save them before continuing to CSV import?')) {
+                event.preventDefault();
+                return;
+            }
+
+            updateDrawSetting();
+            var invalidField = Array.from(form.elements).find(function (field) {
+                return field.willValidate && !field.checkValidity();
+            });
+            if (invalidField) {
+                event.preventDefault();
+                activateQuizField(invalidField);
+                window.requestAnimationFrame(function () {
+                    invalidField.focus();
+                    invalidField.reportValidity();
+                });
+                return;
+            }
+            allowNavigation = true;
+        });
+        window.addEventListener('beforeunload', function (event) {
+            if (allowNavigation || quizFormSnapshot(form) === initialSnapshot) return;
+            event.preventDefault();
+            event.returnValue = '';
+        });
     });
 </script>
 

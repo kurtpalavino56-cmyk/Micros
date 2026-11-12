@@ -59,10 +59,16 @@ class QuizAttemptService
     public function attemptsUsed(Quiz $quiz, int $userId): int
     {
         $editedAt = $this->lastEditedAt($quiz);
+        $snapshotAttemptIds = $this->completedSnapshotAttemptIds((int) $quiz->id, $userId, $editedAt);
 
         return QuizAttempt::where('user_id', $userId)
             ->where('quiz_id', $quiz->id)
-            ->whereHas('answers')
+            ->where(function ($query) use ($snapshotAttemptIds): void {
+                $query->whereHas('answers');
+                if ($snapshotAttemptIds !== []) {
+                    $query->orWhereIn('id', $snapshotAttemptIds);
+                }
+            })
             ->when($editedAt, fn ($query) => $query->where(function ($where) use ($editedAt) {
                 $where->where('submitted_at', '>=', $editedAt)
                     ->orWhere('created_at', '>=', $editedAt);
@@ -117,24 +123,47 @@ class QuizAttemptService
         // presentation comes from the server (session or deterministic
         // derivation), never from the client.
         $presentation ??= $this->presentationFor($quiz, (int) $student->id);
+        if (! is_array($presentation['question_snapshot'] ?? null)) {
+            $presentation['question_snapshot'] = $this->questionSnapshot($quiz, $presentation);
+        }
+
         $grade = $this->grading->grade($quiz, $result, $this->questionsInPresentation($quiz, $presentation));
         $percent = $grade['score'];
         $passed = $grade['passed'];
 
-        DB::transaction(function () use ($student, $quiz, $grade, $percent, $passed, $startedAt, $presentation): void {
-            $attempt = QuizAttempt::create([
-                'user_id' => $student->id,
-                'quiz_id' => $quiz->id,
+        $attempt = DB::transaction(function () use ($student, $quiz, $grade, $percent, $passed, $startedAt, $presentation): QuizAttempt {
+            $attributes = [
                 'quiz_set_id' => $presentation['set_id'],
                 'shuffle_seed' => $presentation['question_seed'],
                 'presentation' => $this->presentationSnapshot($presentation),
+                'question_snapshot' => $presentation['question_snapshot'],
                 'score' => $percent,
                 'passed' => $passed,
                 'started_at' => $startedAt ?? now(),
                 'submitted_at' => now(),
-            ]);
+            ];
+            $attempt = isset($presentation['attempt_id'])
+                ? QuizAttempt::query()->whereKey($presentation['attempt_id'])
+                    ->where('user_id', $student->id)
+                    ->where('quiz_id', $quiz->id)
+                    ->whereNull('submitted_at')
+                    ->first()
+                : null;
+            if ($attempt) {
+                $attempt->update($attributes);
+            } else {
+                $attempt = QuizAttempt::create([
+                    'user_id' => $student->id,
+                    'quiz_id' => $quiz->id,
+                    ...$attributes,
+                ]);
+            }
 
             foreach ($grade['answers'] as $questionId => $answer) {
+                if (! QuizQuestion::query()->whereKey((int) $questionId)->exists()) {
+                    continue;
+                }
+
                 QuizAttemptAnswer::create([
                     'quiz_attempt_id' => $attempt->id,
                     'question_id' => (int) $questionId,
@@ -142,6 +171,8 @@ class QuizAttemptService
                     'is_correct' => $answer['correct'],
                 ]);
             }
+
+            return $attempt;
         });
 
         $this->forgetPresentation($quiz, (int) $student->id);
@@ -163,7 +194,14 @@ class QuizAttemptService
             'passed' => $passed,
             'correct' => $grade['correct'],
             'total' => $grade['total'],
-            'answers' => $grade['answers'],
+            'earned_points' => $grade['earned_points'],
+            'possible_points' => $grade['possible_points'],
+            'answers' => $passed
+                ? $grade['answers']
+                : collect($grade['answers'])
+                    ->map(fn (array $answer): array => ['answer' => $answer['answer']])
+                    ->all(),
+            'review_questions' => $this->reviewQuestionsForAttempt($attempt),
             'unlock' => $passed ? null : now()->addMinutes(5)->getTimestamp() * 1000,
         ];
     }
@@ -187,7 +225,7 @@ class QuizAttemptService
      *
      * @return array{quiz_id:int,attempt_number:int,version:int|null,set_id:int|null,set_name:string,set_index:int,set_count:int,question_seed:int,choice_seed:int,question_ids:list<int>,choice_orders:array<string,list<int>>}
      */
-    public function presentationFor(Quiz $quiz, int $userId, bool $remember = true): array
+    public function presentationFor(Quiz $quiz, int $userId, bool $remember = true, bool $persistAttempt = true): array
     {
         $attemptNumber = $this->attemptsUsed($quiz, $userId);
         $version = $this->lastEditedAt($quiz)?->getTimestamp();
@@ -198,13 +236,44 @@ class QuizAttemptService
         $stored = $session?->get($key);
         if (is_array($stored)
             && ($stored['attempt_number'] ?? null) === $attemptNumber
-            && ($stored['version'] ?? null) === $version
-            && $groups->has((string) ($stored['set_id'] ?? '0'))
-            && $this->sameQuestions($groups->get((string) ($stored['set_id'] ?? '0')), $stored['question_ids'] ?? [])) {
+            && (is_array($stored['question_snapshot'] ?? null)
+                || (($stored['version'] ?? null) === $version
+                    && ($quiz->questions_per_attempt !== null
+                        ? $this->sameDrawQuestions($quiz, $stored['question_ids'] ?? [])
+                        : ($groups->has((string) ($stored['set_id'] ?? '0'))
+                            && $this->sameQuestions($groups->get((string) ($stored['set_id'] ?? '0')), $stored['question_ids'] ?? [])))))) {
+            if ($remember && $persistAttempt && empty($stored['attempt_id'])) {
+                $stored = $this->persistActivePresentation($quiz, $userId, $stored);
+                $session?->put($key, $stored);
+            }
+
             return $stored;
         }
 
+        $pending = QuizAttempt::query()
+            ->where('user_id', $userId)
+            ->where('quiz_id', $quiz->id)
+            ->whereNull('submitted_at')
+            ->whereNotNull('question_snapshot')
+            ->latest('id')
+            ->first();
+        if ($pending && is_array($pending->presentation) && is_array($pending->question_snapshot)) {
+            $presentation = $pending->presentation;
+            $presentation['attempt_number'] = $attemptNumber;
+            $presentation['question_snapshot'] = $pending->question_snapshot;
+            $presentation['attempt_id'] = (int) $pending->id;
+            if ($remember) {
+                $session?->put($key, $presentation);
+            }
+
+            return $presentation;
+        }
+
         $presentation = $this->buildPresentation($quiz, $userId, $attemptNumber, $version, $groups);
+        $presentation['question_snapshot'] = $this->questionSnapshot($quiz, $presentation);
+        if ($remember && $persistAttempt) {
+            $presentation = $this->persistActivePresentation($quiz, $userId, $presentation);
+        }
         if ($remember) {
             $session?->put($key, $presentation);
         }
@@ -224,10 +293,43 @@ class QuizAttemptService
      */
     public function presentedQuestions(Quiz $quiz, array $presentation): array
     {
+        if (is_array($presentation['question_snapshot'] ?? null)) {
+            $choiceOrders = $presentation['choice_orders'] ?? [];
+
+            return collect($presentation['question_snapshot']['questions'])->map(function (array $snapshot) use ($choiceOrders): array {
+                $type = (string) ($snapshot['type'] ?? '');
+                $options = $type === 'Identification' ? [] : array_values((array) ($snapshot['options'] ?? []));
+                $order = $choiceOrders[(string) ($snapshot['id'] ?? '')] ?? array_keys($options);
+                $presented = [];
+                foreach ($options as $displayIndex => $option) {
+                    $presented[] = [
+                        'value' => chr(65 + (int) ($order[$displayIndex] ?? $displayIndex)),
+                        'label' => chr(65 + $displayIndex),
+                        'text' => (string) $option,
+                    ];
+                }
+
+                $question = new QuizQuestion([
+                    'question' => (string) ($snapshot['text'] ?? ''),
+                    'type' => $type,
+                    'points' => $snapshot['points'] ?? null,
+                    'options' => $options,
+                    'correct_answer' => $snapshot['correct_answer'] ?? null,
+                ]);
+                $question->setAttribute('id', (int) ($snapshot['id'] ?? 0));
+                $question->exists = true;
+
+                return ['question' => $question, 'options' => $presented];
+            })->values()->all();
+        }
+
         $choiceOrders = $presentation['choice_orders'] ?? [];
 
         return $this->questionsInPresentation($quiz, $presentation)->map(function (QuizQuestion $question) use ($choiceOrders): array {
-            $options = array_values((array) ($question->options ?? []));
+            $options = $question->type === 'Identification' ? [] : array_values((array) ($question->options ?? []));
+            if ($question->type === 'Identification') {
+                $question->setAttribute('options', []);
+            }
             $order = $choiceOrders[(string) $question->id] ?? array_keys($options);
             if (count($order) !== count($options) || array_diff(array_keys($options), $order) !== []) {
                 $order = array_keys($options);
@@ -259,9 +361,78 @@ class QuizAttemptService
         return array_diff(array_map('strval', array_keys($answers)), $allowed) === [];
     }
 
+    /**
+     * Return snapshot question data in a learner-safe shape for an authorized
+     * post-submission review. The storage snapshot itself is never serialized.
+     *
+     * @return list<array<string, mixed>>|null
+     */
+    public function reviewQuestionsForAttempt(QuizAttempt $attempt): ?array
+    {
+        $snapshot = $attempt->question_snapshot;
+        if (! is_array($snapshot['questions'] ?? null)) {
+            return null;
+        }
+
+        $includeCorrectAnswers = (bool) $attempt->passed;
+
+        return collect($snapshot['questions'])->map(function (array $question) use ($attempt, $includeCorrectAnswers): array {
+            $options = ($question['type'] ?? null) === 'Identification' ? [] : array_values((array) ($question['options'] ?? []));
+            $answer = $question['correct_answer'] ?? null;
+            $order = $attempt->presentation['choice_orders'][(string) ($question['id'] ?? '')] ?? array_keys($options);
+
+            $review = [
+                'id' => (int) ($question['id'] ?? 0),
+                'label' => mb_substr((string) ($question['text'] ?? ''), 0, 40),
+                'question' => (string) ($question['text'] ?? ''),
+                'type' => (string) ($question['type'] ?? ''),
+                'points' => $question['points'] ?? null,
+                'options' => collect($options)->map(fn ($option, int $index): array => [
+                    'letter' => chr(65 + (int) ($order[$index] ?? $index)),
+                    'label' => chr(65 + $index),
+                    'text' => (string) $option,
+                    ...($includeCorrectAnswers ? ['is_correct' => is_string($answer) && $option === $answer] : []),
+                ])->all(),
+            ];
+
+            if ($includeCorrectAnswers && ($question['type'] ?? null) === 'Identification') {
+                $review['review_answer'] = (string) $answer;
+            }
+
+            return $review;
+        })->values()->all();
+    }
+
     /** @return Collection<int, QuizQuestion> */
     public function questionsInPresentation(Quiz $quiz, array $presentation): Collection
     {
+        $snapshotQuestions = $presentation['question_snapshot']['questions'] ?? null;
+        if (is_array($snapshotQuestions)) {
+            $choiceOrders = $presentation['choice_orders'] ?? [];
+
+            return collect($snapshotQuestions)->map(function (array $snapshot) use ($choiceOrders): QuizQuestion {
+                $options = array_values((array) ($snapshot['options'] ?? []));
+                $order = $choiceOrders[(string) ($snapshot['id'] ?? '')] ?? array_keys($options);
+                $authoredOptions = [];
+                foreach ($options as $displayIndex => $option) {
+                    $authoredOptions[(int) ($order[$displayIndex] ?? $displayIndex)] = (string) $option;
+                }
+                ksort($authoredOptions);
+
+                $question = new QuizQuestion([
+                    'question' => (string) ($snapshot['text'] ?? ''),
+                    'type' => (string) ($snapshot['type'] ?? ''),
+                    'points' => $snapshot['points'] ?? null,
+                    'options' => array_values($authoredOptions),
+                    'correct_answer' => $snapshot['correct_answer'] ?? null,
+                ]);
+                $question->setAttribute('id', (int) ($snapshot['id'] ?? 0));
+                $question->exists = true;
+
+                return $question;
+            })->values();
+        }
+
         $questions = ($quiz->relationLoaded('questions') ? $quiz->questions : $quiz->questions()->get())->keyBy('id');
 
         $ordered = collect($presentation['question_ids'] ?? [])
@@ -307,6 +478,10 @@ class QuizAttemptService
     /** @param Collection<string, Collection<int, QuizQuestion>> $groups */
     private function buildPresentation(Quiz $quiz, int $userId, int $attemptNumber, ?int $version, Collection $groups): array
     {
+        if ($quiz->questions_per_attempt !== null) {
+            return $this->buildDrawPresentation($quiz, $userId, $attemptNumber, $version, $groups);
+        }
+
         $setIds = $groups->keys()->values();
         $setCount = max(1, $setIds->count());
         $setIndex = (int) ((SeededShuffle::seed('set', (string) $userId, (string) $quiz->id) + $attemptNumber) % $setCount);
@@ -349,6 +524,67 @@ class QuizAttemptService
         ];
     }
 
+    /** @param Collection<string, Collection<int, QuizQuestion>> $groups */
+    private function buildDrawPresentation(Quiz $quiz, int $userId, int $attemptNumber, ?int $version, Collection $groups): array
+    {
+        $setKey = (string) ($groups->keys()->first() ?? '0');
+        $questions = $groups->get($setKey, collect());
+        $poolIds = $questions->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
+        $drawCount = min(max(0, (int) $quiz->questions_per_attempt), count($poolIds));
+        $seenIds = QuizAttempt::query()
+            ->where('quiz_id', $quiz->id)
+            ->where('user_id', $userId)
+            ->get(['presentation'])
+            ->flatMap(fn (QuizAttempt $attempt) => (array) ($attempt->presentation['question_ids'] ?? []))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->all();
+        $seen = array_values(array_intersect($poolIds, $seenIds));
+        $unseen = array_values(array_diff($poolIds, $seen));
+        $drawSeed = SeededShuffle::seed('draw', (string) $userId, (string) $quiz->id, (string) $attemptNumber, (string) ($version ?? 0));
+        $drawn = array_slice(SeededShuffle::shuffle($unseen, $drawSeed), 0, $drawCount);
+        if (count($drawn) < $drawCount) {
+            $seenSeed = SeededShuffle::seed('seen', (string) $drawSeed);
+            $drawn = array_merge($drawn, array_slice(SeededShuffle::shuffle($seen, $seenSeed), 0, $drawCount - count($drawn)));
+        }
+
+        $questionSeed = SeededShuffle::seed('questions', (string) $userId, (string) $quiz->id, (string) $attemptNumber);
+        if ($quiz->shuffle_questions) {
+            $drawn = SeededShuffle::shuffle($drawn, $questionSeed);
+        } else {
+            $positions = array_flip($poolIds);
+            usort($drawn, fn (int $left, int $right): int => $positions[$left] <=> $positions[$right]);
+        }
+
+        $choiceSeed = SeededShuffle::seed('choices', (string) $userId, (string) $quiz->id, (string) $attemptNumber);
+        $choiceOrders = [];
+        foreach ($questions->whereIn('id', $drawn) as $question) {
+            $count = count((array) ($question->options ?? []));
+            $order = $count > 0 ? range(0, $count - 1) : [];
+            if ($count > 0 && $quiz->shuffle_choices && $this->choicesShuffle($question)) {
+                $order = SeededShuffle::shuffle($order, SeededShuffle::seed((string) $choiceSeed, (string) $question->id));
+            }
+            $choiceOrders[(string) $question->id] = $order;
+        }
+
+        $set = $setKey !== '0' ? $quiz->orderedSets()->firstWhere('id', (int) $setKey) : null;
+
+        return [
+            'quiz_id' => (int) $quiz->id,
+            'attempt_number' => $attemptNumber,
+            'version' => $version,
+            'set_id' => $set?->id ? (int) $set->id : ($setKey !== '0' ? (int) $setKey : null),
+            'set_name' => $set?->name ?? 'Set A',
+            'set_index' => 0,
+            'set_count' => 1,
+            'question_seed' => $questionSeed,
+            'choice_seed' => $choiceSeed,
+            'question_ids' => array_values($drawn),
+            'choice_orders' => $choiceOrders,
+            'draw_seed' => $drawSeed,
+        ];
+    }
+
     /** True/False and locked questions keep their authored order; Identification has no choices. */
     private function choicesShuffle(QuizQuestion $question): bool
     {
@@ -368,10 +604,26 @@ class QuizAttemptService
         return $current === $stored;
     }
 
+    /** A saved draw remains valid when its IDs are a unique subset of the current pool. */
+    private function sameDrawQuestions(Quiz $quiz, array $ids): bool
+    {
+        if ($quiz->orderedSets()->count() > 1) {
+            return false;
+        }
+
+        $poolIds = $quiz->questionsForSet()->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $stored = collect($ids)->map(fn ($id) => (int) $id)->values()->all();
+        $expectedCount = min(max(0, (int) $quiz->questions_per_attempt), count($poolIds));
+
+        return count($stored) === $expectedCount
+            && count($stored) === count(array_unique($stored))
+            && array_diff($stored, $poolIds) === [];
+    }
+
     /** What is stored on the attempt so review can reproduce the served order after later edits. */
     private function presentationSnapshot(array $presentation): array
     {
-        return [
+        $snapshot = [
             'set_id' => $presentation['set_id'],
             'set_name' => $presentation['set_name'],
             'attempt_number' => $presentation['attempt_number'],
@@ -380,6 +632,63 @@ class QuizAttemptService
             'question_ids' => $presentation['question_ids'],
             'choice_orders' => $presentation['choice_orders'],
         ];
+
+        if (isset($presentation['draw_seed'])) {
+            $snapshot['draw_seed'] = $presentation['draw_seed'];
+        }
+
+        return $snapshot;
+    }
+
+    /** @return array{v:int,questions:list<array{id:int,text:string,type:string,points:int|null,options:list<string>,correct_answer:?string}>} */
+    private function questionSnapshot(Quiz $quiz, array $presentation): array
+    {
+        $questions = ($quiz->relationLoaded('questions') ? $quiz->questions : $quiz->questions()->get())->keyBy('id');
+        $choiceOrders = $presentation['choice_orders'] ?? [];
+        $snapshots = [];
+
+        foreach ($presentation['question_ids'] ?? [] as $id) {
+            $question = $questions->get((int) $id);
+            if (! $question) {
+                continue;
+            }
+
+            $options = array_values((array) ($question->options ?? []));
+            $order = $choiceOrders[(string) $question->id] ?? array_keys($options);
+            if (count($order) !== count($options) || array_diff(array_keys($options), $order) !== []) {
+                $order = array_keys($options);
+            }
+
+            $snapshots[] = [
+                'id' => (int) $question->id,
+                'text' => (string) $question->question,
+                'type' => (string) $question->type,
+                'points' => $question->points === null ? null : (int) $question->points,
+                'options' => array_values(array_map(fn ($index): string => (string) $options[$index], $order)),
+                'correct_answer' => $question->correct_answer,
+            ];
+        }
+
+        return ['v' => 1, 'questions' => $snapshots];
+    }
+
+    private function persistActivePresentation(Quiz $quiz, int $userId, array $presentation): array
+    {
+        $activeAttempt = QuizAttempt::create([
+            'user_id' => $userId,
+            'quiz_id' => $quiz->id,
+            'quiz_set_id' => $presentation['set_id'],
+            'shuffle_seed' => $presentation['question_seed'],
+            'presentation' => $this->presentationSnapshot($presentation),
+            'question_snapshot' => $presentation['question_snapshot'],
+            'score' => 0,
+            'passed' => false,
+            'started_at' => now(),
+        ]);
+
+        $presentation['attempt_id'] = (int) $activeAttempt->id;
+
+        return $presentation;
     }
 
     private function session(): ?Session
@@ -413,10 +722,37 @@ class QuizAttemptService
 
     private function latestAttempt(Quiz $quiz, int $userId): ?QuizAttempt
     {
+        $snapshotAttemptIds = $this->completedSnapshotAttemptIds((int) $quiz->id, $userId);
+
         return QuizAttempt::where('user_id', $userId)
             ->where('quiz_id', $quiz->id)
-            ->whereHas('answers')
+            ->where(function ($query) use ($snapshotAttemptIds): void {
+                $query->whereHas('answers');
+                if ($snapshotAttemptIds !== []) {
+                    $query->orWhereIn('id', $snapshotAttemptIds);
+                }
+            })
             ->latest('submitted_at')
             ->first();
+    }
+
+    /** @return list<int> */
+    private function completedSnapshotAttemptIds(int $quizId, int $userId, ?Carbon $editedAt = null): array
+    {
+        return QuizAttempt::query()
+            ->where('user_id', $userId)
+            ->where('quiz_id', $quizId)
+            ->whereNotNull('submitted_at')
+            ->whereNotNull('question_snapshot')
+            ->when($editedAt, fn ($query) => $query->where(function ($where) use ($editedAt): void {
+                $where->where('submitted_at', '>=', $editedAt)
+                    ->orWhere('created_at', '>=', $editedAt);
+            }))
+            ->get(['id', 'question_snapshot'])
+            ->filter(fn (QuizAttempt $attempt): bool => count($attempt->question_snapshot['questions'] ?? []) > 0)
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->values()
+            ->all();
     }
 }

@@ -80,6 +80,16 @@ class Course extends Model
         'version_approved_at',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (Course $course): void {
+            if ($course->isDirty(['is_featured', 'is_published', 'is_approved', 'approval_status'])
+                && ! $course->isEligibleForFeaturing()) {
+                $course->is_featured = false;
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [
@@ -105,12 +115,19 @@ class Course extends Model
         ];
     }
 
+    public function isEligibleForFeaturing(): bool
+    {
+        return $this->approval_status === 'approved'
+            && $this->is_approved
+            && $this->is_published;
+    }
+
     /**
      * Display status used by the Faculty / Admin course cards.
      */
     public function statusLabel(): string
     {
-        if ($this->approval_status === 'approved' || $this->is_approved) {
+        if ($this->is_published && ($this->approval_status === 'approved' || $this->is_approved)) {
             return 'Published';
         }
 

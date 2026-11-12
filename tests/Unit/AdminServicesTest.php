@@ -120,34 +120,61 @@ test('course moderation denies a course and notifies its author', function () {
         ->not->toBeNull();
 });
 
-test('course moderation toggles publish and feature without conflating the two flags', function () {
-    $course = makeAdminModerationCourse();
+test('course moderation only features approved published courses and unfeatures them when unpublished', function () {
+    $course = makeAdminModerationCourse([
+        'approval_status' => 'approved',
+        'is_approved' => true,
+        'is_published' => true,
+    ]);
     $service = app(CourseModerationService::class);
 
     expect($service->toggleFeature($course))->toBeTrue();
-    $course->refresh();
-    expect($course->is_featured)->toBeTrue()
-        ->and($course->approval_status)->toBe('pending');
+    expect($course->fresh()->is_featured)->toBeTrue();
+    expect($service->togglePublish($course))->toBeFalse();
+    expect($course->fresh()->is_published)->toBeFalse()
+        ->and($course->fresh()->is_featured)->toBeFalse();
 
-    expect($service->togglePublish($course, 8))->toBeTrue();
-    $course->refresh();
-    expect($course->is_published)->toBeTrue()
-        ->and($course->is_approved)->toBeTrue()
-        ->and($course->approval_status)->toBe('approved')
-        ->and($course->approved_by)->toBe(8);
+    $pendingCourse = makeAdminModerationCourse();
+    expect(fn () => $service->toggleFeature($pendingCourse))
+        ->toThrow(DomainException::class, 'Only approved, published courses can be featured.');
+});
 
-    expect($service->togglePublish($course, 8))->toBeFalse();
-    expect($course->fresh()->is_published)->toBeFalse();
+test('course status changes automatically unfeature courses that are no longer published', function () {
+    $ineligibleStates = [
+        ['approval_status' => 'draft', 'is_approved' => false, 'is_published' => true],
+        ['approval_status' => 'pending', 'is_approved' => false, 'is_published' => true],
+        ['approval_status' => 'approved', 'is_approved' => true, 'is_published' => false],
+    ];
+
+    foreach ($ineligibleStates as $index => $state) {
+        $course = makeAdminModerationCourse([
+            'title' => 'Published Course '.$index,
+            'approval_status' => 'approved',
+            'is_approved' => true,
+            'is_published' => true,
+            'is_featured' => true,
+        ]);
+
+        $course->update($state);
+
+        expect($course->fresh()->is_featured)->toBeFalse();
+    }
 });
 
 test('course moderation prevents featuring a fourth course but allows unfeaturing', function () {
     $service = app(CourseModerationService::class);
     $featuredCourses = collect(range(1, 3))->map(fn (int $number) => makeAdminModerationCourse([
         'title' => 'Featured Course '.$number,
+        'approval_status' => 'approved',
+        'is_approved' => true,
+        'is_published' => true,
         'is_featured' => true,
     ]));
     $fourthCourse = makeAdminModerationCourse([
         'title' => 'Fourth Course',
+        'approval_status' => 'approved',
+        'is_approved' => true,
+        'is_published' => true,
         'is_featured' => false,
     ]);
 

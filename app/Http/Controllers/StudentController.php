@@ -898,6 +898,7 @@ class StudentController extends Controller
             $editedAt = $this->quizLastEditedAt($m->quiz);
             $lastAny = QuizAttempt::where('user_id', $auth->id)
                 ->where('quiz_id', $m->quiz->id)
+                ->whereNotNull('submitted_at')
                 ->latest('submitted_at')
                 ->first();
             $lastAnyAt = $lastAny ? ($lastAny->submitted_at ?? $lastAny->created_at) : null;
@@ -907,11 +908,13 @@ class StudentController extends Controller
             }
             $failed = QuizAttempt::where('user_id', $auth->id)
                 ->where('quiz_id', $m->quiz->id)
+                ->whereNotNull('submitted_at')
                 ->where('passed', false)
                 ->latest('submitted_at')
                 ->first();
             $passed = QuizAttempt::where('user_id', $auth->id)
                 ->where('quiz_id', $m->quiz->id)
+                ->whereNotNull('submitted_at')
                 ->where('passed', true)
                 ->exists();
 
@@ -945,6 +948,7 @@ class StudentController extends Controller
             $latestAttempt = QuizAttempt::query()
                 ->where('user_id', $auth->id)
                 ->where('quiz_id', $quiz->id)
+                ->whereNotNull('submitted_at')
                 ->latest('submitted_at')
                 ->first();
 
@@ -1553,7 +1557,7 @@ class StudentController extends Controller
         abort_unless($enrolled, 403);
         abort_unless($this->quizIsUnlockedForStudent($quiz, (int) $student->id), 403, 'Complete the required course content before taking this quiz.');
         $status = $this->quizAttempts->retakeStatus($quiz, (int) $student->id);
-        $latestAttempt = QuizAttempt::query()->where('quiz_id', $quiz->id)->where('user_id', $student->id)->latest('submitted_at')->first();
+        $latestAttempt = QuizAttempt::query()->where('quiz_id', $quiz->id)->where('user_id', $student->id)->whereNotNull('submitted_at')->latest('submitted_at')->first();
         $timeLimitSeconds = max(0, (int) $quiz->time_limit * 60);
         $sessionKey = $this->quizTrackingSessionKey((int) $student->id, (int) $quiz->id);
         if ($status['exhausted'] || $status['unlock']) {
@@ -1576,6 +1580,9 @@ class StudentController extends Controller
             'module_order' => $quiz->module_order,
             'status' => $status,
             'latestAttempt' => $latestAttempt,
+            'review_questions' => $latestAttempt?->passed
+                ? $this->quizAttempts->reviewQuestionsForAttempt($latestAttempt)
+                : null,
             'time_limit_seconds' => $timeLimitSeconds,
             'timer_remaining_seconds' => $quizStartedAt === null
                 ? null
@@ -1649,6 +1656,8 @@ class StudentController extends Controller
             'id' => (int) $item['question']->id,
             'label' => Str::limit((string) $item['question']->question, 40, ''),
             'question' => (string) $item['question']->question,
+            'type' => (string) $item['question']->type,
+            'points' => (int) $item['question']->points,
             'options' => array_map(fn (array $option): array => [
                 'letter' => $option['value'],
                 'label' => $option['label'],
@@ -1667,10 +1676,23 @@ class StudentController extends Controller
     private function playerQuizQuestions(Quiz $quiz, int $userId, bool $review): array
     {
         if ($review) {
+            $snapshotAttempt = QuizAttempt::query()
+                ->where('user_id', $userId)
+                ->where('quiz_id', $quiz->id)
+                ->whereNotNull('submitted_at')
+                ->whereNotNull('question_snapshot')
+                ->latest('submitted_at')
+                ->latest('id')
+                ->first();
+            if ($snapshotAttempt) {
+                return $this->quizAttempts->reviewQuestionsForAttempt($snapshotAttempt) ?? [];
+            }
+
             $editedAt = $this->quizAttempts->lastEditedAt($quiz);
             $latest = QuizAttempt::query()
                 ->where('user_id', $userId)
                 ->where('quiz_id', $quiz->id)
+                ->whereNotNull('submitted_at')
                 ->whereNotNull('presentation')
                 ->when($editedAt, fn ($query) => $query->where('submitted_at', '>=', $editedAt))
                 ->latest('submitted_at')
@@ -1682,7 +1704,7 @@ class StudentController extends Controller
         }
 
         return $this->playerQuestionPayload(
-            $this->quizAttempts->presentedQuestions($quiz, $this->quizAttempts->presentationFor($quiz, $userId))
+            $this->quizAttempts->presentedQuestions($quiz, $this->quizAttempts->presentationFor($quiz, $userId, persistAttempt: false))
         );
     }
 
@@ -1780,6 +1802,7 @@ class StudentController extends Controller
                 'lesson_completed' => $lessonCompleted,
                 'next_url' => $nextRequirement['url'],
                 'pending_review' => $nextRequirement['pending_review'],
+                'review_questions' => $result['passed'] ? $result['review_questions'] : null,
                 'progress_percent' => (int) $enrollment->fresh()->progress_percent,
                 'progress_breakdown' => $this->progressService->progressBreakdown($course, (int) $student->id, $enrollment->enrolled_at),
                 'evaluation_eligible' => $courseEvaluation->isEligible($course, $student, $enrollment->fresh()),
@@ -1789,6 +1812,7 @@ class StudentController extends Controller
         return redirect()->route('quiz.show', $quiz->id)->with('quiz_result', [
             'score' => $result['score'],
             'passed' => $result['passed'],
+            'review_questions' => $result['review_questions'],
             'lesson_completed' => $lessonCompleted,
             'next_requirement_url' => $nextRequirement['url'],
             'pending_review' => $nextRequirement['pending_review'],
@@ -1930,6 +1954,7 @@ class StudentController extends Controller
                     : null,
                 'progress_percent' => (int) $enrollment->fresh()->progress_percent,
                 'progress_breakdown' => $this->progressService->progressBreakdown($course, (int) $student->id, $enrollment->enrolled_at),
+                'review_questions' => $result['review_questions'],
             ]);
         }
 
@@ -2149,13 +2174,8 @@ class StudentController extends Controller
     }
 
     /**
-     * Recompute and persist an enrollment's progress against the course as
-     * it exists NOW, returning the fresh percentage.
-     *
-     * Progress is (correct answers / current questions). When faculty
-     * deletes a quiz or a module the stored percentage describes content
-     * that no longer exists, so it has to be recalculated wherever it is
-     * displayed — not only inside the course player.
+     * Recompute enrollment completion against the current course content.
+     * Quiz percentages come from their stored attempts and remain unchanged.
      */
     private function syncEnrollmentProgress($course, ?Enrollment $enrollment): int
     {
@@ -2194,16 +2214,10 @@ class StudentController extends Controller
      * started touching the parent row.
      */
     /**
-     * Recalculate a course's progress from the student's quiz scores and the
-     * quiz questions that exist *right now*.
+     * Recalculate the legacy course accuracy percentage from stored quiz
+     * percentages, weighted by available points in each current default set.
      *
-     * Progress is (correct answers / total questions), so it has to be
-     * recomputed whenever faculty adds or removes questions — otherwise the
-     * stored percentage describes a version of the course that no longer
-     * exists. Each module's score is capped at its current question count so
-     * a score of 5 on a quiz trimmed to 2 questions can't report 250%.
-     *
-     * @param  array<string,int>  $moduleScores  moduleIndex => correct answers
+     * @param  array<string,int>  $moduleScores  moduleIndex => score percentage
      */
     /**
      * Translate saved completed-lesson keys into current lesson IDs.
@@ -2306,7 +2320,7 @@ class StudentController extends Controller
             'module_scores.*' => 'integer|min:0',
             'quiz_results' => 'nullable|array',
             'quiz_results.*.answers' => 'nullable|array',
-            'quiz_results.*.answers.*' => 'nullable|string|size:1',
+            'quiz_results.*.answers.*' => 'nullable|string|max:2000',
             'quiz_results.*.score' => 'prohibited',
             'retake_check' => 'nullable|integer|min:0',
         ]);
@@ -2463,7 +2477,7 @@ class StudentController extends Controller
             } else {
                 // The score comes from the server-side graded attempt. Never
                 // copy a score from the browser into progress state.
-                $moduleScores[(string) $moduleIndex] = (int) ($submission['correct'] ?? 0);
+                $moduleScores[(string) $moduleIndex] = (int) ($submission['score'] ?? 0);
             }
         }
 
@@ -3138,10 +3152,11 @@ class StudentController extends Controller
         ])->where('user_id', $auth->id)->get();
         $enrollments->each(fn (Enrollment $enrollment) => $this->syncEnrollmentProgress($enrollment->course, $enrollment));
 
-        $avgScore = QuizAttempt::where('user_id', $auth->id)->avg('score');
+        $avgScore = QuizAttempt::where('user_id', $auth->id)->whereNotNull('submitted_at')->avg('score');
         $recentQuizAttempts = QuizAttempt::query()
             ->with('quiz.course')
             ->where('user_id', $auth->id)
+            ->whereNotNull('submitted_at')
             ->latest('submitted_at')
             ->limit(20)
             ->get();
@@ -3173,7 +3188,7 @@ class StudentController extends Controller
                 'completed_courses' => $enrollments->where('completion_status', MicrocredentialCompletionService::STATUS_COMPLETED)->count(),
                 'badges_earned' => $auth->badges()->wherePivot('status', 'active')->count(),
                 'certificates' => $auth->certificates()->where('status', 'active')->count(),
-                'quiz_attempts_count' => QuizAttempt::where('user_id', $auth->id)->count(),
+                'quiz_attempts_count' => QuizAttempt::where('user_id', $auth->id)->whereNotNull('submitted_at')->count(),
                 'score_avg' => $avgScore !== null ? round((float) $avgScore, 1) : null,
                 'competencies_mastered' => CompetencyProgress::where('user_id', $auth->id)
                     ->where('status', 'completed')
@@ -3209,13 +3224,8 @@ class StudentController extends Controller
             ->where('completed_at', '>=', $now->copy()->subDays(30))
             ->get();
         $attempts = QuizAttempt::where('user_id', $userId)
-            ->where(function ($query) use ($now) {
-                $query->where('submitted_at', '>=', $now->copy()->subDays(30))
-                    ->orWhere(function ($fallback) use ($now) {
-                        $fallback->whereNull('submitted_at')
-                            ->where('created_at', '>=', $now->copy()->subDays(30));
-                    });
-            })
+            ->whereNotNull('submitted_at')
+            ->where('submitted_at', '>=', $now->copy()->subDays(30))
             ->get();
 
         $totalLessons = max(1, $enrollments->sum(fn (Enrollment $enrollment) => $enrollment->course?->lessons?->count() ?? 0));

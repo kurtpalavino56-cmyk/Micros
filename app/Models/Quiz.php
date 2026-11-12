@@ -5,10 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 
 class Quiz extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'course_id',
         'module_id',
@@ -19,6 +22,7 @@ class Quiz extends Model
         'description',
         'passing_score',
         'attempts',
+        'questions_per_attempt',
         'time_limit',
         'shuffle_questions',
         'shuffle_choices',
@@ -35,6 +39,7 @@ class Quiz extends Model
             'is_summative' => 'boolean',
             'shuffle_questions' => 'boolean',
             'shuffle_choices' => 'boolean',
+            'questions_per_attempt' => 'integer',
             'questions_changed_at' => 'datetime',
         ];
     }

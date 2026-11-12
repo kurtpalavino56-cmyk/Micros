@@ -273,11 +273,17 @@ test('admin cannot feature more than three courses at once', function () {
     $featuredCourses = collect(range(1, 3))->map(fn (int $number) => Course::create([
         'title' => 'Featured Course '.$number,
         'slug' => 'featured-course-'.$number,
+        'approval_status' => 'approved',
+        'is_approved' => true,
+        'is_published' => true,
         'is_featured' => true,
     ]));
     $fourthCourse = Course::create([
         'title' => 'Fourth Course',
         'slug' => 'fourth-course',
+        'approval_status' => 'approved',
+        'is_approved' => true,
+        'is_published' => true,
         'is_featured' => false,
     ]);
 
@@ -298,6 +304,29 @@ test('admin cannot feature more than three courses at once', function () {
     $this->post(route('admin.courses.feature', $featuredCourses->first()->id))
         ->assertRedirect();
     expect($featuredCourses->first()->fresh()->is_featured)->toBeFalse();
+});
+
+test('admin cannot feature an unpublished course', function () {
+    $admin = User::factory()->admin()->create();
+    $course = Course::create([
+        'title' => 'Pending Course',
+        'slug' => 'pending-course',
+        'approval_status' => 'pending',
+        'is_approved' => false,
+        'is_published' => false,
+        'is_featured' => false,
+    ]);
+
+    $this->actingAs($admin)
+        ->from(route('admin.courses'))
+        ->post(route('admin.courses.feature', $course->id))
+        ->assertRedirect(route('admin.courses'));
+
+    expect($course->fresh()->is_featured)->toBeFalse();
+
+    $this->get(route('admin.courses'))
+        ->assertSee('Only approved, published courses can be featured.')
+        ->assertDontSee('Feature course on homepage');
 });
 
 test('admin can confirm academic-unit confirmation for an enrollment', function () {

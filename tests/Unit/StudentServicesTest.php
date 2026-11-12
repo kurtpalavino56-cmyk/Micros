@@ -7,6 +7,7 @@ use App\Models\CourseModule;
 use App\Models\Enrollment;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
+use App\Models\QuizAttemptAnswer;
 use App\Models\QuizQuestion;
 use App\Models\User;
 use App\Services\QuizAttemptService;
@@ -70,7 +71,12 @@ test('quiz grading calculates percentage and passing status from the current que
     [$course, $module] = makeCourseWithModule();
     $quiz = addQuiz($course, $module, ['passing_score' => 70], 3);
 
-    $grade = app(QuizGradingService::class)->grade($quiz, ['score' => 2]);
+    $grade = app(QuizGradingService::class)->grade($quiz, [
+        'answers' => [
+            (string) $quiz->questions[0]->id => 'A',
+            (string) $quiz->questions[1]->id => 'A',
+        ],
+    ]);
 
     expect($grade)->toMatchArray([
         'correct' => 2,
@@ -79,7 +85,9 @@ test('quiz grading calculates percentage and passing status from the current que
         'passed' => false,
     ]);
 
-    expect(app(QuizGradingService::class)->grade($quiz, ['score' => 3]))
+    expect(app(QuizGradingService::class)->grade($quiz, [
+        'answers' => $quiz->questions->mapWithKeys(fn (QuizQuestion $question): array => [(string) $question->id => 'A'])->all(),
+    ]))
         ->toMatchArray(['score' => 100, 'passed' => true]);
 });
 
@@ -87,8 +95,8 @@ test('quiz grading returns zero for a quiz with no questions', function () {
     [$course, $module] = makeCourseWithModule();
     $quiz = addQuiz($course, $module, ['passing_score' => 1]);
 
-    expect(app(QuizGradingService::class)->grade($quiz, ['score' => 1]))
-        ->toMatchArray(['correct' => 1, 'total' => 0, 'score' => 0, 'passed' => false]);
+    expect(app(QuizGradingService::class)->grade($quiz, []))
+        ->toMatchArray(['correct' => 0, 'total' => 0, 'score' => 0, 'passed' => false]);
 });
 
 test('quiz attempts parse default, unlimited, numeric, and malformed attempt limits', function () {
@@ -106,7 +114,9 @@ test('a passing quiz submission is graded, persisted, and emits a quiz-passed ev
     [$course, $module] = makeCourseWithModule();
     $quiz = addQuiz($course, $module, ['passing_score' => 70], 3);
 
-    $result = app(QuizAttemptService::class)->submit($student, $quiz, ['score' => 3]);
+    $result = app(QuizAttemptService::class)->submit($student, $quiz, [
+        'answers' => $quiz->questions->mapWithKeys(fn (QuizQuestion $question): array => [(string) $question->id => 'A'])->all(),
+    ]);
 
     expect($result)->toMatchArray(['blocked' => false, 'score' => 100, 'passed' => true, 'unlock' => null]);
     expect(QuizAttempt::where('user_id', $student->id)->where('quiz_id', $quiz->id)->count())->toBe(1);
@@ -158,8 +168,8 @@ test('attempts are exhausted after the configured budget is used', function () {
     $quiz = addQuiz($course, $module, ['attempts' => '1'], 1);
     $service = app(QuizAttemptService::class);
 
-    Carbon::setTestNow('2026-09-16 12:00:00');
-    $service->submit($student, $quiz, ['score' => 1]);
+    Carbon::setTestNow(now()->addMinute());
+    $service->submit($student, $quiz, ['answers' => [(string) $quiz->questions->first()->id => 'A']]);
     $status = $service->retakeStatus($quiz, $student->id);
     $blocked = $service->submit($student, $quiz, ['score' => 1]);
 
@@ -186,24 +196,24 @@ test('quiz edits reset the counted attempt history and stale cooldown', function
     Carbon::setTestNow();
 });
 
-test('progress percentage uses current question counts and caps stale scores', function () {
+test('progress percentage uses weighted stored quiz scores and caps stale scores', function () {
     [$course, $module] = makeCourseWithModule();
-    addQuiz($course, $module, [], 2);
+    addQuiz($course, $module, ['is_summative' => true], 2);
     $service = app(StudentProgressService::class);
 
-    expect($service->calculateProgressPercent($course->load('modules.quiz.questions'), ['0' => 5]))->toBe(100);
-    expect($service->calculateProgressPercent($course->load('modules.quiz.questions'), ['0' => 1]))->toBe(50);
+    expect($service->calculateProgressPercent($course->load('modules.quiz.questions'), ['0' => 150]))->toBe(100);
+    expect($service->calculateProgressPercent($course->load('modules.quiz.questions'), ['0' => 50]))->toBe(50);
 });
 
 test('earned module scores only retain scores backed by a current quiz attempt', function () {
     $student = User::factory()->create();
     [$course, $module] = makeCourseWithModule();
-    $quiz = addQuiz($course, $module, [], 2);
+    $quiz = addQuiz($course, $module, ['is_summative' => true], 2);
     $service = app(StudentProgressService::class);
 
     expect($service->earnedModuleScores($course->load('modules.quiz.questions'), ['0' => 2], $student->id))->toBe([]);
 
-    QuizAttempt::create([
+    $attempt = QuizAttempt::create([
         'user_id' => $student->id,
         'quiz_id' => $quiz->id,
         'score' => 100,
@@ -212,8 +222,17 @@ test('earned module scores only retain scores backed by a current quiz attempt',
         'submitted_at' => now(),
     ]);
 
+    foreach ($quiz->questions as $question) {
+        QuizAttemptAnswer::create([
+            'quiz_attempt_id' => $attempt->id,
+            'question_id' => $question->id,
+            'answer' => 'A',
+            'is_correct' => true,
+        ]);
+    }
+
     expect($service->earnedModuleScores($course->fresh()->load('modules.quiz.questions'), ['0' => 2], $student->id))
-        ->toBe(['0' => 2]);
+        ->toBe(['0' => 100]);
 });
 
 test('progress resolves real lesson IDs and legacy positions without attaching stale replacement lessons', function () {

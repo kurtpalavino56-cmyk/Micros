@@ -25,7 +25,7 @@
         --admin-hover: #f2f7ff;
         --admin-hover-text: #0d1b6e;
         --admin-hover-icon: #2447d4;
-        --admin-active: #fff4c7;
+        --admin-active: #dbeafe;
         --admin-font: 'Inter', sans-serif;
 
         /* Shared aliases used by page-level admin styles. */
@@ -261,7 +261,7 @@
         position: relative !important;
 
         background: var(--admin-active) !important;
-        color: #1C3552 !important;
+        color: #071550 !important;
         font-weight: 600 !important;
 
         border-radius: 0 !important;
@@ -275,7 +275,7 @@
         border-radius: 0 8px 8px 0 !important;
     }
 
-    /* Yellow highlight accent at the left edge. */
+    /* Blue highlight accent at the left edge. */
     aside.shared-admin-sidebar .sb-item.active::before {
         content: "" !important;
         position: absolute !important;
@@ -283,7 +283,7 @@
         top: 0 !important;
         bottom: 0 !important;
         width: 4px !important;
-        background: #f9c21b !important;
+        background: #2447d4 !important;
         border-radius: 0 3px 3px 0 !important;
     }
 

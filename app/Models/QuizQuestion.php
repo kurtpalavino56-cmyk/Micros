@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class QuizQuestion extends Model
 {
+    protected $hidden = [
+        'correct_answer',
+    ];
+
     protected $fillable = [
         'quiz_id',
         'quiz_set_id',
@@ -26,6 +30,11 @@ class QuizQuestion extends Model
             'lock_choice_order' => 'boolean',
             'position' => 'integer',
         ];
+    }
+
+    public function effectivePoints(): int
+    {
+        return max(1, (int) ($this->points ?? 1));
     }
 
     /**

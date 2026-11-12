@@ -242,6 +242,7 @@ test('faculty analytics pass rate counts each learner once across quiz retakes',
         DB::table('quiz_attempts')->insert([
             ...$attempt,
             'quiz_id' => $quizId,
+            'submitted_at' => now(),
             'created_at' => now(),
             'updated_at' => now(),
         ]);

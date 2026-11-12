@@ -140,7 +140,7 @@ class CourseCreationService
             ->filter()
             ->values()
             ->all();
-        $csv = preg_split('/[,\r\n]+/', (string) $request->input('related_skills_csv', ''));
+        $csv = explode('||', (string) $request->input('related_skills_csv', ''));
 
         return array_values(array_unique(array_merge($skills, array_filter(array_map('trim', $csv)))));
     }
