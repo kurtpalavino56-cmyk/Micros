@@ -4,14 +4,15 @@ namespace App\Support;
 
 use Illuminate\Validation\ValidationException;
 use SimpleXMLElement;
-use ZipArchive;
 
 /**
  * Builds the formatted Excel (.xlsx) quiz-question template and turns an
  * uploaded .xlsx back into CSV text, so QuizCsvImportService validates both
  * formats with exactly the same rules.
  *
- * Uses only PHP's zip and SimpleXML extensions; no spreadsheet package.
+ * Reads and writes the .xlsx zip container in plain PHP (zlib + SimpleXML
+ * only), so it does not depend on the optional ext-zip / ZipArchive, which
+ * some hosts (e.g. Railway's default PHP image) do not install.
  */
 class QuizQuestionSpreadsheet
 {
@@ -152,39 +153,12 @@ class QuizQuestionSpreadsheet
      */
     public function toCsv(string $binary): string
     {
-        $path = tempnam(sys_get_temp_dir(), 'quiz-xlsx-');
-        if ($path === false || file_put_contents($path, $binary) === false) {
-            throw $this->invalid('The Excel file could not be read.');
+        $parts = $this->parts($binary);
+        $sheetXml = $parts[$this->firstSheetPath($parts)] ?? null;
+        if ($sheetXml === null) {
+            throw $this->invalid('The Excel file has no worksheet to import.');
         }
-
-        $zip = new ZipArchive;
-        $opened = false;
-        try {
-            if ($zip->open($path, ZipArchive::RDONLY) !== true) {
-                throw $this->invalid('The file is not a valid Excel (.xlsx) workbook.');
-            }
-            $opened = true;
-
-            $uncompressed = 0;
-            for ($index = 0; $index < $zip->numFiles; $index++) {
-                $uncompressed += (int) ($zip->statIndex($index)['size'] ?? 0);
-            }
-            if ($uncompressed > self::MAX_UNCOMPRESSED_BYTES) {
-                throw $this->invalid('The Excel file is too large to import.');
-            }
-
-            $sheetXml = $this->part($zip, $this->firstSheetPath($zip));
-            if ($sheetXml === null) {
-                throw $this->invalid('The Excel file has no worksheet to import.');
-            }
-            $sharedStrings = $this->sharedStrings($zip);
-            $grid = $this->readGrid($sheetXml, $sharedStrings);
-        } finally {
-            if ($opened) {
-                $zip->close();
-            }
-            @unlink($path);
-        }
+        $grid = $this->readGrid($sheetXml, $this->sharedStrings($parts));
 
         if ($grid === []) {
             return '';
@@ -272,9 +246,9 @@ class QuizQuestionSpreadsheet
     }
 
     /** @return list<string> */
-    private function sharedStrings(ZipArchive $zip): array
+    private function sharedStrings(array $parts): array
     {
-        $xml = $this->part($zip, 'xl/sharedStrings.xml');
+        $xml = $parts['xl/sharedStrings.xml'] ?? null;
         if ($xml === null) {
             return [];
         }
@@ -304,11 +278,12 @@ class QuizQuestionSpreadsheet
         return $text;
     }
 
-    private function firstSheetPath(ZipArchive $zip): string
+    /** @param array<string, string> $parts */
+    private function firstSheetPath(array $parts): string
     {
         $fallback = 'xl/worksheets/sheet1.xml';
-        $workbookXml = $this->part($zip, 'xl/workbook.xml');
-        $relsXml = $this->part($zip, 'xl/_rels/workbook.xml.rels');
+        $workbookXml = $parts['xl/workbook.xml'] ?? null;
+        $relsXml = $parts['xl/_rels/workbook.xml.rels'] ?? null;
         if ($workbookXml === null || $relsXml === null) {
             return $fallback;
         }
@@ -326,13 +301,6 @@ class QuizQuestionSpreadsheet
         return $fallback;
     }
 
-    private function part(ZipArchive $zip, string $name): ?string
-    {
-        $contents = $zip->getFromName($name);
-
-        return $contents === false ? null : $contents;
-    }
-
     private function xml(string $contents): SimpleXMLElement
     {
         $previous = libxml_use_internal_errors(true);
@@ -346,22 +314,101 @@ class QuizQuestionSpreadsheet
         return $xml;
     }
 
-    /** @param array<string, string> $parts */
+    /**
+     * Unpacks every file in an .xlsx (zip) container.
+     *
+     * @return array<string, string> part name => contents
+     */
+    public function parts(string $binary): array
+    {
+        $invalid = 'The file is not a valid Excel (.xlsx) workbook.';
+        $end = strrpos($binary, "PK\x05\x06");
+        if ($end === false || strlen($binary) < $end + 22) {
+            throw $this->invalid($invalid);
+        }
+        $directory = unpack('ventries/VdirSize/VdirOffset', $binary, $end + 10);
+        if ($directory === false || $directory['dirOffset'] + $directory['dirSize'] > $end) {
+            throw $this->invalid($invalid);
+        }
+
+        $parts = [];
+        $declaredBytes = 0;
+        $offset = $directory['dirOffset'];
+        for ($index = 0; $index < $directory['entries']; $index++) {
+            if (substr($binary, $offset, 4) !== "PK\x01\x02") {
+                throw $this->invalid($invalid);
+            }
+            $entry = unpack('vflags/vmethod/x8/VcompressedSize/Vsize/vnameLength/vextraLength/vcommentLength/x8/VlocalOffset', $binary, $offset + 8);
+            $name = substr($binary, $offset + 46, $entry['nameLength']);
+            $offset += 46 + $entry['nameLength'] + $entry['extraLength'] + $entry['commentLength'];
+
+            if (($entry['flags'] & 0x1) === 0x1) {
+                throw $this->invalid('Password-protected Excel files cannot be imported.');
+            }
+            $declaredBytes += $entry['size'];
+            if ($declaredBytes > self::MAX_UNCOMPRESSED_BYTES) {
+                throw $this->invalid('The Excel file is too large to import.');
+            }
+            if (str_ends_with($name, '/')) {
+                continue;
+            }
+
+            $local = $entry['localOffset'];
+            if (substr($binary, $local, 4) !== "PK\x03\x04") {
+                throw $this->invalid($invalid);
+            }
+            $header = unpack('vnameLength/vextraLength', $binary, $local + 26);
+            $data = substr($binary, $local + 30 + $header['nameLength'] + $header['extraLength'], $entry['compressedSize']);
+
+            $contents = match ($entry['method']) {
+                0 => $data,
+                8 => function_exists('gzinflate') ? @gzinflate($data, max(1, $entry['size'])) : false,
+                default => false,
+            };
+            if ($contents === false || strlen($contents) !== $entry['size']) {
+                throw $this->invalid('The Excel file is damaged and could not be read.');
+            }
+            $parts[$name] = $contents;
+        }
+
+        return $parts;
+    }
+
+    /**
+     * Packs files into a zip container (deflated when zlib is available).
+     *
+     * @param  array<string, string>  $parts
+     */
     private function zip(array $parts): string
     {
-        $path = tempnam(sys_get_temp_dir(), 'quiz-template-');
-        $zip = new ZipArchive;
-        if ($path === false || $zip->open($path, ZipArchive::OVERWRITE) !== true) {
-            throw new \RuntimeException('The Excel template could not be created.');
-        }
+        [$time, $date] = $this->dosTimestamp();
+        $body = '';
+        $directory = '';
         foreach ($parts as $name => $contents) {
-            $zip->addFromString($name, $contents);
-        }
-        $zip->close();
-        $binary = (string) file_get_contents($path);
-        @unlink($path);
+            $deflated = function_exists('gzdeflate') ? gzdeflate($contents, 6) : false;
+            $method = $deflated === false ? 0 : 8;
+            $data = $deflated === false ? $contents : $deflated;
+            $crc = crc32($contents);
+            $fields = pack('vvvvvVVVvv', 20, 0, $method, $time, $date, $crc, strlen($data), strlen($contents), strlen($name), 0);
 
-        return $binary;
+            $directory .= "PK\x01\x02".pack('v', 20).$fields
+                .pack('vvvVV', 0, 0, 0, 0, strlen($body)).$name;
+            $body .= "PK\x03\x04".$fields.$name.$data;
+        }
+
+        return $body.$directory."PK\x05\x06"
+            .pack('vvvvVVv', 0, 0, count($parts), count($parts), strlen($directory), strlen($body), 0);
+    }
+
+    /** @return array{0: int, 1: int} MS-DOS time and date fields for the zip headers. */
+    private function dosTimestamp(): array
+    {
+        $now = getdate();
+
+        return [
+            ($now['hours'] << 11) | ($now['minutes'] << 5) | intdiv($now['seconds'], 2),
+            (max(0, $now['year'] - 1980) << 9) | ($now['mon'] << 5) | $now['mday'],
+        ];
     }
 
     private function styles(): string

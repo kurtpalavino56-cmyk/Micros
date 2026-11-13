@@ -186,13 +186,8 @@ test('the Excel template opens with readable column widths, a frozen header and 
         ->get(route('faculty.quiz-import.template', [$course->id, $quiz->id]))
         ->streamedContent();
 
-    $path = tempnam(sys_get_temp_dir(), 'template-test-');
-    file_put_contents($path, $binary);
-    $zip = new ZipArchive;
-    $zip->open($path);
-    $sheet = $zip->getFromName('xl/worksheets/sheet1.xml');
-    $zip->close();
-    unlink($path);
+    // Read with the app's own reader: production hosts may lack ext-zip.
+    $sheet = app(QuizQuestionSpreadsheet::class)->parts($binary)['xl/worksheets/sheet1.xml'];
 
     expect($sheet)
         ->toContain('<col min="2" max="2" width="52" customWidth="1"')
