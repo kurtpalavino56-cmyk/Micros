@@ -141,6 +141,17 @@ test('CSV accepts a UTF-8 BOM and semicolon delimiter', function () {
         ->and($preview['valid'][0]['question']['question'])->toBe('Semicolon row');
 });
 
+test('CSV detects a semicolon delimiter from the header row when note lines come first', function () {
+    [, , $quiz] = csvQuizFixture();
+    $content = "# A note line\r\n# Another note\r\n".csvImportContents([csvImportRow(['question' => 'Resaved row'])], ';');
+
+    $preview = app(QuizCsvImportService::class)->preview($quiz, $content);
+
+    expect($preview['errors'])->toBe([])
+        ->and($preview['valid'])->toHaveCount(1)
+        ->and($preview['valid'][0]['question']['question'])->toBe('Resaved row');
+});
+
 test('the saved quiz builder links to CSV import and the template has the documented columns', function () {
     [$course, , $quiz, , $faculty] = csvQuizFixture();
     $this->actingAs($faculty)->get(route('faculty.quiz.create', [$course->id, $quiz->module_id]))

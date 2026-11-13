@@ -2298,16 +2298,26 @@ class FacultyController extends Controller
     {
         $course = $this->ownedCourse($id);
         $quiz = $this->ownedQuizForCourse($course, $quizId);
-        $template = "# Identification accepts one answer; matching trims, ignores case, and collapses repeated whitespace.\r\n"
-            ."# Rephrase answers starting with - to avoid spreadsheet formula injection.\r\n"
-            ."# Blank points and 0 count as 1. Limits: 2 MB and 500 data rows.\r\n"
-            ."type,question,choice_a,choice_b,choice_c,choice_d,correct_answer,points\r\n"
-            ."multiple_choice,What is 2 + 2?,3,4,5,6,B,1\r\n"
-            ."true_false,The Earth orbits the Sun,,,,,true,1\r\n"
-            ."identification,What is the opposite of hot?,,,,,cold,1\r\n";
+        // Each note is one short cell in column A with the rest of its row
+        // empty, so a spreadsheet shows the whole sentence without widening
+        // any column. fputcsv quotes a cell if it ever contains a comma, so a
+        // note can never split across columns.
+        $rows = [
+            ['# Identification: one correct answer. Matching ignores capital letters and extra spaces.'],
+            ['# Rephrase answers starting with - (or = + @) so they are not read as formulas.'],
+            ['# Points: blank or 0 counts as 1. Limits: 2 MB and 500 questions.'],
+            ['type', 'question', 'choice_a', 'choice_b', 'choice_c', 'choice_d', 'correct_answer', 'points'],
+            ['multiple_choice', 'Which planet is known as the Red Planet?', 'Earth', 'Mars', 'Jupiter', 'Venus', 'B', '1'],
+            ['true_false', 'The Earth orbits the Sun.', '', '', '', '', 'True', '1'],
+            ['identification', 'What is the opposite of hot?', '', '', '', '', 'cold', '1'],
+        ];
 
-        return response()->streamDownload(static function () use ($template): void {
-            echo $template;
+        return response()->streamDownload(static function () use ($rows): void {
+            $output = fopen('php://output', 'w');
+            foreach ($rows as $row) {
+                fputcsv($output, $row, ',', '"', '', "\r\n");
+            }
+            fclose($output);
         }, 'quiz-questions-template.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 

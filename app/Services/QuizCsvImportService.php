@@ -209,7 +209,17 @@ class QuizCsvImportService
 
     private function detectDelimiter(string $contents): string
     {
-        $line = strtok($contents, "\r\n") ?: $contents;
+        // Detect from the header row, not a leading "# note" line: a note is
+        // a single cell, so it would tie and wrongly fall back to commas for
+        // a file a spreadsheet re-saved with semicolons.
+        $line = $contents;
+        foreach (preg_split('/\r\n|\r|\n/', $contents) ?: [] as $candidate) {
+            $firstCell = ltrim($candidate, " \t\"");
+            if (trim($candidate) !== '' && ! str_starts_with($firstCell, '#')) {
+                $line = $candidate;
+                break;
+            }
+        }
         $commaCount = count(str_getcsv($line, ',', '"', ''));
         $semicolonCount = count(str_getcsv($line, ';', '"', ''));
 
