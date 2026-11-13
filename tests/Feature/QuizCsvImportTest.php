@@ -87,6 +87,16 @@ function csvImportPost(TestCase $testCase, Course $course, Quiz $quiz, User $fac
     ]);
 }
 
+function quikStakImportPost(TestCase $testCase, Course $course, Quiz $quiz, User $faculty, string $contents): TestResponse
+{
+    Storage::fake('local');
+
+    return $testCase->actingAs($faculty)->from(route('faculty.quiz-import.form', [$course->id, $quiz->id]))
+        ->post(route('faculty.quiz-import.preview', [$course->id, $quiz->id]), [
+            'csv_file' => UploadedFile::fake()->createWithContent('questions.txt', $contents),
+        ]);
+}
+
 function csvImportState(User $faculty, Quiz $quiz): array
 {
     return session('quiz_csv_import.'.$faculty->id.'.'.$quiz->id);
@@ -156,16 +166,19 @@ test('CSV detects a semicolon delimiter from the header row when note lines come
 test('the saved quiz builder links to CSV import and the template has the documented columns', function () {
     [$course, , $quiz, , $faculty] = csvQuizFixture();
     $this->actingAs($faculty)->get(route('faculty.quiz.create', [$course->id, $quiz->module_id]))
-        ->assertOk()->assertSee('Upload CSV')->assertSee('name="continue_to_import"', false)
+        ->assertOk()->assertSee('Upload file')->assertSee('name="continue_to_import"', false)
         ->assertSee('Save Quiz')->assertSee('min="1"', false)->assertSee('0 or blank counts as 1');
     $this->actingAs($faculty)->get(route('faculty.quiz-import.form', [$course->id, $quiz->id]))
         ->assertOk()
         ->assertSee('<header class="auth-topbar faculty-auth-topbar', false)
         ->assertSee('<aside class="faculty-sidebar" id="faculty-sidebar">', false)
         ->assertSee('class="main quiz-csv-page"', false)
+        ->assertSee('Download Excel template')
+        ->assertSee('Download QUIK STAK template')
         ->assertSee('Identification questions accept one correct answer')
-        ->assertSee('Rephrase any answer starting with')
-        ->assertSee('2 MB and 500 data rows');
+        ->assertSee('rephrase any answer starting with')
+        ->assertSee('up to 2 MB')
+        ->assertSee('500 questions');
     $template = $this->get(route('faculty.quiz-import.template', [$course->id, $quiz->id]))
         ->assertOk()
         ->assertDownload('quiz-questions-template.xlsx')
@@ -178,6 +191,169 @@ test('the saved quiz builder links to CSV import and the template has the docume
         ->and($csv)->toContain('type,question,choice_a,choice_b,choice_c,choice_d,correct_answer,points')
         ->and($csv)->toContain('Rephrase answers starting with -')
         ->and(app(QuizCsvImportService::class)->preview($quiz, $csv)['valid'])->toHaveCount(3);
+
+    $quikStakTemplate = $this->get(route('faculty.quiz-import.quik-stak-template', [$course->id, $quiz->id]))
+        ->assertOk()
+        ->assertDownload('quik-stak-template.txt')
+        ->assertHeader('content-type', 'text/plain; charset=UTF-8')
+        ->streamedContent();
+    expect($quikStakTemplate)
+        ->toStartWith("# QUIK STAK v1\n")
+        ->toContain('=== ANSWER KEY ===')
+        ->toContain('1. b @2');
+});
+
+test('QUIK STAK uploads preview and import multiple choice, true false and identification questions', function () {
+    [$course, , $quiz, , $faculty] = csvQuizFixture();
+    $contents = <<<'QUIK'
+# QUIK STAK v1
+
+1. Which planet is known as the Red Planet?
+a) Earth
+b) Mars
+c) Jupiter
+d) Venus
+
+2. The Earth orbits the Sun.
+
+3. What is the opposite of hot?
+
+=== ANSWER KEY ===
+1. b @2
+2. TRUE
+3. cold
+QUIK;
+
+    quikStakImportPost($this, $course, $quiz, $faculty, $contents)
+        ->assertRedirect(route('faculty.quiz-import.preview.show', [$course->id, $quiz->id]));
+
+    $preview = app(QuizCsvImportService::class)->preview($quiz->fresh(), $contents);
+    expect($preview['valid'])->toHaveCount(3)
+        ->and($preview['errors'])->toBe([])
+        ->and($preview['valid'][0]['question'])->toMatchArray([
+            'question' => 'Which planet is known as the Red Planet?',
+            'type' => 'Multiple Choice',
+            'points' => 2,
+            'options' => ['Earth', 'Mars', 'Jupiter', 'Venus'],
+            'correct_answer' => 'Mars',
+        ])
+        ->and($preview['valid'][1]['question'])->toMatchArray([
+            'type' => 'True or False',
+            'points' => 1,
+            'options' => ['True', 'False'],
+            'correct_answer' => 'True',
+        ])
+        ->and($preview['valid'][2]['question'])->toMatchArray([
+            'type' => 'Identification',
+            'points' => 1,
+            'options' => [],
+            'correct_answer' => 'cold',
+        ]);
+
+    $state = csvImportState($faculty, $quiz);
+    $this->actingAs($faculty)->get(route('faculty.quiz-import.preview.show', [$course->id, $quiz->id]))
+        ->assertOk()
+        ->assertSee('valid rows')
+        ->assertSee('Which planet is known as the Red Planet?');
+    $this->post(route('faculty.quiz-import.confirm', [$course->id, $quiz->id]), ['token' => $state['token']])
+        ->assertRedirect(route('faculty.quiz.create', [$course->id, $quiz->module_id]).'#questions');
+
+    $questions = $quiz->questions()->orderBy('position')->get()->keyBy('question');
+    expect($questions)->toHaveCount(3)
+        ->and($questions['Which planet is known as the Red Planet?']->correct_answer)->toBe('Mars')
+        ->and($questions['Which planet is known as the Red Planet?']->points)->toBe(2)
+        ->and($questions['The Earth orbits the Sun.']->correct_answer)->toBe('True')
+        ->and($questions['What is the opposite of hot?']->correct_answer)->toBe('cold');
+});
+
+test('QUIK STAK upload rejects mismatched question and answer-key counts', function () {
+    [$course, , $quiz, , $faculty] = csvQuizFixture();
+    $contents = <<<'QUIK'
+# QUIK STAK v1
+
+1. First question
+
+2. Second question
+
+=== ANSWER KEY ===
+1. answer
+2. answer
+2. answer
+QUIK;
+
+    $this->from(route('faculty.quiz-import.form', [$course->id, $quiz->id]))
+        ->actingAs($faculty)
+        ->post(route('faculty.quiz-import.preview', [$course->id, $quiz->id]), [
+            'csv_file' => UploadedFile::fake()->createWithContent('questions.txt', $contents),
+        ])
+        ->assertSessionHasErrors('file');
+    expect(session('errors')->get('file')[0])->toContain('2 questions but 3 answer-key lines');
+});
+
+test('QUIK STAK upload rejects answer-key numbers without a matching question', function () {
+    [$course, , $quiz, , $faculty] = csvQuizFixture();
+    $contents = <<<'QUIK'
+# QUIK STAK v1
+
+1. First question
+
+=== ANSWER KEY ===
+2. answer
+QUIK;
+
+    $this->from(route('faculty.quiz-import.form', [$course->id, $quiz->id]))
+        ->actingAs($faculty)
+        ->post(route('faculty.quiz-import.preview', [$course->id, $quiz->id]), [
+            'csv_file' => UploadedFile::fake()->createWithContent('questions.txt', $contents),
+        ])
+        ->assertSessionHasErrors('file');
+    expect(session('errors')->get('file')[0])->toContain('refers to question 2, but no such question exists');
+});
+
+test('QUIK STAK upload rejects a multiple-choice answer that does not match a choice', function () {
+    [$course, , $quiz, , $faculty] = csvQuizFixture();
+    $contents = <<<'QUIK'
+# QUIK STAK v1
+
+1. Pick one
+a) First
+b) Second
+
+=== ANSWER KEY ===
+1. c
+QUIK;
+
+    $this->from(route('faculty.quiz-import.form', [$course->id, $quiz->id]))
+        ->actingAs($faculty)
+        ->post(route('faculty.quiz-import.preview', [$course->id, $quiz->id]), [
+            'csv_file' => UploadedFile::fake()->createWithContent('questions.txt', $contents),
+        ])
+        ->assertSessionHasErrors('file');
+    expect(session('errors')->get('file')[0])->toContain('answer must be a choice letter from a to b');
+});
+
+test('QUIK STAK upload reports a missing answer-key line for its question', function () {
+    [$course, , $quiz, , $faculty] = csvQuizFixture();
+    $contents = <<<'QUIK'
+# QUIK STAK v1
+
+1. First question
+
+2. Second question
+
+=== ANSWER KEY ===
+1. answer
+QUIK;
+
+    $this->from(route('faculty.quiz-import.form', [$course->id, $quiz->id]))
+        ->actingAs($faculty)
+        ->post(route('faculty.quiz-import.preview', [$course->id, $quiz->id]), [
+            'csv_file' => UploadedFile::fake()->createWithContent('questions.txt', $contents),
+        ])
+        ->assertSessionHasErrors('file');
+    expect(session('errors')->get('file')[0])
+        ->toContain('2 questions but 1 answer-key lines')
+        ->toContain('missing an entry for question 2');
 });
 
 test('the Excel template opens with readable column widths, a frozen header and a type dropdown', function () {
@@ -384,7 +560,7 @@ test('CSV formula-like cells are rejected but negative identification answers an
         ->and($preview['points_normalized'])->toBe(1);
 });
 
-test('empty files, more than 500 rows, oversized uploads and non-CSV files are rejected', function () {
+test('empty files, row limits, oversized uploads, invalid QUIK STAK and non-CSV files are rejected', function () {
     [$course, , $quiz, , $faculty] = csvQuizFixture();
     $service = app(QuizCsvImportService::class);
     expect(fn () => $service->preview($quiz, ''))->toThrow(ValidationException::class, 'empty')
@@ -396,7 +572,7 @@ test('empty files, more than 500 rows, oversized uploads and non-CSV files are r
     Storage::fake('local');
     $this->actingAs($faculty)->post(route('faculty.quiz-import.preview', [$course->id, $quiz->id]), [
         'csv_file' => UploadedFile::fake()->create('questions.txt', 1, 'text/plain'),
-    ])->assertSessionHasErrors('csv_file');
+    ])->assertSessionHasErrors('file');
     $this->post(route('faculty.quiz-import.preview', [$course->id, $quiz->id]), [
         'csv_file' => UploadedFile::fake()->create('questions.csv', 1, 'application/octet-stream'),
     ])->assertSessionHasErrors('csv_file');

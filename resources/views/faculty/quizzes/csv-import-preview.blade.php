@@ -1,4 +1,4 @@
-<x-faculty.layout title="Preview CSV import | Upskill" data-faculty-page="quiz-csv-import-preview" use-app-css use-app-js>
+<x-faculty.layout title="Preview question import | Upskill" data-faculty-page="quiz-csv-import-preview" use-app-css use-app-js>
     @php
         $validCount = count($preview['valid']);
         $duplicateCount = count($preview['duplicates']);
@@ -8,10 +8,10 @@
         <a class="quiz-csv-back-link" href="{{ $builderUrl }}">&larr; Back to quiz builder</a>
         <header class="quiz-csv-header">
             <span class="quiz-csv-eyebrow">Question pool</span>
-            <h1>Preview CSV import</h1>
+            <h1>Preview question import</h1>
             <p><strong>{{ $course->title }}</strong><span aria-hidden="true"> · </span>{{ $quiz->title }}</p>
         </header>
-        <p class="quiz-csv-intro">Review the rows below before saving. Identification accepts one answer; matching trims it, ignores case, and collapses repeated whitespace. Rephrase answers starting with <code>-</code> to avoid spreadsheet formula injection. Blank points and points of 0 count as 1. Limits: 2 MB and 500 data rows.</p>
+        <p class="quiz-csv-intro">Review the questions below before saving. Identification accepts one answer; matching trims it, ignores case, and collapses repeated whitespace. For Excel and CSV, rephrase answers starting with <code>-</code> to avoid spreadsheet formula injection. Blank points and points of 0 count as 1. Limits: 2 MB and 500 questions.</p>
 
         @if($errors->any())
             <div class="quiz-csv-alert" role="alert">
@@ -71,7 +71,7 @@
                 <p class="quiz-csv-notice" role="note"><strong>Append-only for this quiz</strong><span>Replace mode is unavailable because students have already attempted this quiz. New valid rows will be appended.</span></p>
             @endif
             <div class="quiz-csv-form-actions">
-                <a class="quiz-csv-secondary-button" href="{{ $uploadUrl }}">Upload a different CSV</a>
+                <a class="quiz-csv-secondary-button" href="{{ $uploadUrl }}">Upload a different file</a>
                 <button class="quiz-csv-primary-button" type="submit">Confirm import</button>
             </div>
         </form>

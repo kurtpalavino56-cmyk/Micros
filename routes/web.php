@@ -476,6 +476,8 @@ Route::middleware([PreventBackHistory::class, RoleBasedAccess::class.':faculty',
         ->whereNumber('id')->whereNumber('quizId')->name('faculty.quiz-import.form');
     Route::get('/Faculty-mycourses/manage/{id}/quizzes/{quizId}/csv-import/template', [FacultyController::class, 'quizCsvImportTemplate'])
         ->whereNumber('id')->whereNumber('quizId')->name('faculty.quiz-import.template');
+    Route::get('/Faculty-mycourses/manage/{id}/quizzes/{quizId}/csv-import/quik-stak-template', [FacultyController::class, 'quizQuikStakImportTemplate'])
+        ->whereNumber('id')->whereNumber('quizId')->name('faculty.quiz-import.quik-stak-template');
     Route::post('/Faculty-mycourses/manage/{id}/quizzes/{quizId}/csv-import/preview', [FacultyController::class, 'quizCsvImportPreview'])
         ->whereNumber('id')->whereNumber('quizId')->name('faculty.quiz-import.preview');
     Route::get('/Faculty-mycourses/manage/{id}/quizzes/{quizId}/csv-import/preview', [FacultyController::class, 'showQuizCsvImportPreview'])

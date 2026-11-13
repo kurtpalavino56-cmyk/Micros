@@ -2262,7 +2262,7 @@ class FacultyController extends Controller
 
         if ($existingQuiz === null) {
             return redirect()->route('faculty.lesson-quiz.create', [$course->id, $lesson->id])
-                    ->with('success', 'Lesson quiz created. Add questions or update its settings.');
+                ->with('success', 'Lesson quiz created. Add questions or update its settings.');
         }
 
         return redirect()->route('faculty.lesson-quiz.create', [$course->id, $lesson->id])
@@ -2291,6 +2291,7 @@ class FacultyController extends Controller
             'replaceAllowed' => ! QuizAttempt::query()->where('quiz_id', $quiz->id)->exists(),
             'previewUrl' => route('faculty.quiz-import.preview', [$course->id, $quiz->id]),
             'templateUrl' => route('faculty.quiz-import.template', [$course->id, $quiz->id]),
+            'quikStakTemplateUrl' => route('faculty.quiz-import.quik-stak-template', [$course->id, $quiz->id]),
             'builderUrl' => $this->quizImportBuilderUrl($course, $quiz),
         ]);
     }
@@ -2326,6 +2327,35 @@ class FacultyController extends Controller
         }, 'quiz-questions-template.xlsx', ['Content-Type' => QuizQuestionSpreadsheet::MIME]);
     }
 
+    public function quizQuikStakImportTemplate(int $id, int $quizId)
+    {
+        $course = $this->ownedCourse($id);
+        $this->ownedQuizForCourse($course, $quizId);
+
+        $template = <<<'QUIK'
+# QUIK STAK v1
+
+1. Which planet is known as the Red Planet?
+a) Earth
+b) Mars
+c) Jupiter
+d) Venus
+
+2. The Earth orbits the Sun.
+
+3. What is the opposite of hot?
+
+=== ANSWER KEY ===
+1. b @2
+2. TRUE
+3. cold
+QUIK;
+
+        return response()->streamDownload(static function () use ($template): void {
+            echo $template;
+        }, 'quik-stak-template.txt', ['Content-Type' => 'text/plain; charset=UTF-8']);
+    }
+
     public function quizCsvImportPreview(Request $request, int $id, int $quizId, QuizCsvImportService $csvImport, QuizQuestionSpreadsheet $spreadsheet): RedirectResponse
     {
         $course = $this->ownedCourse($id);
@@ -2336,16 +2366,17 @@ class FacultyController extends Controller
         $extension = strtolower($file->getClientOriginalExtension());
         $allowedMimes = [
             'csv' => ['text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel', 'text/comma-separated-values'],
+            'txt' => ['text/plain', 'text/utf-8', 'application/octet-stream'],
             // finfo reports .xlsx differently across systems; the workbook
             // itself is still opened and checked by QuizQuestionSpreadsheet.
             'xlsx' => [QuizQuestionSpreadsheet::MIME, 'application/zip', 'application/x-zip-compressed', 'application/octet-stream'],
         ];
         if (! in_array($mime, $allowedMimes[$extension] ?? [], true)) {
-            throw ValidationException::withMessages(['csv_file' => 'Upload the Excel template (.xlsx) or a .csv file.']);
+            throw ValidationException::withMessages(['csv_file' => 'Upload the Excel template (.xlsx), a .csv file, or a QUIK STAK .txt file.']);
         }
 
-        // An Excel upload is converted to CSV text up front, so both formats
-        // go through the same preview rules and the same private storage.
+        // Excel is converted to CSV text; CSV and QUIK STAK stay in their
+        // original text format and are parsed by the shared preview service.
         $csvContents = $extension === 'xlsx'
             ? $spreadsheet->toCsv((string) file_get_contents($file->getRealPath()))
             : null;
@@ -2356,17 +2387,17 @@ class FacultyController extends Controller
         $token = (string) Str::uuid();
         $basePath = 'quiz-imports/'.$userId.'/'.$quiz->id.'/'.$token;
         $uploadPath = $csvContents === null
-            ? $file->storeAs('quiz-imports/'.$userId.'/'.$quiz->id, $token.'.csv', 'local')
+            ? $file->storeAs('quiz-imports/'.$userId.'/'.$quiz->id, $token.'.'.$extension, 'local')
             : (Storage::disk('local')->put($basePath.'.csv', $csvContents) ? $basePath.'.csv' : false);
         if (! $uploadPath) {
             throw ValidationException::withMessages(['csv_file' => 'The uploaded file could not be stored privately.']);
         }
 
         try {
-            $preview = $csvImport->preview($quiz, Storage::disk('local')->get($uploadPath));
+            $preview = $csvImport->preview($quiz, Storage::disk('local')->get($uploadPath), $extension === 'txt');
             $previewPath = $basePath.'.json';
             if (! Storage::disk('local')->put($previewPath, json_encode($preview, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE))) {
-                throw ValidationException::withMessages(['csv_file' => 'The preview could not be stored privately. Upload the CSV again.']);
+                throw ValidationException::withMessages(['csv_file' => 'The preview could not be stored privately. Upload the file again.']);
             }
             $request->session()->put($key, [
                 'token' => $token,
@@ -2392,13 +2423,13 @@ class FacultyController extends Controller
             $this->forgetQuizCsvImportPreview($key);
 
             return redirect()->route('faculty.quiz-import.form', [$course->id, $quiz->id])
-                ->withErrors(['preview' => 'This preview expired. Upload the CSV again.']);
+                ->withErrors(['preview' => 'This preview expired. Upload the question file again.']);
         }
         if (! Storage::disk('local')->exists($state['preview_path'] ?? '')) {
             $this->forgetQuizCsvImportPreview($key);
 
             return redirect()->route('faculty.quiz-import.form', [$course->id, $quiz->id])
-                ->withErrors(['preview' => 'This preview could not be found. Upload the CSV again.']);
+                ->withErrors(['preview' => 'This preview could not be found. Upload the question file again.']);
         }
         $previewContents = Storage::disk('local')->get($state['preview_path']);
         $preview = json_decode($previewContents, true);
@@ -2406,7 +2437,7 @@ class FacultyController extends Controller
             $this->forgetQuizCsvImportPreview($key);
 
             return redirect()->route('faculty.quiz-import.form', [$course->id, $quiz->id])
-                ->withErrors(['preview' => 'This preview could not be read. Upload the CSV again.']);
+                ->withErrors(['preview' => 'This preview could not be read. Upload the question file again.']);
         }
 
         return view('faculty.quizzes.csv-import-preview', [
@@ -2434,7 +2465,7 @@ class FacultyController extends Controller
             $this->forgetQuizCsvImportPreview($key);
 
             return redirect()->route('faculty.quiz-import.form', [$course->id, $quiz->id])
-                ->withErrors(['preview' => 'This preview is invalid or expired. Upload the CSV again.']);
+                ->withErrors(['preview' => 'This preview is invalid or expired. Upload the question file again.']);
         }
 
         $preview = json_decode(Storage::disk('local')->get($state['preview_path']), true);
@@ -2442,7 +2473,7 @@ class FacultyController extends Controller
             $this->forgetQuizCsvImportPreview($key);
 
             return redirect()->route('faculty.quiz-import.form', [$course->id, $quiz->id])
-                ->withErrors(['preview' => 'This preview could not be read. Upload the CSV again.']);
+                ->withErrors(['preview' => 'This preview could not be read. Upload the question file again.']);
         }
         $includeDuplicates = $request->boolean('include_duplicates');
         $replace = $request->boolean('replace');

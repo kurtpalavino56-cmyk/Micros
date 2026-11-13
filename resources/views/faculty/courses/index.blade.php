@@ -588,7 +588,7 @@
                                 <summary class="btn-save-lesson">Add</summary>
                                 <div class="quiz-add-menu__items">
                                     <button type="button" onclick="addQuestion()">New question (manual)</button>
-                                    <button type="submit" name="continue_to_import" value="1" data-csv-submit>Upload CSV</button>
+                                    <button type="submit" name="continue_to_import" value="1" data-csv-submit>Upload file</button>
                                 </div>
                             </details>
                         </div>
