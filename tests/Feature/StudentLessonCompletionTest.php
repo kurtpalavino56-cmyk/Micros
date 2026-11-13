@@ -222,6 +222,60 @@ test('the course player can open the selected reflection and lesson quiz from th
     expect($quizResponse->json('html'))->toContain('Lesson Quiz');
 });
 
+test('lesson quiz header shows the number of questions in the attempt instead of the pool size', function () {
+    [$student, $course, $lesson] = lessonTrackingFixture();
+    $quiz = Quiz::create([
+        'course_id' => $course->id,
+        'lesson_id' => $lesson->id,
+        'title' => 'Drawn Lesson Quiz',
+        'passing_score' => 70,
+        'attempts' => 'Unlimited',
+        'questions_per_attempt' => 2,
+        'is_active' => true,
+        'sort_order' => 1,
+    ]);
+
+    foreach (range(1, 4) as $index) {
+        QuizQuestion::create([
+            'quiz_id' => $quiz->id,
+            'question' => 'Question '.$index,
+            'type' => 'Multiple Choice',
+            'options' => ['A', 'B'],
+            'correct_answer' => 'A',
+            'points' => 1,
+        ]);
+    }
+
+    Enrollment::create([
+        'user_id' => $student->id,
+        'course_id' => $course->id,
+        'enrolled_at' => now(),
+        'progress_percent' => 0,
+        'progress_state' => [],
+    ]);
+
+    $this->actingAs($student)
+        ->postJson(route('courses.lessons.start', [$course->id, $lesson->id]))
+        ->assertOk();
+    $this->travel(6)->seconds();
+    $this->postJson(route('courses.lessons.complete', [$course->id, $lesson->id]))
+        ->assertOk();
+
+    $html = $this->getJson(route('quiz.show', $quiz->id))->assertOk()->json('html');
+
+    expect($html)
+        ->toContain('2 questions · Pass 70%')
+        ->not->toContain('4 questions · Pass 70%')
+        ->and(substr_count($html, '<fieldset class="inline-quiz-question">'))->toBe(2)
+        ->and($quiz->fresh()->questionsShownPerAttemptCount())->toBe(2);
+
+    $standaloneHtml = $this->get(route('quiz.show', $quiz->id))
+        ->assertOk()
+        ->getContent();
+
+    expect($standaloneHtml)->toContain('2 questions · pass 70%');
+});
+
 test('passing a lesson quiz returns correct answers and shows the latest attempt in the header', function () {
     [$student, $course, $lesson] = lessonTrackingFixture();
     $quiz = Quiz::create([

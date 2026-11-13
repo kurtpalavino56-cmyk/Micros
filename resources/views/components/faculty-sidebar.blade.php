@@ -29,6 +29,9 @@
     <a href="{{ route('faculty.courses') }}" class="side-link {{ request()->routeIs('faculty.courses') ? 'active' : '' }}">
         <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">menu_book</span></span>
         <span class="side-label">My Courses</span>
+        @if ($facultyMyCoursesNeedsAttention ?? false)
+            <span class="side-alert-dot" role="img" aria-label="Assignments awaiting review"></span>
+        @endif
     </a>
     <a href="{{ route('faculty.create') }}" class="side-link {{ request()->routeIs('faculty.create') ? 'active' : '' }}">
         <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">post_add</span></span>
@@ -37,6 +40,9 @@
     <span class="sidebar-section-label">People</span>
     <a href="{{ route('faculty.students') }}" class="side-link {{ request()->routeIs('faculty.students*') ? 'active' : '' }}">
         <span class="side-icon-box"><span class="material-symbols-rounded" aria-hidden="true">groups</span></span><span class="side-label">Learner Progress</span>
+        @if ($facultyLearnerProgressNeedsAttention ?? false)
+            <span class="side-alert-dot" role="img" aria-label="Learner progress needs attention"></span>
+        @endif
     </a>
     <span class="sidebar-section-label">Insights</span>
     <a href="{{ route('faculty.analytics') }}" class="side-link {{ request()->routeIs('faculty.analytics') ? 'active' : '' }}">

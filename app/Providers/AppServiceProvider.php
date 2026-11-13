@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Complaint;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\LessonActivitySubmission;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Services\MicrocredentialCompletionService;
@@ -77,6 +78,7 @@ class AppServiceProvider extends ServiceProvider
                     'admin_course_reviews' => 0,
                     'admin_completion_reviews' => 0,
                     'faculty_learner_progress' => false,
+                    'faculty_my_courses' => false,
                 ];
 
                 if (Auth::check()) {
@@ -117,6 +119,18 @@ class AppServiceProvider extends ServiceProvider
                             ->pluck('id');
 
                         if ($courseIds->isNotEmpty()) {
+                            $counts['faculty_my_courses'] = LessonActivitySubmission::query()
+                                ->where('status', 'submitted')
+                                ->whereHas('activity', function ($query) use ($courseIds): void {
+                                    $query->where('is_active', true)
+                                        ->where('activity_type', 'assignment')
+                                        ->where(function ($scope) use ($courseIds): void {
+                                            $scope->whereHas('lesson', fn ($lesson) => $lesson->whereIn('course_id', $courseIds))
+                                                ->orWhereHas('module', fn ($module) => $module->whereIn('course_id', $courseIds));
+                                        });
+                                })
+                                ->exists();
+
                             $hasPendingReview = Enrollment::query()
                                 ->whereIn('course_id', $courseIds)
                                 ->whereIn('faculty_verification_status', ['pending', 'not_required'])
@@ -167,6 +181,7 @@ class AppServiceProvider extends ServiceProvider
             $view->with('adminPendingCourseReviewCount', $counts['admin_course_reviews']);
             $view->with('adminPendingCompletionReviewCount', $counts['admin_completion_reviews']);
             $view->with('facultyLearnerProgressNeedsAttention', $counts['faculty_learner_progress']);
+            $view->with('facultyMyCoursesNeedsAttention', $counts['faculty_my_courses']);
         });
     }
 }

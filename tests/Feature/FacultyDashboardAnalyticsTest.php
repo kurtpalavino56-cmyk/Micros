@@ -7,6 +7,7 @@ use App\Models\Enrollment;
 use App\Models\LessonActivity;
 use App\Models\LessonActivitySubmission;
 use App\Models\User;
+use App\Services\MicrocredentialCompletionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -208,12 +209,41 @@ test('faculty dashboard grading count matches the assignment review queue', func
         ->get(route('faculty.dashboard'))
         ->assertOk()
         ->assertSee('2 to grade')
+        ->assertSee('Assignments awaiting review', false)
         ->assertSee(route('faculty.activities.reviews', $course->id), false)
         ->assertViewHas('courses', fn ($courses) => $courses->firstWhere('id', $course->id)?->to_grade === 2);
 
     $this->get(route('faculty.activities.reviews', $course->id))
         ->assertOk()
         ->assertViewHas('pendingCount', 2);
+});
+
+test('faculty sidebar flags learners awaiting faculty verification', function () {
+    $faculty = User::factory()->faculty()->create();
+    $course = Course::create([
+        'title' => 'Verification course',
+        'slug' => Str::uuid()->toString(),
+        'created_by' => $faculty->id,
+        'requires_faculty_verification' => true,
+        'approval_status' => 'draft',
+        'is_published' => false,
+    ]);
+
+    $this->actingAs($faculty)
+        ->get(route('faculty.dashboard'))
+        ->assertOk()
+        ->assertDontSee('Learner progress needs attention', false);
+
+    Enrollment::create([
+        'user_id' => User::factory()->create()->id,
+        'course_id' => $course->id,
+        'completion_status' => MicrocredentialCompletionService::STATUS_AWAITING_FACULTY_VERIFICATION,
+        'faculty_verification_status' => 'pending',
+    ]);
+
+    $this->get(route('faculty.dashboard'))
+        ->assertOk()
+        ->assertSee('Learner progress needs attention', false);
 });
 
 test('faculty analytics pass rate counts each learner once across quiz retakes', function () {

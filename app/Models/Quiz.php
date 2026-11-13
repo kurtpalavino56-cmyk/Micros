@@ -96,10 +96,7 @@ class Quiz extends Model
         return $ordered->where('quiz_set_id', (int) $setId)->values();
     }
 
-    /**
-     * Number of questions a student is served (the per-set count). Uses the
-     * loaded questions relation when present, so list pages add no queries.
-     */
+    /** Largest authored set size, without applying the per-attempt draw limit. */
     public function questionsPerSetCount(): int
     {
         $questions = $this->relationLoaded('questions') ? $this->questions : $this->questions()->get(['id', 'quiz_set_id']);
@@ -108,6 +105,16 @@ class Quiz extends Model
         }
 
         return (int) $questions->groupBy(fn (QuizQuestion $question) => (int) $question->quiz_set_id)->max(fn ($group) => $group->count());
+    }
+
+    /** Configured questions per attempt, capped by the available question set. */
+    public function questionsShownPerAttemptCount(): int
+    {
+        if ($this->questions_per_attempt === null) {
+            return $this->questionsPerSetCount();
+        }
+
+        return min(max(0, (int) $this->questions_per_attempt), $this->questionsForSet()->count());
     }
 
     /** Number of sets that actually hold questions (an empty quiz counts as one set). */

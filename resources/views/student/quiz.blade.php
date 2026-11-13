@@ -1,11 +1,14 @@
 <x-layout title="{{ $quiz->title }} | UpSkill" shell="bare" page="quiz">
+@php
+    $questionsShownCount = count($presented_questions ?? []) ?: $quiz->questionsShownPerAttemptCount();
+@endphp
 <section class="quiz-shell">
     <p><a href="{{ route('courses.learn', $quiz->course_id) }}">← Back to course</a></p>
     <section class="quiz-card">
         <p>{{ $quiz->course->title }}</p>
         <h1>{{ $quiz->title }}</h1>
         @if($quiz->instructions)<div class="quiz-instructions up-ckeditor-wrapper"><div class="ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($quiz->instructions) !!}</div></div>@endif
-        <p>{{ $quiz->questionsPerSetCount() }} questions · pass {{ $quiz->passing_score }}% · {{ $status['allowed'] === 0 ? 'unlimited' : max(0, $status['allowed'] - $status['used']).' attempt(s) remaining' }}</p>
+        <p>{{ $questionsShownCount }} questions · pass {{ $quiz->passing_score }}% · {{ $status['allowed'] === 0 ? 'unlimited' : max(0, $status['allowed'] - $status['used']).' attempt(s) remaining' }}</p>
         @if(($time_limit_seconds ?? 0) > 0 && ! $status['exhausted'] && ! $status['unlock'])
             <p class="quiz-notice quiz-timer" id="quiz-timer" role="timer" aria-live="polite"></p>
         @endif

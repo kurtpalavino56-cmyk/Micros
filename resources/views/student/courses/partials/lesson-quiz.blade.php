@@ -2,6 +2,10 @@
     $latestAttemptPassed = (bool) $latestAttempt?->passed;
     $canContinue = $latestAttemptPassed || (! $status['exhausted'] && (bool) $status['unlock']);
     $quizAvailable = ! $status['exhausted'] && ! $status['unlock'] && ! $latestAttemptPassed;
+    $questionsShownCount = $latestAttemptPassed
+        ? count($review_questions ?? [])
+        : count($presented_questions ?? []);
+    $questionsShownCount = $questionsShownCount ?: $quiz->questionsShownPerAttemptCount();
 @endphp
 <section class="inline-assessment-panel" data-assessment-kind="quiz" data-assessment-id="{{ $quiz->id }}" data-module-order="{{ $module_order ?? '' }}" data-module-content-step="{{ ! empty($module_content_step) ? '1' : '0' }}" data-retry-required="{{ ! empty($module_content_step) && $latestAttempt && ! $latestAttemptPassed ? '1' : '0' }}" data-next-url="{{ $module_next_url ?? '' }}" data-assessment-url="{{ route('quiz.show', $quiz->id) }}" data-cooldown-until="{{ (int) ($status['unlock'] ?? 0) }}" data-can-continue="{{ $canContinue ? '1' : '0' }}" data-timer-remaining="{{ (int) ($timer_remaining_seconds ?? 0) }}">
     <header class="inline-assessment-header">
@@ -16,7 +20,7 @@
             @endif
         </div>
         <h2>{{ $quiz->title }}</h2>
-        <p>{{ $quiz->lesson?->title ?? $quiz->module?->title ?? '' }} · {{ $quiz->questionsPerSetCount() }} questions · Pass {{ $quiz->passing_score }}%</p>
+        <p>{{ $quiz->lesson?->title ?? $quiz->module?->title ?? '' }} · {{ $questionsShownCount }} questions · Pass {{ $quiz->passing_score }}%</p>
     </header>
     @if($quiz->instructions)<div class="inline-assessment-instructions up-ckeditor-wrapper"><div class="ck-content rich-content">{!! \App\Support\RichTextSanitizer::sanitize($quiz->instructions) !!}</div></div>@endif
     @if(($time_limit_seconds ?? 0) > 0 && $quizAvailable)
