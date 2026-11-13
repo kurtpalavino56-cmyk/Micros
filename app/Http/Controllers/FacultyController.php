@@ -33,6 +33,7 @@ use App\Services\StudentProgressService;
 use App\Services\UserNotificationService;
 use App\Support\CertificateBuilder;
 use App\Support\CompletionStatusPresenter;
+use App\Support\QuizQuestionSpreadsheet;
 use App\Support\RichTextSanitizer;
 use App\Support\SkillCatalog;
 use App\Support\UserPresenter;
@@ -2294,51 +2295,69 @@ class FacultyController extends Controller
         ]);
     }
 
-    public function quizCsvImportTemplate(int $id, int $quizId)
+    public function quizCsvImportTemplate(int $id, int $quizId, QuizQuestionSpreadsheet $spreadsheet)
     {
         $course = $this->ownedCourse($id);
         $quiz = $this->ownedQuizForCourse($course, $quizId);
-        // Each note is one short cell in column A with the rest of its row
-        // empty, so a spreadsheet shows the whole sentence without widening
-        // any column. fputcsv quotes a cell if it ever contains a comma, so a
-        // note can never split across columns.
-        $rows = [
-            ['# Identification: one correct answer. Matching ignores capital letters and extra spaces.'],
-            ['# Rephrase answers starting with - (or = + @) so they are not read as formulas.'],
-            ['# Points: blank or 0 counts as 1. Limits: 2 MB and 500 questions.'],
-            ['type', 'question', 'choice_a', 'choice_b', 'choice_c', 'choice_d', 'correct_answer', 'points'],
-            ['multiple_choice', 'Which planet is known as the Red Planet?', 'Earth', 'Mars', 'Jupiter', 'Venus', 'B', '1'],
-            ['true_false', 'The Earth orbits the Sun.', '', '', '', '', 'True', '1'],
-            ['identification', 'What is the opposite of hot?', '', '', '', '', 'cold', '1'],
-        ];
 
-        return response()->streamDownload(static function () use ($rows): void {
-            $output = fopen('php://output', 'w');
-            foreach ($rows as $row) {
-                fputcsv($output, $row, ',', '"', '', "\r\n");
-            }
-            fclose($output);
-        }, 'quiz-questions-template.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        // An Excel workbook, because only .xlsx can carry column widths: every
+        // column opens wide enough to read and type in without resizing. Note
+        // rows start with "#" so the importer skips them.
+        $binary = $spreadsheet->template(
+            notes: [
+                '# Replace the three example rows with your own questions. One question per row. Do not change the blue header row.',
+                '# multiple_choice: fill choice_a to choice_d (at least two) and put A, B, C, D or the exact choice text in correct_answer.',
+                '# true_false: leave the choices blank and put True or False in correct_answer.',
+                '# identification: leave the choices blank. One correct answer; matching ignores capital letters and extra spaces.',
+                '# Rephrase answers starting with - (or = + @) so they are not read as formulas.',
+                '# points: whole number; blank or 0 counts as 1. Limits: 2 MB and 500 questions.',
+            ],
+            headers: ['type', 'question', 'choice_a', 'choice_b', 'choice_c', 'choice_d', 'correct_answer', 'points'],
+            examples: [
+                ['multiple_choice', 'Which planet is known as the Red Planet?', 'Earth', 'Mars', 'Jupiter', 'Venus', 'B', 1],
+                ['true_false', 'The Earth orbits the Sun.', '', '', '', '', 'True', 1],
+                ['identification', 'What is the opposite of hot?', '', '', '', '', 'cold', 1],
+            ],
+            widths: ['A' => 18, 'B' => 52, 'C' => 18, 'D' => 18, 'E' => 18, 'F' => 18, 'G' => 18, 'H' => 9],
+        );
+
+        return response()->streamDownload(static function () use ($binary): void {
+            echo $binary;
+        }, 'quiz-questions-template.xlsx', ['Content-Type' => QuizQuestionSpreadsheet::MIME]);
     }
 
-    public function quizCsvImportPreview(Request $request, int $id, int $quizId, QuizCsvImportService $csvImport): RedirectResponse
+    public function quizCsvImportPreview(Request $request, int $id, int $quizId, QuizCsvImportService $csvImport, QuizQuestionSpreadsheet $spreadsheet): RedirectResponse
     {
         $course = $this->ownedCourse($id);
         $quiz = $this->ownedQuizForCourse($course, $quizId);
         $request->validate(['csv_file' => ['required', 'file', 'max:2048']]);
         $file = $request->file('csv_file');
         $mime = strtolower((string) $file->getMimeType());
-        $allowedMimes = ['text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel', 'text/comma-separated-values'];
-        if (strtolower($file->getClientOriginalExtension()) !== 'csv' || ! in_array($mime, $allowedMimes, true)) {
-            throw ValidationException::withMessages(['csv_file' => 'Upload a .csv file with a recognized CSV MIME type.']);
+        $extension = strtolower($file->getClientOriginalExtension());
+        $allowedMimes = [
+            'csv' => ['text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel', 'text/comma-separated-values'],
+            // finfo reports .xlsx differently across systems; the workbook
+            // itself is still opened and checked by QuizQuestionSpreadsheet.
+            'xlsx' => [QuizQuestionSpreadsheet::MIME, 'application/zip', 'application/x-zip-compressed', 'application/octet-stream'],
+        ];
+        if (! in_array($mime, $allowedMimes[$extension] ?? [], true)) {
+            throw ValidationException::withMessages(['csv_file' => 'Upload the Excel template (.xlsx) or a .csv file.']);
         }
+
+        // An Excel upload is converted to CSV text up front, so both formats
+        // go through the same preview rules and the same private storage.
+        $csvContents = $extension === 'xlsx'
+            ? $spreadsheet->toCsv((string) file_get_contents($file->getRealPath()))
+            : null;
 
         $userId = (int) Auth::id();
         $key = $this->quizCsvImportSessionKey($userId, (int) $quiz->id);
         $this->forgetQuizCsvImportPreview($key);
         $token = (string) Str::uuid();
         $basePath = 'quiz-imports/'.$userId.'/'.$quiz->id.'/'.$token;
-        $uploadPath = $file->storeAs('quiz-imports/'.$userId.'/'.$quiz->id, $token.'.csv', 'local');
+        $uploadPath = $csvContents === null
+            ? $file->storeAs('quiz-imports/'.$userId.'/'.$quiz->id, $token.'.csv', 'local')
+            : (Storage::disk('local')->put($basePath.'.csv', $csvContents) ? $basePath.'.csv' : false);
         if (! $uploadPath) {
             throw ValidationException::withMessages(['csv_file' => 'The uploaded file could not be stored privately.']);
         }

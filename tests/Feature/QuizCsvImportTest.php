@@ -11,6 +11,7 @@ use App\Models\QuizSet;
 use App\Models\User;
 use App\Services\QuizCsvImportService;
 use App\Services\QuizManagementService;
+use App\Support\QuizQuestionSpreadsheet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
@@ -166,11 +167,77 @@ test('the saved quiz builder links to CSV import and the template has the docume
         ->assertSee('Rephrase any answer starting with')
         ->assertSee('2 MB and 500 data rows');
     $template = $this->get(route('faculty.quiz-import.template', [$course->id, $quiz->id]))
-        ->assertOk()->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        ->assertOk()
+        ->assertDownload('quiz-questions-template.xlsx')
+        ->assertHeader('content-type', QuizQuestionSpreadsheet::MIME);
 
-    expect($template->streamedContent())->toContain('type,question,choice_a,choice_b,choice_c,choice_d,correct_answer,points')
-        ->and($template->streamedContent())->toContain('Rephrase answers starting with -')
-        ->and(app(QuizCsvImportService::class)->preview($quiz, $template->streamedContent())['valid'])->toHaveCount(3);
+    $binary = $template->streamedContent();
+    $csv = app(QuizQuestionSpreadsheet::class)->toCsv($binary);
+
+    expect(substr($binary, 0, 2))->toBe('PK')
+        ->and($csv)->toContain('type,question,choice_a,choice_b,choice_c,choice_d,correct_answer,points')
+        ->and($csv)->toContain('Rephrase answers starting with -')
+        ->and(app(QuizCsvImportService::class)->preview($quiz, $csv)['valid'])->toHaveCount(3);
+});
+
+test('the Excel template opens with readable column widths, a frozen header and a type dropdown', function () {
+    [$course, , $quiz, , $faculty] = csvQuizFixture();
+    $binary = $this->actingAs($faculty)
+        ->get(route('faculty.quiz-import.template', [$course->id, $quiz->id]))
+        ->streamedContent();
+
+    $path = tempnam(sys_get_temp_dir(), 'template-test-');
+    file_put_contents($path, $binary);
+    $zip = new ZipArchive;
+    $zip->open($path);
+    $sheet = $zip->getFromName('xl/worksheets/sheet1.xml');
+    $zip->close();
+    unlink($path);
+
+    expect($sheet)
+        ->toContain('<col min="2" max="2" width="52" customWidth="1"')
+        ->toContain('state="frozen"')
+        ->toContain('<formula1>"multiple_choice,true_false,identification"</formula1>');
+});
+
+test('a filled-in Excel template uploads, previews and imports like a CSV', function () {
+    [$course, , $quiz, , $faculty] = csvQuizFixture();
+    Storage::fake('local');
+    $binary = app(QuizQuestionSpreadsheet::class)->template(
+        notes: ['# A note row'],
+        headers: ['type', 'question', 'choice_a', 'choice_b', 'choice_c', 'choice_d', 'correct_answer', 'points'],
+        examples: [
+            ['multiple_choice', 'Excel letter question', 'Yes', 'No', '', '', 'A', 2],
+            ['true_false', 'Excel true false question', '', '', '', '', 'TRUE', 1],
+            ['identification', 'Excel identification question', '', '', '', '', 'answer', 1],
+        ],
+        widths: [],
+    );
+
+    $this->actingAs($faculty)->post(route('faculty.quiz-import.preview', [$course->id, $quiz->id]), [
+        'csv_file' => UploadedFile::fake()->createWithContent('questions.xlsx', $binary),
+    ])->assertSessionHasNoErrors()->assertRedirect(route('faculty.quiz-import.preview.show', [$course->id, $quiz->id]));
+
+    $state = csvImportState($faculty, $quiz);
+    $this->post(route('faculty.quiz-import.confirm', [$course->id, $quiz->id]), ['token' => $state['token']])
+        ->assertRedirect();
+
+    $questions = $quiz->questions()->get()->keyBy('question');
+    expect($questions)->toHaveCount(3)
+        ->and($questions['Excel letter question']->correct_answer)->toBe('Yes')
+        ->and($questions['Excel letter question']->points)->toBe(2)
+        ->and($questions['Excel true false question']->correct_answer)->toBe('True');
+});
+
+test('a file named .xlsx that is not a real workbook is rejected', function () {
+    [$course, , $quiz, , $faculty] = csvQuizFixture();
+    Storage::fake('local');
+
+    $this->actingAs($faculty)->post(route('faculty.quiz-import.preview', [$course->id, $quiz->id]), [
+        'csv_file' => UploadedFile::fake()->createWithContent('questions.xlsx', 'not a workbook'),
+    ])->assertSessionHasErrors('csv_file');
+
+    expect($quiz->questions()->count())->toBe(0);
 });
 
 test('saving an empty bank can go directly to CSV import with all questions shown', function () {

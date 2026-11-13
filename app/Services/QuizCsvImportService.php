@@ -36,7 +36,9 @@ class QuizCsvImportService
         $rowNumber = 0;
         while (($headers = fgetcsv($stream, null, $delimiter, '"', '')) !== false) {
             $rowNumber++;
-            if (! str_starts_with(trim((string) ($headers[0] ?? '')), '#')) {
+            // Notes ("#...") and blank rows may sit above the header row.
+            $isBlank = count(array_filter($headers, fn ($cell): bool => trim((string) $cell) !== '')) === 0;
+            if (! $isBlank && ! str_starts_with(trim((string) ($headers[0] ?? '')), '#')) {
                 break;
             }
         }
